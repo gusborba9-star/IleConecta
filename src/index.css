@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 97%;
+    --foreground: 22 40% 12%;
+
+    --card: 30 40% 99%;
+    --card-foreground: 22 40% 12%;
+
+    --muted: 30 15% 92%;
+    --muted-foreground: 22 15% 40%;
+
+    --primary: 12 72% 45%;
+    --primary-foreground: 40 40% 98%;
+
+    --secondary: 30 20% 90%;
+    --secondary-foreground: 22 40% 15%;
+
+    --accent: 158 40% 25%;
+    --accent-foreground: 40 40% 98%;
+
+    --gold: 42 88% 52%;
+    --gold-foreground: 22 40% 12%;
+
+    --forest: 158 40% 25%;
+    --forest-foreground: 40 40% 98%;
+
+    --border: 30 20% 85%;
+    --input: 30 20% 88%;
+    --ring: 12 72% 45%;
+
+    --danger: 0 72% 45%;
+    --success: 145 55% 35%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 100% -10%, hsla(42,88%,60%,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, hsla(12,72%,55%,0.08), transparent 60%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+  ::selection {
+    background: hsl(var(--gold));
+    color: hsl(var(--gold-foreground));
+  }
+}
+
+@layer components {
+  .altar-divider {
+    background-image: linear-gradient(90deg, transparent, hsl(var(--gold)) 20%, hsl(var(--primary)) 50%, hsl(var(--gold)) 80%, transparent);
+    height: 2px;
+  }
+  .glass {
+    background: hsla(30, 40%, 99%, 0.75);
+    backdrop-filter: blur(12px);
+  }
+  .scroll-x {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar { display: none; }
+}
