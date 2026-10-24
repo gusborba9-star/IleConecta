@@ -11,7 +11,7 @@
 | FIN-03 | Reserva interna de 2% é alocada dentro da parcela de 17% da plataforma; não é uma terceira parcela | **Confirmada pelo CTO** na ordem DOC-02 |
 | FIN-04 | Liberação de repasse planejada após o evento, com janela operacional de até três dias após encerramento | **Confirmada como intenção de negócio**, sujeita às regras aplicáveis de cancelamento, reembolso e direitos do consumidor |
 | FIN-05 | Integração inicial Asaas deve permanecer em Sandbox até autorização posterior | **Confirmada pelo CTO** na ordem DOC-02 |
-| SEC-01 | Credenciais, segredos e chaves privadas não podem aparecer em documentos, código público ou logs | **Confirmada pelo CTO** na ordem DOC-02 |
+| SEC-SECRET-01 | Credenciais, segredos e chaves privadas não podem aparecer em documentos, código público ou logs | **Confirmada pelo CTO** na ordem DOC-02 |
 
 ## 2. Interpretação aritmética da reserva
 
