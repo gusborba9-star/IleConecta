@@ -38,7 +38,7 @@
 | PRIV-01 | Minimização, retenção, exportação e exclusão de dados | BLUEPRINT §9 | P-ARCH-01 | A definir | Política formal não localizada | Testes de direitos/retention e revisão jurídica | Política aprovada e aplicada sem quebrar registros obrigatórios | BLOQUEADO | Pendente |
 | NFR-BUILD-01 | Build e verificações estáticas reproduzíveis | ROADMAP P-TECH-01 | P-TECH-01 | EXEC-01 | package.json, vite.config.ts, package-lock.json; [PR #1](https://github.com/gusborba9-star/IleConecta/pull/1) | npm ci, build, lint, tsc -b com logs | Todos os comandos executam e falhas são resolvidas/documentadas | EM ANDAMENTO; testes não executados | Pendente |
 | TEST-REG-01 | Testes de regressão para fluxos críticos | BLUEPRINT §11 | P-QA-01 | A definir | Suite de testes a inventariar | CI e resultados ligados ao SHA | Fluxos críticos passam após mudança | BLOQUEADO | Pendente |
-| DEPLOY-PREVIEW-01 | Preview isolado e validado antes de produção | ROADMAP P-QA-01 | P-QA-01 | A definir | Vercel/CI não validado nesta DOC-02 | URL/commit Preview, E2E, logs e rollback de Preview | Preview corresponde ao SHA e não altera produção | BLOQUEADO | Pendente |
+| DEPLOY-PREVIEW-01 | Preview isolado e validado antes de produção | ROADMAP P-QA-01 | P-QA-01 | A definir | Verificações automáticas GitHub–Vercel associadas à PR #2; status de deploy falharam no SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0` | URL/commit Preview, E2E, logs e rollback de Preview | Preview corresponde ao SHA e não altera produção | BLOQUEADO — status automáticos de Vercel com falha; causa não diagnosticada | Pendente |
 | REL-PROD-01 | Produção exige gates e autorização explícita | BLUEPRINT §11; ROADMAP P-REL-01 | P-REL-01 | Nenhuma | Infra não alterada nesta DOC-02 | Registro de autorização, checklist, rollback | Nenhuma publicação sem todos gates e aprovação | CONFIRMADO como restrição desta ordem; execução não aplicável | Pendente |
 
 ## Checklist verificável de qualidade e segurança
@@ -78,6 +78,12 @@
 - [ ] Revisar vulnerabilidades e acessibilidade conforme escopo aprovado.
 - [ ] Confirmar plano de rollback, alertas e recuperação.
 - [ ] Obter autorização explícita do CTO antes de qualquer promoção a produção.
+
+## Verificação de estado da DOC-02
+
+- A revisão de links relativos e referências cruzadas identificou e corrigiu os namespaces de requisitos/fases e a referência à fase `P-QA-01` que não estava listada no Roadmap.
+- Os status automáticos da Vercel são falhas observadas, não evidência de causa raiz. Nenhuma tentativa de deploy foi feita para corrigi-los.
+- DOC-02 permanece em revisão; a decisão final de encerramento cabe ao CTO.
 
 ## Requisitos ainda sem cobertura/evidência
 
