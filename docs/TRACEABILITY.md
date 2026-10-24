@@ -81,7 +81,7 @@
 
 ## Verificação de estado da DOC-02
 
-- A revisão de links relativos e referências cruzadas identificou e corrigiu os namespaces de requisitos/fases e a referência à fase `P-QA-01` que não estava listada no Roadmap.
+- A revisão de links relativos e referências cruzadas alinhou os namespaces de requisitos/fases; a fase proposta `P-QA-01` está listada uma única vez no Roadmap.
 - No SHA anterior `ffff750506b844d24c6f4bf25c523a6ad34107d0`, foram observados dois status Vercel `failure` e um `pending`; no SHA atual `3558237767fcfd11c960b033a768374c734078d7`, os três status consultados estavam `pending` e o bot indicou `Building`. Falha anterior observada, causa raiz não identificada; nenhum deploy manual foi feito para corrigi-la.
 - DOC-02 permanece em revisão; a decisão final de encerramento cabe ao CTO.
 
