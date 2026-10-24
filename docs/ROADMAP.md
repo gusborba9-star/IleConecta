@@ -1,6 +1,6 @@
 # Ilê Conecta — Roadmap integral (baseline proposta)
 
-> **Estado:** proposta para revisão do CTO; fases abaixo são uma reorganização documental proposta pela DOC-02, **não nomes nem números históricos recuperados**. Não se afirma que existam fases oficiais anteriores. Nenhuma fase é considerada concluída por estar documentada.  
+> **Estado:** proposta para revisão do CTO; fases abaixo são uma reorganização documental proposta pela DOC-02, **não nomes nem números históricos recuperados**. Todas as fases `P-*` permanecem propostas sujeitas à aprovação explícita do CTO; não se afirma que existam fases oficiais anteriores. Nenhuma fase é considerada concluída por estar documentada.  
 > Fonte de estado técnico: `main` SHA `93e7060756b29d397b75f2151d870606a33b9692`; branch EXEC-01 `fc69a5938c48f92cd79176d2b57de0930ffde5cd`; [PR #1](https://github.com/gusborba9-star/IleConecta/pull/1).
 
 ## Regras de estado
