@@ -167,7 +167,11 @@ Um requisito só pode ser marcado como validado quando houver: (1) implementaç�
 9. Aprovar fases propostas do Roadmap antes de tratá-las como baseline oficial.
 10. Manter EXEC-01 aberta até testes verificáveis; não iniciar EXEC-02 sem autorização.
 
-## 13. Estado de produto
+## 13. Mapeamento de identificadores
+
+Os IDs de requisitos utilizados pela matriz oficial desta baseline estão definidos em [TRACEABILITY.md](TRACEABILITY.md). As referências financeiras `FIN-01` a `FIN-05` e `SEC-SECRET-01` são detalhadas em [FINANCIAL_RULES.md](FINANCIAL_RULES.md); os requisitos técnicos e operacionais propostos são detalhados em [BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md). As fases `P-*` são propostas documentais definidas em [ROADMAP.md](ROADMAP.md), não fases históricas nem aprovadas.
+
+## 14. Estado de produto
 
 | Dimensão | Estado nesta baseline |
 |---|---|
