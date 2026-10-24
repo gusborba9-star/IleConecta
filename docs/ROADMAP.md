@@ -39,7 +39,7 @@
 - **Estado:** em andamento para revisão do CTO; branch documental própria.
 - **Escopo:** documentação, sem alterações na aplicação, banco ou produção.
 - **Critério de conclusão:** revisão cruzada dos documentos, IDs/links/estados consistentes, commits/PR registrados, evidências verificadas e decisão explícita do CTO. Criar arquivos, por si só, não encerra a execução.
-- **Verificações automáticas GitHub–Vercel:** a criação/atualização da PR #2 acionou verificações/Preview automaticamente. No SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, a consulta de status em 2026-10-24 às 02:16 UTC mostrou dois status Vercel `failure` e um `pending`; não foi investigada nem corrigida a causa, não houve deploy manual, e isso não foi atividade da EXEC-02.
+- **Verificações automáticas GitHub–Vercel:** a criação/atualização da PR #2 acionou verificações/Preview automaticamente. No SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, a consulta de status em 2026-10-24 às 02:16 UTC mostrou dois status Vercel `failure` e um `pending`. No commit atual `3558237767fcfd11c960b033a768374c734078d7`, a última consulta às 02:18 UTC mostrou os três status Vercel `pending` e a mensagem automática do bot indicou `Building`. Portanto, a falha foi observada no SHA anterior; no SHA atual, a verificação permanece em andamento. A causa das falhas anteriores não foi diagnosticada, não houve deploy manual, e isso não foi atividade da EXEC-02.
 
 ### EXEC-01 — Correção do build e preparação técnica para Vercel
 - **Estado:** **em andamento, aberta e independente**.
