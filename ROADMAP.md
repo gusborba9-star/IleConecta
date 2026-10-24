@@ -31,6 +31,10 @@
 
 **Testes locais:** NÃO EXECUTADOS. A tentativa de clonar o repositório para executar os comandos falhou porque o ambiente não conseguiu resolver `github.com` (`Could not resolve host: github.com`). Portanto, não há evidência de `npm ci`, `npm run build`, `npm run lint` ou verificação TypeScript nesta execução. Não interpretar a correção estática como build aprovado.
 
+### Achado adicional — lockfile inconsistente
+
+A comparação das dependências de topo mostra que `package.json` declara pacotes que não aparecem no bloco `packages[""].dependencies` de `package-lock.json`, incluindo `@google/generative-ai`, `@react-three/drei`, `@react-three/fiber`, `axios`, `chart.js`, `crypto-js`, `framer-motion`, `hls.js`, `leaflet`, `react-calendar`, `react-dropzone`, `react-helmet-async`, `react-leaflet`, `react-redux`, `three`, `uuid`, `web-vitals`, `xlsx` e `zustand`. Portanto, além do plugin Vite, existe evidência de que o lockfile está desatualizado em relação ao manifesto. Não foi regenerado porque o ambiente não conseguiu clonar o repositório nem executar npm; a atualização deve ser feita com npm em ambiente funcional e revisada para evitar alterações indiscriminadas.
+
 ### Pendências antes da conclusão da EXEC-01
 
 1. Executar em ambiente com acesso ao repositório e ao registry npm: `npm ci`.
