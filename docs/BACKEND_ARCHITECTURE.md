@@ -159,7 +159,11 @@ Proposta:
 
 Nenhum teste acima é declarado executado por este documento.
 
-## 12. Decisões pendentes
+## 12. Referências de rastreabilidade
+
+Requisitos de identidade e autorização: `ROLE-01`, `AUTH-01`, `SEC-ISO-01`. Pagamentos: `PAY-01`, `WEBHOOK-01`, `IDEMP-01`. Auditoria e operação: `AUDIT-01`, `PRIV-01`, `DEPLOY-PREVIEW-01`. A definição e os estados de cada requisito ficam na [matriz mestre](TRACEABILITY.md). Esses IDs são documentais e não comprovam implementação.
+
+## 13. Decisões pendentes
 
 1. Aprovar stack e padrão de API/backend.
 2. Aprovar provedor de identidade e modelo de sessão.
