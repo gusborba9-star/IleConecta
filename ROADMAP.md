@@ -92,3 +92,37 @@ Equipe observada: `Gustavo Borba's projects` (`team_YpETl8VTprdnelFt86Gjmll7`). 
 - DOC-02 permanece em revisão, sem aprovação ou merge. EXEC-02 não foi iniciada nem autorizada.
 - Nenhuma alteração em `main`, configuração Vercel, domínio, variável de ambiente, Supabase, Asaas, banco, dados ou produção foi feita.
 - Próximos passos: obter um ambiente com acesso ao GitHub e ao registry npm; executar os quatro comandos e testes relevantes; obter logs Vercel acessíveis e comparar configurações completas dos três projetos; confirmar com o CTO o domínio/projeto oficial antes de qualquer exclusão.
+
+
+## Complemento de validação — 2026-10-24 02:57 UTC
+
+### Tentativa de executar testes no ambiente disponível
+- Ambiente local: Node.js `v22.16.0`, npm `10.9.2`, Git `2.47.3`.
+- O diretório de trabalho não contém checkout do repositório. Tentativa executada: `git clone --depth 1 --branch exec-01/fix-vite-build-vercel https://github.com/gusborba9-star/IleConecta.git /tmp/IleConecta-exec01`.
+- Resultado real: código de saída 128; `fatal: unable to access 'https://github.com/gusborba9-star/IleConecta.git/': Could not resolve host: github.com`.
+- Verificação de DNS: `getent hosts github.com` não retornou endereço. Portanto, não havia arquivos de projeto locais nos quais executar `npm ci`, `npm run build`, `npm run lint` ou `npx tsc -b`. Esses comandos permanecem **não executados**, não aprovados nem reprovados.
+- Não foi criado sandbox remoto nem alterada configuração de rede para evitar introduzir um recurso ou mudança remota não autorizada.
+
+### Status GitHub–Vercel consultados novamente
+- HEAD EXEC-01 `1687ef725a004aba2cfffd69d1d7c1c8ce66afab`: os três status Vercel foram consultados novamente e retornaram `success`:
+  - [ile-conecta](https://vercel.com/gustavo-borba-s-projects/ile-conecta/2GQfg8bQ76FC7svVUAim7dnjo5ZF)
+  - [ile-conecta-tdfx](https://vercel.com/gustavo-borba-s-projects/ile-conecta-tdfx/3M8yHHYTDhnUn8HDamzQykUwUt2U)
+  - [ile-conecta-9qfn](https://vercel.com/gustavo-borba-s-projects/ile-conecta-9qfn/J4ddxxvDxMBdZFRVcXRkFoJpHBRF)
+- HEAD DOC-02 `cf0fd36a7fd709c75e06c28835ca4412cef85af7`: os três status Vercel foram consultados novamente e retornaram `failure`:
+  - [ile-conecta](https://vercel.com/gustavo-borba-s-projects/ile-conecta/B3QWkS71JCNaf2hBjMdeXu2tzEAp)
+  - [ile-conecta-tdfx](https://vercel.com/gustavo-borba-s-projects/ile-conecta-tdfx/F1DZFg9XU6D8fEJK8efxfgW1dEbM)
+  - [ile-conecta-9qfn](https://vercel.com/gustavo-borba-s-projects/ile-conecta-9qfn/4kLkJnnLGeqLRv1q3MFJRJW4fhiD)
+- Para os seis identificadores de deployment, a consulta de logs de build retornou `404 not_found / Deployment not found`; não foi possível obter as etapas que causaram os status. Não inferir a causa a partir do status isolado.
+
+### Auditoria Vercel — limite de acesso encontrado nesta rodada
+- `get_project` para os três nomes retornou `404 not_found / Project not found`.
+- Consultas de deployments e logs de runtime para os três IDs retornaram `403 forbidden` (sem permissão ou projeto não acessível pelo contexto de API atual).
+- Consultas de runtime errors retornaram `403 forbidden`. A mensagem de logs especifica que a consulta falhou antes de retornar resultados; isso **não** significa que não existam logs.
+- A listagem de projetos filtrada por `repo=gusborba9-star/IleConecta` retornou zero projetos para o contexto atual, embora o histórico desta auditoria contenha resultados anteriores. Não interpretar essa diferença como exclusão dos projetos; registrar como mudança/limitação de acesso à API até verificação por um proprietário autorizado.
+- Como consequência, root directory, comandos de instalação/build, output directory, variáveis por nome, integrações, domínios atuais e logs runtime ficam **não verificados nesta rodada**. Os dados históricos do Roadmap continuam identificados como observações anteriores, não como confirmação atual.
+- Nenhuma configuração, variável, domínio, integração, deployment ou projeto foi alterado.
+
+### Estado atualizado
+- EXEC-01 continua **ABERTA**: a verificação automática Vercel do HEAD `1687ef725a004aba2cfffd69d1d7c1c8ce66afab` retornou `success` nos três projetos, mas não substitui os quatro comandos locais obrigatórios nem fornece logs de produção acessíveis.
+- DOC-02 permanece em revisão. EXEC-02 não iniciada nem autorizada. PR #1 e PR #2 não foram mescladas.
+- Próxima ação necessária: recuperar acesso autorizado ao repositório/registry no ambiente de teste e ao contexto de leitura dos projetos Vercel; executar os comandos e recuperar logs completos antes de determinar causa raiz ou escolher definitivamente o projeto oficial.
