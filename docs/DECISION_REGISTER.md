@@ -29,15 +29,17 @@
 
 ## C. Propostas novas que dependem de aprovação do CTO
 
+Os IDs `PROP-001` a `PROP-007` identificam propostas no registro de decisões; os IDs `P-*` identificam fases propostas do Roadmap. São namespaces distintos.
+
 | ID | Proposta | Onde registrada |
 |---|---|---|
-| P-001 | Ciclos de vida de atividade, reserva, pagamento, reembolso e repasse | [Blueprint](BLUEPRINT.md), [Regras Financeiras](FINANCIAL_RULES.md) |
-| P-002 | Backend confiável separado do frontend, API server-side, modelo relacional e ledger auditável | [Arquitetura Backend](BACKEND_ARCHITECTURE.md) |
-| P-003 | Entidades conceituais e constraints de integridade | [Arquitetura Backend](BACKEND_ARCHITECTURE.md) |
-| P-004 | Fases `P-*` do Roadmap e seus gates | [Roadmap](ROADMAP.md) |
-| P-005 | Requisitos de auth/RBAC, isolamento, observabilidade, retenção e recuperação | Blueprint e Arquitetura Backend |
-| P-006 | Critérios de aceite e testes automatizados da matriz | [Rastreabilidade](TRACEABILITY.md) |
-| P-007 | Uso de 2% da parcela da plataforma interpretado como 2% de R$ 17 em uma venda de R$ 100 | [Regras Financeiras](FINANCIAL_RULES.md) — exemplo ilustrativo, requer confirmação da base e da titularidade |
+| PROP-001 | Ciclos de vida de atividade, reserva, pagamento, reembolso e repasse | [Blueprint](BLUEPRINT.md), [Regras Financeiras](FINANCIAL_RULES.md) |
+| PROP-002 | Backend confiável separado do frontend, API server-side, modelo relacional e ledger auditável | [Arquitetura Backend](BACKEND_ARCHITECTURE.md) |
+| PROP-003 | Entidades conceituais e constraints de integridade | [Arquitetura Backend](BACKEND_ARCHITECTURE.md) |
+| PROP-004 | Fases `P-*` do Roadmap e seus gates | [Roadmap](ROADMAP.md) |
+| PROP-005 | Requisitos de auth/RBAC, isolamento, observabilidade, retenção e recuperação | Blueprint e Arquitetura Backend |
+| PROP-006 | Critérios de aceite e testes automatizados da matriz | [Rastreabilidade](TRACEABILITY.md) |
+| PROP-007 | Uso de 2% da parcela da plataforma interpretado como 2% de R$ 17 em uma venda de R$ 100 | [Regras Financeiras](FINANCIAL_RULES.md) — exemplo ilustrativo, requer confirmação da base e da titularidade |
 
 ## D. Questões em aberto
 
@@ -61,4 +63,5 @@
 - Não foram alterados documentos de `main`, código da aplicação, dependências, lockfiles, banco ou produção nesta execução documental.
 - EXEC-01 permanece aberta, em branch e PR próprios.
 - EXEC-02 permanece não autorizada e não iniciada.
+- A integração GitHub–Vercel acionou verificações automáticas associadas à PR #2; no SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, dois status falharam e um permaneceu pendente (consulta em 2026-10-24 02:16 UTC). Isso é automação da integração GitHub–Vercel, não uma execução da EXEC-02; nenhuma tentativa manual de deploy foi feita.
 - Qualquer mudança de status de requisito/fase exige evidência e, quando aplicável, aprovação explícita do CTO.
