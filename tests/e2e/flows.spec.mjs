@@ -65,7 +65,7 @@ test("mensagem enviada aparece na conversa e persiste após recarga", async ({ p
   await page.goto("/mensagens/casa_1");
   const content = "E2E mensagem persistida 2026";
   await page.getByPlaceholder("Escreva sua mensagem...").fill(content);
-  await page.getByRole("button").filter({ has: page.locator("svg") }).last().click();
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(page.getByText(content)).toBeVisible();
   await page.reload();
   await expect(page.getByText(content)).toBeVisible();
@@ -116,4 +116,15 @@ test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ pa
   await page.reload();
   await page.goto("/descobrir");
   await expect(page.getByRole("heading", { name: "Impulsionadas" })).toHaveCount(0);
+});
+
+test("layout móvel não cria overflow horizontal", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page);
+  await expect(page.getByText("Momentos das casas")).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
 });
