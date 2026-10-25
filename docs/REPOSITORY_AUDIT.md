@@ -365,3 +365,26 @@ O campo global anunciava busca por casas, rituais e orixás, mas encaminhava tod
 
 ### Limites
 Não foi executado teste de navegador. A busca foi validada por função de domínio e build, não por interação real de rota/campo. A navegação login → feed, stories desabilitados, criação de publicação, curtidas/comentários, persistência após recarga e layout responsivo continuam sem prova E2E.
+
+
+## 17. Quarta entrega integrada — integridade de referências no perfil
+
+### Causa raiz
+A lista de reservas demonstrativas em `Profile.tsx` usava uma asserção de não-nulidade para localizar o ritual (`rituals.find(...)!`). Como o estado é persistido localmente e pode sobreviver a mudanças de dados/versão, uma reserva antiga sem ritual correspondente poderia provocar erro de renderização e quebrar a página de perfil.
+
+### Correção
+- A lista agora trata explicitamente a ausência do ritual e renderiza um registro residual sem tentar acessar propriedades inexistentes.
+- A ausência da casa responsável também é tratada sem gerar rota `/mensagens/undefined`.
+- O valor e a data do registro local são preservados como histórico demonstrativo, sem alegar que a reserva continua válida.
+
+### Validação CI no SHA `60468827811b04bf73b814df107e074ce7071a76`
+[Run #36](https://github.com/gusborba9-star/IleConecta/actions/runs/40232827299):
+- `npm ci`: PASS.
+- Build: PASS, 3,24 s.
+- Lint: PASS, 0 erros e 8 avisos.
+- TypeScript: PASS.
+- Testes de domínio: PASS, 7/7.
+- `npm audit --omit=dev`: FAIL, 6 vulnerabilidades moderadas; gate geral FAIL.
+
+### Limites
+A correção evita o crash de renderização para uma referência ausente, mas não adiciona validação de esquema completa a `localStorage`. Dados persistidos malformados, migração de versões, quota, armazenamento indisponível e sincronização entre abas continuam sem testes de integração.
