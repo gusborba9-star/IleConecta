@@ -388,3 +388,40 @@ A lista de reservas demonstrativas em `Profile.tsx` usava uma asserção de não
 
 ### Limites
 A correção evita o crash de renderização para uma referência ausente, mas não adiciona validação de esquema completa a `localStorage`. Dados persistidos malformados, migração de versões, quota, armazenamento indisponível e sincronização entre abas continuam sem testes de integração.
+
+
+## 18. Validação integrada — persistência, navegador, UI compartilhada e dependências
+
+### Persistência: causas e correções
+- `src/lib/storage.ts` agora delega a `src/lib/storageCore.js`: JSON inválido ou incompatível com o esquema retorna fallback seguro, guarda uma cópia de recuperação quando possível e remove a chave inválida do caminho de leitura.
+- `saveKey` e `clearAll` retornam sucesso/falha em vez de ocultar o resultado. `AppContext` registra aviso quando uma gravação não funciona.
+- `src/lib/persistedState.js` valida estrutura e relações entre usuários, casas, rituais, publicações, stories, conversas, mensagens, reservas e sessão. IDs órfãos e duplicados fazem o registro persistido ser rejeitado, evitando que referências inválidas entrem no estado ativo.
+- Testes adicionados: `tests/storage.test.mjs`, `tests/persisted-state.test.mjs` e `tests/security-floor.test.mjs`.
+
+### Fluxos reais de navegador
+- `playwright.config.mjs` fixa a configuração e usa servidor Vite local, sem configurar serviços de produção.
+- `tests/e2e/flows.spec.mjs` cobre nove cenários com recarga: cadastro/sessão, login, busca global, publicação, mensagens, reserva demonstrativa, fechamento de modal com Escape, expiração de impulsionamento, layout móvel e recuperação de JSON inválido.
+- A execução anterior no SHA `45877421e3fcb352cc70ec971da5e2041d58e050` expôs três defeitos nos próprios testes e na disposição dos cartões: seletores ambíguos, texto repetido no perfil e cartões de impulsionamento estreitos na coluna central. Os seletores foram desambiguados e a grade de impulsionamento passou a usar duas colunas em telas grandes antes de chegar a três em telas muito largas. O CI do SHA posterior `c6606c583533f7f55fb99603ff1c354488a41059` está sendo executado; não tratar os testes E2E como aprovados até a conclusão desse run.
+
+### Componentes compartilhados examinados e correções
+- `src/components/base/index.tsx` — modal agora usa semântica de diálogo, foco inicial, contenção de Tab, Escape, restauração do foco e bloqueio/restauração de scroll do body.
+- `src/components/ui/dialog.tsx`, `alert-dialog.tsx` e `sheet.tsx` — conteúdo limitado à altura disponível e rolável em viewports baixos.
+- `Login.tsx` e `Register.tsx` — labels associados aos controles por IDs.
+- `PostComposer.tsx` e `Messages.tsx` — nomes acessíveis para campo de publicação, entrada de mensagem e botão de envio.
+- `Boost.tsx` — grade responsiva ajustada à largura real da coluna principal com navegação lateral e painel direito.
+- Os primitivos Radix compartilhados já fornecem controles de foco/teclado; não foram reescritos. O restante de `src/components/ui/**` não foi auditado arquivo por arquivo.
+
+### Segurança de dependências: bloqueador independente
+- `postcss-selector-parser` foi fixado em `6.1.5` com override restrito à dependência `@tailwindcss/typography`, cujo manifesto publicado fixa `6.0.10`. A versão `6.1.5` é a correção compatível da linha 6.x; `npm ci` e o teste de piso de segurança passaram. O relatório de `npm audit` ainda sinaliza `<7.1.6` porque a faixa do aviso não reconhece esse backport. Não ocultar nem remover esse aviso do gate.
+- `react-router` / `react-router-dom` continuam em 6.30.6. Os avisos GHSA-wrjc-x8rr-h8h6 e GHSA-337j-9hxr-rhxg indicam correção a partir de 7.18.0; o `npm audit` sugere 7.18.4, que é major. Nenhuma migração major foi aplicada sem uma entrega de compatibilidade dedicada.
+- A cadeia Vite / `launch-editor` mantém uma vulnerabilidade alta, GHSA-fx2h-pf6j-xcff, além de avisos moderados; o fix sugerido pelo audit é Vite 8.3.5, também major. A atualização permanece pendente de migração e validação próprias.
+- Relatório integral do CI: 9 vulnerabilidades (8 moderadas, 1 alta); `npm audit --omit=dev`: 6 moderadas. O gate continua falhando corretamente.
+
+### Pendências explícitas
+- Aguardar e registrar o resultado final de E2E no SHA atual; não declarar fluxo integral validado antes disso.
+- Auditar individualmente `src/hooks/**`, `src/App.css`, `src/index.css`, `tailwind.config.ts`, `postcss.config.js`, `tsconfig*.json`, assets, `public/**` e os componentes restantes de `src/components/ui/**`.
+- Ainda não foram validados sincronização entre abas, migração de esquemas antigos, quota e falhas persistentes de armazenamento com feedback visual, foco em todos os formulários, navegação responsiva de todas as rotas ou todos os estados de erro.
+- Stories, seguir casas, edição completa de perfil, notificações e criação completa de rituais continuam incompletos/indisponíveis. Não há backend provado, autenticação server-side, ledger, webhook, pagamentos ou repasses reais.
+- Regras financeiras de 17%/83%, reserva de 2% e retenção de 72h continuam sem implementação financeira real; não confundir simulação local com conformidade de produção.
+
+A revisão integral continua **NÃO CONCLUÍDA**.
