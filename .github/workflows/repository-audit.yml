@@ -1,0 +1,121 @@
+name: Repository audit
+
+on:
+  pull_request:
+    branches: [main, cto/repository-audit-vercel-foundation]
+  workflow_dispatch:
+
+concurrency:
+  group: repository-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm install, build, lint, TypeScript and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR head SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+          git rev-parse HEAD
+      - name: Reproducible clean install (npm ci)
+        id: clean_install
+        continue-on-error: true
+        run: npm ci
+      - name: Diagnostic install if lockfile prevents npm ci
+        id: diagnostic_install
+        if: steps.clean_install.outcome == 'failure'
+        continue-on-error: true
+        run: npm install --no-audit --no-fund
+      - name: Upload regenerated lockfile for review
+        if: always() && steps.diagnostic_install.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+      - name: TypeScript project build
+        id: typescript
+        continue-on-error: true
+        run: npx tsc -b
+      - name: Domain tests
+        id: domain_tests
+        continue-on-error: true
+        run: npm test
+      - name: Browser integration tests (pinned Playwright)
+        id: e2e_tests
+        continue-on-error: true
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - name: Inventory all dependency advisories
+        id: full_audit
+        continue-on-error: true
+        run: |
+          npm audit --json > /tmp/npm-audit-full.json || true
+          node -e 'const r=require("/tmp/npm-audit-full.json"); console.log(JSON.stringify({metadata:r.metadata?.vulnerabilities, vulnerabilities:Object.entries(r.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,isDirect:v.isDirect,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range,severity:x.severity})}))},null,2))'
+          cp /tmp/npm-audit-full.json npm-audit-full.json
+      - name: Upload full dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-dependency-audit
+          path: npm-audit-full.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Audit production dependencies
+        id: audit
+        continue-on-error: true
+        run: npm audit --omit=dev
+      - name: Fail the job if any required check failed
+        if: always()
+        env:
+          CLEAN_INSTALL: ${{ steps.clean_install.outcome }}
+          DIAGNOSTIC_INSTALL: ${{ steps.diagnostic_install.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          TYPESCRIPT: ${{ steps.typescript.outcome }}
+          DOMAIN_TESTS: ${{ steps.domain_tests.outcome }}
+          E2E_TESTS: ${{ steps.e2e_tests.outcome }}
+          AUDIT: ${{ steps.audit.outcome }}
+        run: |
+          {
+            echo "## Repository audit results"
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| npm ci | $CLEAN_INSTALL |"
+            echo "| Diagnostic npm install | $DIAGNOSTIC_INSTALL |"
+            echo "| Production build | $BUILD |"
+            echo "| Lint | $LINT |"
+            echo "| TypeScript | $TYPESCRIPT |"
+            echo "| Domain tests | $DOMAIN_TESTS |"
+            echo "| Browser integration tests | $E2E_TESTS |"
+            echo "| npm audit --omit=dev | $AUDIT |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CLEAN_INSTALL" != "success" ] || [ "$BUILD" != "success" ] || [ "$LINT" != "success" ] || [ "$TYPESCRIPT" != "success" ] || [ "$DOMAIN_TESTS" != "success" ] || [ "$E2E_TESTS" != "success" ] || [ "$AUDIT" != "success" ]; then
+            echo "One or more required repository checks failed. See individual step logs and summary."
+            exit 1
+          fi

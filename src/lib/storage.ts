@@ -1,23 +1,19 @@
+import { createSafeStorage } from "@/lib/storageCore.js";
+import type { StorageValidator } from "@/lib/storageCore.js";
+
 const NS = "ile-conecta:v1";
+const storage = createSafeStorage(() => globalThis.localStorage, NS);
 
-export function loadKey<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(`${NS}:${key}`);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+export function loadKey<T>(key: string, fallback: T, validate?: StorageValidator<T>): T {
+  return storage.loadKey(key, fallback, validate);
 }
 
-export function saveKey<T>(key: string, value: T) {
-  try {
-    localStorage.setItem(`${NS}:${key}`, JSON.stringify(value));
-  } catch {}
+/** Returns false when local storage is unavailable, serialization fails, or quota is exceeded. */
+export function saveKey<T>(key: string, value: T): boolean {
+  return storage.saveKey(key, value);
 }
 
-export function clearAll() {
-  Object.keys(localStorage)
-    .filter((k) => k.startsWith(`${NS}:`))
-    .forEach((k) => localStorage.removeItem(k));
+/** Clears only keys owned by this demo namespace. */
+export function clearAll(): boolean {
+  return storage.clearAll();
 }

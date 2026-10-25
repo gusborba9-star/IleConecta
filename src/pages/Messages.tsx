@@ -4,6 +4,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button, Card } from "@/components/base";
 import { Send } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Messages() {
   const { id } = useParams();
@@ -33,15 +34,11 @@ export default function Messages() {
 
   const submit = () => {
     if (!text.trim() || !otherId) return;
-    sendMessage(otherId, text.trim());
+    if (!sendMessage(otherId, text)) {
+      toast.error("Não foi possível registrar a mensagem na demonstração.");
+      return;
+    }
     setText("");
-    setTimeout(() => {
-      // simulated reply for demo
-      const houseName = users.find((u) => u.id === otherId)?.name;
-      if (users.find((u) => u.id === otherId)?.type === "commercial") {
-        sendMessage(currentUser!.id, ""); // no-op to avoid noise
-      }
-    }, 400);
   };
 
   return (
@@ -85,7 +82,7 @@ export default function Messages() {
                   {other.name}
                 </button>
                 <div className="text-xs text-muted-foreground">
-                  {other.type === "commercial" ? (other as any).category : "Cliente"}
+                  {other.type === "commercial" ? other.category : "Cliente"}
                 </div>
               </div>
             </header>
@@ -116,13 +113,14 @@ export default function Messages() {
 
             <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
               <input
+                aria-label="Mensagem"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 placeholder="Escreva sua mensagem..."
                 className="flex-1 h-11 px-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm"
               />
-              <Button size="icon" onClick={submit}><Send className="h-4 w-4" /></Button>
+              <Button size="icon" aria-label="Enviar mensagem" onClick={submit}><Send className="h-4 w-4" /></Button>
             </div>
           </>
         ) : (
