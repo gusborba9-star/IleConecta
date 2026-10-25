@@ -3,6 +3,7 @@ import { Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Bookmark, Use
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card } from "@/components/base";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 export default function SideNav() {
   const { currentUser } = useApp();
@@ -67,7 +68,7 @@ export default function SideNav() {
   );
 }
 
-function NavItem({ to, icon: Icon, label, tone }: { to: string; icon: any; label: string; tone?: "gold" }) {
+function NavItem({ to, icon: Icon, label, tone }: { to: string; icon: LucideIcon; label: string; tone?: "gold" }) {
   return (
     <NavLink
       to={to}
