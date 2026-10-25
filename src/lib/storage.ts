@@ -13,7 +13,9 @@ export function loadKey<T>(key: string, fallback: T): T {
 export function saveKey<T>(key: string, value: T) {
   try {
     localStorage.setItem(`${NS}:${key}`, JSON.stringify(value));
-  } catch {}
+  } catch {
+    // Local storage can be unavailable or exceed quota; demo persistence is best-effort.
+  }
 }
 
 export function clearAll() {
