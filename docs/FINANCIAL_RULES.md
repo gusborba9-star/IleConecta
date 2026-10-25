@@ -28,9 +28,11 @@ Os 2% são uma alocação interna dentro dos 17% da plataforma, nunca uma tercei
 
 ### 1.2 Centavos e arredondamento
 
+**Regra determinística:** `casa_centavos = round_half_up(bruto_centavos × 83 / 100)`; `plataforma_centavos = bruto_centavos − casa_centavos`. O arredondamento half-up é aplicado à parcela da casa e a comissão é o restante, evitando criar/perder centavos e evitando que o arredondamento reduza o direito da casa.
+
 - Usar inteiros em centavos em persistência, APIs internas e ledger; nunca usar ponto flutuante binário para dinheiro.
 - Registrar moeda e valores de origem; converter reais para centavos na fronteira de entrada usando parser decimal determinístico.
-- Calcular 17%/83% sobre a base bruta em centavos. Definir e documentar arredondamento half-up para cada parcela e garantir que comissão + parcela da casa = bruto em centavos; se arredondamentos causarem diferença, aplicar regra determinística versionada e auditável sem reduzir arbitrariamente a parcela da casa.
+- Calcular a parcela da casa como arredondamento half-up de bruto_em_centavos × 83 / 100 para o centavo inteiro mais próximo. Calcular a comissão da plataforma como bruto_em_centavos − parcela_da_casa; assim, a soma é sempre exatamente igual ao bruto e o arredondamento protege a parcela da casa. A comissão é a parcela complementar do split percentual 17%/83% para o valor indivisível em centavos. Versionar esta regra e cobri-la com testes.
 - Persistir a versão da regra financeira aplicada em cada transação para preservar histórico.
 - Testar valores de R$ 0,01, valores ímpares em centavos, valores altos dentro dos limites aprovados, reembolsos parciais e múltiplas operações repetidas.
 
