@@ -236,3 +236,12 @@ Asaas permanece prioridade de avaliação. Antes de selecionar a arquitetura, ve
 ### 18. Limites e aprovação
 
 Esta seção é uma proposta arquitetural. Nenhum schema, API, webhook, ledger ou adaptador Asaas é declarado implementado. A implementação financeira requer execução específica, revisão do CTO, testes automatizados e Sandbox; produção permanece fora de escopo.
+
+
+### 19. Evidência oficial do Asaas e impacto arquitetural (consulta em 2026-10-25)
+
+A [FAQ oficial de Split](https://docs.asaas.com/docs/split-faq) declara que não é possível programar uma data futura para executar o Split: ele é processado automaticamente quando a cobrança é recebida. A mesma documentação sugere avaliar fluxo de transferência quando é necessário controlar quando o saldo será movimentado. Portanto, o Split padrão não satisfaz por si só o requisito de liberar somente em evento + 72 horas.
+
+A documentação oficial de [estorno de cobrança](https://docs.asaas.com/reference/estornar-cobranca) informa que taxas de cobrança não são devolvidas e que um estorno Pix pode falhar por saldo disponível insuficiente. A documentação de [eventos de cobrança](https://docs.asaas.com/docs/webhook-para-cobrancas) distingue pagamento confirmado de pagamento recebido/saldo disponível e lista eventos de estorno, chargeback e Split. O mecanismo oficial de [validação de saque por webhook](https://docs.asaas.com/docs/mecanismo-para-validacao-de-saque-via-webhooks), incluindo a extensão a Split anunciada em 28/09/2026 ([changelog](https://docs.asaas.com/changelog/valida%C3%A7%C3%A3o-de-saque-via-webhook-para-liquida%C3%A7%C3%A3o-de-splits-de-pagamento)), é um gate de aprovação/recusa próximo da operação de saída; não demonstra temporizador de 72 horas.
+
+**Consequência:** avaliar um fluxo de transferência iniciado pelo backend após encerramento + 72h, com reconciliação e bloqueios. Ainda é necessário comprovar contrato, elegibilidade das contas, saldo disponível, custos, possibilidade de retenção, comportamento em cancelamento/chargeback e estorno de valores já transferidos. Não afirmar escrow nem suporte completo antes de testar em Sandbox. O Sandbox não foi executado nesta DOC-03.
