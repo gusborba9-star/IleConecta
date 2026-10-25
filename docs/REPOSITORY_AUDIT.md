@@ -336,5 +336,32 @@ A regra de elegibilidade para simular reserva estava distribuída entre a tela e
 ### Limites
 A reserva continua sendo apenas um registro local; a regra não oferece bloqueio transacional, reserva de vaga concorrente, sincronização entre abas/usuários ou confirmação real. Esses comportamentos exigem backend e não são simulados como se existissem.
 
-### Validação
-A validação deste conjunto depende do CI no SHA que contém a implementação. Não declarar a entrega validada antes de registrar o resultado do build, TypeScript, lint e testes nesse SHA; os testes de navegador ainda não foram executados.
+### Validação CI no SHA `4c5be44bdb0f6f42039db5c0d18f1b4264f3eace`
+[Run #32](https://github.com/gusborba9-star/IleConecta/actions/runs/40232069665). `npm ci`, build (2,08 s), lint (0 erros; 8 avisos), `npx tsc -b` e 6/6 testes de domínio passaram. `npm audit --omit=dev` encontrou 6 vulnerabilidades moderadas e manteve o gate geral em falha. Testes de navegador ainda não foram executados.
+
+
+## 16. Terceira entrega integrada — descoberta global e navegação
+
+### Causa raiz
+O campo global anunciava busca por casas, rituais e orixás, mas encaminhava todas as consultas para um filtro que só examinava nome/cidade de casas. Além disso, a comparação não ignorava acentos e a tela podia exibir um estado vazio de casas mesmo quando havia rituais correspondentes. A página de login também navegava durante a renderização, e o botão de criar story não executava nenhuma ação.
+
+### Correção
+- A busca de Descobrir agora compara nome, cidade, estado, categoria, descrição e tags de casas e compara título, descrição, categoria e casa responsável dos rituais.
+- Normalização de busca remove diacríticos e espaços extras, permitindo consultas como `sao paulo` e `xango`.
+- O estado vazio global só aparece quando não há casas nem rituais correspondentes.
+- O redirecionamento da página de login foi movido para `useEffect`, evitando navegação como efeito colateral do render.
+- O botão de stories sem implementação foi desabilitado e identificado.
+- Publicações de pessoas deixam de usar links `#` que provocavam navegação para o topo; a própria publicação pode levar ao perfil do autor, quando disponível.
+- Foram adicionados testes de normalização e correspondência de busca.
+
+### Validação CI no SHA `90c248b2447a00ab43d50a06475fecbca5e6c26f`
+[Run #34](https://github.com/gusborba9-star/IleConecta/actions/runs/40232438763):
+- `npm ci`: PASS.
+- Build: PASS, 3,26 s.
+- Lint: PASS, 0 erros e 8 avisos.
+- TypeScript: PASS.
+- Testes de domínio: PASS, 7/7.
+- `npm audit --omit=dev`: FAIL, 6 vulnerabilidades moderadas; gate geral FAIL.
+
+### Limites
+Não foi executado teste de navegador. A busca foi validada por função de domínio e build, não por interação real de rota/campo. A navegação login → feed, stories desabilitados, criação de publicação, curtidas/comentários, persistência após recarga e layout responsivo continuam sem prova E2E.
