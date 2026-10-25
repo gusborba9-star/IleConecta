@@ -23,13 +23,13 @@ create type boost_kind      as enum ('impulsionamento', 'destaque_feed');
 create type boost_scope     as enum ('local', 'estado', 'pais');
 
 -- ============ FUNCOES AUXILIARES ============
-create or replace function public.set_updated_at() returns trigger language plpgsql as $$
+create or replace function public.set_updated_at() returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end $$;
 
 -- Divisao 17/83 em centavos (FIN-D03-05 / D-017). Versao da regra: 'fin-v1'.
 create or replace function public.split_gross_cents(gross_cents bigint)
 returns table (house_cents bigint, platform_cents bigint)
-language sql immutable as $$
+language sql immutable set search_path = public as $$
   select ((gross_cents * 83 + 50) / 100) as house_cents,
          gross_cents - ((gross_cents * 83 + 50) / 100) as platform_cents;
 $$;
@@ -65,7 +65,7 @@ create index houses_tags_gin on public.houses using gin (tags);
 
 create or replace function public.is_house_owner(h uuid) returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.houses where id = h and owner_id = auth.uid());
+  select exists (select 1 from public.houses where id = h and owner_id = (select auth.uid()));
 $$;
 
 create table public.follows (
@@ -74,6 +74,7 @@ create table public.follows (
   created_at  timestamptz not null default now(),
   primary key (follower_id, house_id)
 );
+create index follows_house on public.follows (house_id);
 
 -- ============ CONTEUDO ============
 create table public.posts (
@@ -91,6 +92,7 @@ create table public.post_likes (
   user_id uuid not null references public.profiles(id) on delete cascade,
   primary key (post_id, user_id)
 );
+create index post_likes_user on public.post_likes (user_id);
 
 create table public.post_comments (
   id uuid primary key default gen_random_uuid(),
@@ -99,6 +101,8 @@ create table public.post_comments (
   text text not null check (char_length(text) between 1 and 1000),
   created_at timestamptz not null default now()
 );
+create index post_comments_post on public.post_comments (post_id);
+create index post_comments_user on public.post_comments (user_id);
 
 create table public.stories (
   id uuid primary key default gen_random_uuid(),
@@ -108,6 +112,7 @@ create table public.stories (
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default (now() + interval '24 hours')
 );
+create index stories_house on public.stories (house_id, expires_at);
 
 -- ============ SERVICOS (buzios/trabalhos: SEM comissao) ============
 create table public.services (
@@ -120,6 +125,7 @@ create table public.services (
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+create index services_house on public.services (house_id);
 
 -- ============ EVENTOS / RITUAIS (comissao 17%) ============
 create table public.events (
@@ -153,6 +159,7 @@ create trigger trg_reservations_updated before update on public.reservations for
 -- Uma reserva ativa por pessoa/evento (anti-duplicidade):
 create unique index reservations_one_active on public.reservations (event_id, user_id)
   where status in ('aguardando_pagamento', 'confirmada');
+create index reservations_user on public.reservations (user_id);
 -- Controle de vagas sem overselling: criar reservas SOMENTE via funcao/Edge Function no servidor (a definir em P-BOOK-01).
 
 -- ============ FINANCEIRO (somente service role escreve) ============
@@ -167,6 +174,7 @@ create table public.payments (
   confirmed_at timestamptz,
   created_at timestamptz not null default now()
 );
+create index payments_reservation on public.payments (reservation_id);
 
 -- Ledger append-only: correcoes sao novos lancamentos compensatorios.
 create table public.ledger_entries (
@@ -180,6 +188,7 @@ create table public.ledger_entries (
   created_at timestamptz not null default now()
 );
 create index ledger_house on public.ledger_entries (house_id, created_at);
+create index ledger_payment on public.ledger_entries (payment_id);
 
 create table public.payouts (
   id uuid primary key default gen_random_uuid(),
@@ -192,6 +201,8 @@ create table public.payouts (
   created_at timestamptz not null default now(),
   paid_at timestamptz
 );
+create index payouts_house on public.payouts (house_id);
+create index payouts_event on public.payouts (event_id);
 
 create table public.webhook_events (               -- persiste antes de processar; deduplica por id externo
   id uuid primary key default gen_random_uuid(),
@@ -217,6 +228,7 @@ create table public.boosts (
   created_at timestamptz not null default now()
 );
 create index boosts_active on public.boosts (kind, scope, expires_at) where paid;
+create index boosts_house on public.boosts (house_id);
 
 -- ============ ASSISTENTE VIRTUAL (por casa) ============
 create table public.assistants (
@@ -243,6 +255,7 @@ create table public.conversation_members (
   user_id uuid not null references public.profiles(id) on delete cascade,
   primary key (conversation_id, user_id)
 );
+create index conversation_members_user on public.conversation_members (user_id);
 create table public.messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references public.conversations(id) on delete cascade,
@@ -252,10 +265,11 @@ create table public.messages (
   created_at timestamptz not null default now()
 );
 create index messages_conv on public.messages (conversation_id, created_at);
+create index messages_sender on public.messages (sender_id);
 
 create or replace function public.is_conversation_member(c uuid) returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.conversation_members where conversation_id = c and user_id = auth.uid());
+  select exists (select 1 from public.conversation_members where conversation_id = c and user_id = (select auth.uid()));
 $$;
 
 create table public.notifications (
@@ -266,6 +280,7 @@ create table public.notifications (
   read boolean not null default false,
   created_at timestamptz not null default now()
 );
+create index notifications_user on public.notifications (user_id, created_at desc);
 
 -- ============ RLS (negar por padrao) ============
 alter table public.profiles             enable row level security;
@@ -291,14 +306,14 @@ alter table public.notifications        enable row level security;
 
 -- profiles: leitura publica basica; cada um edita o proprio (account_type nao muda pelo cliente)
 create policy profiles_read   on public.profiles for select using (true);
-create policy profiles_insert on public.profiles for insert to authenticated with check (id = auth.uid());
-create policy profiles_update on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+create policy profiles_insert on public.profiles for insert to authenticated with check (id = (select auth.uid()));
+create policy profiles_update on public.profiles for update to authenticated using (id = (select auth.uid())) with check (id = (select auth.uid()));
 
 -- houses: leitura publica; dono cria/edita (verified e plan sao protegidos por trigger abaixo)
 create policy houses_read   on public.houses for select using (true);
 create policy houses_insert on public.houses for insert to authenticated
-  with check (owner_id = auth.uid() and exists (select 1 from public.profiles p where p.id = auth.uid() and p.account_type = 'casa'));
-create policy houses_update on public.houses for update to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+  with check (owner_id = (select auth.uid()) and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.account_type = 'casa'));
+create policy houses_update on public.houses for update to authenticated using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
 
 create or replace function public.protect_house_privileged_columns() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -311,9 +326,9 @@ begin
 end $$;
 create trigger trg_houses_protect before insert or update on public.houses for each row execute function public.protect_house_privileged_columns();
 
-create policy follows_read   on public.follows for select to authenticated using (follower_id = auth.uid() or public.is_house_owner(house_id));
-create policy follows_insert on public.follows for insert to authenticated with check (follower_id = auth.uid());
-create policy follows_delete on public.follows for delete to authenticated using (follower_id = auth.uid());
+create policy follows_read   on public.follows for select to authenticated using (follower_id = (select auth.uid()) or public.is_house_owner(house_id));
+create policy follows_insert on public.follows for insert to authenticated with check (follower_id = (select auth.uid()));
+create policy follows_delete on public.follows for delete to authenticated using (follower_id = (select auth.uid()));
 
 create policy posts_read   on public.posts for select using (true);
 create policy posts_write  on public.posts for insert to authenticated with check (public.is_house_owner(house_id));
@@ -321,12 +336,12 @@ create policy posts_update on public.posts for update to authenticated using (pu
 create policy posts_delete on public.posts for delete to authenticated using (public.is_house_owner(house_id));
 
 create policy likes_read   on public.post_likes for select using (true);
-create policy likes_insert on public.post_likes for insert to authenticated with check (user_id = auth.uid());
-create policy likes_delete on public.post_likes for delete to authenticated using (user_id = auth.uid());
+create policy likes_insert on public.post_likes for insert to authenticated with check (user_id = (select auth.uid()));
+create policy likes_delete on public.post_likes for delete to authenticated using (user_id = (select auth.uid()));
 
 create policy comments_read   on public.post_comments for select using (true);
-create policy comments_insert on public.post_comments for insert to authenticated with check (user_id = auth.uid());
-create policy comments_delete on public.post_comments for delete to authenticated using (user_id = auth.uid());
+create policy comments_insert on public.post_comments for insert to authenticated with check (user_id = (select auth.uid()));
+create policy comments_delete on public.post_comments for delete to authenticated using (user_id = (select auth.uid()));
 
 create policy stories_read  on public.stories for select using (expires_at > now() or public.is_house_owner(house_id));
 create policy stories_write on public.stories for insert to authenticated with check (public.is_house_owner(house_id));
@@ -340,11 +355,11 @@ create policy events_write on public.events for all to authenticated using (publ
 
 -- reservations: leitura pelo cliente e pela casa dona do evento. SEM insert/update pelo cliente (somente backend).
 create policy reservations_read on public.reservations for select to authenticated
-  using (user_id = auth.uid() or exists (select 1 from public.events e where e.id = event_id and public.is_house_owner(e.house_id)));
+  using (user_id = (select auth.uid()) or exists (select 1 from public.events e where e.id = event_id and public.is_house_owner(e.house_id)));
 
 -- financeiro: cliente ve o proprio pagamento; casa ve seu ledger/repasses; escrita so service role (sem policy)
 create policy payments_read on public.payments for select to authenticated
-  using (exists (select 1 from public.reservations r where r.id = reservation_id and r.user_id = auth.uid()));
+  using (exists (select 1 from public.reservations r where r.id = reservation_id and r.user_id = (select auth.uid())));
 create policy ledger_read on public.ledger_entries for select to authenticated using (public.is_house_owner(house_id));
 create policy payouts_read on public.payouts for select to authenticated using (public.is_house_owner(house_id));
 -- webhook_events: nenhuma policy (apenas service role)
@@ -354,10 +369,10 @@ create policy boosts_insert on public.boosts for insert to authenticated with ch
 
 create policy assistants_owner on public.assistants for all to authenticated using (public.is_house_owner(house_id)) with check (public.is_house_owner(house_id));
 
-create policy conv_members_read on public.conversation_members for select to authenticated using (user_id = auth.uid() or public.is_conversation_member(conversation_id));
+create policy conv_members_read on public.conversation_members for select to authenticated using (user_id = (select auth.uid()) or public.is_conversation_member(conversation_id));
 create policy conv_read  on public.conversations for select to authenticated using (public.is_conversation_member(id));
 create policy msgs_read  on public.messages for select to authenticated using (public.is_conversation_member(conversation_id));
-create policy msgs_write on public.messages for insert to authenticated with check (sender_id = auth.uid() and public.is_conversation_member(conversation_id));
+create policy msgs_write on public.messages for insert to authenticated with check (sender_id = (select auth.uid()) and public.is_conversation_member(conversation_id));
 
-create policy notifs_read   on public.notifications for select to authenticated using (user_id = auth.uid());
-create policy notifs_update on public.notifications for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy notifs_read   on public.notifications for select to authenticated using (user_id = (select auth.uid()));
+create policy notifs_update on public.notifications for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));

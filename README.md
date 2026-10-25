@@ -36,3 +36,7 @@ Migrações em `supabase/migrations/`. A `0001_core_schema.sql` cria o schema co
 
 ## Estado atual
 Protótipo funcional em `localStorage`; pagamentos (Pix/Asaas), ledger e repasses ainda **não** estão integrados (ver `docs/ROADMAP.md`).
+
+## Estado do ambiente
+- **Supabase** (projeto `IleConecta`): migrações `0001` e `0002` já aplicadas; RLS ativo em todas as tabelas.
+- Regra financeira validada no banco: `split_gross_cents(29900)` → casa 24817 / plataforma 5083.
