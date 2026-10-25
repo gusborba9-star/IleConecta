@@ -132,3 +132,17 @@ test("layout móvel não cria overflow horizontal", async ({ page }) => {
   }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
 });
+
+test("JSON persistido inválido é recuperado sem derrubar o login", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("e2e-corrupt-once")) return;
+    localStorage.setItem("ile-conecta:v1:users", "{json-inválido");
+    sessionStorage.setItem("e2e-corrupt-once", "1");
+  });
+  await login(page);
+  await expect(page.getByText("Momentos das casas")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Momentos das casas")).toBeVisible();
+  const recovery = await page.evaluate(() => localStorage.getItem("ile-conecta:v1:recovery:users"));
+  expect(recovery).toBe("{json-inválido");
+});
