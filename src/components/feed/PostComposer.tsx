@@ -31,6 +31,7 @@ export default function PostComposer() {
         <Avatar src={currentUser.avatar} name={currentUser.name} size={44} ring={isHouse ? "gold" : "none"} />
         <div className="flex-1 space-y-3">
           <Textarea
+            aria-label="Texto da publicação"
             placeholder={
               isHouse
                 ? "Compartilhe um trabalho, ritual, jogo de búzios ou uma mensagem para seus filhos de santo..."
