@@ -5,12 +5,13 @@ import PostCard from "@/components/feed/PostCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import type { Post } from "@/types";
 
 export default function Feed() {
   const { posts, users } = useApp();
 
   // Insert a promoted card between posts
-  const feedItems: any[] = [];
+  const feedItems: ({ kind: "post"; data: Post } | { kind: "promo" })[] = [];
   posts.forEach((p, i) => {
     feedItems.push({ kind: "post", data: p });
     if (i === 1) feedItems.push({ kind: "promo" });
