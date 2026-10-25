@@ -126,20 +126,20 @@ A presença de SDKs de Supabase/Stripe em `package.json` não comprova integraç
 #### AUD-QA-01 — Cobertura automatizada e rotas não comprovadas (MÉDIO)
 O manifesto define scripts `build`, `lint` e `preview`, mas não define script de testes. Nenhuma suíte automatizada foi confirmada/executada nesta sessão. `npx tsc -b` também não foi executado. Planejar testes unitários para cálculos/estados, testes de autorização no backend futuro e smoke tests de rotas SPA/refresh.
 
-### 8.3 Resultados de execução — distinção obrigatória
+### 8.3 Resultados de execução — linha do tempo
 
-| Verificação | Resultado real nesta sessão |
-|---|---|
-| Comparação estática package.json/package-lock.json | Executada por leitura dos arquivos; 27 dependências raiz declaradas ausentes do bloco raiz do lockfile |
-| `npm ci` | **NÃO EXECUTADO** |
-| `npm run build` | **NÃO EXECUTADO** |
-| `npm run lint` | **NÃO EXECUTADO** |
-| `npx tsc -b` | **NÃO EXECUTADO** |
-| `npm audit` | **NÃO EXECUTADO** |
-| Navegação/refresh e inspeção de console em navegador | **NÃO EXECUTADO** |
-| Testes de autenticação/autorização, persistência multiusuário ou pagamentos | **NÃO EXECUTADO** |
+A tabela original desta seção descrevia apenas a inspeção estática, antes da execução CI subsequente. Os resultados atualizados e reproduzíveis estão em §9, com comandos executados em GitHub Actions. Não interpretar os estados iniciais abaixo como resultado final.
 
-O estado de sucesso de uma verificação remota Vercel anterior, quando associado a outro SHA ou sem logs acessíveis, não substitui os comandos acima nem comprova lint, TypeScript, segurança ou comportamento funcional.
+| Verificação | Estado na inspeção estática inicial | Estado após CI |
+|---|---|---|
+| Comparação estática package.json/package-lock.json | Executada; 27 dependências ausentes do bloco raiz | Confirmada por `npm ci` falhar com EUSAGE e listar pacotes ausentes/desalinhados |
+| `npm ci` | Não executado ainda | **FALHOU**; veja §9 |
+| `npm run build` | Não executado ainda | **PASSOU somente após instalação diagnóstica**; veja §9 |
+| `npm run lint` | Não executado ainda | **FALHOU**; 24 erros e 8 avisos |
+| `npx tsc -b` | Não executado ainda | **PASSOU após instalação diagnóstica** |
+| `npm audit --omit=dev` | Não executado ainda | **FALHOU**; 16 vulnerabilidades relatadas |
+| Navegação/refresh e inspeção de console em navegador | Não executado | Não executado |
+| Testes de autenticação/autorização, persistência multiusuário ou pagamentos | Não executado | Não executado |
 
 ### 8.4 Plano de estabilização sem ampliação de escopo
 
@@ -153,10 +153,11 @@ O estado de sucesso de uma verificação remota Vercel anterior, quando associad
 
 ## 9. Execução CI real — workflow audit (2026-10-25)
 
-**Run #1:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221235100)  
+**Run #1 (workflow inicial, status geral enganoso por continue-on-error):** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221235100)  
 **Branch HEAD testada:** `ba5945b1d71c44c4cb9e6ce04eb3569e49e886be`  
 **Merge ref efetivamente checkout:** `8f04b4a1a9fb0713e11706b0c34ebc29ff7898c3`  
-**Ambiente:** Ubuntu 24.04; Node `v20.20.2`; npm `10.8.2`.
+**Ambiente:** Ubuntu 24.04; Node `v20.20.2`; npm `10.8.2`.  
+**Run #2 (workflow corrigido, falha agregada conforme esperado):** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221406756), branch HEAD `19c41e34f5ef8212741342e8a477ce89cd2e62ff`, merge ref checkoutada pelo runner; conclusão geral `failure` porque npm ci, lint e audit falharam.
 
 > O run #1 usou `continue-on-error` em verificações individuais, portanto o estado geral do job ficou `success` apesar de falhas nos comandos. Isso foi identificado e o workflow foi corrigido para falhar explicitamente se qualquer verificação obrigatória falhar. O estado geral do run #1 **não** significa aprovação do build, lint ou auditoria de dependências.
 
@@ -189,4 +190,4 @@ Nenhum `npm audit fix` ou `--force` foi executado. Próxima ação: avaliar depe
 - Lint e audit de produção falharam.
 - TypeScript passou após a instalação diagnóstica.
 - Nenhum teste funcional em navegador, teste de isolamento/autorização, teste multiusuário, Sandbox Asaas ou teste de retenção de 72h foi executado.
-- O workflow atualizado registra os resultados em resumo e falha o job se qualquer verificação obrigatória falhar. O run #1 é evidência diagnóstica; aguarda-se novo run com a configuração corrigida.
+- O workflow atualizado registra os resultados em resumo e falha o job se qualquer verificação obrigatória falhar. O run #2 confirmou que o gate final sinaliza a falha; foi produzido o artefato `diagnostic-package-lock` para revisão, mas o lockfile versionado não foi alterado nesta etapa.
