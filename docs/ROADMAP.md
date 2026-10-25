@@ -87,11 +87,11 @@ A ordem DOC-03 aprova a especificação financeira FIN-D03-01–FIN-D03-11 em [F
 
 ### Requisitos e critérios financeiros de aceite
 
-- FIN-01–FIN-03: prova de cálculo sobre bruto e taxa do provedor custeada pela plataforma.
+- FIN-D03-01–FIN-D03-03: prova de cálculo sobre bruto e taxa do provedor custeada pela plataforma.
 - FIN-D03-04: base, finalidade, titularidade e movimentação da reserva decididas e auditáveis.
 - FIN-D03-05: cálculos em centavos inteiros, arredondamento versionado e testes de fronteira.
 - FIN-D03-06: ledger com transação, comissão, casa, taxa, reembolso, retenção, saldo e repasse.
-- FIN-07–FIN-09: testes de elegibilidade evento + 72h, fuso correto, contestação e bloqueio.
+- FIN-D03-07–FIN-D03-09: testes de elegibilidade evento + 72h, fuso correto, contestação e bloqueio.
 - FIN-D03-10: identificador, destinatário, valor, data, estado e confirmação de cada repasse.
 - FIN-D03-11: capacidade do Asaas comprovada por documentação oficial e Sandbox, sem presumir escrow.
 - AUDIT-01: inventário de funcionalidades reais, simuladas, dependentes de backend e inexistentes.
