@@ -89,4 +89,8 @@ Os IDs `PROP-001` a `PROP-007` identificam propostas no registro de decisões; o
 - **DEC-ARCH-01:** aprovar ledger, estados, política de idempotência, reconciliação, notificações e limites de autorização antes de implementação.
 
 
-| D-018 | O Split padrão do Asaas não deve ser presumido compatível com retenção pós-evento: documentação oficial consultada em 2026-10-25 informa que Split é processado automaticamente no recebimento e não aceita data futura. | Avaliar fluxo de transferência após evento + 72h; confirmar contrato e Sandbox antes de decidir. |
+## F. Evidência oficial do Asaas — 2026-10-25
+
+| ID | Decisão técnica / evidência | Implicação |
+|---|---|---|
+| D-018 | A FAQ oficial do Asaas informa que o Split padrão é processado automaticamente no recebimento e não aceita data futura. | Não usar Split padrão como prova de retenção evento + 72h; avaliar transferência posterior, contrato e Sandbox antes da decisão. |
