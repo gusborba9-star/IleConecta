@@ -4,6 +4,15 @@ import { loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
+import {
+  isAuthState,
+  isConversationsState,
+  isPostsState,
+  isPurchasesState,
+  isRitualsState,
+  isStoriesState,
+  isUsersState,
+} from "@/lib/persistedState.js";
 
 interface AppState {
   currentUser: User | null;
@@ -42,21 +51,27 @@ interface AppState {
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<User[]>(() => loadKey("users", seedUsers));
-  const [posts, setPosts] = useState<Post[]>(() => loadKey("posts", seedPosts));
-  const [stories, setStories] = useState<Story[]>(() => loadKey("stories", seedStories));
-  const [rituals, setRituals] = useState<Ritual[]>(() => loadKey("rituals", seedRituals));
-  const [conversations, setConversations] = useState<Conversation[]>(() => loadKey("conversations", seedConversations));
-  const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", []));
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null));
+  const [users, setUsers] = useState<User[]>(() => loadKey("users", seedUsers, isUsersState));
+  const [rituals, setRituals] = useState<Ritual[]>(() => loadKey("rituals", seedRituals, (value): value is Ritual[] => isRitualsState(value, users)));
+  const [posts, setPosts] = useState<Post[]>(() => loadKey("posts", seedPosts, (value): value is Post[] => isPostsState(value, users, rituals)));
+  const [stories, setStories] = useState<Story[]>(() => loadKey("stories", seedStories, (value): value is Story[] => isStoriesState(value, users)));
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadKey("conversations", seedConversations, (value): value is Conversation[] => isConversationsState(value, users)));
+  const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", [], (value): value is Purchase[] => isPurchasesState(value, users, rituals)));
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null, (value): value is string | null => isAuthState(value, users)));
 
-  useEffect(() => saveKey("users", users), [users]);
-  useEffect(() => saveKey("posts", posts), [posts]);
-  useEffect(() => saveKey("stories", stories), [stories]);
-  useEffect(() => saveKey("rituals", rituals), [rituals]);
-  useEffect(() => saveKey("conversations", conversations), [conversations]);
-  useEffect(() => saveKey("purchases", purchases), [purchases]);
-  useEffect(() => saveKey("auth", currentUserId), [currentUserId]);
+  const persist = (key: string, value: unknown) => {
+    if (!saveKey(key, value)) {
+      console.warn(`Ilê Conecta: não foi possível persistir "${key}" neste navegador.`);
+    }
+  };
+
+  useEffect(() => persist("users", users), [users]);
+  useEffect(() => persist("posts", posts), [posts]);
+  useEffect(() => persist("stories", stories), [stories]);
+  useEffect(() => persist("rituals", rituals), [rituals]);
+  useEffect(() => persist("conversations", conversations), [conversations]);
+  useEffect(() => persist("purchases", purchases), [purchases]);
+  useEffect(() => persist("auth", currentUserId), [currentUserId]);
 
   const currentUser = useMemo(() => users.find((u) => u.id === currentUserId) || null, [users, currentUserId]);
 
