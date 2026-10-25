@@ -87,3 +87,6 @@ Os IDs `PROP-001` a `PROP-007` identificam propostas no registro de decisões; o
 - **DEC-PAY-01:** escolher desenho técnico apenas após comprovação da capacidade do Asaas no contrato e Sandbox; definir contingência se não houver retenção compatível.
 - **DEC-ROUND-01:** regra documental especificada em D-017/FIN-05: parcela da casa = half-up de 83% do bruto em centavos; comissão = bruto − parcela da casa. A implementação deve demonstrar invariantes por testes automatizados antes de qualquer lançamento.
 - **DEC-ARCH-01:** aprovar ledger, estados, política de idempotência, reconciliação, notificações e limites de autorização antes de implementação.
+
+
+| D-018 | O Split padrão do Asaas não deve ser presumido compatível com retenção pós-evento: documentação oficial consultada em 2026-10-25 informa que Split é processado automaticamente no recebimento e não aceita data futura. | Avaliar fluxo de transferência após evento + 72h; confirmar contrato e Sandbox antes de decidir. |
