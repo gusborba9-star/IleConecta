@@ -16,13 +16,13 @@
 | ID proposto | Nome proposto | Objetivo e entregáveis | Requisitos Blueprint | Dependências / escopo excluído | Execuções associadas | Entrada e saída verificáveis | Testes/evidências e responsável | Estado real |
 |---|---|---|---|---|---|---|---|---|
 | P-DOC02-A | Baseline documental e decisões | Blueprint, regras financeiras, arquitetura proposta, registro de decisões e matriz de rastreabilidade | GOV-01; PROD-01; FIN-01–FIN-05; SEC-SECRET-01; referências de BACKEND_ARCHITECTURE.md | Depende da recuperação histórica; não aprova automaticamente as propostas | DOC-01, DOC-02 | Entrada: ordem DOC-02. Saída: documentos coerentes em branch e PR, pendências explícitas; validação final do CTO | Links/commits, matriz cruzada e revisão manual do CTO | **Em andamento** — arquivos propostos nesta branch; revisão pendente |
-| P-TECH-01 | Qualidade de build e preparação de Preview | Corrigir incompatibilidades técnicas e obter build/verificações estáticas reproduzíveis | NFR-BUILD-01 | Não inclui merge nem produção; depende de ambiente com registry e acesso funcional | EXEC-01 | Entrada: diagnóstico. Saída: `npm ci`, build, lint e `npx tsc -b` executados e logs ligados ao SHA | Logs reais, status CI, inspeção de diff; executor + aprovação CTO | **Em andamento** — [PR #1](https://github.com/gusborba9-star/IleConecta/pull/1); testes não executados por limitação DNS reportada |
+| P-TECH-01 | Qualidade de build e preparação de Preview | Corrigir incompatibilidades técnicas e obter build/verificações estáticas reproduzíveis | NFR-BUILD-01 | Não inclui merge nem produção; depende de ambiente com registry e acesso funcional | EXEC-01 | Entrada: diagnóstico. Saída: `npm ci`, build, lint e `npx tsc -b` executados e logs ligados ao SHA | Logs reais, status CI, inspeção de diff; executor + aprovação CTO | **Parcialmente validada** — CI run #9 passou `npm ci`, build, lint e TypeScript; auditoria de dependências ainda falha; testes de navegador/rotas e Preview não executados. [PR #3](https://github.com/gusborba9-star/IleConecta/pull/3) |
 | P-ARCH-01 | Decisão e fundação do backend | Aprovar fronteiras de confiança, identidade, modelo relacional e contratos API | ROLE-01; AUTH-01; SEC-ISO-01; PRIV-01; BACKEND_ARCHITECTURE.md §§2–12 | Proposta de arquitetura; não declara schema Supabase existente; nenhuma alteração de banco nesta DOC-02 | A definir após aprovação | Entrada: decisão do CTO. Saída: contratos/modelo aprovados e plano de migração/testes | ADRs, diagramas, revisão de segurança; CTO aprova | **Bloqueada** — arquitetura e identidade pendentes |
 | P-ID-01 | Identidade, autorização e isolamento | Implementar auth server-side, RBAC e testes de isolamento | ROLE-01; AUTH-01; SEC-ISO-01 | Exclui contas reais até política aprovada | A definir | Saída: testes positivos/negativos para cada perfil e acesso cruzado negado | Testes de integração e auditoria; CTO aprova | **Bloqueada** — backend e política de perfis não aprovados |
 | P-CORE-01 | Casas, conteúdo e descoberta | APIs e persistência para casas, páginas, publicações, busca e moderação mínima aprovada | HOUSE-01; DISC-01 | Não inclui promoção paga sem decisão comercial | A definir | Saída: CRUD autorizado, visibilidade e moderação testados | Testes de contrato, autorização, regressão | **Não iniciada** como execução formal; UI existente não comprova backend |
 | P-BOOK-01 | Atividades, vagas e reservas | Modelo transacional, estados, concorrência de vagas, expiração e cancelamento | EVENT-01; RES-01 | Não inicia cobrança real; depende de estados e política aprovados | A definir | Saída: sem oversell sob concorrência; transições inválidas rejeitadas | Testes concorrentes, integração e regressão | **Bloqueada** — regras de domínio pendentes |
-| P-PAY-01 | Pix e Asaas Sandbox | Criar cobranças de teste, processar webhooks, idempotência e conciliação | FIN-01; FIN-05; PAY-01; WEBHOOK-01; IDEMP-01 | Sandbox apenas; sem credenciais reais ou produção; suporte a split deve ser confirmado com provedor | A definir após autorização | Saída: fluxo de ponta a ponta em Sandbox e casos de falha duplicados testados | Logs sanitizados, payloads de teste, reconciliação; CTO autoriza | **Bloqueada** — viabilidade técnica/contratual e arquitetura pendentes |
-| P-SET-01 | Comissões, repasses, cancelamentos e reembolsos | Implementar regras financeiras aprovadas, ledger e janela de elegibilidade | FIN-02; FIN-03; FIN-04; FIN-REF-01 | Não liberar repasse até confirmar contrato, lei e política operacional | A definir | Saída: conciliação centavo a centavo e testes de cancelamento/reembolso/duplicidade | Casos de teste financeiros e reconciliação independente; CTO + validação jurídica/contábil necessária | **Bloqueada** |
+| P-PAY-01 | Pix e Asaas Sandbox | Criar cobranças de teste, processar webhooks, idempotência e conciliação | FIN-01; FIN-05; FIN-D03-01; FIN-D03-11; PAY-01; WEBHOOK-01; IDEMP-01 | Sandbox apenas; sem credenciais reais ou produção; suporte a split deve ser confirmado com provedor | A definir após autorização | Saída: fluxo de ponta a ponta em Sandbox e casos de falha duplicados testados | Logs sanitizados, payloads de teste, reconciliação; CTO autoriza | **Bloqueada** — viabilidade técnica/contratual e arquitetura pendentes |
+| P-SET-01 | Comissões, repasses, cancelamentos e reembolsos | Implementar regras financeiras aprovadas, ledger e janela de elegibilidade | FIN-02; FIN-03; FIN-04; FIN-D03-01–FIN-D03-10; FIN-REF-01 | Não liberar repasse até confirmar contrato, lei e política operacional | A definir | Saída: conciliação centavo a centavo e testes de cancelamento/reembolso/duplicidade | Casos de teste financeiros e reconciliação independente; CTO + validação jurídica/contábil necessária | **Bloqueada** |
 | P-OPS-01 | Observabilidade, suporte e recuperação | Logs, métricas, alertas, auditoria, backup/restore e runbooks | AUDIT-01; PRIV-01; requisitos operacionais propostos em BACKEND_ARCHITECTURE.md §10 | Sem metas inventadas; SLO/RPO/RTO exigem aprovação | A definir | Saída: alertas testados e restauração/recuperação demonstrada | Evidências de teste e runbook; CTO aprova | **Não iniciada** |
 | P-QA-01 | Qualificação integrada e Preview | Regressão, segurança, acessibilidade, testes E2E e Preview | TEST-REG-01; NFR-BUILD-01; DEPLOY-PREVIEW-01; REL-PROD-01 | Preview não equivale a produção; não altera produção | A definir | Saída: checklist completo, zero bloqueadores conhecidos, evidências ligadas ao SHA | CI, relatórios de teste e validação em Preview; CTO aprova | **Bloqueada** — verificações automáticas associadas à PR #2 reportaram falhas; causa não diagnosticada nesta DOC-02 |
 
@@ -42,14 +42,14 @@
 - **Verificações automáticas GitHub–Vercel:** a criação/atualização da PR #2 acionou verificações/Preview automaticamente. No SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, a consulta de status em 2026-10-24 às 02:16 UTC mostrou dois status Vercel `failure` e um `pending`. Na consulta subsequente sobre o SHA `3558237767fcfd11c960b033a768374c734078d7`, às 02:18 UTC, os três status Vercel estavam `pending` e a mensagem automática do bot indicava `Building`. A falha foi observada no SHA anterior; esses registros são uma linha do tempo de status, não diagnóstico de causa raiz. A causa das falhas anteriores não foi diagnosticada, não houve deploy manual, e isso não foi atividade da EXEC-02.
 
 ### EXEC-01 — Correção do build e preparação técnica para Vercel
-- **Estado:** **em andamento, aberta e independente**.
-- Branch: `exec-01/fix-vite-build-vercel`.
-- Commit de correção: [`01e16b4`](https://github.com/gusborba9-star/IleConecta/commit/01e16b4489b1ffc1b6eef7961498e4c73d849cf5).
-- Commit de registro: [`fc69a59`](https://github.com/gusborba9-star/IleConecta/commit/fc69a5938c48f92cd79176d2b57de0930ffde5cd).
+- **Estado:** **em andamento, aberta e independente**; não concluída nem mesclada.
+- Branch da correção inicial: `exec-01/fix-vite-build-vercel`.
+- Commit de correção inicial: [`01e16b4`](https://github.com/gusborba9-star/IleConecta/commit/01e16b4489b1ffc1b6eef7961498e4c73d849cf5).
+- Commit de registro inicial: [`fc69a59`](https://github.com/gusborba9-star/IleConecta/commit/fc69a5938c48f92cd79176d2b57de0930ffde5cd).
 - PR #1: https://github.com/gusborba9-star/IleConecta/pull/1 — rascunho.
-- **Não executados:** `npm ci`, `npm run build`, `npm run lint`, `npx tsc -b`, por falha de resolução DNS relatada ao tentar clonar.
-- Pendência adicional: divergência entre dependências declaradas em `package.json` e o bloco de dependências de topo de `package-lock.json`; regeneração não feita.
-- Critério de encerramento: executar comandos em ambiente funcional, registrar evidências e submeter a revisão do CTO. Não fazer merge sem autorização.
+- **Nota histórica:** os comandos não haviam sido executados no diagnóstico inicial por falha DNS. A validação posterior está registrada na [PR #3](https://github.com/gusborba9-star/IleConecta/pull/3), [CI run #9](https://github.com/gusborba9-star/IleConecta/actions/runs/40225477675): `npm ci`, build, lint e TypeScript passaram no mesmo runner.
+- A divergência do lockfile foi corrigida em branch isolada; `bun.lock` permanece preservado. Pendências atuais: auditoria de dependências, testes de navegador/rotas e validação de Preview.
+- Critério de encerramento: concluir a triagem de riscos, executar testes funcionais e submeter as evidências à revisão do CTO. Não fazer merge sem autorização.
 
 ### EXEC-02
 - **Estado:** não autorizada e não iniciada.
@@ -71,3 +71,34 @@
 ## Histórico e aprovação
 
 Não foram encontrados nomes ou números históricos de fases no material examinado. Os IDs `P-*` acima são rótulos propostos para discussão, não fatos históricos. Fases só devem ser renomeadas/reordenadas como baseline oficial após aprovação do CTO.
+
+
+## DOC-03 — Regras financeiras aprovadas e execução de auditoria
+
+A ordem DOC-03 aprova a especificação financeira FIN-D03-01–FIN-D03-11 em [FINANCIAL_RULES.md](FINANCIAL_RULES.md), mas **não** declara a implementação concluída. A reserva de 2% ainda precisa de decisão sobre base exata, finalidade e tratamento contábil antes da implementação.
+
+| ID | Etapa | Dependências e saída verificável | Estado |
+|---|---|---|---|
+| P-DOC03-FIN | Consolidar regra financeira, retenção e exceções | Revisão cruzada de Blueprint, regras, registro de decisões, arquitetura e matriz; PR draft; revisão do CTO | Em revisão documental; implementação pendente |
+| P-AUDIT-01 | Auditoria reproduzível de frontend, segurança e funcionalidades | Inventário por funcionalidade, riscos priorizados, arquivos/linhas e evidências reproduzíveis | **Em andamento:** PR #6 corrige cadastro local, mensagens, expiração de boosts, simulação de reservas, busca global por casas/rituais, navegação e referência residual no perfil. Run #37 validou o HEAD exato `729e0606f76aec74371d85fac78320fd6e31d8fc`; E2E/navegador, persistência resiliente e módulos de publicação/stories continuam pendentes. [PR #6](https://github.com/gusborba9-star/IleConecta/pull/6) |
+| P-BUILD-01 | Estabilização de dependências e build | [CI run #37](https://github.com/gusborba9-star/IleConecta/actions/runs/40232933580) no SHA exato `729e0606f76aec74371d85fac78320fd6e31d8fc`; corrigir riscos restantes e executar testes de rotas | **Parcialmente validada, não concluída:** `npm ci` passou; build passou em 3,24 s; lint passou com 0 erros e 8 avisos; TypeScript passou; `npm test` passou em 7/7 testes de domínio. `npm audit --omit=dev` falhou com 6 vulnerabilidades moderadas (PostCSS selector parser e React Router 6); gate geral FAIL. Auditoria completa: 9 entradas (8 moderadas, 1 alta, 0 críticas). Testes de navegador/rotas e Preview pendentes. |
+| P-PAY-ARCH-01 | Avaliar fluxo de pagamento/repasse Asaas | Fontes oficiais datadas + testes Sandbox; comprovar split, retenção, saldo, transferências e reembolsos; ADR submetida ao CTO | Pendente; sem integração nesta etapa |
+| P-PAY-IMPL-01 | Implementar ledger e integração Sandbox | Somente após execução específica autorizada; testes idempotentes/negativos, reconciliação e revisão de segurança | Não iniciada; exige autorização própria |
+
+### Requisitos e critérios financeiros de aceite
+
+- FIN-D03-01–FIN-D03-03: prova de cálculo sobre bruto e taxa do provedor custeada pela plataforma.
+- FIN-D03-04: base, finalidade, titularidade e movimentação da reserva decididas e auditáveis.
+- FIN-D03-05: cálculos em centavos inteiros, arredondamento versionado e testes de fronteira.
+- FIN-D03-06: ledger com transação, comissão, casa, taxa, reembolso, retenção, saldo e repasse.
+- FIN-D03-07–FIN-D03-09: testes de elegibilidade evento + 72h, fuso correto, contestação e bloqueio.
+- FIN-D03-10: identificador, destinatário, valor, data, estado e confirmação de cada repasse.
+- FIN-D03-11: capacidade do Asaas comprovada por documentação oficial e Sandbox, sem presumir escrow.
+- AUDIT-01: inventário de funcionalidades reais, simuladas, dependentes de backend e inexistentes.
+- BUILD-01: comandos reais e resultados preservados; nenhuma fase marcada concluída por documentação apenas.
+
+Não alterar o estado de EXEC-01 nem de fases anteriores sem novas evidências. Não iniciar EXEC-02 nem a etapa de infraestrutura por inferência.
+
+### Evidência Asaas incorporada ao gate P-PAY-ARCH-01
+
+A documentação oficial consultada em 2026-10-25 informa que o Split padrão é processado quando a cobrança é recebida e não permite agendar data futura ([FAQ de Split](https://docs.asaas.com/docs/split-faq)). Logo, não é aceito como evidência de retenção de 72 horas após o evento. P-PAY-ARCH-01 deve comparar o fluxo de Split com um fluxo de transferência posterior, provar comportamento de saldo, taxas, estornos, chargebacks e destinatários por documentação/contrato e testes Sandbox. **Estado: bloqueado até comprovação; nenhum Sandbox foi executado nesta DOC-03.**

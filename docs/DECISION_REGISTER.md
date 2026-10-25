@@ -10,7 +10,7 @@
 | D-002 | Pix previsto para o lançamento | Ordem DOC-02 | Não implica integração pronta |
 | D-003 | Distribuição 17% plataforma / 83% casa | Ordem DOC-02 | Implementação financeira permanece pendente |
 | D-004 | Reserva de 2% é interna à parcela de 17%, não terceira parcela | Ordem DOC-02 | Base/titularidade/uso ainda precisam ser detalhados |
-| D-005 | Repasse planejado após evento, janela operacional de até 3 dias | Ordem DOC-02 | Sujeito a cancelamento, reembolso e direitos do consumidor |
+| D-005 | Repasse planejado após evento, janela operacional de até 3 dias | Ordem DOC-02 | **SUPERADA pela D-013/DOC-03**: regra vigente é evento encerrado efetivamente + 72 horas em `America/Sao_Paulo`, com verificações antes da liberação |
 | D-006 | Asaas em Sandbox até autorização posterior | Ordem DOC-02 | Sem produção ou credenciais reais nesta etapa |
 | D-007 | Segredos/credenciais/chaves privadas não podem estar em documentos, código público ou logs | Ordem DOC-02 | Requisito transversal de segurança |
 | D-008 | DOC-02 é documental, branch própria; sem alterações de app, banco ou produção; sem merge | Ordem DOC-02 | Limite desta execução |
@@ -65,3 +65,32 @@ Os IDs `PROP-001` a `PROP-007` identificam propostas no registro de decisões; o
 - EXEC-02 permanece não autorizada e não iniciada.
 - A integração GitHub–Vercel acionou verificações automáticas associadas à PR #2; no SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, dois status falharam e um permaneceu pendente (consulta em 2026-10-24 02:16 UTC). Isso é automação da integração GitHub–Vercel, não uma execução da EXEC-02; nenhuma tentativa manual de deploy foi feita.
 - Qualquer mudança de status de requisito/fase exige evidência e, quando aplicável, aprovação explícita do CTO.
+
+
+## D. Decisões aprovadas na ordem DOC-03
+
+| ID | Decisão do CTO | Implicação / limite |
+|---|---|---|
+| D-010 | Comissão da plataforma = 17% do valor bruto de cada transação. | Cálculo em centavos inteiros; versão da regra persistida. |
+| D-011 | Direito bruto da casa = 83% do valor bruto. Taxas do provedor são despesa da plataforma e não reduzem esse direito. | Exemplo R$ 100,00: R$ 17,00 plataforma, R$ 83,00 casa; taxa de R$ 3,00 é absorvida pela plataforma. |
+| D-012 | Reserva de 2% dentro dos 17%, sem cobrança adicional. | Base exata, finalidade, titularidade e uso continuam pendentes de decisão complementar. |
+| D-013 | Retenção de 72 horas após encerramento efetivo do evento, fuso `America/Sao_Paulo`. | Nunca contar desde o pagamento; vencimento não libera automaticamente sem reconciliação. |
+| D-014 | Reembolsos, contestações e saldo real devem ser verificados antes do repasse; contestação pendente bloqueia valor afetado. | Implementação exige estados explícitos, ledger, idempotência e trilha de auditoria. |
+| D-015 | Asaas é prioridade de avaliação, sem capacidade presumida. | Split, retenção, saldo, transferência, reembolso e escrow exigem comprovação oficial e Sandbox. |
+| D-016 | DOC-03 autoriza documentação e auditoria isolada, sem merge, pagamentos reais, produção, configuração Vercel/Supabase ou credenciais. | Qualquer etapa posterior exige ordem específica. |
+| D-017 | Arredondamento monetário: calcular a parcela da casa por half-up sobre 83% do bruto em centavos; calcular a comissão como bruto menos parcela da casa, garantindo conservação exata dos centavos e protegendo o direito da casa. | Regra determinística de especificação; implementação exige testes de fronteira. |
+
+### E. Decisões ainda necessárias
+
+- **DEC-FIN-01:** definir a base dos 2% da reserva (valor bruto ou comissão de 17%), titularidade contábil, finalidade, conta/ledger, uso e liberação.
+- **DEC-FIN-02:** aprovar política contratual/jurídica de cancelamentos, reembolsos, chargebacks e recuperação de valores após repasse.
+- **DEC-PAY-01:** escolher desenho técnico apenas após comprovação da capacidade do Asaas no contrato e Sandbox; definir contingência se não houver retenção compatível.
+- **DEC-ROUND-01:** regra documental especificada em D-017/FIN-D03-05: parcela da casa = half-up de 83% do bruto em centavos; comissão = bruto − parcela da casa. A implementação deve demonstrar invariantes por testes automatizados antes de qualquer lançamento.
+- **DEC-ARCH-01:** aprovar ledger, estados, política de idempotência, reconciliação, notificações e limites de autorização antes de implementação.
+
+
+## F. Evidência oficial do Asaas — 2026-10-25
+
+| ID | Decisão técnica / evidência | Implicação |
+|---|---|---|
+| D-018 | A FAQ oficial do Asaas informa que o Split padrão é processado automaticamente no recebimento e não aceita data futura. | Não usar Split padrão como prova de retenção evento + 72h; avaliar transferência posterior, contrato e Sandbox antes da decisão. |

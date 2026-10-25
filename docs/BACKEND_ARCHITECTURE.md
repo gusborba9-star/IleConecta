@@ -175,3 +175,73 @@ Requisitos de identidade e autorização: `ROLE-01`, `AUTH-01`, `SEC-ISO-01`. Pa
 8. Aprovar ambientes, gates de Preview e processo de lançamento.
 
 **Este documento não autoriza implementação de backend, migração de banco, integração real nem deploy.**
+
+
+## DOC-03 — Arquitetura financeira e ciclo de fundos (proposta; implementação pendente)
+
+### 13. Invariantes de domínio
+
+1. O cliente nunca determina comissão, parcela da casa, taxa, elegibilidade ou estado final de pagamento.
+2. A base de 17%/83% é o valor bruto confirmado da transação, calculado em centavos inteiros.
+3. Taxas do provedor são despesa da plataforma; nunca são subtraídas automaticamente dos 83% brutos da casa.
+4. A reserva de 2% é interna aos 17%; não implementar antes da decisão DEC-FIN-01 sobre base, titularidade e finalidade.
+5. Ledger interno é a fonte auditável dos direitos e obrigações; o saldo real disponível deve ser confirmado no provedor. Um não substitui o outro.
+6. A data de elegibilidade é encerramento efetivo do evento + 72 horas em `America/Sao_Paulo`; persistir timestamp UTC e timezone de negócio. Não usar o instante do pagamento como início da retenção.
+7. Nenhum repasse é concluído até haver confirmação verificável do provedor. Estados ambíguos ficam pendentes e passam por reconciliação.
+8. Reembolsos, contestações e falhas geram lançamentos/estados auditáveis; não apagar o histórico financeiro original.
+
+### 14. Modelo lógico proposto (não é schema implementado)
+
+- `payment_transactions`: ID interno, referência de reserva/evento, ID externo do provedor, moeda, valor bruto em centavos, estado, timestamps e versão da regra.
+- `financial_ledger_entries`: lançamentos imutáveis, tipo, valor em centavos, moeda, referência de origem, transação, casa, timestamps, chave idempotente e metadados mínimos de auditoria.
+- `provider_fees`: valor efetivamente cobrado, estado de recuperação e vínculo com transação; contabilizado como despesa da plataforma.
+- `refunds`: valor solicitado/confirmado, motivo categorizado, estado externo, timestamps e chave idempotente.
+- `disputes`: identificador externo, valor afetado, estado, prazo, bloqueios e resolução.
+- `payouts`: identificador interno/externo, destinatário validado, valor, estado, criado/enviado/confirmado e evidência do provedor.
+- `event_settlements`: encerramento efetivo, timezone, timestamp de encerramento, instante de elegibilidade e estado de reconciliação.
+- `reserve_movements`: alocações/movimentações da reserva de 2%, somente depois da decisão sobre base, finalidade e titularidade.
+- `provider_webhook_events`: ID externo único, tipo, recebido/verificado/processado, payload minimizado, hash ou referência de evidência, tentativas e erro categorizado.
+
+### 15. Máquina de estados e processamento
+
+Separar no mínimo: estado de cobrança/pagamento; estado de reembolso; estado de contestação; estado de retenção/elegibilidade; estado de repasse. Não comprimir tudo em um único campo `status`.
+
+Fluxo proposto:
+1. Backend valida identidade, evento, preço e disponibilidade; cria referência e chave idempotente.
+2. Backend cria cobrança no Sandbox por adaptador server-side; segredo não sai do servidor.
+3. Evento do provedor é autenticado conforme documentação oficial; ID externo é persistido e deduplicado antes do processamento.
+4. Backend reconcilia valor, moeda, referência e estado no provedor; só então confirma pagamento e lança parcelas no ledger.
+5. Reserva o valor devido à casa e calcula elegibilidade com base no encerramento efetivo do evento + 72h.
+6. Ao vencer o prazo, consulta reembolsos, contestações, saldo real e discrepâncias. Qualquer exceção bloqueia o valor afetado.
+7. Cria uma ordem de repasse idempotente; timeout não é sucesso. Confirmação externa verificável encerra a ordem.
+8. Reconciliação periódica compara ledger e provedor e gera alertas/itens para revisão humana.
+
+### 16. Split, saldo, escrow, transferência e reembolso
+
+Split é distribuição configurada no provedor; não comprova retenção por 72 horas após evento nem absorção de taxas. Saldo disponível é a informação de disponibilidade do provedor, não o direito contábil da casa. Transferência é movimento de fundos, com sucesso apenas após confirmação. Reembolso é uma operação separada e não garante que taxas sejam recuperadas ou que valores já transferidos sejam recolhidos. Escrow é uma estrutura específica e não pode ser afirmada sem comprovação contratual/regulatória.
+
+Asaas permanece prioridade de avaliação. Antes de selecionar a arquitetura, verificar documentação oficial atual e Sandbox quanto a split sobre bruto, taxas, subcontas, saldo, bloqueio/retenção, transferência, reembolso integral/parcial, chargeback, autenticação de webhook, idempotência e reconciliação. Registrar fonte, data, teste e limitações. Se a retenção exigida não for suportada, suspender a implementação financeira e levar alternativa ao CTO.
+
+### 17. Falhas, recuperação e segurança financeira
+
+- Reembolsos integrais/parciais e solicitações durante retenção bloqueiam/ajustam o valor conforme estado confirmado e política versionada.
+- Contestação pendente bloqueia o valor afetado até resolução.
+- Após repasse, não presumir retirada automática; abrir fluxo auditável de recuperação e exigir base contratual/legal.
+- Operações falhas, timeouts, eventos duplicados e estados desconhecidos devem ser idempotentes e reconciliáveis.
+- Taxa não recuperada é registrada como despesa da plataforma, sem dedução automática dos 83% da casa.
+- Saldo insuficiente gera exceção, alerta e revisão; não simular fundos ou marcar operação como concluída.
+- Notificar a casa sobre pagamento, reembolso, contestação, bloqueio, ajuste e estado do repasse.
+- Testes negativos devem provar que o cliente não pode manipular valor, casa, destinatário, estado, elegibilidade ou autorização.
+
+### 18. Limites e aprovação
+
+Esta seção é uma proposta arquitetural. Nenhum schema, API, webhook, ledger ou adaptador Asaas é declarado implementado. A implementação financeira requer execução específica, revisão do CTO, testes automatizados e Sandbox; produção permanece fora de escopo.
+
+
+### 19. Evidência oficial do Asaas e impacto arquitetural (consulta em 2026-10-25)
+
+A [FAQ oficial de Split](https://docs.asaas.com/docs/split-faq) declara que não é possível programar uma data futura para executar o Split: ele é processado automaticamente quando a cobrança é recebida. A mesma documentação sugere avaliar fluxo de transferência quando é necessário controlar quando o saldo será movimentado. Portanto, o Split padrão não satisfaz por si só o requisito de liberar somente em evento + 72 horas.
+
+A documentação oficial de [estorno de cobrança](https://docs.asaas.com/reference/estornar-cobranca) informa que taxas de cobrança não são devolvidas e que um estorno Pix pode falhar por saldo disponível insuficiente. A documentação de [eventos de cobrança](https://docs.asaas.com/docs/webhook-para-cobrancas) distingue pagamento confirmado de pagamento recebido/saldo disponível e lista eventos de estorno, chargeback e Split. O mecanismo oficial de [validação de saque por webhook](https://docs.asaas.com/docs/mecanismo-para-validacao-de-saque-via-webhooks), incluindo a extensão a Split anunciada em 28/09/2026 ([changelog](https://docs.asaas.com/changelog/valida%C3%A7%C3%A3o-de-saque-via-webhook-para-liquida%C3%A7%C3%A3o-de-splits-de-pagamento)), é um gate de aprovação/recusa próximo da operação de saída; não demonstra temporizador de 72 horas.
+
+**Consequência:** avaliar um fluxo de transferência iniciado pelo backend após encerramento + 72h, com reconciliação e bloqueios. Ainda é necessário comprovar contrato, elegibilidade das contas, saldo disponível, custos, possibilidade de retenção, comportamento em cancelamento/chargeback e estorno de valores já transferidos. Não afirmar escrow nem suporte completo antes de testar em Sandbox. O Sandbox não foi executado nesta DOC-03.

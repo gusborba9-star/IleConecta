@@ -181,3 +181,12 @@ Os IDs de requisitos utilizados pela matriz oficial desta baseline estão defini
 | Bloqueadores | Autenticação server-side, backend, esquema de dados verificado, segurança, pagamentos reais, testes e decisões do CTO |
 
 **Este Blueprint está submetido para revisão. Não é declaração de aprovação oficial nem autorização de implementação.**
+
+
+## DOC-03 — Regra financeira vinculante aprovada pelo CTO
+
+A ordem DOC-03 substitui qualquer hipótese anterior incompatível neste Blueprint ou nos documentos relacionados. A comissão da plataforma é 17% do valor bruto e o direito bruto da casa é 83% do valor bruto. As taxas do provedor são despesa da plataforma e não reduzem os 83% da casa. A reserva de 2% permanece dentro dos 17%, não é cobrança adicional; sua base exata e finalidade contábil ainda exigem decisão complementar antes de codificação.
+
+A elegibilidade de repasse ocorre somente após 72 horas do encerramento efetivo do evento, com fuso `America/Sao_Paulo`, e após revisão de reembolsos, contestações e saldo realmente disponível. O prazo não é contado desde o pagamento. Cada movimento deve ser registrado em centavos inteiros e rastreado em ledger. Regras operacionais detalhadas e casos excepcionais estão em [FINANCIAL_RULES.md](FINANCIAL_RULES.md).
+
+**Estado:** regra de negócio financeira APROVADA-CTO; implementação e adequação do provedor PENDENTES. O Asaas é prioritário para avaliação, sem pressupor split, escrow, retenção, reembolso ou transferência não comprovados. A especificação documental não autoriza cobrança, movimentação financeira ou integração real.
