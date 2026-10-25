@@ -1,4 +1,4 @@
-export type StorageValidator<T> = (value: unknown) => value is T;
+export type StorageValidator<T> = (value: unknown) => boolean;
 
 export interface SafeStorage {
   loadKey<T>(key: string, fallback: T, validate?: StorageValidator<T>): T;
