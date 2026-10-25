@@ -191,3 +191,31 @@ Nenhum `npm audit fix` ou `--force` foi executado. Próxima ação: avaliar depe
 - TypeScript passou após a instalação diagnóstica.
 - Nenhum teste funcional em navegador, teste de isolamento/autorização, teste multiusuário, Sandbox Asaas ou teste de retenção de 72h foi executado.
 - O workflow atualizado registra os resultados em resumo e falha o job se qualquer verificação obrigatória falhar. O run #2 confirmou que o gate final sinaliza a falha; foi produzido o artefato `diagnostic-package-lock` para revisão, mas o lockfile versionado não foi alterado nesta etapa.
+
+
+## 10. Segunda passagem de estabilização de lint — 2026-10-25
+
+**Run #3:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221726102)  
+Branch HEAD testada: `4297af0adc734e74c0cf0458fbd4246383851782`; merge ref checkoutada: `99c802cc0c5af3ef6c36e69f56404d4464f136a1`.
+
+### Correções implementadas na branch isolada
+
+- `src/pages/HousePage.tsx`: moveu cálculos antes do early return e removeu chamadas condicionais de `useMemo`, corrigindo violação das Rules of Hooks.
+- Substituiu usos de `any` por tipos explícitos nos componentes de feed, stories, rails, navegação, boost, descoberta, mensagens, perfil, cadastro e detalhe de ritual.
+- `src/lib/storage.ts`: documentou o catch de persistência best-effort, eliminando bloco vazio.
+- `src/components/ui/command.tsx` e `src/components/ui/textarea.tsx`: substituiu interfaces vazias por aliases de tipo equivalentes.
+- Nenhuma regra ESLint foi desabilitada globalmente; nenhum lockfile foi alterado.
+
+### Resultados CI no merge ref
+
+| Comando | Resultado no Run #3 |
+|---|---|
+| `npm ci` | **FALHOU** por divergência entre manifesto e lockfile; instalação diagnóstica executada depois |
+| `npm install --no-audit --no-fund` | PASSOU como fallback diagnóstico; 595 pacotes instalados |
+| `npm run build` | PASSOU; Vite 5.4.19, 1.609 módulos, build em 3,15s |
+| `npm run lint` | PASSOU sem erros; restam 8 avisos de Fast Refresh/exportação mista |
+| `npx tsc -b` | PASSOU após instalação diagnóstica |
+| `npm audit --omit=dev` | FALHOU; 16 vulnerabilidades: 2 moderadas, 13 altas e 1 crítica |
+| Gate final do workflow | **FALHOU corretamente** por `npm ci` e `npm audit`; lint não bloqueia mais |
+
+O Run #3 ainda antecede a última alteração de concorrência do workflow; uma nova execução na revisão atual deve confirmar o mesmo estado. O lockfile diagnóstico foi enviado como artefato para revisão, mas a versão versionada continua sem correção. Não declarar estabilização concluída até `npm ci` passar com lockfile versionado e a triagem de vulnerabilidades ser concluída.
