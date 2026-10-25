@@ -108,7 +108,7 @@ export default function Boost() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    applyHighlight(h.scope as any, 15);
+                    applyHighlight(h.scope as "local" | "cidade" | "pais", 15);
                     toast.success(`Destaque ${h.scope} ativado por 15 dias`);
                   }}
                 >
