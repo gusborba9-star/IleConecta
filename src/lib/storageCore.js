@@ -45,11 +45,11 @@ export function createSafeStorage(storageProvider, namespace) {
 
       try {
         if (!validate(parsed)) {
-          removeCorrupt(storage, key);
+          removeCorrupt(storage, key, raw);
           return fallback;
         }
       } catch {
-        removeCorrupt(storage, key);
+        removeCorrupt(storage, key, raw);
         return fallback;
       }
       return parsed;
