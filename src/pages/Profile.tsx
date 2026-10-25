@@ -44,18 +44,30 @@ export default function Profile() {
         ) : (
           <div className="divide-y divide-border">
             {myPurchases.map((p) => {
-              const r = rituals.find((x) => x.id === p.ritualId)!;
+              const r = rituals.find((x) => x.id === p.ritualId);
+              if (!r) {
+                return (
+                  <div key={p.id} className="py-3 flex items-center gap-3">
+                    <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center text-xs text-muted-foreground">N/D</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold">Ritual não encontrado</div>
+                      <div className="text-xs text-muted-foreground">Registro demonstrativo antigo · {timeAgo(p.createdAt)}</div>
+                    </div>
+                    <div className="font-display font-bold">{formatBRL(p.amount)}</div>
+                  </div>
+                );
+              }
               const h = getHouse(r.houseId);
               return (
                 <div key={p.id} className="py-3 flex items-center gap-3">
-                  <img src={r.cover} className="h-14 w-14 rounded-lg object-cover" />
+                  <img src={r.cover} alt="" className="h-14 w-14 rounded-lg object-cover" />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate">{r.title}</div>
-                    <div className="text-xs text-muted-foreground">{h?.name} · {timeAgo(p.createdAt)}</div>
+                    <div className="text-xs text-muted-foreground">{h?.name ?? "Casa não encontrada"} · {timeAgo(p.createdAt)}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-display font-bold">{formatBRL(p.amount)}</div>
-                    <Button variant="ghost" size="sm" onClick={() => nav(`/mensagens/${h?.id}`)}>Falar com a casa</Button>
+                    {h && <Button variant="ghost" size="sm" onClick={() => nav(`/mensagens/${h.id}`)}>Falar com a casa</Button>}
                   </div>
                 </div>
               );
