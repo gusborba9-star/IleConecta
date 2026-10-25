@@ -66,29 +66,29 @@ export default function Register() {
 
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label>{type === "commercial" ? "Nome da casa" : "Seu nome"}</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <Label htmlFor="register-name">{type === "commercial" ? "Nome da casa" : "Seu nome"}</Label>
+            <Input id="register-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div>
-            <Label>E-mail</Label>
-            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+            <Label htmlFor="register-email">E-mail</Label>
+            <Input id="register-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           </div>
           <div>
-            <Label>Senha</Label>
-            <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <Label htmlFor="register-password">Senha</Label>
+            <Input id="register-password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
           <div>
-            <Label>Cidade</Label>
-            <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            <Label htmlFor="register-city">Cidade</Label>
+            <Input id="register-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
           </div>
           <div>
-            <Label>Estado</Label>
-            <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            <Label htmlFor="register-state">Estado</Label>
+            <Input id="register-state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
           </div>
           {type === "commercial" && (
             <div className="md:col-span-2">
-              <Label>Categoria / tradição</Label>
-              <Input placeholder="Ex: Candomblé Ketu, Umbanda..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <Label htmlFor="register-category">Categoria / tradição</Label>
+              <Input id="register-category" placeholder="Ex: Candomblé Ketu, Umbanda..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
             </div>
           )}
           <div className="md:col-span-2 flex justify-between items-center pt-2">
