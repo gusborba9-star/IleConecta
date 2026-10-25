@@ -186,6 +186,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createdAt: now,
       };
 
+      const created: Conversation = {
+        id: uid("conv"),
+        participantIds: [currentUser.id, toUserId],
+        messages: [message],
+        updatedAt: now,
+      };
+
       setConversations((prev) => {
         const existing = prev.find(
           (conversation) =>
@@ -203,12 +210,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return prev.map((conversation) => (conversation.id === existing.id ? updated : conversation));
         }
 
-        const created: Conversation = {
-          id: uid("conv"),
-          participantIds: [currentUser.id, toUserId],
-          messages: [message],
-          updatedAt: now,
-        };
         return [created, ...prev];
       });
 

@@ -40,13 +40,13 @@ export default function SideNav() {
         <Card className="p-4 bg-gradient-to-br from-gold/20 via-transparent to-primary/10 border-gold/40">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <div className="text-sm font-semibold">Alcance sua comunidade</div>
+            <div className="text-sm font-semibold">Simule o alcance da sua casa</div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Impulsione sua casa a nível cidade, estado ou país e alcance mais fiéis.
+            Visualize opções demonstrativas de alcance por cidade, estado ou país. Não há compra de mídia.
           </p>
           <Link to="/impulsionar" className="block mt-3 text-sm font-semibold text-primary hover:underline">
-            Ver planos →
+            Ver simulações →
           </Link>
         </Card>
       )}

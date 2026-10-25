@@ -46,8 +46,8 @@ function PromotedBanner() {
         </div>
         <div className="flex-1">
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Publi · Ilê Conecta</div>
-          <div className="font-display font-bold text-lg">Faça sua casa alcançar todo o país</div>
-          <div className="text-sm text-muted-foreground">Impulsione por 3, 7 ou 30 dias com preços a partir de R$ 39,90.</div>
+          <div className="font-display font-bold text-lg">Simule o alcance da sua casa</div>
+          <div className="text-sm text-muted-foreground">Experimente planos demonstrativos. Nenhuma mídia será comprada nem haverá cobrança real.</div>
         </div>
         <Link to="/impulsionar" className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-card hover:brightness-110 transition">
           Impulsionar

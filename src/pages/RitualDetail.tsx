@@ -90,7 +90,7 @@ export default function RitualDetail() {
 
             {isClient ? (
               <Button className="w-full mt-4" size="lg" disabled={soldOut} onClick={() => setOpen(true)}>
-                {soldOut ? "Ritual esgotado" : "Contratar agora"}
+                {soldOut ? "Ritual esgotado" : "Simular reserva"}
               </Button>
             ) : currentUser?.id === house?.id ? (
               <Button className="w-full mt-4" size="lg" variant="outline" onClick={() => nav("/impulsionar")}>

@@ -22,7 +22,7 @@ export default function PostComposer() {
     });
     setText("");
     setImage("");
-    toast.success(isHouse ? "Publicação divulgada nas suas redes" : "Momento publicado no seu feed");
+    toast.success("Publicação adicionada ao feed local de demonstração.");
   };
 
   return (
