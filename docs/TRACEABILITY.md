@@ -93,3 +93,24 @@
 - Não foi comprovado backend funcional, schema Supabase, autenticação segura, APIs, webhooks, ledger, conciliação ou repasses.
 - Nenhum requisito está VALIDADO nesta matriz.
 - EXEC-01 não tem evidência de execução dos comandos de build; EXEC-02 não foi iniciada.
+
+
+## DOC-03 — Requisitos financeiros e evidências de aceite
+
+| ID | Requisito verificável | Blueprint | Roadmap | Execução prevista | Teste/evidência obrigatória | Estado |
+|---|---|---|---|---|---|---|
+| FIN-01 | Comissão = 17% do bruto | § DOC-03 | P-DOC03-FIN / P-PAY-IMPL-01 | Execução financeira futura | Testes de centavos e ledger comparando bruto/comissão | APROVADO-CTO; não implementado |
+| FIN-02 | Direito bruto da casa = 83% do bruto | § DOC-03 | P-DOC03-FIN / P-PAY-IMPL-01 | Execução financeira futura | Exemplo R$ 100,00 => R$ 83,00 antes de ajustes legítimos | APROVADO-CTO; não implementado |
+| FIN-03 | Taxa do provedor suportada pela plataforma | § DOC-03 | P-PAY-ARCH-01 / P-PAY-IMPL-01 | Execução financeira futura | Teste de taxa sem redução dos 83% | APROVADO-CTO; não implementado |
+| FIN-04 | Reserva 2% interna aos 17% e rastreável | § DOC-03 | P-DOC03-FIN | Decisão DEC-FIN-01 + execução futura | ADR, ledger e conciliação da reserva | Parcialmente especificado; base pendente |
+| FIN-05 | Valores em centavos e arredondamento explícito | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Testes de fronteira, valores ímpares e invariantes | APROVADO-CTO; política final pendente |
+| FIN-06 | Ledger registra bruto, parcelas, taxas, reembolsos, retenção e repasse | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Esquema revisado, invariantes e auditoria de lançamentos | Não implementado |
+| FIN-07 | Retenção termina 72h após encerramento do evento em America/Sao_Paulo | § DOC-03 | P-PAY-ARCH-01 / P-PAY-IMPL-01 | Execução financeira futura | Testes de fronteira com evento, fuso e horário | APROVADO-CTO; não implementado |
+| FIN-08 | Só liberar após verificar reembolsos, contestações e saldo disponível | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Testes de bloqueio e reconciliação | APROVADO-CTO; não implementado |
+| FIN-09 | Contestação pendente bloqueia valor afetado | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Teste negativo de repasse durante contestação | APROVADO-CTO; não implementado |
+| FIN-10 | Repasse rastreável com confirmação do provedor | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Identificador, destinatário, valor, data, estado, evidência | APROVADO-CTO; não implementado |
+| FIN-11 | Capacidades Asaas comprovadas antes da decisão de integração | § DOC-03 | P-PAY-ARCH-01 | Pesquisa oficial e Sandbox | Fontes datadas, logs Sandbox e ADR | Pendente |
+| AUDIT-01 | Funcionalidades classificadas por estado real | docs/REPOSITORY_AUDIT.md | P-AUDIT-01 | Auditoria isolada | Inventário por recurso com arquivo e teste | Em andamento |
+| BUILD-01 | Build, lint e TypeScript reproduzíveis | Roadmap | P-BUILD-01 | Execução técnica isolada | Logs reais vinculados ao SHA | Pendente; comandos não executados nesta sessão |
+
+Os estados “APROVADO-CTO” indicam aprovação da regra, não conclusão de código. Nenhuma linha pode ser marcada validada sem teste/evidência real e revisão exigida.
