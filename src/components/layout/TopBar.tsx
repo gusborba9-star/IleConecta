@@ -4,6 +4,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button } from "@/components/base";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
   const { currentUser, logout } = useApp();
@@ -75,7 +76,7 @@ export default function TopBar() {
   );
 }
 
-function TopIcon({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) {
   return (
     <NavLink
       to={to}
@@ -95,7 +96,7 @@ function TopIcon({ to, icon: Icon, label }: { to: string; icon: any; label: stri
   );
 }
 
-function MenuItem({ icon: Icon, label, onClick, tone }: { icon: any; label: string; onClick: () => void; tone?: "danger" }) {
+function MenuItem({ icon: Icon, label, onClick, tone }: { icon: LucideIcon; label: string; onClick: () => void; tone?: "danger" }) {
   return (
     <button
       onClick={onClick}
