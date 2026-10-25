@@ -1,42 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
-import { cn, isPromotionActive } from "@/lib/utils";
-import type { HouseUser } from "@/types";
-import RitualCard from "@/components/feed/RitualCard";
-import { matchesDemoSearch } from "@/lib/demoState";
+import { cn } from "@/lib/utils";
 
 export default function Discover() {
-  const { users, rituals } = useApp();
-  const [searchParams] = useSearchParams();
-  const houses = users.filter((u): u is HouseUser => u.type === "commercial");
-  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
+  const { users } = useApp();
+  const houses = users.filter((u) => u.type === "commercial") as any[];
+  const [q, setQ] = useState("");
   const [tag, setTag] = useState("Todas");
-
-  useEffect(() => setQ(searchParams.get("q") ?? ""), [searchParams]);
 
   const tags = ["Todas", "Candomblé Ketu", "Umbanda", "Umbanda Omolokô", "Candomblé Nagô"];
 
   const filtered = useMemo(() => {
     return houses.filter((h) => {
       if (tag !== "Todas" && h.category !== tag) return false;
-      if (q && !matchesDemoSearch(q, [h.name, h.city, h.state, h.category, h.bio, ...h.tags])) return false;
+      if (q && !h.name.toLowerCase().includes(q.toLowerCase()) && !h.city.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
   }, [houses, tag, q]);
 
-  const matchingRituals = q.trim()
-    ? rituals.filter((ritual) => {
-        const house = users.find((user) => user.id === ritual.houseId);
-        const houseCategory = house?.type === "commercial" ? house.category : "";
-        return matchesDemoSearch(q, [ritual.title, ritual.description, ritual.category, house?.name, houseCategory]);
-      })
-    : [];
-
-  const promoted = filtered.filter((h) => isPromotionActive(h.boost?.expiresAt));
-  const rest = filtered.filter((h) => !isPromotionActive(h.boost?.expiresAt));
+  const promoted = filtered.filter((h) => h.boost);
+  const rest = filtered.filter((h) => !h.boost);
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
@@ -83,44 +69,29 @@ export default function Discover() {
         </section>
       )}
 
-      {q.trim() && matchingRituals.length > 0 && (
-        <section>
-          <h2 className="font-display font-bold text-lg mb-2">Rituais relacionados</h2>
-          <div className="space-y-3">
-            {matchingRituals.map((ritual) => <RitualCard key={ritual.id} ritual={ritual} />)}
-          </div>
-        </section>
-      )}
-
       <section>
         <h2 className="font-display font-bold text-lg mb-2">Casas da comunidade</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rest.map((h) => (
             <HouseTile key={h.id} h={h} />
           ))}
-          {filtered.length === 0 && !q.trim() && <Card className="p-8 text-center text-muted-foreground md:col-span-2">Nenhuma casa encontrada.</Card>}
+          {filtered.length === 0 && <Card className="p-8 text-center text-muted-foreground md:col-span-2">Nenhuma casa encontrada.</Card>}
         </div>
       </section>
-
-      {q.trim() && filtered.length === 0 && matchingRituals.length === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">Nenhuma casa ou ritual encontrado para “{q.trim()}”.</Card>
-      )}
     </div>
   );
 }
 
-function HouseTile({ h }: { h: HouseUser }) {
-  const activeBoost = isPromotionActive(h.boost?.expiresAt) ? h.boost : undefined;
-
+function HouseTile({ h }: { h: any }) {
   return (
     <Link to={`/casa/${h.id}`} className="block">
       <Card className="overflow-hidden hover:shadow-altar transition">
         <div className="relative h-28">
           <img src={h.cover} className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          {activeBoost && (
+          {h.boost && (
             <Badge tone="gold" className="absolute top-2 right-2">
-              <TrendingUp className="h-3 w-3" /> {activeBoost.level}
+              <TrendingUp className="h-3 w-3" /> {h.boost.level}
             </Badge>
           )}
         </div>

@@ -19,55 +19,42 @@ export default function Profile() {
           <Avatar src={currentUser.avatar} name={currentUser.name} size={80} />
           <div className="flex-1">
             <h1 className="font-display font-bold text-2xl">{currentUser.name}</h1>
-            <div className="text-sm text-muted-foreground">{currentUser.type === "commercial" ? "Casa espiritual" : "Cliente"} · {currentUser.city}, {currentUser.state}</div>
+            <div className="text-sm text-muted-foreground">Cliente · {currentUser.city}, {currentUser.state}</div>
             <div className="flex gap-1.5 mt-2">
-              {currentUser.type === "personal" && currentUser.interests?.map((i) => (
+              {(currentUser as any).interests?.map((i: string) => (
                 <Badge key={i} tone="muted">{i}</Badge>
               ))}
             </div>
           </div>
-          <Button variant="outline" disabled title="Edição de perfil ainda não está disponível no protótipo">Edição indisponível</Button>
+          <Button variant="outline">Editar perfil</Button>
         </div>
       </Card>
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Ticket className="h-5 w-5 text-primary" />
-          <h2 className="font-display font-bold text-lg">Reservas demonstrativas</h2>
+          <h2 className="font-display font-bold text-lg">Minhas contratações</h2>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">Registros locais de simulação. Não representam pagamento ou reserva real.</p>
         {myPurchases.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
-            Você ainda não criou uma simulação de reserva.{" "}
+            Você ainda não contratou nenhum ritual.{" "}
             <Link to="/rituais" className="text-primary font-semibold hover:underline">Descubra rituais →</Link>
           </div>
         ) : (
           <div className="divide-y divide-border">
             {myPurchases.map((p) => {
-              const r = rituals.find((x) => x.id === p.ritualId);
-              if (!r) {
-                return (
-                  <div key={p.id} className="py-3 flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-lg bg-muted grid place-items-center text-xs text-muted-foreground">N/D</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold">Ritual não encontrado</div>
-                      <div className="text-xs text-muted-foreground">Registro demonstrativo antigo · {timeAgo(p.createdAt)}</div>
-                    </div>
-                    <div className="font-display font-bold">{formatBRL(p.amount)}</div>
-                  </div>
-                );
-              }
+              const r = rituals.find((x) => x.id === p.ritualId)!;
               const h = getHouse(r.houseId);
               return (
                 <div key={p.id} className="py-3 flex items-center gap-3">
-                  <img src={r.cover} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                  <img src={r.cover} className="h-14 w-14 rounded-lg object-cover" />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate">{r.title}</div>
-                    <div className="text-xs text-muted-foreground">{h?.name ?? "Casa não encontrada"} · {timeAgo(p.createdAt)}</div>
+                    <div className="text-xs text-muted-foreground">{h?.name} · {timeAgo(p.createdAt)}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-display font-bold">{formatBRL(p.amount)}</div>
-                    {h && <Button variant="ghost" size="sm" onClick={() => nav(`/mensagens/${h.id}`)}>Falar com a casa</Button>}
+                    <Button variant="ghost" size="sm" onClick={() => nav(`/mensagens/${h?.id}`)}>Falar com a casa</Button>
                   </div>
                 </div>
               );

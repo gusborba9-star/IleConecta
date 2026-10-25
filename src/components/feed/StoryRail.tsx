@@ -2,27 +2,26 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar } from "@/components/base";
 import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { HouseUser, Story } from "@/types";
 
 export default function StoryRail() {
   const { stories, users, currentUser } = useApp();
 
-  const byHouse = new Map<string, { story: Story; house: HouseUser }>();
+  const byHouse = new Map<string, { story: any; house: any }>();
   stories.forEach((s) => {
     const h = users.find((u) => u.id === s.houseId);
-    if (h?.type === "commercial" && !byHouse.has(h.id)) byHouse.set(h.id, { story: s, house: h });
+    if (h && !byHouse.has(h.id)) byHouse.set(h.id, { story: s, house: h });
   });
   const items = Array.from(byHouse.values()).slice(0, 12);
 
   return (
     <div className="scroll-x -mx-1 px-1">
       <div className="flex gap-3 pb-1">
-        <button disabled title="Criação de stories ainda não está implementada" className="shrink-0 w-28 h-44 rounded-2xl border-2 border-dashed border-border bg-card opacity-60 cursor-not-allowed flex flex-col items-center justify-center gap-2">
+        <button className="shrink-0 w-28 h-44 rounded-2xl border-2 border-dashed border-border bg-card hover:border-primary hover:bg-primary/5 transition flex flex-col items-center justify-center gap-2">
           <div className="h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center">
             <Plus className="h-5 w-5" />
           </div>
           <div className="text-xs font-semibold text-center px-2">
-            {currentUser?.type === "commercial" ? "Story indisponível" : "Momento indisponível"}
+            {currentUser?.type === "commercial" ? "Novo story da casa" : "Publicar momento"}
           </div>
         </button>
         {items.map(({ story, house }) => (

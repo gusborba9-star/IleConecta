@@ -3,10 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card, Progress } from "@/components/base";
 import { formatBRL } from "@/lib/utils";
-import { canReserveDemoRitual } from "@/lib/demoState";
 import { CalendarDays, MapPin, MessageCircle, ShieldCheck, Sparkles, Ticket, Video } from "lucide-react";
 import RitualPurchaseModal from "@/components/ritual/RitualPurchaseModal";
-import type { LucideIcon } from "lucide-react";
 
 export default function RitualDetail() {
   const { id } = useParams();
@@ -20,7 +18,6 @@ export default function RitualDetail() {
   const pct = (ritual.vagasVendidas / ritual.vagasTotal) * 100;
   const soldOut = remaining <= 0;
   const isClient = currentUser?.type === "personal";
-  const reservationAllowed = canReserveDemoRitual(currentUser?.type, ritual.date, remaining);
 
   return (
     <div className="pb-16 lg:pb-4 space-y-4">
@@ -80,7 +77,7 @@ export default function RitualDetail() {
           <Card className="p-6 sticky top-24">
             <div className="text-xs uppercase tracking-widest text-muted-foreground">Valor da vaga</div>
             <div className="font-display font-bold text-4xl text-primary mt-1">{formatBRL(ritual.price)}</div>
-            <div className="text-xs text-muted-foreground">Valor ilustrativo · sem cobrança real</div>
+            <div className="text-xs text-muted-foreground">Pagamento único · à vista ou parcelado</div>
 
             <div className="mt-4">
               <div className="flex justify-between text-xs mb-1">
@@ -91,8 +88,8 @@ export default function RitualDetail() {
             </div>
 
             {isClient ? (
-              <Button className="w-full mt-4" size="lg" disabled={!reservationAllowed} onClick={() => setOpen(true)}>
-                {soldOut ? "Ritual esgotado" : !isClient ? "Somente clientes" : !reservationAllowed ? "Inscrições encerradas" : "Simular reserva"}
+              <Button className="w-full mt-4" size="lg" disabled={soldOut} onClick={() => setOpen(true)}>
+                {soldOut ? "Ritual esgotado" : "Contratar agora"}
               </Button>
             ) : currentUser?.id === house?.id ? (
               <Button className="w-full mt-4" size="lg" variant="outline" onClick={() => nav("/impulsionar")}>
@@ -113,7 +110,7 @@ export default function RitualDetail() {
 
             <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground flex items-start gap-2">
               <ShieldCheck className="h-4 w-4 text-forest mt-0.5" />
-              Demonstração local: nenhuma cobrança, confirmação financeira ou repasse é executado. A integração financeira depende de implementação e validação próprias.
+              Pagamento processado pela plataforma. A casa recebe automaticamente após a confirmação, já com a taxa da plataforma descontada.
             </div>
           </Card>
         </div>
@@ -124,7 +121,7 @@ export default function RitualDetail() {
   );
 }
 
-function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+function MiniStat({ icon: Icon, label, value }: any) {
   return (
     <div className="p-3 rounded-xl bg-muted/60 border border-border">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">

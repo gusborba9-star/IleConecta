@@ -22,7 +22,7 @@ export default function PostComposer() {
     });
     setText("");
     setImage("");
-    toast.success("Publicação adicionada ao feed local de demonstração.");
+    toast.success(isHouse ? "Publicação divulgada nas suas redes" : "Momento publicado no seu feed");
   };
 
   return (
@@ -31,7 +31,6 @@ export default function PostComposer() {
         <Avatar src={currentUser.avatar} name={currentUser.name} size={44} ring={isHouse ? "gold" : "none"} />
         <div className="flex-1 space-y-3">
           <Textarea
-            aria-label="Texto da publicação"
             placeholder={
               isHouse
                 ? "Compartilhe um trabalho, ritual, jogo de búzios ou uma mensagem para seus filhos de santo..."
@@ -66,11 +65,11 @@ export default function PostComposer() {
               </Button>
               {isHouse && (
                 <>
-                  <Button variant="ghost" size="sm" disabled title="Publicação de rituais ainda não está disponível no protótipo">
-                    <Sparkles className="h-4 w-4 text-gold" /> Ritual indisponível
+                  <Button variant="ghost" size="sm">
+                    <Sparkles className="h-4 w-4 text-gold" /> Ritual
                   </Button>
-                  <Button variant="ghost" size="sm" disabled title="Transmissões ao vivo ainda não estão disponíveis no protótipo">
-                    <Radio className="h-4 w-4 text-primary" /> Ao vivo indisponível
+                  <Button variant="ghost" size="sm">
+                    <Radio className="h-4 w-4 text-primary" /> Ao vivo
                   </Button>
                 </>
               )}

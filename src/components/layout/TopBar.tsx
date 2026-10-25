@@ -4,13 +4,11 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button } from "@/components/base";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
   const { currentUser, logout } = useApp();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <header className="sticky top-0 z-40 glass border-b border-border">
@@ -29,15 +27,7 @@ export default function TopBar() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
-              aria-label="Buscar casas e rituais"
               placeholder="Buscar casas, rituais, orixás..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && searchQuery.trim()) {
-                  nav(`/descobrir?q=${encodeURIComponent(searchQuery.trim())}`);
-                }
-              }}
               className="w-full h-11 pl-10 pr-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm transition"
             />
           </div>
@@ -51,7 +41,7 @@ export default function TopBar() {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" aria-label="Notificações indisponíveis na demonstração" disabled title="Notificações ainda não estão implementadas">
+          <Button variant="ghost" size="icon" aria-label="Notificações">
             <Bell className="h-5 w-5" />
           </Button>
           <div className="relative">
@@ -85,7 +75,7 @@ export default function TopBar() {
   );
 }
 
-function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) {
+function TopIcon({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
     <NavLink
       to={to}
@@ -105,7 +95,7 @@ function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
   );
 }
 
-function MenuItem({ icon: Icon, label, onClick, tone }: { icon: LucideIcon; label: string; onClick: () => void; tone?: "danger" }) {
+function MenuItem({ icon: Icon, label, onClick, tone }: { icon: any; label: string; onClick: () => void; tone?: "danger" }) {
   return (
     <button
       onClick={onClick}

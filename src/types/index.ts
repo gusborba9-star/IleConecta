@@ -77,6 +77,7 @@ export interface Ritual {
   vagasVendidas: number;
   mode: RitualMode;
   date: string;
+  platformFeePct: number; // 10-15
   category: string;
 }
 
@@ -101,8 +102,11 @@ export interface Purchase {
   ritualId: string;
   userId: string;
   amount: number;
+  /** Legacy demonstration field; not a confirmed financial fee. */
+  fee?: number;
+  /** Local simulation only; does not indicate payment confirmation. */
+  mode?: "demo";
   createdAt: string;
-  mode: "demo";
 }
 
 export interface BoostPlan {

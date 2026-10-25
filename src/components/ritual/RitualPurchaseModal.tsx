@@ -1,48 +1,47 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Ritual } from "@/types";
 import { Button, Modal } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { formatBRL } from "@/lib/utils";
-import { canReserveDemoRitual } from "@/lib/demoState";
 import { toast } from "sonner";
-import { CheckCircle2, CreditCard } from "lucide-react";
+import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual: Ritual; open: boolean; onClose: () => void }) {
   const { buyRitual, getHouse, currentUser } = useApp();
+  const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
   const nav = useNavigate();
   const house = getHouse(ritual.houseId);
 
-
-  useEffect(() => {
-    if (open) setDone(false);
-  }, [open, ritual.id]);
+  const platformFee = +(ritual.price * (ritual.platformFeePct / 100)).toFixed(2);
+  const houseReceives = +(ritual.price - platformFee).toFixed(2);
 
   const confirm = () => {
-    if (!canReserveDemoRitual(currentUser?.type, ritual.date, ritual.vagasTotal - ritual.vagasVendidas)) {
-      toast.error("Esta simulação não está disponível para este perfil ou evento.");
-      return;
-    }
-    const p = buyRitual(ritual.id);
-    if (!p) {
-      toast.error("Não foi possível simular a reserva. Verifique a disponibilidade.");
-      return;
-    }
-    setDone(true);
-    toast.success("Simulação registrada neste navegador. Nenhuma cobrança foi feita.");
+    if (!currentUser) return;
+    setProcessing(true);
+    setTimeout(() => {
+      const p = buyRitual(ritual.id);
+      setProcessing(false);
+      if (!p) {
+        toast.error("Vagas esgotadas para este ritual");
+        return onClose();
+      }
+      setDone(true);
+      toast.success("Vaga confirmada! Boa jornada espiritual 🙏");
+    }, 900);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={done ? "Simulação concluída" : "Simular reserva"} maxWidth="max-w-xl">
+    <Modal open={open} onClose={onClose} title={done ? "Vaga confirmada" : "Contratar ritual"} maxWidth="max-w-xl">
       {done ? (
         <div className="text-center space-y-4 py-4">
           <div className="mx-auto h-16 w-16 rounded-full bg-forest/15 text-forest grid place-items-center">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h3 className="font-display text-2xl">Reserva demonstrativa registrada</h3>
+          <h3 className="font-display text-2xl">Axé! Sua vaga foi reservada</h3>
           <p className="text-sm text-muted-foreground">
-            Este registro existe apenas neste navegador. A casa não foi notificada e nenhuma vaga real foi reservada.
+            {house?.name} entrará em contato pelo chat para orientar sua participação.
           </p>
           <div className="flex gap-2 justify-center">
             <Button variant="outline" onClick={onClose}>Fechar</Button>
@@ -61,7 +60,12 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
           </div>
 
           <div className="rounded-xl border border-border p-4 bg-muted/40 space-y-2 text-sm">
-            <Row label="Valor ilustrativo" value={formatBRL(ritual.price)} />
+            <Row label="Valor da vaga" value={formatBRL(ritual.price)} />
+            <Row label={`Taxa da plataforma (${ritual.platformFeePct}%)`} value={formatBRL(platformFee)} muted />
+            <Row label="A casa recebe" value={formatBRL(houseReceives)} muted />
+            <div className="border-t border-border pt-2 mt-2">
+              <Row label="Total a pagar" value={formatBRL(ritual.price)} bold />
+            </div>
           </div>
 
           <div className="rounded-xl border border-border p-3 flex items-center gap-3">
@@ -69,15 +73,16 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
               <CreditCard className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold">Meios de pagamento futuros</div>
-              <div className="text-xs text-muted-foreground">Protótipo local: não há integração com Pix/cartão nem cobrança real.</div>
+              <div className="text-sm font-semibold">Cartão de crédito · Pix</div>
+              <div className="text-xs text-muted-foreground">Pagamento simulado no ambiente demo</div>
             </div>
-            <span className="text-[10px] text-muted-foreground">DEMO</span>
+            <ShieldCheck className="h-5 w-5 text-forest" />
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button onClick={confirm} >Simular reserva
+            <Button onClick={confirm} disabled={processing}>
+              {processing ? "Processando..." : `Pagar ${formatBRL(ritual.price)}`}
             </Button>
           </div>
         </div>

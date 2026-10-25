@@ -1,19 +1,55 @@
-import { createSafeStorage } from "@/lib/storageCore.js";
-import type { StorageValidator } from "@/lib/storageCore.js";
-
 const NS = "ile-conecta:v1";
-const storage = createSafeStorage(() => globalThis.localStorage, NS);
+type Validator<T> = (value: unknown) => value is T;
 
-export function loadKey<T>(key: string, fallback: T, validate?: StorageValidator<T>): T {
-  return storage.loadKey(key, fallback, validate);
+export function loadKey<T>(key: string, fallback: T, validate?: Validator<T>): T {
+  const storageKey = `${NS}:${key}`;
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(storageKey);
+    if (raw === null) return fallback;
+    const value: unknown = JSON.parse(raw);
+    if (validate && !validate(value)) {
+      recoverInvalidKey(storageKey, raw);
+      return fallback;
+    }
+    return value as T;
+  } catch {
+    // JSON parsing and browser storage can fail (private mode, quota, permissions).
+    if (raw !== null) recoverInvalidKey(storageKey, raw);
+    return fallback;
+  }
 }
 
-/** Returns false when local storage is unavailable, serialization fails, or quota is exceeded. */
+function recoverInvalidKey(key: string, raw: string): void {
+  try {
+    localStorage.setItem(`${key}:recovery`, raw);
+  } catch {
+    console.warn("Ilê Conecta: não foi possível guardar a cópia de recuperação.");
+  }
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    console.warn("Ilê Conecta: não foi possível remover o estado local inválido.");
+  }
+}
+
 export function saveKey<T>(key: string, value: T): boolean {
-  return storage.saveKey(key, value);
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized === undefined) return false;
+    localStorage.setItem(`${NS}:${key}`, serialized);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-/** Clears only keys owned by this demo namespace. */
 export function clearAll(): boolean {
-  return storage.clearAll();
+  try {
+    Object.keys(localStorage).filter((key) => key.startsWith(`${NS}:`))
+      .forEach((key) => localStorage.removeItem(key));
+    return true;
+  } catch {
+    return false;
+  }
 }

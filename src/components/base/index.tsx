@@ -127,88 +127,15 @@ export const Modal: React.FC<{
   children: React.ReactNode;
   maxWidth?: string;
 }> = ({ open, onClose, title, children, maxWidth = "max-w-lg" }) => {
-  const dialogRef = React.useRef<HTMLDivElement>(null);
-  const closeRef = React.useRef(onClose);
-  const titleId = React.useId();
-  closeRef.current = onClose;
-
-  React.useEffect(() => {
-    if (!open) return;
-
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusableSelector = [
-      "a[href]",
-      "button:not([disabled])",
-      "input:not([disabled])",
-      "select:not([disabled])",
-      "textarea:not([disabled])",
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(",");
-    const getFocusable = () =>
-      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [])
-        .filter((element) => element.getAttribute("aria-hidden") !== "true");
-
-    getFocusable()[0]?.focus();
-    if (getFocusable().length === 0) dialogRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = getFocusable();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        dialogRef.current?.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
-    };
-  }, [open]);
-
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Fechar modal"
-        className="absolute inset-0 cursor-default bg-black/50 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
-        aria-label={title ? undefined : "Janela de diálogo"}
-        tabIndex={-1}
-        className={cn("relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto bg-card rounded-2xl shadow-altar border border-border animate-fade-in", maxWidth)}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className={cn("relative w-full bg-card rounded-2xl shadow-altar border border-border animate-fade-in", maxWidth)}>
         {title && (
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h3 id={titleId} className="text-lg font-display font-bold">{title}</h3>
-            <button type="button" aria-label="Fechar modal" onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted text-muted-foreground grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]">✕</button>
+            <h3 className="text-lg font-display font-bold">{title}</h3>
+            <button onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted text-muted-foreground grid place-items-center">✕</button>
           </div>
         )}
         <div className="p-5">{children}</div>

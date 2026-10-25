@@ -12,8 +12,6 @@ export function formatBRL(value: number) {
   });
 }
 
-export { isPromotionActive } from "@/lib/demoState";
-
 export function timeAgo(iso: string) {
   const d = new Date(iso).getTime();
   const now = Date.now();
