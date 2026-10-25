@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  canReserveDemoRitual,
   canSendDemoMessage,
   isPromotionActive,
   mergeDemoMessage,
@@ -43,4 +44,14 @@ test("cria conversa nova quando ainda não existe", () => {
   const message = { id: "m1", from: "u1", to: "u2", text: "oi", createdAt: "2026-10-25T10:00:00.000Z" };
   const conversation = { id: "c1", participantIds: ["u1", "u2"], messages: [message], updatedAt: message.createdAt };
   assert.deepEqual(mergeDemoMessage([], message, conversation), [conversation]);
+});
+
+test("permite simulação apenas para cliente, evento futuro e vaga disponível", () => {
+  const now = Date.parse("2026-10-25T12:00:00.000Z");
+  assert.equal(canReserveDemoRitual("personal", "2026-10-26T12:00:00.000Z", 1, now), true);
+  assert.equal(canReserveDemoRitual("commercial", "2026-10-26T12:00:00.000Z", 1, now), false);
+  assert.equal(canReserveDemoRitual(null, "2026-10-26T12:00:00.000Z", 1, now), false);
+  assert.equal(canReserveDemoRitual("personal", "2026-10-24T12:00:00.000Z", 1, now), false);
+  assert.equal(canReserveDemoRitual("personal", "invalid-date", 1, now), false);
+  assert.equal(canReserveDemoRitual("personal", "2026-10-26T12:00:00.000Z", 0, now), false);
 });

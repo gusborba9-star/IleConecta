@@ -3,7 +3,7 @@ import type { AccountType, Conversation, HouseUser, Message, Post, Purchase, Rit
 import { loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
-import { canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
+import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 
 interface AppState {
   currentUser: User | null;
@@ -148,8 +148,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     buyRitual(ritualId) {
       if (!currentUser) return null;
       const rit = rituals.find((r) => r.id === ritualId);
-      if (!rit) return null;
-      if (rit.vagasVendidas >= rit.vagasTotal) return null;
+      if (!rit || !canReserveDemoRitual(currentUser.type, rit.date, rit.vagasTotal - rit.vagasVendidas)) return null;
       const purchase: Purchase = {
         id: uid("demo_reservation"),
         ritualId,

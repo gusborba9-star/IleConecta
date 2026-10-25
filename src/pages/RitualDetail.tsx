@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card, Progress } from "@/components/base";
 import { formatBRL } from "@/lib/utils";
+import { canReserveDemoRitual } from "@/lib/demoState";
 import { CalendarDays, MapPin, MessageCircle, ShieldCheck, Sparkles, Ticket, Video } from "lucide-react";
 import RitualPurchaseModal from "@/components/ritual/RitualPurchaseModal";
 import type { LucideIcon } from "lucide-react";
@@ -19,6 +20,7 @@ export default function RitualDetail() {
   const pct = (ritual.vagasVendidas / ritual.vagasTotal) * 100;
   const soldOut = remaining <= 0;
   const isClient = currentUser?.type === "personal";
+  const reservationAllowed = canReserveDemoRitual(currentUser?.type, ritual.date, remaining);
 
   return (
     <div className="pb-16 lg:pb-4 space-y-4">
@@ -89,8 +91,8 @@ export default function RitualDetail() {
             </div>
 
             {isClient ? (
-              <Button className="w-full mt-4" size="lg" disabled={soldOut} onClick={() => setOpen(true)}>
-                {soldOut ? "Ritual esgotado" : "Simular reserva"}
+              <Button className="w-full mt-4" size="lg" disabled={!reservationAllowed} onClick={() => setOpen(true)}>
+                {soldOut ? "Ritual esgotado" : !isClient ? "Somente clientes" : !reservationAllowed ? "Inscrições encerradas" : "Simular reserva"}
               </Button>
             ) : currentUser?.id === house?.id ? (
               <Button className="w-full mt-4" size="lg" variant="outline" onClick={() => nav("/impulsionar")}>

@@ -37,3 +37,14 @@ export function mergeDemoMessage(conversations, message, newConversation) {
     conversation.id === existing.id ? updated : conversation
   );
 }
+
+export function canReserveDemoRitual(userType, ritualDate, remaining, now = Date.now()) {
+  const startsAt = Date.parse(ritualDate);
+  return Boolean(
+    userType === "personal" &&
+      Number.isFinite(startsAt) &&
+      startsAt > now &&
+      Number.isFinite(remaining) &&
+      remaining > 0
+  );
+}

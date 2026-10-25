@@ -317,3 +317,24 @@ Esta entrega corrige inconsistências de comportamento no protótipo sem declara
 **Limite de segurança:** contas e senhas ainda fazem parte do modelo local de demonstração. O aviso reduz o risco de uso indevido, mas não substitui a implementação autorizada de identidade e autorização server-side. Nenhuma credencial real deve ser usada.
 
 **Validação CI no SHA `7ed07cdd62a0dc493919979cd8712ba029260a90`:** [Run #30](https://github.com/gusborba9-star/IleConecta/actions/runs/40229989125). `npm ci` passou; build passou em 3,30 s; lint passou com 0 erros e 8 avisos; `npx tsc -b` passou; `npm test` passou em 5/5 testes de domínio. O gate final falhou exclusivamente porque `npm audit --omit=dev` encontrou 6 vulnerabilidades moderadas: cadeia `postcss-selector-parser` e React Router 6. O inventário completo permanece em 9 entradas (8 moderadas, 1 alta, 0 críticas). Nenhum teste de navegador/E2E foi executado; busca, mensagens, expiração e reserva ainda precisam de validação de ponta a ponta. O SHA de CI é o commit testado; uma atualização documental posterior exige nova execução para afirmar validação do HEAD mais recente.
+
+
+## 15. Segunda entrega integrada — ciclo de simulação de reserva
+
+Revisão focada no caminho `Rituais → Detalhe → Modal → AppContext → Perfil`.
+
+### Causa raiz
+A regra de elegibilidade para simular reserva estava distribuída entre a tela e o contexto. O contexto aceitava qualquer tipo de conta e não verificava se o evento já havia começado; a interface só bloqueava vagas esgotadas. O modal também usava um temporizador artificial para executar uma operação síncrona, aumentando a complexidade e mantendo estado de conclusão ao reabrir.
+
+### Correção
+- Adicionada a função de domínio `canReserveDemoRitual`, compartilhada entre detalhe, modal e contexto.
+- A simulação agora exige conta do tipo `personal`, data válida no futuro e pelo menos uma vaga disponível.
+- O contexto revalida a elegibilidade antes de gravar a simulação, em vez de confiar apenas no botão da interface.
+- Removido o temporizador artificial; a operação local é síncrona e o modal reinicia o estado de conclusão ao abrir uma nova simulação.
+- Adicionados testes de domínio para perfil comercial, ausência de perfil, evento passado, data inválida e ausência de vagas.
+
+### Limites
+A reserva continua sendo apenas um registro local; a regra não oferece bloqueio transacional, reserva de vaga concorrente, sincronização entre abas/usuários ou confirmação real. Esses comportamentos exigem backend e não são simulados como se existissem.
+
+### Validação
+A validação deste conjunto depende do CI no SHA que contém a implementação. Não declarar a entrega validada antes de registrar o resultado do build, TypeScript, lint e testes nesse SHA; os testes de navegador ainda não foram executados.

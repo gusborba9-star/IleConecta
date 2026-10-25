@@ -1,33 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Ritual } from "@/types";
 import { Button, Modal } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { formatBRL } from "@/lib/utils";
+import { canReserveDemoRitual } from "@/lib/demoState";
 import { toast } from "sonner";
 import { CheckCircle2, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual: Ritual; open: boolean; onClose: () => void }) {
   const { buyRitual, getHouse, currentUser } = useApp();
-  const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
   const nav = useNavigate();
   const house = getHouse(ritual.houseId);
 
 
+  useEffect(() => {
+    if (open) setDone(false);
+  }, [open, ritual.id]);
+
   const confirm = () => {
-    if (!currentUser) return;
-    setProcessing(true);
-    setTimeout(() => {
-      const p = buyRitual(ritual.id);
-      setProcessing(false);
-      if (!p) {
-        toast.error("Não foi possível simular a reserva. Verifique a disponibilidade.");
-        return;
-      }
-      setDone(true);
-      toast.success("Simulação registrada neste navegador. Nenhuma cobrança foi feita.");
-    }, 900);
+    if (!canReserveDemoRitual(currentUser?.type, ritual.date, ritual.vagasTotal - ritual.vagasVendidas)) {
+      toast.error("Esta simulação não está disponível para este perfil ou evento.");
+      return;
+    }
+    const p = buyRitual(ritual.id);
+    if (!p) {
+      toast.error("Não foi possível simular a reserva. Verifique a disponibilidade.");
+      return;
+    }
+    setDone(true);
+    toast.success("Simulação registrada neste navegador. Nenhuma cobrança foi feita.");
   };
 
   return (
@@ -74,8 +77,7 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
 
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button onClick={confirm} disabled={processing}>
-              {processing ? "Simulando..." : "Simular reserva"}
+            <Button onClick={confirm} >Simular reserva
             </Button>
           </div>
         </div>

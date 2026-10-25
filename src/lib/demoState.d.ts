@@ -13,3 +13,10 @@ export function mergeDemoMessage(
   message: Message,
   newConversation: Conversation
 ): Conversation[];
+
+export function canReserveDemoRitual(
+  userType: "personal" | "commercial" | null | undefined,
+  ritualDate: string,
+  remaining: number,
+  now?: number
+): boolean;
