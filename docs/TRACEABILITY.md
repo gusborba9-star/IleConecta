@@ -102,7 +102,7 @@
 | FIN-D03-01 | Comissão = 17% do bruto | § DOC-03 | P-DOC03-FIN / P-PAY-IMPL-01 | Execução financeira futura | Testes de centavos e ledger comparando bruto/comissão | APROVADO-CTO; não implementado |
 | FIN-D03-02 | Direito bruto da casa = 83% do bruto | § DOC-03 | P-DOC03-FIN / P-PAY-IMPL-01 | Execução financeira futura | Exemplo R$ 100,00 => R$ 83,00 antes de ajustes legítimos | APROVADO-CTO; não implementado |
 | FIN-D03-03 | Taxa do provedor suportada pela plataforma | § DOC-03 | P-PAY-ARCH-01 / P-PAY-IMPL-01 | Execução financeira futura | Teste de taxa sem redução dos 83% | APROVADO-CTO; não implementado |
-| FIN-D03-04 | Reserva 2% interna aos 17% e rastreável | § DOC-03 | P-DOC03-FIN | Decisão DEC-FIN-D03-01 + execução futura | ADR, ledger e conciliação da reserva | Parcialmente especificado; base pendente |
+| FIN-D03-04 | Reserva 2% interna aos 17% e rastreável | § DOC-03 | P-DOC03-FIN | Decisão DEC-FIN-01 + execução futura | ADR, ledger e conciliação da reserva | Parcialmente especificado; base pendente |
 | FIN-D03-05 | Valores em centavos e arredondamento explícito | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Testes de fronteira, valores ímpares e invariantes | APROVADO-CTO; política final pendente |
 | FIN-D03-06 | Ledger registra bruto, parcelas, taxas, reembolsos, retenção e repasse | § DOC-03 | P-PAY-IMPL-01 | Execução financeira futura | Esquema revisado, invariantes e auditoria de lançamentos | Não implementado |
 | FIN-D03-07 | Retenção termina 72h após encerramento do evento em America/Sao_Paulo | § DOC-03 | P-PAY-ARCH-01 / P-PAY-IMPL-01 | Execução financeira futura | Testes de fronteira com evento, fuso e horário | APROVADO-CTO; não implementado |
