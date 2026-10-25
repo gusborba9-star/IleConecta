@@ -4,8 +4,10 @@ import {
   canReserveDemoRitual,
   canSendDemoMessage,
   isPromotionActive,
+  matchesDemoSearch,
   mergeDemoMessage,
   normalizeDemoEmail,
+  normalizeDemoSearch,
 } from "../src/lib/demoState.js";
 
 test("normaliza e-mail para comparação de cadastro", () => {
@@ -54,4 +56,12 @@ test("permite simulação apenas para cliente, evento futuro e vaga disponível"
   assert.equal(canReserveDemoRitual("personal", "2026-10-24T12:00:00.000Z", 1, now), false);
   assert.equal(canReserveDemoRitual("personal", "invalid-date", 1, now), false);
   assert.equal(canReserveDemoRitual("personal", "2026-10-26T12:00:00.000Z", 0, now), false);
+});
+
+test("busca ignora acentos e espaços extras e encontra campos combinados", () => {
+  assert.equal(normalizeDemoSearch("  Candomblé Ketu "), "candomble ketu");
+  assert.equal(matchesDemoSearch("oxum", ["Ritual da Prosperidade", "Oxum Dourada"]), true);
+  assert.equal(matchesDemoSearch("  sao paulo ", ["Salvador", "São Paulo"]), true);
+  assert.equal(matchesDemoSearch("xango", ["Oxum", "Iemanjá"]), false);
+  assert.equal(matchesDemoSearch("   ", ["qualquer texto"]), true);
 });

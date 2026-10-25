@@ -48,3 +48,17 @@ export function canReserveDemoRitual(userType, ritualDate, remaining, now = Date
       remaining > 0
   );
 }
+
+export function normalizeDemoSearch(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+export function matchesDemoSearch(query, values) {
+  const normalizedQuery = normalizeDemoSearch(query);
+  if (!normalizedQuery) return true;
+  return values.some((value) => normalizeDemoSearch(value).includes(normalizedQuery));
+}

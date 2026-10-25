@@ -5,9 +5,11 @@ import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
 import { cn, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
+import RitualCard from "@/components/feed/RitualCard";
+import { matchesDemoSearch } from "@/lib/demoState";
 
 export default function Discover() {
-  const { users } = useApp();
+  const { users, rituals } = useApp();
   const [searchParams] = useSearchParams();
   const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
@@ -20,10 +22,18 @@ export default function Discover() {
   const filtered = useMemo(() => {
     return houses.filter((h) => {
       if (tag !== "Todas" && h.category !== tag) return false;
-      if (q && !h.name.toLowerCase().includes(q.toLowerCase()) && !h.city.toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && !matchesDemoSearch(q, [h.name, h.city, h.state, h.category, h.bio, ...h.tags])) return false;
       return true;
     });
   }, [houses, tag, q]);
+
+  const matchingRituals = q.trim()
+    ? rituals.filter((ritual) => {
+        const house = users.find((user) => user.id === ritual.houseId);
+        const houseCategory = house?.type === "commercial" ? house.category : "";
+        return matchesDemoSearch(q, [ritual.title, ritual.description, ritual.category, house?.name, houseCategory]);
+      })
+    : [];
 
   const promoted = filtered.filter((h) => isPromotionActive(h.boost?.expiresAt));
   const rest = filtered.filter((h) => !isPromotionActive(h.boost?.expiresAt));
@@ -73,15 +83,28 @@ export default function Discover() {
         </section>
       )}
 
+      {q.trim() && matchingRituals.length > 0 && (
+        <section>
+          <h2 className="font-display font-bold text-lg mb-2">Rituais relacionados</h2>
+          <div className="space-y-3">
+            {matchingRituals.map((ritual) => <RitualCard key={ritual.id} ritual={ritual} />)}
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 className="font-display font-bold text-lg mb-2">Casas da comunidade</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rest.map((h) => (
             <HouseTile key={h.id} h={h} />
           ))}
-          {filtered.length === 0 && <Card className="p-8 text-center text-muted-foreground md:col-span-2">Nenhuma casa encontrada.</Card>}
+          {filtered.length === 0 && !q.trim() && <Card className="p-8 text-center text-muted-foreground md:col-span-2">Nenhuma casa encontrada.</Card>}
         </div>
       </section>
+
+      {q.trim() && filtered.length === 0 && matchingRituals.length === 0 && (
+        <Card className="p-8 text-center text-muted-foreground">Nenhuma casa ou ritual encontrado para “{q.trim()}”.</Card>
+      )}
     </div>
   );
 }

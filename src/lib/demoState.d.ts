@@ -20,3 +20,6 @@ export function canReserveDemoRitual(
   remaining: number,
   now?: number
 ): boolean;
+
+export function normalizeDemoSearch(value: string | null | undefined): string;
+export function matchesDemoSearch(query: string, values: Array<string | null | undefined>): boolean;
