@@ -85,7 +85,7 @@ export default function Messages() {
                   {other.name}
                 </button>
                 <div className="text-xs text-muted-foreground">
-                  {other.type === "commercial" ? (other as any).category : "Cliente"}
+                  {other.type === "commercial" ? other.category : "Cliente"}
                 </div>
               </div>
             </header>
