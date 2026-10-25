@@ -4,10 +4,11 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { HouseUser } from "@/types";
 
 export default function Discover() {
   const { users } = useApp();
-  const houses = users.filter((u) => u.type === "commercial") as any[];
+  const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState("");
   const [tag, setTag] = useState("Todas");
 
@@ -82,7 +83,7 @@ export default function Discover() {
   );
 }
 
-function HouseTile({ h }: { h: any }) {
+function HouseTile({ h }: { h: HouseUser }) {
   return (
     <Link to={`/casa/${h.id}`} className="block">
       <Card className="overflow-hidden hover:shadow-altar transition">
