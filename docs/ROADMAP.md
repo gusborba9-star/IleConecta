@@ -42,14 +42,14 @@
 - **Verificações automáticas GitHub–Vercel:** a criação/atualização da PR #2 acionou verificações/Preview automaticamente. No SHA `ffff750506b844d24c6f4bf25c523a6ad34107d0`, a consulta de status em 2026-10-24 às 02:16 UTC mostrou dois status Vercel `failure` e um `pending`. Na consulta subsequente sobre o SHA `3558237767fcfd11c960b033a768374c734078d7`, às 02:18 UTC, os três status Vercel estavam `pending` e a mensagem automática do bot indicava `Building`. A falha foi observada no SHA anterior; esses registros são uma linha do tempo de status, não diagnóstico de causa raiz. A causa das falhas anteriores não foi diagnosticada, não houve deploy manual, e isso não foi atividade da EXEC-02.
 
 ### EXEC-01 — Correção do build e preparação técnica para Vercel
-- **Estado:** **em andamento, aberta e independente**.
-- Branch: `exec-01/fix-vite-build-vercel`.
-- Commit de correção: [`01e16b4`](https://github.com/gusborba9-star/IleConecta/commit/01e16b4489b1ffc1b6eef7961498e4c73d849cf5).
-- Commit de registro: [`fc69a59`](https://github.com/gusborba9-star/IleConecta/commit/fc69a5938c48f92cd79176d2b57de0930ffde5cd).
+- **Estado:** **em andamento, aberta e independente**; não concluída nem mesclada.
+- Branch da correção inicial: `exec-01/fix-vite-build-vercel`.
+- Commit de correção inicial: [`01e16b4`](https://github.com/gusborba9-star/IleConecta/commit/01e16b4489b1ffc1b6eef7961498e4c73d849cf5).
+- Commit de registro inicial: [`fc69a59`](https://github.com/gusborba9-star/IleConecta/commit/fc69a5938c48f92cd79176d2b57de0930ffde5cd).
 - PR #1: https://github.com/gusborba9-star/IleConecta/pull/1 — rascunho.
-- **Não executados:** `npm ci`, `npm run build`, `npm run lint`, `npx tsc -b`, por falha de resolução DNS relatada ao tentar clonar.
-- Pendência adicional: divergência entre dependências declaradas em `package.json` e o bloco de dependências de topo de `package-lock.json`; regeneração não feita.
-- Critério de encerramento: executar comandos em ambiente funcional, registrar evidências e submeter a revisão do CTO. Não fazer merge sem autorização.
+- **Nota histórica:** os comandos não haviam sido executados no diagnóstico inicial por falha DNS. A validação posterior está registrada na [PR #3](https://github.com/gusborba9-star/IleConecta/pull/3), [CI run #7](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874): `npm ci`, build, lint e TypeScript passaram no mesmo runner.
+- A divergência do lockfile foi corrigida em branch isolada; `bun.lock` permanece preservado. Pendências atuais: auditoria de dependências, testes de navegador/rotas e validação de Preview.
+- Critério de encerramento: concluir a triagem de riscos, executar testes funcionais e submeter as evidências à revisão do CTO. Não fazer merge sem autorização.
 
 ### EXEC-02
 - **Estado:** não autorizada e não iniciada.
