@@ -3,13 +3,13 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card } from "@/components/base";
 import { Flame, Sparkles, Star } from "lucide-react";
 import { formatBRL } from "@/lib/utils";
+import type { HouseUser } from "@/types";
 
 export default function RightRail() {
   const { users, rituals, conversations, currentUser } = useApp();
 
   const promoted = users
-    .filter((u) => u.type === "commercial")
-    .filter((u: any) => u.boost)
+    .filter((u): u is HouseUser => u.type === "commercial" && Boolean(u.boost))
     .slice(0, 3);
 
   const hotRituals = rituals
@@ -31,7 +31,7 @@ export default function RightRail() {
           <Badge tone="gold">Impulsionadas</Badge>
         </div>
         <div className="space-y-3">
-          {promoted.map((h: any) => (
+          {promoted.map((h) => (
             <Link key={h.id} to={`/casa/${h.id}`} className="flex items-center gap-3 -mx-1 px-1 py-1 rounded-xl hover:bg-muted transition">
               <Avatar src={h.avatar} name={h.name} size={40} ring="gold" />
               <div className="min-w-0 flex-1">
