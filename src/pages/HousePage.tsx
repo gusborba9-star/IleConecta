@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 export default function HousePage() {
   const { id } = useParams();
   const { getHouse, posts, rituals, currentUser } = useApp();
-  const house = getHouse(id!);
+  const house = getHouse(id ?? "");
   const nav = useNavigate();
   const [tab, setTab] = useState<"feed" | "rituais" | "sobre">("feed");
+  const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
+  const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
 
   if (!house)
     return (
@@ -22,8 +24,6 @@ export default function HousePage() {
       </div>
     );
 
-  const housePosts = useMemo(() => posts.filter((p) => p.houseId === house.id), [posts, house.id]);
-  const houseRituals = useMemo(() => rituals.filter((r) => r.houseId === house.id), [rituals, house.id]);
   const isOwn = currentUser?.id === house.id;
 
   return (
