@@ -3,6 +3,7 @@ import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { Heart, MessageCircle, Share2, MoreHorizontal, Send } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
 import RitualCard from "./RitualCard";
@@ -13,22 +14,30 @@ export default function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false);
 
   const author = users.find((u) => u.id === post.houseId);
-  const isHouse = author?.type === "commercial";
+  const houseAuthor = author?.type === "commercial" ? author : null;
+  const isHouse = houseAuthor !== null;
   const liked = currentUser ? post.likes.includes(currentUser.id) : false;
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
+  const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
 
   return (
     <Card className="overflow-hidden">
       <div className="p-4 flex items-start gap-3">
-        <Link to={isHouse ? `/casa/${author?.id}` : "#"}>
+        {authorPath ? (
+          <Link to={authorPath}>
+            <Avatar src={author?.avatar} name={author?.name} size={44} ring={isHouse ? "gold" : "none"} />
+          </Link>
+        ) : (
           <Avatar src={author?.avatar} name={author?.name} size={44} ring={isHouse ? "gold" : "none"} />
-        </Link>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link to={isHouse ? `/casa/${author?.id}` : "#"} className="font-semibold hover:underline">
-              {author?.name}
-            </Link>
-            {isHouse && (author as any)?.verified && <Badge tone="primary">Verificada</Badge>}
+            {authorPath ? (
+              <Link to={authorPath} className="font-semibold hover:underline">{author?.name}</Link>
+            ) : (
+              <span className="font-semibold">{author?.name}</span>
+            )}
+            {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>
                 {post.kind === "buzios" ? "Búzios" : post.kind === "trabalho" ? "Trabalho" : post.kind === "ritual" ? "Ritual" : ""}
@@ -36,10 +45,10 @@ export default function PostCard({ post }: { post: Post }) {
             )}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isHouse ? `${(author as any).city} · ${(author as any).category}` : "Cliente"} · {timeAgo(post.createdAt)}
+            {isHouse ? `${houseAuthor!.city} · ${houseAuthor!.category}` : "Cliente"} · {timeAgo(post.createdAt)}
           </div>
         </div>
-        <button className="h-8 w-8 rounded-full hover:bg-muted grid place-items-center text-muted-foreground">
+        <button disabled title="Mais opções ainda não estão implementadas" className="h-8 w-8 rounded-full grid place-items-center text-muted-foreground disabled:opacity-50">
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>
@@ -66,7 +75,7 @@ export default function PostCard({ post }: { post: Post }) {
       <div className="px-2 pb-2 border-t border-border grid grid-cols-3">
         <ActionBtn active={liked} onClick={() => toggleLike(post.id)} icon={Heart} label="Curtir" activeClass="text-primary" />
         <ActionBtn onClick={() => setShowComments((v) => !v)} icon={MessageCircle} label="Comentar" />
-        <ActionBtn icon={Share2} label="Compartilhar" />
+        <ActionBtn icon={Share2} label="Compartilhar indisponível" disabled />
       </div>
 
       {showComments && (
@@ -124,16 +133,20 @@ function ActionBtn({
   active,
   activeClass,
   onClick,
+  disabled,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   active?: boolean;
   activeClass?: string;
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Compartilhamento ainda não está implementado" : undefined}
       className={cn(
         "h-11 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold hover:bg-muted transition",
         active ? activeClass : "text-muted-foreground"
