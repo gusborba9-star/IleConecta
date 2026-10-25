@@ -46,7 +46,7 @@ export default function Boost() {
           <Flame className="h-5 w-5 text-primary" />
           <h2 className="font-display font-bold text-xl">Planos de impulsionamento</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {(["cidade", "estado", "pais"] as const).map((level) => (
             <Card key={level} className="p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -97,7 +97,7 @@ export default function Boost() {
           <Star className="h-5 w-5 text-gold" />
           <h2 className="font-display font-bold text-xl">Destaques de marca</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {highlightCatalog.map((h) => (
             <Card key={h.scope} className="p-5 flex flex-col">
               <Badge tone="gold" className="self-start mb-2 capitalize">Destaque {h.scope}</Badge>
@@ -125,7 +125,7 @@ export default function Boost() {
         <p className="text-sm text-muted-foreground mb-4">
           Esta modalidade não está implementada. As estimativas de alcance abaixo são ilustrativas e não podem ser contratadas neste protótipo.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {[
             { name: "Entrega local", price: 19.9, reach: "500 usuários" },
             { name: "Entrega ampla", price: 59.9, reach: "5 mil usuários" },
