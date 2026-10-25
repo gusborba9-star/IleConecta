@@ -5,6 +5,7 @@ import { Avatar, Badge, Button, Card, Progress } from "@/components/base";
 import { formatBRL } from "@/lib/utils";
 import { CalendarDays, MapPin, MessageCircle, ShieldCheck, Sparkles, Ticket, Video } from "lucide-react";
 import RitualPurchaseModal from "@/components/ritual/RitualPurchaseModal";
+import type { LucideIcon } from "lucide-react";
 
 export default function RitualDetail() {
   const { id } = useParams();
@@ -121,7 +122,7 @@ export default function RitualDetail() {
   );
 }
 
-function MiniStat({ icon: Icon, label, value }: any) {
+function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="p-3 rounded-xl bg-muted/60 border border-border">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
