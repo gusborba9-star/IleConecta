@@ -7,25 +7,32 @@ import { toast } from "sonner";
 const hero = "https://images.unsplash.com/photo-1503756234508-e32369269deb?w=1600&h=1200&fit=crop";
 
 export default function Login() {
-  const { login, currentUser } = useApp();
-  const [email, setEmail] = useState("mari@cliente.app");
-  const [password, setPassword] = useState("123456");
+  const { login, currentUser, isRemoteAuth, authReady } = useApp();
+  const [email, setEmail] = useState(isRemoteAuth ? "" : "mari@cliente.app");
+  const [password, setPassword] = useState(isRemoteAuth ? "" : "123456");
+  const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
   useEffect(() => {
     if (currentUser) nav("/", { replace: true });
   }, [currentUser, nav]);
 
-  if (currentUser) return null;
+  if (currentUser || !authReady) return null;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = login(email, password);
-    if (u) {
-      toast.success(`Axé, ${u.name}!`);
-      nav("/");
-    } else {
-      toast.error("E-mail ou senha inválidos");
+    if (loading) return;
+    setLoading(true);
+    try {
+      const result = await login(email, password);
+      if (result.ok) {
+        toast.success(`Axé${result.user ? `, ${result.user.name}` : ""}!`);
+        nav("/");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,7 +71,7 @@ export default function Login() {
               <Label htmlFor="login-password">Senha</Label>
               <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <Button className="w-full" size="lg" type="submit">Entrar</Button>
+            <Button className="w-full" size="lg" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</Button>
           </form>
 
           <div className="altar-divider my-6 rounded" />
@@ -74,6 +81,8 @@ export default function Login() {
             <Link to="/register" className="text-primary font-semibold hover:underline">Criar agora</Link>
           </div>
 
+          {!isRemoteAuth && (
+            <>
           <div className="mt-5 p-3 rounded-xl border border-amber-300/60 bg-amber-50 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100 space-y-1">
             <div className="font-semibold">Ambiente de demonstração</div>
             <div>Use apenas dados fictícios. As contas e senhas são locais neste navegador; não informe credenciais reais.</div>
@@ -83,6 +92,8 @@ export default function Login() {
             <div>Cliente · mari@cliente.app · 123456</div>
             <div>Casa · oxum@ile.app · 123456</div>
           </div>
+            </>
+          )}
         </Card>
       </div>
     </div>

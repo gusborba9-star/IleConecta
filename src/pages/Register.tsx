@@ -9,7 +9,9 @@ import type { AccountType } from "@/types";
 import type { LucideIcon } from "lucide-react";
 
 export default function Register() {
-  const { register } = useApp();
+  const { register, isRemoteAuth } = useApp();
+  const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const nav = useNavigate();
   const [type, setType] = useState<AccountType>("personal");
   const [form, setForm] = useState({
@@ -22,16 +24,38 @@ export default function Register() {
     category: "",
   });
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     const name = form.name.trim();
     const email = form.email.trim().toLowerCase();
     if (!name || !email || !form.password.trim()) return toast.error("Preencha nome, e-mail e senha.");
-    const created = register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type });
-    if (!created) return toast.error("Já existe uma conta de demonstração com esse e-mail.");
-    toast.success("Conta de demonstração criada neste navegador.");
-    nav("/");
+    if (isRemoteAuth && form.password.length < 8) return toast.error("A senha precisa ter pelo menos 8 caracteres.");
+    setLoading(true);
+    try {
+      const result = await register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type });
+      if (!result.ok) return toast.error(result.error);
+      if (result.needsEmailConfirmation) return setPendingEmail(email);
+      toast.success(isRemoteAuth ? "Conta criada. Axé!" : "Conta de demonstração criada neste navegador.");
+      nav("/");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (pendingEmail) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-3">
+          <div className="font-display font-bold text-xl">Confirme seu e-mail</div>
+          <p className="text-sm text-muted-foreground">
+            Enviamos um link para <strong>{pendingEmail}</strong>. Abra o e-mail, confirme e volte para entrar.
+          </p>
+          <Link to="/login" className="text-primary font-semibold hover:underline text-sm">Ir para o login</Link>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -43,7 +67,9 @@ export default function Register() {
           <div>
             <div className="font-display font-bold text-xl">Criar conta</div>
             <div className="text-xs text-muted-foreground">Escolha o tipo de conta</div>
-            <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">Protótipo local: use dados fictícios. Não informe senhas reais; a conta não é criada em um servidor.</p>
+            {!isRemoteAuth && (
+              <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">Protótipo local: use dados fictícios. Não informe senhas reais; a conta não é criada em um servidor.</p>
+            )}
           </div>
         </div>
 
@@ -75,7 +101,7 @@ export default function Register() {
           </div>
           <div>
             <Label htmlFor="register-password">Senha</Label>
-            <Input id="register-password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <Input id="register-password" type="password" minLength={isRemoteAuth ? 8 : undefined} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
           <div>
             <Label htmlFor="register-city">Cidade</Label>
@@ -93,7 +119,7 @@ export default function Register() {
           )}
           <div className="md:col-span-2 flex justify-between items-center pt-2">
             <Link to="/login" className="text-sm text-muted-foreground hover:underline">Já tenho conta</Link>
-            <Button type="submit" size="lg">Criar conta</Button>
+            <Button type="submit" size="lg" disabled={loading}>{loading ? "Criando…" : "Criar conta"}</Button>
           </div>
         </form>
       </Card>

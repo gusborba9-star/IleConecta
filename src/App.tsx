@@ -14,7 +14,14 @@ import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 
 function Protected({ children }: { children: JSX.Element }) {
-  const { currentUser } = useApp();
+  const { currentUser, authReady } = useApp();
+  if (!authReady) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground" role="status">
+        Carregando…
+      </div>
+    );
+  }
   if (!currentUser) return <Navigate to="/login" replace />;
   return children;
 }
