@@ -18,18 +18,25 @@ export default function PostCard({ post }: { post: Post }) {
   const isHouse = houseAuthor !== null;
   const liked = currentUser ? post.likes.includes(currentUser.id) : false;
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
+  const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
 
   return (
     <Card className="overflow-hidden">
       <div className="p-4 flex items-start gap-3">
-        <Link to={isHouse ? `/casa/${author?.id}` : "#"}>
+        {authorPath ? (
+          <Link to={authorPath}>
+            <Avatar src={author?.avatar} name={author?.name} size={44} ring={isHouse ? "gold" : "none"} />
+          </Link>
+        ) : (
           <Avatar src={author?.avatar} name={author?.name} size={44} ring={isHouse ? "gold" : "none"} />
-        </Link>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link to={isHouse ? `/casa/${author?.id}` : "#"} className="font-semibold hover:underline">
-              {author?.name}
-            </Link>
+            {authorPath ? (
+              <Link to={authorPath} className="font-semibold hover:underline">{author?.name}</Link>
+            ) : (
+              <span className="font-semibold">{author?.name}</span>
+            )}
             {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
@@ -12,10 +12,11 @@ export default function Login() {
   const [password, setPassword] = useState("123456");
   const nav = useNavigate();
 
-  if (currentUser) {
-    nav("/", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser) nav("/", { replace: true });
+  }, [currentUser, nav]);
+
+  if (currentUser) return null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
