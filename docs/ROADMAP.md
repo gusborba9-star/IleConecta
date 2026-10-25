@@ -21,8 +21,8 @@
 | P-ID-01 | Identidade, autorização e isolamento | Implementar auth server-side, RBAC e testes de isolamento | ROLE-01; AUTH-01; SEC-ISO-01 | Exclui contas reais até política aprovada | A definir | Saída: testes positivos/negativos para cada perfil e acesso cruzado negado | Testes de integração e auditoria; CTO aprova | **Bloqueada** — backend e política de perfis não aprovados |
 | P-CORE-01 | Casas, conteúdo e descoberta | APIs e persistência para casas, páginas, publicações, busca e moderação mínima aprovada | HOUSE-01; DISC-01 | Não inclui promoção paga sem decisão comercial | A definir | Saída: CRUD autorizado, visibilidade e moderação testados | Testes de contrato, autorização, regressão | **Não iniciada** como execução formal; UI existente não comprova backend |
 | P-BOOK-01 | Atividades, vagas e reservas | Modelo transacional, estados, concorrência de vagas, expiração e cancelamento | EVENT-01; RES-01 | Não inicia cobrança real; depende de estados e política aprovados | A definir | Saída: sem oversell sob concorrência; transições inválidas rejeitadas | Testes concorrentes, integração e regressão | **Bloqueada** — regras de domínio pendentes |
-| P-PAY-01 | Pix e Asaas Sandbox | Criar cobranças de teste, processar webhooks, idempotência e conciliação | FIN-01; FIN-05; PAY-01; WEBHOOK-01; IDEMP-01 | Sandbox apenas; sem credenciais reais ou produção; suporte a split deve ser confirmado com provedor | A definir após autorização | Saída: fluxo de ponta a ponta em Sandbox e casos de falha duplicados testados | Logs sanitizados, payloads de teste, reconciliação; CTO autoriza | **Bloqueada** — viabilidade técnica/contratual e arquitetura pendentes |
-| P-SET-01 | Comissões, repasses, cancelamentos e reembolsos | Implementar regras financeiras aprovadas, ledger e janela de elegibilidade | FIN-02; FIN-03; FIN-04; FIN-REF-01 | Não liberar repasse até confirmar contrato, lei e política operacional | A definir | Saída: conciliação centavo a centavo e testes de cancelamento/reembolso/duplicidade | Casos de teste financeiros e reconciliação independente; CTO + validação jurídica/contábil necessária | **Bloqueada** |
+| P-PAY-01 | Pix e Asaas Sandbox | Criar cobranças de teste, processar webhooks, idempotência e conciliação | FIN-01; FIN-05; FIN-D03-01; FIN-D03-11; PAY-01; WEBHOOK-01; IDEMP-01 | Sandbox apenas; sem credenciais reais ou produção; suporte a split deve ser confirmado com provedor | A definir após autorização | Saída: fluxo de ponta a ponta em Sandbox e casos de falha duplicados testados | Logs sanitizados, payloads de teste, reconciliação; CTO autoriza | **Bloqueada** — viabilidade técnica/contratual e arquitetura pendentes |
+| P-SET-01 | Comissões, repasses, cancelamentos e reembolsos | Implementar regras financeiras aprovadas, ledger e janela de elegibilidade | FIN-02; FIN-03; FIN-04; FIN-D03-01–FIN-D03-10; FIN-REF-01 | Não liberar repasse até confirmar contrato, lei e política operacional | A definir | Saída: conciliação centavo a centavo e testes de cancelamento/reembolso/duplicidade | Casos de teste financeiros e reconciliação independente; CTO + validação jurídica/contábil necessária | **Bloqueada** |
 | P-OPS-01 | Observabilidade, suporte e recuperação | Logs, métricas, alertas, auditoria, backup/restore e runbooks | AUDIT-01; PRIV-01; requisitos operacionais propostos em BACKEND_ARCHITECTURE.md §10 | Sem metas inventadas; SLO/RPO/RTO exigem aprovação | A definir | Saída: alertas testados e restauração/recuperação demonstrada | Evidências de teste e runbook; CTO aprova | **Não iniciada** |
 | P-QA-01 | Qualificação integrada e Preview | Regressão, segurança, acessibilidade, testes E2E e Preview | TEST-REG-01; NFR-BUILD-01; DEPLOY-PREVIEW-01; REL-PROD-01 | Preview não equivale a produção; não altera produção | A definir | Saída: checklist completo, zero bloqueadores conhecidos, evidências ligadas ao SHA | CI, relatórios de teste e validação em Preview; CTO aprova | **Bloqueada** — verificações automáticas associadas à PR #2 reportaram falhas; causa não diagnosticada nesta DOC-02 |
 
@@ -75,7 +75,7 @@ Não foram encontrados nomes ou números históricos de fases no material examin
 
 ## DOC-03 — Regras financeiras aprovadas e execução de auditoria
 
-A ordem DOC-03 aprova a especificação financeira FIN-01–FIN-11 em [FINANCIAL_RULES.md](FINANCIAL_RULES.md), mas **não** declara a implementação concluída. A reserva de 2% ainda precisa de decisão sobre base exata, finalidade e tratamento contábil antes da implementação.
+A ordem DOC-03 aprova a especificação financeira FIN-D03-01–FIN-D03-11 em [FINANCIAL_RULES.md](FINANCIAL_RULES.md), mas **não** declara a implementação concluída. A reserva de 2% ainda precisa de decisão sobre base exata, finalidade e tratamento contábil antes da implementação.
 
 | ID | Etapa | Dependências e saída verificável | Estado |
 |---|---|---|---|
@@ -88,12 +88,12 @@ A ordem DOC-03 aprova a especificação financeira FIN-01–FIN-11 em [FINANCIAL
 ### Requisitos e critérios financeiros de aceite
 
 - FIN-01–FIN-03: prova de cálculo sobre bruto e taxa do provedor custeada pela plataforma.
-- FIN-04: base, finalidade, titularidade e movimentação da reserva decididas e auditáveis.
-- FIN-05: cálculos em centavos inteiros, arredondamento versionado e testes de fronteira.
-- FIN-06: ledger com transação, comissão, casa, taxa, reembolso, retenção, saldo e repasse.
+- FIN-D03-04: base, finalidade, titularidade e movimentação da reserva decididas e auditáveis.
+- FIN-D03-05: cálculos em centavos inteiros, arredondamento versionado e testes de fronteira.
+- FIN-D03-06: ledger com transação, comissão, casa, taxa, reembolso, retenção, saldo e repasse.
 - FIN-07–FIN-09: testes de elegibilidade evento + 72h, fuso correto, contestação e bloqueio.
-- FIN-10: identificador, destinatário, valor, data, estado e confirmação de cada repasse.
-- FIN-11: capacidade do Asaas comprovada por documentação oficial e Sandbox, sem presumir escrow.
+- FIN-D03-10: identificador, destinatário, valor, data, estado e confirmação de cada repasse.
+- FIN-D03-11: capacidade do Asaas comprovada por documentação oficial e Sandbox, sem presumir escrow.
 - AUDIT-01: inventário de funcionalidades reais, simuladas, dependentes de backend e inexistentes.
 - BUILD-01: comandos reais e resultados preservados; nenhuma fase marcada concluída por documentação apenas.
 
