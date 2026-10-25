@@ -60,7 +60,6 @@
     "framer-motion": "^12.23.24",
     "hls.js": "^1.6.13",
     "input-otp": "^1.2.4",
-    "jspdf": "^3.0.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
@@ -84,8 +83,6 @@
     "uuid": "^13.0.0",
     "vaul": "^0.9.3",
     "web-vitals": "^5.1.0",
-    "xlsx": "^0.18.5",
-    "zod": "^3.23.8",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
