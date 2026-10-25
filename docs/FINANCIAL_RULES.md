@@ -93,3 +93,18 @@ A decisão técnica deve registrar links e data da documentação consultada, re
 ## 7. Fontes e estado de evidência
 
 A especificação financeira deriva da ordem DOC-03. A capacidade efetiva do Asaas e os termos do produto não foram comprovados nesta execução; devem ser verificados em documentação oficial e Sandbox antes de implementação. A existência de SDK ou de UI de pagamento no frontend não prova integração financeira.
+
+
+## 8. Evidência documental oficial do Asaas consultada em 2026-10-25
+
+A documentação oficial atual do Asaas apresenta limitações relevantes para o desenho de retenção:
+
+- [FAQ oficial de Split](https://docs.asaas.com/docs/split-faq): informa que não é possível definir uma data futura para executar o Split; ele é processado automaticamente quando a cobrança é recebida. A própria FAQ sugere considerar um fluxo de transferência quando a operação precisa controlar quando o saldo será movimentado. Portanto, o Split padrão **não está comprovado como mecanismo de retenção até evento + 72 horas**.
+- [Introdução oficial ao Split](https://docs.asaas.com/docs/split-de-pagamentos): descreve distribuição automática de parte dos valores recebidos para outras contas Asaas. Isso, por si só, não comprova escrow, retenção pós-evento ou a regra de absorção de taxas exigida pelo Ilê Conecta.
+- [Endpoint oficial de estorno](https://docs.asaas.com/reference/estornar-cobranca): permite estorno integral/parcial de cobrança Pix/cartão; informa que taxas da cobrança não são devolvidas e que saldo disponível pode ser insuficiente para um estorno Pix, retornando erro. Isso confirma a necessidade de reserva operacional e de registrar taxa não recuperada/saldo insuficiente.
+- [Eventos oficiais de cobrança](https://docs.asaas.com/docs/webhook-para-cobrancas): documentam eventos distintos para pagamento confirmado, saldo recebido/disponível, estornos parciais/totais, chargebacks e liquidação/cancelamento de Split.
+- [Validação de saque via webhook](https://docs.asaas.com/docs/mecanismo-para-validacao-de-saque-via-webhooks) e [changelog de 28/09/2026](https://docs.asaas.com/changelog/valida%C3%A7%C3%A3o-de-saque-via-webhook-para-liquida%C3%A7%C3%A3o-de-splits-de-pagamento): descrevem uma autorização/recusa de operação de saída, inclusive liquidação de Split em configuração opcional. O evento ocorre perto da liquidação e não comprova, por si só, uma retenção temporizada de 72 horas.
+
+### Conclusão técnica provisória
+
+**Não usar o Split padrão como prova de atendimento à retenção de 72 horas.** A alternativa a avaliar é manter os valores na conta de origem e executar transferência somente após elegibilidade, reconciliação e aprovação do fluxo; a viabilidade contratual, de saldo, destinatários, taxas, estornos e compliance deve ser verificada em documentação aplicável e Sandbox. Até essa comprovação, a arquitetura financeira fica bloqueada para implementação. Nenhuma operação Sandbox foi executada nesta DOC-03.
