@@ -244,3 +244,59 @@ A revisão atual confirma que as correções de lint eliminaram os 24 erros ante
 Consultas direcionadas no código da branch `main` por padrões/nomeações `asaas api key`, `SUPABASE_SERVICE_ROLE_KEY`, `sk_live` e `secret_key` não retornaram correspondências na busca GitHub usada. Isso **não é uma varredura completa de segredos** e não permite afirmar que o repositório esteja livre de credenciais. Não foi executado scanner dedicado (por exemplo, secret scanning/Gitleaks) nem auditoria de histórico completo.
 
 Foi comprovado que o fluxo de demonstração guarda senhas de contas no estado local e `localStorage`; isso é distinto de encontrar uma chave de API real, mas impede usar esse fluxo com credenciais reais. Antes de lançamento, executar secret scanning sobre árvore e histórico, revisar arquivos de ambiente e rotacionar qualquer segredo real caso seja encontrado. Nenhum token ou valor de credencial foi incluído neste relatório.
+
+
+## 13. Correção reproduzível do lockfile e nova triagem de vulnerabilidades — 2026-10-25
+
+Esta seção **substitui o estado anterior** das seções 10–11 quanto ao lockfile e à contagem de vulnerabilidades. Os SHA citados nas seções históricas são commits de CI antigos, não necessariamente o head atual da PR.
+
+### Lockfile e estratégia de gerenciador
+
+- Commit de sincronização do lockfile: [49eaf46](https://github.com/gusborba9-star/IleConecta/commit/49eaf46a07d2c8496d4361dd283aeea116aae167). Executado `npm install --package-lock-only --ignore-scripts --no-audit --no-fund` com Node `v20.20.2` e npm `10.8.2`; o diff regenerou o lockfile para refletir o manifesto.
+- Remediação não-breaking do lockfile: [78658f4](https://github.com/gusborba9-star/IleConecta/commit/78658f44e74ccb827ce56dcddba6b7a13839ad33), com `npm audit fix --package-lock-only --ignore-scripts --no-fund`, sem `--force`.
+- Dependências diretas removidas de `package.json` e do lockfile: `jspdf` (`^3.0.3`), `xlsx` (`^0.18.5`) e `zod` (`^3.23.8`). A inspeção dos arquivos TypeScript/TSX e configurações verificadas não encontrou imports/uso dessas bibliotecas. A remoção elimina o jsPDF crítico, o xlsx de alta gravidade sem correção publicada no relatório e o Zod que exigia major para a correção; reintroduzir qualquer uma exige caso de uso confirmado e nova triagem.
+- `bun.lock` foi preservado sem alterações. A estratégia de gerenciador único continua pendente de decisão formal.
+- Os workflows temporários usados para sincronizar o lockfile e aplicar correções não-breaking foram removidos da branch após a execução; não fazem parte da entrega final.
+
+### CI reproduzível após correção
+
+**Run #7:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874)  
+Node `v20.20.2`; npm `10.8.2`; Ubuntu runner. O workflow fez checkout da merge ref da PR e executou as verificações no mesmo ambiente.
+
+| Verificação | Resultado observado |
+|---|---|
+| `npm ci` | **PASSOU** sem fallback diagnóstico |
+| `npm run build` | **PASSOU**, Vite build em 3,17 s |
+| `npm run lint` | **PASSOU**, 0 erros e 8 avisos de Fast Refresh/exportações mistas |
+| `npx tsc -b` | **PASSOU** |
+| Inventário completo de advisories | PASSOU como etapa de coleta; relatório JSON anexado como artefato |
+| `npm audit --omit=dev` | **FALHOU** por 6 vulnerabilidades moderadas remanescentes |
+| Gate final | **FALHOU corretamente** por auditoria de dependências; instalação, build, lint e TypeScript passaram |
+
+Artefato JSON completo: [full-dependency-audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874/artifacts/12611125750).
+
+### Resultado da triagem
+
+Antes da remediação, o inventário registrava 16 vulnerabilidades (2 moderadas, 13 altas, 1 crítica). Após remover dependências diretas não utilizadas e aplicar correções não-breaking, o inventário completo atual registra **9 entradas de vulnerabilidade: 8 moderadas, 1 alta e 0 críticas**. A auditoria de produção `npm audit --omit=dev` registra 6 moderadas, sem alta ou crítica nessa seleção.
+
+| Pacote / cadeia | Gravidade reportada | Correção disponível e avaliação |
+|---|---|---|
+| `vite` / `esbuild` / `launch-editor` | Alta no inventário completo; advisories adicionais moderados | npm indica Vite `8.3.5`, mudança major desde Vite 5. Não migrar sem avaliação de compatibilidade com plugin SWC, configuração Vite, build e ambiente. É risco remanescente de tooling/desenvolvimento; manter explícito, não ignorar. |
+| `react-router-dom` / `react-router` | Moderada | Correção sugerida é `7.18.4`, major desde Router 6. O app usa `BrowserRouter`, `Routes`, `Route`, `Navigate`, `Link`, `NavLink`, `useNavigate`, `useParams` e `Outlet`. A compatibilidade precisa de atualização isolada e testes de navegação/refresh antes de aceitar a major. |
+| `tailwindcss`, `@tailwindcss/typography`, `tailwindcss-animate`, `postcss-nested`, `postcss-selector-parser` | Moderada | O relatório atual não oferece correção segura completa para `postcss-selector-parser <7.1.6`; há cadeias transientes ligadas a Tailwind 3. Não aplicar override arbitrário sem verificar compatibilidade dos plugins. Avaliar upgrade compatível ou migração Tailwind separada. |
+
+Advisories relevantes no relatório:
+- Vite: [GHSA-fx2h-pf6j-xcff](https://github.com/advisories/GHSA-fx2h-pf6j-xcff) e [GHSA-587h-7wmj-h5pm](https://github.com/advisories/GHSA-587h-7wmj-h5pm).
+- React Router: [GHSA-wrjc-x8rr-h8h6](https://github.com/advisories/GHSA-wrjc-x8rr-h8h6) e [GHSA-337j-9hxr-rhxg](https://github.com/advisories/GHSA-337j-9hxr-rhxg).
+- PostCSS selector parser: [GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf).
+
+### Decisões ainda necessárias
+
+1. Aprovar ou rejeitar uma execução isolada para migrar Vite 5 → Vite 8, com atualização compatível de plugin/configuração e testes.
+2. Aprovar ou rejeitar uma execução isolada para React Router 6 → 7, com teste de todas as rotas e refresh direto.
+3. Definir abordagem para a cadeia Tailwind/PostCSS sem override inseguro.
+4. Formalizar a estratégia npm/Bun; até lá, `bun.lock` permanece intacto.
+
+### Estado honesto após a remediação
+
+A instalação limpa reproduzível foi demonstrada. Build, lint e TypeScript passaram no mesmo runner e na mesma execução. A auditoria de dependências continua com riscos moderados e um advisory alto no inventário completo relacionado ao tooling Vite. Por isso, a PR é **apresentável para revisão do CTO, mas não é declarada livre de vulnerabilidades nem pronta para lançamento**. Nenhuma PR foi mesclada e nenhuma infraestrutura/integração financeira foi configurada.
