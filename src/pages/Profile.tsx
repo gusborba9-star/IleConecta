@@ -21,7 +21,7 @@ export default function Profile() {
             <h1 className="font-display font-bold text-2xl">{currentUser.name}</h1>
             <div className="text-sm text-muted-foreground">Cliente · {currentUser.city}, {currentUser.state}</div>
             <div className="flex gap-1.5 mt-2">
-              {(currentUser as any).interests?.map((i: string) => (
+              {currentUser.type === "personal" && currentUser.interests?.map((i) => (
                 <Badge key={i} tone="muted">{i}</Badge>
               ))}
             </div>
