@@ -113,13 +113,14 @@ export default function Messages() {
 
             <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
               <input
+                aria-label="Mensagem"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 placeholder="Escreva sua mensagem..."
                 className="flex-1 h-11 px-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm"
               />
-              <Button size="icon" onClick={submit}><Send className="h-4 w-4" /></Button>
+              <Button size="icon" aria-label="Enviar mensagem" onClick={submit}><Send className="h-4 w-4" /></Button>
             </div>
           </>
         ) : (
