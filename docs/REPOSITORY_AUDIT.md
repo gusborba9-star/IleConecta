@@ -237,3 +237,10 @@ Branch HEAD: `ac72b717b3a28c7511991389cb406ffb856527b5`; merge ref testada: `b7e
 | Gate final | **FALHOU corretamente** porque `npm ci` e audit não passaram. |
 
 A revisão atual confirma que as correções de lint eliminaram os 24 erros anteriores. Ainda não é possível declarar a instalação reproduzível nem o repositório pronto para lançamento: o lockfile versionado não foi substituído, e as vulnerabilidades não foram remediadas. Nenhuma alteração foi mesclada à `main`.
+
+
+## 12. Busca direcionada por segredos — limite da evidência
+
+Consultas direcionadas no código da branch `main` por padrões/nomeações `asaas api key`, `SUPABASE_SERVICE_ROLE_KEY`, `sk_live` e `secret_key` não retornaram correspondências na busca GitHub usada. Isso **não é uma varredura completa de segredos** e não permite afirmar que o repositório esteja livre de credenciais. Não foi executado scanner dedicado (por exemplo, secret scanning/Gitleaks) nem auditoria de histórico completo.
+
+Foi comprovado que o fluxo de demonstração guarda senhas de contas no estado local e `localStorage`; isso é distinto de encontrar uma chave de API real, mas impede usar esse fluxo com credenciais reais. Antes de lançamento, executar secret scanning sobre árvore e histórico, revisar arquivos de ambiente e rotacionar qualquer segredo real caso seja encontrado. Nenhum token ou valor de credencial foi incluído neste relatório.
