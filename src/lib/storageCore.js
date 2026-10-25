@@ -9,7 +9,12 @@ export function createSafeStorage(storageProvider, namespace) {
     }
   }
 
-  function removeCorrupt(storage, key) {
+  function removeCorrupt(storage, key, raw) {
+    try {
+      if (typeof raw === "string") storage.setItem(`${prefix}recovery:${key}`, raw);
+    } catch {
+      // A full/unavailable storage may prevent preserving a recovery copy.
+    }
     try {
       storage.removeItem(`${prefix}${key}`);
     } catch {
@@ -34,7 +39,7 @@ export function createSafeStorage(storageProvider, namespace) {
       try {
         parsed = JSON.parse(raw);
       } catch {
-        removeCorrupt(storage, key);
+        removeCorrupt(storage, key, raw);
         return fallback;
       }
 
