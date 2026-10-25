@@ -71,3 +71,30 @@
 ## Histórico e aprovação
 
 Não foram encontrados nomes ou números históricos de fases no material examinado. Os IDs `P-*` acima são rótulos propostos para discussão, não fatos históricos. Fases só devem ser renomeadas/reordenadas como baseline oficial após aprovação do CTO.
+
+
+## DOC-03 — Regras financeiras aprovadas e execução de auditoria
+
+A ordem DOC-03 aprova a especificação financeira FIN-01–FIN-11 em [FINANCIAL_RULES.md](FINANCIAL_RULES.md), mas **não** declara a implementação concluída. A reserva de 2% ainda precisa de decisão sobre base exata, finalidade e tratamento contábil antes da implementação.
+
+| ID | Etapa | Dependências e saída verificável | Estado |
+|---|---|---|---|
+| P-DOC03-FIN | Consolidar regra financeira, retenção e exceções | Revisão cruzada de Blueprint, regras, registro de decisões, arquitetura e matriz; PR draft; revisão do CTO | Em revisão documental; implementação pendente |
+| P-AUDIT-01 | Auditoria reproduzível de frontend, segurança e funcionalidades | Inventário por funcionalidade, riscos priorizados, arquivos/linhas e evidências reproduzíveis | Em andamento; sem alegação de produto operacional |
+| P-BUILD-01 | Estabilização de dependências e build | `npm ci`, `npm run build`, `npm run lint`, `npx tsc -b` executados e logs associados ao SHA; testes de rotas | Bloqueada até execução real em ambiente funcional |
+| P-PAY-ARCH-01 | Avaliar fluxo de pagamento/repasse Asaas | Fontes oficiais datadas + testes Sandbox; comprovar split, retenção, saldo, transferências e reembolsos; ADR submetida ao CTO | Pendente; sem integração nesta etapa |
+| P-PAY-IMPL-01 | Implementar ledger e integração Sandbox | Somente após execução específica autorizada; testes idempotentes/negativos, reconciliação e revisão de segurança | Não iniciada; exige autorização própria |
+
+### Requisitos e critérios financeiros de aceite
+
+- FIN-01–FIN-03: prova de cálculo sobre bruto e taxa do provedor custeada pela plataforma.
+- FIN-04: base, finalidade, titularidade e movimentação da reserva decididas e auditáveis.
+- FIN-05: cálculos em centavos inteiros, arredondamento versionado e testes de fronteira.
+- FIN-06: ledger com transação, comissão, casa, taxa, reembolso, retenção, saldo e repasse.
+- FIN-07–FIN-09: testes de elegibilidade evento + 72h, fuso correto, contestação e bloqueio.
+- FIN-10: identificador, destinatário, valor, data, estado e confirmação de cada repasse.
+- FIN-11: capacidade do Asaas comprovada por documentação oficial e Sandbox, sem presumir escrow.
+- AUDIT-01: inventário de funcionalidades reais, simuladas, dependentes de backend e inexistentes.
+- BUILD-01: comandos reais e resultados preservados; nenhuma fase marcada concluída por documentação apenas.
+
+Não alterar o estado de EXEC-01 nem de fases anteriores sem novas evidências. Não iniciar EXEC-02 nem a etapa de infraestrutura por inferência.
