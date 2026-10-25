@@ -219,3 +219,21 @@ Branch HEAD testada: `4297af0adc734e74c0cf0458fbd4246383851782`; merge ref check
 | Gate final do workflow | **FALHOU corretamente** por `npm ci` e `npm audit`; lint não bloqueia mais |
 
 O Run #3 ainda antecede a última alteração de concorrência do workflow; uma nova execução na revisão atual deve confirmar o mesmo estado. O lockfile diagnóstico foi enviado como artefato para revisão, mas a versão versionada continua sem correção. Não declarar estabilização concluída até `npm ci` passar com lockfile versionado e a triagem de vulnerabilidades ser concluída.
+
+
+## 11. Verificação final da revisão atual — 2026-10-25
+
+**Run #4:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221827927)  
+Branch HEAD: `ac72b717b3a28c7511991389cb406ffb856527b5`; merge ref testada: `b7ecc06fde40255cad2d3ec200c1777657ed41a5`. Node `v20.20.2`, npm `10.8.2`, Ubuntu 24.04.
+
+| Comando | Resultado observado |
+|---|---|
+| `npm ci` | **FALHOU — EUSAGE**; continuam ausentes do lockfile dependências declaradas no manifesto, incluindo `@google/generative-ai`, `@react-three/drei`, `@stripe/stripe-js`, `@supabase/supabase-js` e outras; também foi reportada versão desalinhada de `@tanstack/react-query`. |
+| `npm install --no-audit --no-fund` | PASSOU como fallback diagnóstico; o artefato `diagnostic-package-lock` foi produzido para revisão. |
+| `npm run build` | **PASSOU após fallback**; 1.609 módulos transformados, build em 2,44s. Browserslist/caniuse-lite continua desatualizado. |
+| `npm run lint` | **PASSOU sem erros**; restam 8 avisos de Fast Refresh/exportação mista. |
+| `npx tsc -b` | **PASSOU após fallback**; não foram observados erros de TypeScript. |
+| `npm audit --omit=dev` | **FALHOU**; 16 vulnerabilidades (2 moderadas, 13 altas, 1 crítica). |
+| Gate final | **FALHOU corretamente** porque `npm ci` e audit não passaram. |
+
+A revisão atual confirma que as correções de lint eliminaram os 24 erros anteriores. Ainda não é possível declarar a instalação reproduzível nem o repositório pronto para lançamento: o lockfile versionado não foi substituído, e as vulnerabilidades não foram remediadas. Nenhuma alteração foi mesclada à `main`.
