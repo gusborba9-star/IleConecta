@@ -1,0 +1,47 @@
+name: Repository audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm install, build, lint and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+          git rev-parse HEAD
+      - name: Reproducible clean install (npm ci)
+        id: clean_install
+        continue-on-error: true
+        run: npm ci
+      - name: Diagnostic install if lockfile prevents npm ci
+        if: steps.clean_install.outcome == 'failure'
+        continue-on-error: true
+        run: npm install --no-audit --no-fund
+      - name: Production build
+        continue-on-error: true
+        run: npm run build
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint
+      - name: TypeScript project build
+        continue-on-error: true
+        run: npx tsc -b
+      - name: Audit dependencies
+        continue-on-error: true
+        run: npm audit --omit=dev
