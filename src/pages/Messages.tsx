@@ -4,6 +4,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button, Card } from "@/components/base";
 import { Send } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Messages() {
   const { id } = useParams();
@@ -33,15 +34,11 @@ export default function Messages() {
 
   const submit = () => {
     if (!text.trim() || !otherId) return;
-    sendMessage(otherId, text.trim());
+    if (!sendMessage(otherId, text)) {
+      toast.error("Não foi possível registrar a mensagem na demonstração.");
+      return;
+    }
     setText("");
-    setTimeout(() => {
-      // simulated reply for demo
-      const houseName = users.find((u) => u.id === otherId)?.name;
-      if (users.find((u) => u.id === otherId)?.type === "commercial") {
-        sendMessage(currentUser!.id, ""); // no-op to avoid noise
-      }
-    }, 400);
   };
 
   return (

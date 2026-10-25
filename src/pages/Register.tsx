@@ -24,9 +24,12 @@ export default function Register() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.password) return toast.error("Preencha todos os campos");
-    register({ ...form, type });
-    toast.success("Bem-vindo(a) ao Ilê Conecta!");
+    const name = form.name.trim();
+    const email = form.email.trim().toLowerCase();
+    if (!name || !email || !form.password.trim()) return toast.error("Preencha nome, e-mail e senha.");
+    const created = register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type });
+    if (!created) return toast.error("Já existe uma conta de demonstração com esse e-mail.");
+    toast.success("Conta de demonstração criada neste navegador.");
     nav("/");
   };
 
@@ -40,6 +43,7 @@ export default function Register() {
           <div>
             <div className="font-display font-bold text-xl">Criar conta</div>
             <div className="text-xs text-muted-foreground">Escolha o tipo de conta</div>
+            <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">Protótipo local: use dados fictícios. Não informe senhas reais; a conta não é criada em um servidor.</p>
           </div>
         </div>
 
@@ -56,7 +60,7 @@ export default function Register() {
             onClick={() => setType("commercial")}
             icon={Store}
             title="Casa espiritual"
-            desc="Publique trabalhos, rituais e receba clientes com pagamento integrado."
+            desc="Publique trabalhos, rituais e organize sua presença na demonstração."
           />
         </div>
 

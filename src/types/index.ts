@@ -77,7 +77,6 @@ export interface Ritual {
   vagasVendidas: number;
   mode: RitualMode;
   date: string;
-  platformFeePct: number; // 10-15
   category: string;
 }
 
@@ -102,8 +101,8 @@ export interface Purchase {
   ritualId: string;
   userId: string;
   amount: number;
-  fee: number;
   createdAt: string;
+  mode: "demo";
 }
 
 export interface BoostPlan {

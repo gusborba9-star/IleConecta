@@ -19,22 +19,23 @@ export default function Profile() {
           <Avatar src={currentUser.avatar} name={currentUser.name} size={80} />
           <div className="flex-1">
             <h1 className="font-display font-bold text-2xl">{currentUser.name}</h1>
-            <div className="text-sm text-muted-foreground">Cliente · {currentUser.city}, {currentUser.state}</div>
+            <div className="text-sm text-muted-foreground">{currentUser.type === "commercial" ? "Casa espiritual" : "Cliente"} · {currentUser.city}, {currentUser.state}</div>
             <div className="flex gap-1.5 mt-2">
               {currentUser.type === "personal" && currentUser.interests?.map((i) => (
                 <Badge key={i} tone="muted">{i}</Badge>
               ))}
             </div>
           </div>
-          <Button variant="outline">Editar perfil</Button>
+          <Button variant="outline" disabled title="Edição de perfil ainda não está disponível no protótipo">Edição indisponível</Button>
         </div>
       </Card>
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Ticket className="h-5 w-5 text-primary" />
-          <h2 className="font-display font-bold text-lg">Minhas contratações</h2>
+          <h2 className="font-display font-bold text-lg">Reservas demonstrativas</h2>
         </div>
+        <p className="text-xs text-muted-foreground mb-3">Registros locais de simulação. Não representam pagamento ou reserva real.</p>
         {myPurchases.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
             Você ainda não contratou nenhum ritual.{" "}

@@ -73,7 +73,11 @@ export default function Login() {
             <Link to="/register" className="text-primary font-semibold hover:underline">Criar agora</Link>
           </div>
 
-          <div className="mt-5 p-3 rounded-xl bg-muted text-xs text-muted-foreground space-y-1">
+          <div className="mt-5 p-3 rounded-xl border border-amber-300/60 bg-amber-50 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100 space-y-1">
+            <div className="font-semibold">Ambiente de demonstração</div>
+            <div>Use apenas dados fictícios. As contas e senhas são locais neste navegador; não informe credenciais reais.</div>
+          </div>
+          <div className="mt-3 p-3 rounded-xl bg-muted text-xs text-muted-foreground space-y-1">
             <div className="font-semibold text-foreground">Contas de demonstração</div>
             <div>Cliente · mari@cliente.app · 123456</div>
             <div>Casa · oxum@ile.app · 123456</div>

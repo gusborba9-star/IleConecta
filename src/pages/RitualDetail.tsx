@@ -78,7 +78,7 @@ export default function RitualDetail() {
           <Card className="p-6 sticky top-24">
             <div className="text-xs uppercase tracking-widest text-muted-foreground">Valor da vaga</div>
             <div className="font-display font-bold text-4xl text-primary mt-1">{formatBRL(ritual.price)}</div>
-            <div className="text-xs text-muted-foreground">Pagamento único · à vista ou parcelado</div>
+            <div className="text-xs text-muted-foreground">Valor ilustrativo · sem cobrança real</div>
 
             <div className="mt-4">
               <div className="flex justify-between text-xs mb-1">
@@ -111,7 +111,7 @@ export default function RitualDetail() {
 
             <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground flex items-start gap-2">
               <ShieldCheck className="h-4 w-4 text-forest mt-0.5" />
-              Pagamento processado pela plataforma. A casa recebe automaticamente após a confirmação, já com a taxa da plataforma descontada.
+              Demonstração local: nenhuma cobrança, confirmação financeira ou repasse é executado. A integração financeira depende de implementação e validação próprias.
             </div>
           </Card>
         </div>

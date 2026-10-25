@@ -97,7 +97,7 @@ A conta conectada lista os projetos `ile-conecta`, `ile-conecta-tdfx`, `ile-cone
 | Casas/perfis/descoberta | Dados iniciais vêm de `src/lib/mockData.ts`; contexto fornece acesso local | Simulado com dados fictícios | Não comprova cadastro real, verificação de casa ou fonte persistente. |
 | Mensagens | Conversas e mensagens são atualizadas em estado local | Simulado/local | Sem entrega entre dispositivos, autorização server-side ou proteção de conteúdo. |
 | Reserva/compra de ritual | `src/components/ritual/RitualPurchaseModal.tsx` usa timer local, chama `buyRitual` e declara “Pagamento simulado no ambiente demo” | Simulada; sem provedor real | Não cobrar nem anunciar confirmação financeira real; capacidade/vagas não são transacionais no servidor. |
-| Comissão e repasse | Modal/contexto usam `ritual.platformFeePct` e aritmética JS com `toFixed(2)` | Demonstração incompatível com a nova regra aprovada | A execução financeira futura deve usar 17%/83%, centavos inteiros e backend; esta ordem não autoriza alterar o fluxo de pagamento. |
+| Comissão e repasse | O protótipo não deve calcular nem exibir divisão financeira como real; percentuais fictícios removidos do modelo local nesta correção | Não implementado; sem ledger, cobrança ou provedor | A implementação financeira futura deve seguir FIN-D03-01–FIN-D03-11, com centavos inteiros, ledger, idempotência e autorização específica. |
 | Boost/destaque | Atualizações locais no contexto | Simulado/local | Sem cobrança, autorização server-side ou expiração confiável. |
 | Rotas protegidas | `src/App.tsx` usa componente `Protected` baseado em `currentUser` no frontend | Proteção de navegação somente | Não equivale a autorização; todo acesso a dados sensíveis precisa ser validado no servidor. |
 | Backend/API/banco | Nenhuma API própria, migrations Supabase ou Edge Functions foi confirmada no snapshot examinado | Não localizado nesta árvore | Não declarar backend operacional; validar em nova inspeção quando arquitetura for aprovada. |
@@ -300,3 +300,20 @@ Advisories relevantes no relatório:
 ### Estado honesto após a remediação
 
 A instalação limpa reproduzível foi demonstrada. Build, lint e TypeScript passaram no mesmo runner e na mesma execução. A auditoria de dependências continua com riscos moderados e um advisory alto no inventário completo relacionado ao tooling Vite. Por isso, a PR é **apresentável para revisão do CTO, mas não é declarada livre de vulnerabilidades nem pronta para lançamento**. Nenhuma PR foi mesclada e nenhuma infraestrutura/integração financeira foi configurada.
+
+
+## 14. Correção integrada de fluxos locais — branch `fix/integrated-demo-flows`
+
+Esta entrega corrige inconsistências de comportamento no protótipo sem declarar o produto operacional e sem iniciar backend, infraestrutura ou pagamentos reais.
+
+- Cadastro local: e-mail normalizado e duplicidades detectadas antes de criar uma conta demonstrativa.
+- Mensagens: removido o temporizador que criava uma mensagem vazia para o próprio usuário; envio agora rejeita texto vazio, destinatário inexistente e autoenvio, e atualiza conversas com setter funcional para reduzir perda de atualização por estado obsoleto.
+- Busca: a busca do cabeçalho navega para Descobrir e aplica o termo na filtragem.
+- Impulsionamento: os componentes de descoberta, página da casa e trilho lateral só consideram ativo um boost cuja expiração ainda não passou.
+- Reserva/financeiro: removidos percentuais fictícios do modelo de ritual e do cálculo local; o fluxo é identificado como simulação e não afirma que houve pagamento, notificação à casa ou reserva real.
+- Ações sem implementação: controles identificados como indisponíveis foram desabilitados em vez de parecerem operações concluídas.
+- Aviso global e avisos de autenticação esclarecem que o estado é local, não há autenticação server-side nem sincronização entre usuários e não se devem inserir credenciais reais.
+
+**Limite de segurança:** contas e senhas ainda fazem parte do modelo local de demonstração. O aviso reduz o risco de uso indevido, mas não substitui a implementação autorizada de identidade e autorização server-side. Nenhuma credencial real deve ser usada.
+
+**Validação:** build, lint, TypeScript e CI funcional ainda precisam ser ligados ao SHA exato desta entrega. Não marcar esta correção como validada até haver execução reproduzível; mensagens, busca, expiração e reserva não foram testadas em navegador nesta etapa.

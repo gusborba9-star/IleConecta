@@ -65,11 +65,11 @@ export default function PostComposer() {
               </Button>
               {isHouse && (
                 <>
-                  <Button variant="ghost" size="sm">
-                    <Sparkles className="h-4 w-4 text-gold" /> Ritual
+                  <Button variant="ghost" size="sm" disabled title="Publicação de rituais ainda não está disponível no protótipo">
+                    <Sparkles className="h-4 w-4 text-gold" /> Ritual indisponível
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    <Radio className="h-4 w-4 text-primary" /> Ao vivo
+                  <Button variant="ghost" size="sm" disabled title="Transmissões ao vivo ainda não estão disponíveis no protótipo">
+                    <Radio className="h-4 w-4 text-primary" /> Ao vivo indisponível
                   </Button>
                 </>
               )}

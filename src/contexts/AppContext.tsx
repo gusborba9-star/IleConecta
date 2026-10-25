@@ -23,7 +23,7 @@ interface AppState {
     state: string;
     country: string;
     category?: string;
-  }) => User;
+  }) => User | null;
   createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Post;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
   toggleLike: (postId: string) => void;
@@ -31,7 +31,7 @@ interface AppState {
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
   applyHighlight: (scope: "local" | "cidade" | "pais", days: number) => void;
-  sendMessage: (toUserId: string, text: string) => Conversation;
+  sendMessage: (toUserId: string, text: string) => boolean;
   getConversationWith: (otherId: string) => Conversation | null;
   getHouse: (id: string) => HouseUser | null;
   getUser: (id: string) => User | null;
@@ -68,7 +68,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     conversations,
     purchases,
     login(email, password) {
-      const u = users.find((x) => x.email.toLowerCase() === email.toLowerCase() && x.password === password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const u = users.find((x) => x.email.trim().toLowerCase() === normalizedEmail && x.password === password);
       if (u) setCurrentUserId(u.id);
       return u ?? null;
     },
@@ -76,11 +77,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserId(null);
     },
     register(data) {
+      const normalizedEmail = data.email.trim().toLowerCase();
+      if (!normalizedEmail || users.some((existing) => existing.email.trim().toLowerCase() === normalizedEmail)) {
+        return null;
+      }
       const base = {
         id: uid(data.type === "commercial" ? "casa" : "user"),
-        email: data.email,
+        email: normalizedEmail,
         password: data.password,
-        name: data.name,
+        name: data.name.trim(),
         city: data.city,
         state: data.state,
         country: data.country,
@@ -144,14 +149,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const rit = rituals.find((r) => r.id === ritualId);
       if (!rit) return null;
       if (rit.vagasVendidas >= rit.vagasTotal) return null;
-      const fee = +(rit.price * (rit.platformFeePct / 100)).toFixed(2);
       const purchase: Purchase = {
-        id: uid("pur"),
+        id: uid("demo_reservation"),
         ritualId,
         userId: currentUser.id,
         amount: rit.price,
-        fee,
         createdAt: new Date().toISOString(),
+        mode: "demo",
       };
       setPurchases((prev) => [purchase, ...prev]);
       setRituals((prev) => prev.map((r) => (r.id === ritualId ? { ...r, vagasVendidas: r.vagasVendidas + 1 } : r)));
@@ -168,25 +172,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id && u.type === "commercial" ? { ...u, highlight: { scope, expiresAt } } : u)));
     },
     sendMessage(toUserId, text) {
-      if (!currentUser) throw new Error("no user");
-      const now = new Date().toISOString();
-      const existing = conversations.find(
-        (c) => c.participantIds.includes(currentUser.id) && c.participantIds.includes(toUserId)
-      );
-      const msg: Message = { id: uid("m"), from: currentUser.id, to: toUserId, text, createdAt: now };
-      if (existing) {
-        const updated: Conversation = { ...existing, messages: [...existing.messages, msg], updatedAt: now };
-        setConversations((prev) => prev.map((c) => (c.id === existing.id ? updated : c)));
-        return updated;
+      const normalizedText = text.trim();
+      if (!currentUser || !normalizedText || toUserId === currentUser.id || !users.some((u) => u.id === toUserId)) {
+        return false;
       }
-      const created: Conversation = {
-        id: uid("conv"),
-        participantIds: [currentUser.id, toUserId],
-        messages: [msg],
-        updatedAt: now,
+
+      const now = new Date().toISOString();
+      const message: Message = {
+        id: uid("m"),
+        from: currentUser.id,
+        to: toUserId,
+        text: normalizedText,
+        createdAt: now,
       };
-      setConversations((prev) => [created, ...prev]);
-      return created;
+
+      setConversations((prev) => {
+        const existing = prev.find(
+          (conversation) =>
+            conversation.participantIds.length === 2 &&
+            conversation.participantIds.includes(currentUser.id) &&
+            conversation.participantIds.includes(toUserId)
+        );
+
+        if (existing) {
+          const updated: Conversation = {
+            ...existing,
+            messages: [...existing.messages, message],
+            updatedAt: now,
+          };
+          return prev.map((conversation) => (conversation.id === existing.id ? updated : conversation));
+        }
+
+        const created: Conversation = {
+          id: uid("conv"),
+          participantIds: [currentUser.id, toUserId],
+          messages: [message],
+          updatedAt: now,
+        };
+        return [created, ...prev];
+      });
+
+      return true;
     },
     getConversationWith(otherId) {
       if (!currentUser) return null;

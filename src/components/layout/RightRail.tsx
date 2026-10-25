@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card } from "@/components/base";
 import { Flame, Sparkles, Star } from "lucide-react";
-import { formatBRL } from "@/lib/utils";
+import { formatBRL, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
 
 export default function RightRail() {
   const { users, rituals, conversations, currentUser } = useApp();
 
   const promoted = users
-    .filter((u): u is HouseUser => u.type === "commercial" && Boolean(u.boost))
+    .filter((u): u is HouseUser => u.type === "commercial" && isPromotionActive(u.boost?.expiresAt))
     .slice(0, 3);
 
   const hotRituals = rituals
