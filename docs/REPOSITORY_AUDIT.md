@@ -149,3 +149,44 @@ O estado de sucesso de uma verificação remota Vercel anterior, quando associad
 4. Criar testes para cálculos monetários em centavos e máquina de estados apenas na execução financeira autorizada; não conectar provedor nesta etapa.
 5. Registrar evidência de navegação/refresh, responsividade, acessibilidade e console quando houver navegador de teste.
 6. Não declarar o produto operacional enquanto autenticação, autorização e persistência forem locais/simuladas.
+
+
+## 9. Execução CI real — workflow audit (2026-10-25)
+
+**Run #1:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40221235100)  
+**Branch HEAD testada:** `ba5945b1d71c44c4cb9e6ce04eb3569e49e886be`  
+**Merge ref efetivamente checkout:** `8f04b4a1a9fb0713e11706b0c34ebc29ff7898c3`  
+**Ambiente:** Ubuntu 24.04; Node `v20.20.2`; npm `10.8.2`.
+
+> O run #1 usou `continue-on-error` em verificações individuais, portanto o estado geral do job ficou `success` apesar de falhas nos comandos. Isso foi identificado e o workflow foi corrigido para falhar explicitamente se qualquer verificação obrigatória falhar. O estado geral do run #1 **não** significa aprovação do build, lint ou auditoria de dependências.
+
+| Comando | Resultado real | Evidência / interpretação |
+|---|---|---|
+| `npm ci` | **FALHOU — EUSAGE, exit code 1** | npm informou que `package.json` e `package-lock.json` não estão sincronizados. Listou pacotes ausentes do lock e uma versão inválida de `@tanstack/react-query`. |
+| `npm install --no-audit --no-fund` | **PASSOU como instalação diagnóstica** | Instalou 595 pacotes em 47s no runner. O lockfile gerado ficou apenas no workspace efêmero; não foi automaticamente aplicado à branch. |
+| `npm run build` | **PASSOU após a instalação diagnóstica** | Vite 5.4.19; 1.609 módulos transformados; build concluído em 3,15s. Não é prova de build a partir de instalação limpa do lock versionado. Browserslist/caniuse-lite desatualizado foi avisado. |
+| `npm run lint` | **FALHOU — exit code 1** | 32 problemas: 24 erros e 8 avisos. Entre os erros: `no-explicit-any` em vários componentes/páginas, bloco vazio em `src/lib/storage.ts:16` e hooks `useMemo` condicionais em `src/pages/HousePage.tsx:25–26`. |
+| `npx tsc -b` | **PASSOU na instalação diagnóstica** | O comando terminou sem saída de erro e o workflow avançou ao próximo passo. Não equivale a instalação limpa. |
+| `npm audit --omit=dev` | **FALHOU — exit code 1** | 16 vulnerabilidades na árvore analisada: 2 moderadas, 13 altas e 1 crítica. |
+
+### 9.1 Vulnerabilidades de dependências — bloqueador de segurança
+
+O relatório de `npm audit --omit=dev` identificou avisos envolvendo, entre outras, `@remix-run/router`/React Router (alto), `brace-expansion` (alto), `glob` (alto), `jspdf` (crítico), `lodash` (alto), `minimatch` (alto), `nanoid` (alto), `picomatch` (alto), `postcss` (alto), `postcss-selector-parser` (moderado), `source-map-js` (alto), `xlsx` (alto, sem correção reportada pelo audit), `yaml` (moderado) e `zod` (alto). A saída recomenda `npm audit fix` para parte dos itens; para jsPDF e Zod, a correção automática sugerida exigiria `--force` e mudança de versão potencialmente incompatível.
+
+Nenhum `npm audit fix` ou `--force` foi executado. Próxima ação: avaliar dependências diretas/transitivas, uso real dos pacotes, versões corrigidas e compatibilidade; separar atualizações de baixo risco das mudanças breaking. Não tratar o número de advisories como prova de exploração no produto, mas bloquear lançamento até triagem e plano de remediação revisado.
+
+### 9.2 Próximas correções sustentadas pelas evidências
+
+1. Regenerar e revisar `package-lock.json` em branch isolada usando npm 10/Node 20, comparar o diff e confirmar que `npm ci` passa no commit resultante. `bun.lock` permanece preservado até decisão explícita sobre gerenciador único.
+2. Corrigir os erros de lint em mudanças pequenas, sem desativar regras globalmente; resolver primeiro o uso condicional de hooks e os blocos vazios.
+3. Tratar vulnerabilidades por pacote, priorizando a crítica em jsPDF e as altas em React Router, xlsx e demais dependências, com testes de regressão e sem `--force` indiscriminado.
+4. Reexecutar build, lint, TypeScript e audit a partir do lockfile corrigido e registrar SHA/logs.
+5. Executar testes de rotas/refresh, console, acessibilidade e responsividade; não foram executados no run #1.
+
+### 9.3 Estado honesto da execução
+
+- O build foi comprovado apenas após `npm install` diagnóstico, não via `npm ci`.
+- Lint e audit de produção falharam.
+- TypeScript passou após a instalação diagnóstica.
+- Nenhum teste funcional em navegador, teste de isolamento/autorização, teste multiusuário, Sandbox Asaas ou teste de retenção de 72h foi executado.
+- O workflow atualizado registra os resultados em resumo e falha o job se qualquer verificação obrigatória falhar. O run #1 é evidência diagnóstica; aguarda-se novo run com a configuração corrigida.
