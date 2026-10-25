@@ -1,8 +1,18 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { AccountType, Conversation, HouseUser, Message, Post, Purchase, Ritual, Story, User } from "@/types";
+import type { Conversation, HouseUser, Message, Post, Purchase, Ritual, Story, User } from "@/types";
 import { loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import {
+  fetchRemoteUser,
+  remoteLogin,
+  remoteLogout,
+  remoteRegister,
+  remoteUpdateProfile,
+  type AuthResult,
+  type RegisterInput,
+} from "@/lib/remoteAuth";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 import {
   isAuthState,
@@ -22,18 +32,13 @@ interface AppState {
   rituals: Ritual[];
   conversations: Conversation[];
   purchases: Purchase[];
-  login: (email: string, password: string) => User | null;
-  logout: () => void;
-  register: (data: {
-    type: AccountType;
-    name: string;
-    email: string;
-    password: string;
-    city: string;
-    state: string;
-    country: string;
-    category?: string;
-  }) => User | null;
+  /** true quando o login é real (Supabase); false no modo demonstração local. */
+  isRemoteAuth: boolean;
+  /** false enquanto a sessão salva ainda está sendo verificada. */
+  authReady: boolean;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  logout: () => Promise<void>;
+  register: (data: RegisterInput) => Promise<AuthResult>;
   createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Post;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
   toggleLike: (postId: string) => void;
@@ -59,6 +64,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", [], (value): value is Purchase[] => isPurchasesState(value, users, rituals)));
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null, (value): value is string | null => isAuthState(value, users)));
 
+  const [remoteUser, setRemoteUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    const load = async (userId: string | null, email: string) => {
+      const u = userId ? await fetchRemoteUser(userId, email) : null;
+      if (active) setRemoteUser(u);
+    };
+    supabase.auth
+      .getSession()
+      .then(({ data }) => load(data.session?.user.id ?? null, data.session?.user.email ?? ""))
+      .catch(() => active && setRemoteUser(null))
+      .finally(() => active && setAuthReady(true));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Fora do callback para evitar deadlock do cliente Supabase.
+      setTimeout(() => void load(session?.user.id ?? null, session?.user.email ?? ""), 0);
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
   const persist = (key: string, value: unknown) => {
     if (!saveKey(key, value)) {
       console.warn(`Ilê Conecta: não foi possível persistir "${key}" neste navegador.`);
@@ -73,29 +103,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => persist("purchases", purchases), [purchases]);
   useEffect(() => persist("auth", currentUserId), [currentUserId]);
 
-  const currentUser = useMemo(() => users.find((u) => u.id === currentUserId) || null, [users, currentUserId]);
+  // Com Supabase configurado, só existe usuário logado de verdade; contas demo nunca ficam ativas.
+  const currentUser = useMemo(
+    () => (isSupabaseConfigured ? remoteUser : users.find((u) => u.id === currentUserId) || null),
+    [users, currentUserId, remoteUser]
+  );
+  const allUsers = useMemo(
+    () => (remoteUser ? [...users.filter((u) => u.id !== remoteUser.id), remoteUser] : users),
+    [users, remoteUser]
+  );
 
   const value: AppState = {
     currentUser,
-    users,
+    users: allUsers,
+    isRemoteAuth: isSupabaseConfigured,
+    authReady,
     posts,
     stories,
     rituals,
     conversations,
     purchases,
-    login(email, password) {
+    async login(email, password) {
+      if (isSupabaseConfigured) {
+        const result = await remoteLogin(email, password);
+        if (result.ok && result.user) setRemoteUser(result.user);
+        return result;
+      }
       const normalizedEmail = normalizeDemoEmail(email);
       const u = users.find((x) => x.email.trim().toLowerCase() === normalizedEmail && x.password === password);
-      if (u) setCurrentUserId(u.id);
-      return u ?? null;
+      if (!u) return { ok: false, error: "E-mail ou senha inválidos" };
+      setCurrentUserId(u.id);
+      return { ok: true, user: u };
     },
-    logout() {
+    async logout() {
+      if (isSupabaseConfigured) {
+        await remoteLogout();
+        setRemoteUser(null);
+        return;
+      }
       setCurrentUserId(null);
     },
-    register(data) {
+    async register(data) {
+      if (isSupabaseConfigured) {
+        const result = await remoteRegister(data);
+        if (result.ok && result.user) setRemoteUser(result.user);
+        return result;
+      }
       const normalizedEmail = normalizeDemoEmail(data.email);
       if (!normalizedEmail || users.some((existing) => existing.email.trim().toLowerCase() === normalizedEmail)) {
-        return null;
+        return { ok: false, error: "Já existe uma conta de demonstração com esse e-mail." };
       }
       const base = {
         id: uid(data.type === "commercial" ? "casa" : "user"),
@@ -122,7 +178,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : { ...base, type: "personal" };
       setUsers((prev) => [...prev, user]);
       setCurrentUserId(user.id);
-      return user;
+      return { ok: true, user };
     },
     createPost(post) {
       const p: Post = { ...post, id: uid("post"), createdAt: new Date().toISOString(), likes: [], comments: [] };
@@ -179,16 +235,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     applyBoost(level, days) {
       if (!currentUser || currentUser.type !== "commercial") return;
       const expiresAt = new Date(Date.now() + days * 86400 * 1000).toISOString();
+      if (isSupabaseConfigured) {
+        setRemoteUser((prev) => (prev && prev.type === "commercial" ? { ...prev, boost: { level, expiresAt } } : prev));
+        return;
+      }
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id && u.type === "commercial" ? { ...u, boost: { level, expiresAt } } : u)));
     },
     applyHighlight(scope, days) {
       if (!currentUser || currentUser.type !== "commercial") return;
       const expiresAt = new Date(Date.now() + days * 86400 * 1000).toISOString();
+      if (isSupabaseConfigured) {
+        setRemoteUser((prev) => (prev && prev.type === "commercial" ? { ...prev, highlight: { scope, expiresAt } } : prev));
+        return;
+      }
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id && u.type === "commercial" ? { ...u, highlight: { scope, expiresAt } } : u)));
     },
     sendMessage(toUserId, text) {
       const normalizedText = text.trim();
-      if (!canSendDemoMessage(currentUser?.id, toUserId, normalizedText, users.some((u) => u.id === toUserId))) {
+      if (!canSendDemoMessage(currentUser?.id, toUserId, normalizedText, allUsers.some((u) => u.id === toUserId))) {
         return false;
       }
       if (!currentUser) return false;
@@ -218,14 +282,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ) ?? null;
     },
     getHouse(id) {
-      const u = users.find((x) => x.id === id);
+      const u = allUsers.find((x) => x.id === id);
       return u && u.type === "commercial" ? (u as HouseUser) : null;
     },
     getUser(id) {
-      return users.find((x) => x.id === id) ?? null;
+      return allUsers.find((x) => x.id === id) ?? null;
     },
     updateUser(patch) {
       if (!currentUser) return;
+      if (isSupabaseConfigured) {
+        setRemoteUser((prev) => (prev ? ({ ...prev, ...patch } as User) : prev));
+        void remoteUpdateProfile(currentUser.id, patch);
+        return;
+      }
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? ({ ...u, ...patch } as User) : u)));
     },
   };
