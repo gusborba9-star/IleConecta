@@ -3,6 +3,7 @@ import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { Heart, MessageCircle, Share2, MoreHorizontal, Send } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
 import RitualCard from "./RitualCard";
@@ -13,7 +14,8 @@ export default function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false);
 
   const author = users.find((u) => u.id === post.houseId);
-  const isHouse = author?.type === "commercial";
+  const houseAuthor = author?.type === "commercial" ? author : null;
+  const isHouse = houseAuthor !== null;
   const liked = currentUser ? post.likes.includes(currentUser.id) : false;
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
 
@@ -28,7 +30,7 @@ export default function PostCard({ post }: { post: Post }) {
             <Link to={isHouse ? `/casa/${author?.id}` : "#"} className="font-semibold hover:underline">
               {author?.name}
             </Link>
-            {isHouse && (author as any)?.verified && <Badge tone="primary">Verificada</Badge>}
+            {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>
                 {post.kind === "buzios" ? "Búzios" : post.kind === "trabalho" ? "Trabalho" : post.kind === "ritual" ? "Ritual" : ""}
@@ -36,7 +38,7 @@ export default function PostCard({ post }: { post: Post }) {
             )}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isHouse ? `${(author as any).city} · ${(author as any).category}` : "Cliente"} · {timeAgo(post.createdAt)}
+            {isHouse ? `${houseAuthor!.city} · ${houseAuthor!.category}` : "Cliente"} · {timeAgo(post.createdAt)}
           </div>
         </div>
         <button className="h-8 w-8 rounded-full hover:bg-muted grid place-items-center text-muted-foreground">
@@ -125,7 +127,7 @@ function ActionBtn({
   activeClass,
   onClick,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   active?: boolean;
   activeClass?: string;
