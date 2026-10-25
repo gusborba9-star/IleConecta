@@ -45,9 +45,9 @@ test("busca pelo campo global abre resultados e preserva a consulta após recarg
   await search.fill("xango");
   await search.press("Enter");
   await expect(page).toHaveURL(/\/descobrir\?q=xango/);
-  await expect(page.getByText("Terreiro de Xangô Airá")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ })).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Terreiro de Xangô Airá")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ })).toBeVisible();
 });
 
 test("publicação aparece no feed e permanece após recarga", async ({ page }) => {
@@ -55,9 +55,9 @@ test("publicação aparece no feed e permanece após recarga", async ({ page }) 
   const content = "E2E publicação persistida 2026";
   await page.getByPlaceholder(/Compartilhe um trabalho/).fill(content);
   await page.getByRole("button", { name: "Publicar" }).click();
-  await expect(page.getByText(content)).toBeVisible();
+  await expect(page.locator("section").getByText(content)).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText(content)).toBeVisible();
+  await expect(page.locator("section").getByText(content)).toBeVisible();
 });
 
 test("mensagem enviada aparece na conversa e persiste após recarga", async ({ page }) => {
@@ -66,9 +66,9 @@ test("mensagem enviada aparece na conversa e persiste após recarga", async ({ p
   const content = "E2E mensagem persistida 2026";
   await page.getByPlaceholder("Escreva sua mensagem...").fill(content);
   await page.getByRole("button", { name: "Enviar mensagem" }).click();
-  await expect(page.getByText(content)).toBeVisible();
+  await expect(page.locator("section").getByText(content)).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText(content)).toBeVisible();
+  await expect(page.locator("section").getByText(content)).toBeVisible();
 });
 
 test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escape", async ({ page }) => {
@@ -93,7 +93,7 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
   await page.getByRole("button", { name: "Simular reserva" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Simular reserva" }).click();
   await expect(page.getByText("Reserva demonstrativa registrada")).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "Fechar" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Fechar", exact: true }).click();
   await page.goto("/perfil", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada")).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -103,7 +103,9 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
 test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ page }) => {
   await login(page, "oxum@ile.app");
   await page.goto("/impulsionar", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Simular" }).first().click();
+  const simulate = page.getByRole("button", { name: "Simular" }).first();
+  await simulate.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await simulate.click();
   await expect(page.getByText(/Impulsionamento demonstrativo:/)).toBeVisible();
   await page.evaluate(() => {
     const key = "ile-conecta:v1:users";
