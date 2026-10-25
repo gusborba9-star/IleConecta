@@ -1,0 +1,15 @@
+import type { Conversation, Message } from "@/types";
+
+export function normalizeDemoEmail(email: string): string;
+export function isPromotionActive(expiresAt?: string, now?: number): boolean;
+export function canSendDemoMessage(
+  senderId: string | null | undefined,
+  recipientId: string | null | undefined,
+  text: string,
+  recipientExists: boolean
+): boolean;
+export function mergeDemoMessage(
+  conversations: Conversation[],
+  message: Message,
+  newConversation: Conversation
+): Conversation[];

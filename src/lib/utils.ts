@@ -12,11 +12,7 @@ export function formatBRL(value: number) {
   });
 }
 
-export function isPromotionActive(expiresAt?: string): boolean {
-  if (!expiresAt) return false;
-  const expiry = Date.parse(expiresAt);
-  return Number.isFinite(expiry) && expiry > Date.now();
-}
+export { isPromotionActive } from "@/lib/demoState";
 
 export function timeAgo(iso: string) {
   const d = new Date(iso).getTime();

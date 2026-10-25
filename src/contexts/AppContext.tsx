@@ -3,6 +3,7 @@ import type { AccountType, Conversation, HouseUser, Message, Post, Purchase, Rit
 import { loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
+import { canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 
 interface AppState {
   currentUser: User | null;
@@ -68,7 +69,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     conversations,
     purchases,
     login(email, password) {
-      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedEmail = normalizeDemoEmail(email);
       const u = users.find((x) => x.email.trim().toLowerCase() === normalizedEmail && x.password === password);
       if (u) setCurrentUserId(u.id);
       return u ?? null;
@@ -77,7 +78,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserId(null);
     },
     register(data) {
-      const normalizedEmail = data.email.trim().toLowerCase();
+      const normalizedEmail = normalizeDemoEmail(data.email);
       if (!normalizedEmail || users.some((existing) => existing.email.trim().toLowerCase() === normalizedEmail)) {
         return null;
       }
@@ -173,9 +174,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     sendMessage(toUserId, text) {
       const normalizedText = text.trim();
-      if (!currentUser || !normalizedText || toUserId === currentUser.id || !users.some((u) => u.id === toUserId)) {
+      if (!canSendDemoMessage(currentUser?.id, toUserId, normalizedText, users.some((u) => u.id === toUserId))) {
         return false;
       }
+      if (!currentUser) return false;
 
       const now = new Date().toISOString();
       const message: Message = {
@@ -185,34 +187,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         text: normalizedText,
         createdAt: now,
       };
-
-      const created: Conversation = {
+      const newConversation: Conversation = {
         id: uid("conv"),
         participantIds: [currentUser.id, toUserId],
         messages: [message],
         updatedAt: now,
       };
 
-      setConversations((prev) => {
-        const existing = prev.find(
-          (conversation) =>
-            conversation.participantIds.length === 2 &&
-            conversation.participantIds.includes(currentUser.id) &&
-            conversation.participantIds.includes(toUserId)
-        );
-
-        if (existing) {
-          const updated: Conversation = {
-            ...existing,
-            messages: [...existing.messages, message],
-            updatedAt: now,
-          };
-          return prev.map((conversation) => (conversation.id === existing.id ? updated : conversation));
-        }
-
-        return [created, ...prev];
-      });
-
+      setConversations((prev) => mergeDemoMessage(prev, message, newConversation));
       return true;
     },
     getConversationWith(otherId) {

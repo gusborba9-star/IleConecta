@@ -60,6 +60,10 @@ jobs:
         id: typescript
         continue-on-error: true
         run: npx tsc -b
+      - name: Domain tests
+        id: domain_tests
+        continue-on-error: true
+        run: npm test
       - name: Inventory all dependency advisories
         id: full_audit
         continue-on-error: true
@@ -87,6 +91,7 @@ jobs:
           BUILD: ${{ steps.build.outcome }}
           LINT: ${{ steps.lint.outcome }}
           TYPESCRIPT: ${{ steps.typescript.outcome }}
+          DOMAIN_TESTS: ${{ steps.domain_tests.outcome }}
           AUDIT: ${{ steps.audit.outcome }}
         run: |
           {
@@ -98,9 +103,10 @@ jobs:
             echo "| Production build | $BUILD |"
             echo "| Lint | $LINT |"
             echo "| TypeScript | $TYPESCRIPT |"
+            echo "| Domain tests | $DOMAIN_TESTS |"
             echo "| npm audit --omit=dev | $AUDIT |"
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$CLEAN_INSTALL" != "success" ] || [ "$BUILD" != "success" ] || [ "$LINT" != "success" ] || [ "$TYPESCRIPT" != "success" ] || [ "$AUDIT" != "success" ]; then
+          if [ "$CLEAN_INSTALL" != "success" ] || [ "$BUILD" != "success" ] || [ "$LINT" != "success" ] || [ "$TYPESCRIPT" != "success" ] || [ "$DOMAIN_TESTS" != "success" ] || [ "$AUDIT" != "success" ]; then
             echo "One or more required repository checks failed. See individual step logs and summary."
             exit 1
           fi
