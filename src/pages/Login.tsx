@@ -57,12 +57,12 @@ export default function Login() {
           </div>
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <Label>E-mail</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Label htmlFor="login-email">E-mail</Label>
+              <Input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
-              <Label>Senha</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Label htmlFor="login-password">Senha</Label>
+              <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <Button className="w-full" size="lg" type="submit">Entrar</Button>
           </form>
