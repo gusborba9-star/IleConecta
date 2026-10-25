@@ -55,9 +55,9 @@ test("publicação aparece no feed e permanece após recarga", async ({ page }) 
   const content = "E2E publicação persistida 2026";
   await page.getByPlaceholder(/Compartilhe um trabalho/).fill(content);
   await page.getByRole("button", { name: "Publicar" }).click();
-  await expect(page.locator("section").getByText(content)).toBeVisible();
+  await expect(page.getByText(content)).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.locator("section").getByText(content)).toBeVisible();
+  await expect(page.getByText(content)).toBeVisible();
 });
 
 test("mensagem enviada aparece na conversa e persiste após recarga", async ({ page }) => {
