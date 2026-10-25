@@ -260,20 +260,20 @@ Esta seção **substitui o estado anterior** das seções 10–11 quanto ao lock
 
 ### CI reproduzível após correção
 
-**Run #7:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874)  
-Node `v20.20.2`; npm `10.8.2`; Ubuntu runner. O workflow fez checkout da merge ref da PR e executou as verificações no mesmo ambiente.
+**Run #8:** [GitHub Actions — Repository audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224931236)  
+Node `v20.20.2`; npm `10.8.2`; Ubuntu runner. A PR #3 head observado para esta execução era `2cebabc313976235a44122351537fa61d8534669`; o workflow fez checkout da merge ref `2d0b458f62d21e65513a63ecbfc57a4e4324d6b9` e executou as verificações no mesmo ambiente. O SHA atual da PR deve sempre ser confirmado diretamente no GitHub, pois este relatório também recebe commits documentais.
 
 | Verificação | Resultado observado |
 |---|---|
 | `npm ci` | **PASSOU** sem fallback diagnóstico |
-| `npm run build` | **PASSOU**, Vite build em 3,17 s |
+| `npm run build` | **PASSOU**, Vite build em 2,17 s |
 | `npm run lint` | **PASSOU**, 0 erros e 8 avisos de Fast Refresh/exportações mistas |
 | `npx tsc -b` | **PASSOU** |
 | Inventário completo de advisories | PASSOU como etapa de coleta; relatório JSON anexado como artefato |
 | `npm audit --omit=dev` | **FALHOU** por 6 vulnerabilidades moderadas remanescentes |
 | Gate final | **FALHOU corretamente** por auditoria de dependências; instalação, build, lint e TypeScript passaram |
 
-Artefato JSON completo: [full-dependency-audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874/artifacts/12611125750).
+Artefato JSON completo: [full-dependency-audit](https://github.com/gusborba9-star/IleConecta/actions/runs/40224931236/artifacts/12610792196).
 
 ### Resultado da triagem
 
