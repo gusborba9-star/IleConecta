@@ -6,6 +6,7 @@ import { Flame, User, Store } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { AccountType } from "@/types";
+import type { LucideIcon } from "lucide-react";
 
 export default function Register() {
   const { register } = useApp();
@@ -96,7 +97,7 @@ export default function Register() {
   );
 }
 
-function TypeCard({ active, onClick, icon: Icon, title, desc }: any) {
+function TypeCard({ active, onClick, icon: Icon, title, desc }: { active: boolean; onClick: () => void; icon: LucideIcon; title: string; desc: string }) {
   return (
     <button
       type="button"
