@@ -92,7 +92,7 @@
 - Não foram localizados critérios de aceitação aprovados, suite formal de testes ou ADRs.
 - Não foi comprovado backend funcional, schema Supabase, autenticação segura, APIs, webhooks, ledger, conciliação ou repasses.
 - Nenhum requisito está VALIDADO nesta matriz.
-- EXEC-01 não tem evidência de execução dos comandos de build; EXEC-02 não foi iniciada.
+- **Nota histórica corrigida:** o diagnóstico inicial de EXEC-01 não tinha evidência de build; a validação posterior da branch isolada está registrada na [PR #3](https://github.com/gusborba9-star/IleConecta/pull/3), [CI run #7](https://github.com/gusborba9-star/IleConecta/actions/runs/40224806874), com `npm ci`, build, lint e TypeScript aprovados no mesmo runner. A auditoria de dependências ainda reporta riscos e testes funcionais/Preview continuam pendentes; EXEC-02 não foi iniciada.
 
 
 ## DOC-03 — Requisitos financeiros e evidências de aceite
