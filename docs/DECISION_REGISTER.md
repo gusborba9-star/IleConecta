@@ -78,11 +78,12 @@ Os IDs `PROP-001` a `PROP-007` identificam propostas no registro de decisões; o
 | D-014 | Reembolsos, contestações e saldo real devem ser verificados antes do repasse; contestação pendente bloqueia valor afetado. | Implementação exige estados explícitos, ledger, idempotência e trilha de auditoria. |
 | D-015 | Asaas é prioridade de avaliação, sem capacidade presumida. | Split, retenção, saldo, transferência, reembolso e escrow exigem comprovação oficial e Sandbox. |
 | D-016 | DOC-03 autoriza documentação e auditoria isolada, sem merge, pagamentos reais, produção, configuração Vercel/Supabase ou credenciais. | Qualquer etapa posterior exige ordem específica. |
+| D-017 | Arredondamento monetário: calcular a parcela da casa por half-up sobre 83% do bruto em centavos; calcular a comissão como bruto menos parcela da casa, garantindo conservação exata dos centavos e protegendo o direito da casa. | Regra determinística de especificação; implementação exige testes de fronteira. |
 
 ### E. Decisões ainda necessárias
 
 - **DEC-FIN-01:** definir a base dos 2% da reserva (valor bruto ou comissão de 17%), titularidade contábil, finalidade, conta/ledger, uso e liberação.
 - **DEC-FIN-02:** aprovar política contratual/jurídica de cancelamentos, reembolsos, chargebacks e recuperação de valores após repasse.
 - **DEC-PAY-01:** escolher desenho técnico apenas após comprovação da capacidade do Asaas no contrato e Sandbox; definir contingência se não houver retenção compatível.
-- **DEC-ROUND-01:** ratificar regra de arredondamento e distribuição de diferenças de centavos antes de produção; proposta técnica: half-up com reconciliação determinística que nunca reduza arbitrariamente o direito da casa.
+- **DEC-ROUND-01:** regra documental especificada em D-017/FIN-05: parcela da casa = half-up de 83% do bruto em centavos; comissão = bruto − parcela da casa. A implementação deve demonstrar invariantes por testes automatizados antes de qualquer lançamento.
 - **DEC-ARCH-01:** aprovar ledger, estados, política de idempotência, reconciliação, notificações e limites de autorização antes de implementação.
