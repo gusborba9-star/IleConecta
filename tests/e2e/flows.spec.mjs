@@ -4,7 +4,7 @@ const demoEmail = "mari@cliente.app";
 const demoPassword = "123456";
 
 async function login(page, email = demoEmail, password = demoPassword) {
-  await page.goto("/login");
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: "Entrar" }).click();
@@ -12,7 +12,7 @@ async function login(page, email = demoEmail, password = demoPassword) {
 }
 
 test("cadastro cria conta local e mantém sessão após recarga", async ({ page }) => {
-  await page.goto("/register");
+  await page.goto("/register", { waitUntil: "domcontentloaded" });
   const fields = page.locator("form input");
   await fields.nth(0).fill("Teste Persistência");
   await fields.nth(1).fill("teste.persistencia@example.test");
@@ -21,8 +21,8 @@ test("cadastro cria conta local e mantém sessão após recarga", async ({ page 
   await fields.nth(4).fill("PE");
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page).toHaveURL(/\/$/);
-  await page.reload();
-  await page.goto("/perfil");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto("/perfil", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Teste Persistência" })).toBeVisible();
   const persisted = await page.evaluate(() => ({
     users: JSON.parse(localStorage.getItem("ile-conecta:v1:users") || "[]"),
@@ -35,7 +35,7 @@ test("cadastro cria conta local e mantém sessão após recarga", async ({ page 
 test("login demo restaura a rota protegida após recarga", async ({ page }) => {
   await login(page);
   await expect(page.getByText("Momentos das casas")).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Momentos das casas")).toBeVisible();
 });
 
@@ -46,7 +46,7 @@ test("busca pelo campo global abre resultados e preserva a consulta após recarg
   await search.press("Enter");
   await expect(page).toHaveURL(/\/descobrir\?q=xango/);
   await expect(page.getByText("Terreiro de Xangô Airá")).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Terreiro de Xangô Airá")).toBeVisible();
 });
 
@@ -56,18 +56,18 @@ test("publicação aparece no feed e permanece após recarga", async ({ page }) 
   await page.getByPlaceholder(/Compartilhe um trabalho/).fill(content);
   await page.getByRole("button", { name: "Publicar" }).click();
   await expect(page.getByText(content)).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText(content)).toBeVisible();
 });
 
 test("mensagem enviada aparece na conversa e persiste após recarga", async ({ page }) => {
   await login(page);
-  await page.goto("/mensagens/casa_1");
+  await page.goto("/mensagens/casa_1", { waitUntil: "domcontentloaded" });
   const content = "E2E mensagem persistida 2026";
   await page.getByPlaceholder("Escreva sua mensagem...").fill(content);
   await page.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(page.getByText(content)).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText(content)).toBeVisible();
 });
 
@@ -81,8 +81,8 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
     target.date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     localStorage.setItem(key, JSON.stringify(rituals));
   });
-  await page.reload();
-  await page.goto("/rituais/rit_1");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto("/rituais/rit_1", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Simular reserva" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
@@ -94,15 +94,15 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
   await page.getByRole("dialog").getByRole("button", { name: "Simular reserva" }).click();
   await expect(page.getByText("Reserva demonstrativa registrada")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Fechar" }).click();
-  await page.goto("/perfil");
+  await page.goto("/perfil", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada")).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada")).toBeVisible();
 });
 
 test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ page }) => {
   await login(page, "oxum@ile.app");
-  await page.goto("/impulsionar");
+  await page.goto("/impulsionar", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Simular" }).first().click();
   await expect(page.getByText(/Impulsionamento demonstrativo:/)).toBeVisible();
   await page.evaluate(() => {
@@ -117,8 +117,8 @@ test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ pa
     house.boost = { ...(house.boost || {}), level: "cidade", expiresAt: expiredAt };
     localStorage.setItem(key, JSON.stringify(users));
   });
-  await page.reload();
-  await page.goto("/descobrir");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto("/descobrir", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Impulsionadas" })).toHaveCount(0);
 });
 
@@ -141,7 +141,7 @@ test("JSON persistido inválido é recuperado sem derrubar o login", async ({ pa
   });
   await login(page);
   await expect(page.getByText("Momentos das casas")).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Momentos das casas")).toBeVisible();
   const recovery = await page.evaluate(() => localStorage.getItem("ile-conecta:v1:recovery:users"));
   expect(recovery).toBe("{json-inválido");
