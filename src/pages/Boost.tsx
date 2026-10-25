@@ -1,7 +1,7 @@
 import { useApp } from "@/contexts/AppContext";
 import { boostCatalog, highlightCatalog } from "@/lib/mockData";
 import { Badge, Button, Card } from "@/components/base";
-import { formatBRL } from "@/lib/utils";
+import { formatBRL, isPromotionActive } from "@/lib/utils";
 import { Flame, Sparkles, TrendingUp, Star, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -30,11 +30,11 @@ export default function Boost() {
             <h1 className="font-display font-bold text-2xl">Impulsione sua casa</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Alcance mais fiéis e potencialize suas contratações. Escolha o alcance geográfico e o tempo de exibição.
+            Simule o alcance geográfico e o tempo de exibição. Esta demonstração não processa pagamentos nem compra mídia real.
           </p>
-          {currentUser.boost && (
+          {isPromotionActive(currentUser.boost?.expiresAt) && currentUser.boost && (
             <Badge tone="gold" className="mt-4">
-              <Sparkles className="h-3 w-3" /> Boost ativo: {currentUser.boost.level} até{" "}
+              <Sparkles className="h-3 w-3" /> Impulsionamento demonstrativo: {currentUser.boost.level} até{" "}
               {new Date(currentUser.boost.expiresAt).toLocaleDateString("pt-BR")}
             </Badge>
           )}
@@ -46,7 +46,7 @@ export default function Boost() {
           <Flame className="h-5 w-5 text-primary" />
           <h2 className="font-display font-bold text-xl">Planos de impulsionamento</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {(["cidade", "estado", "pais"] as const).map((level) => (
             <Card key={level} className="p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -79,10 +79,10 @@ export default function Boost() {
                         className="ml-3"
                         onClick={() => {
                           applyBoost(level, p.days);
-                          toast.success(`Casa impulsionada em nível ${level} por ${p.days} dias`);
+                          toast.success(`Simulação local: nível ${level} por ${p.days} dias. Nenhuma cobrança foi feita.`);
                         }}
                       >
-                        Contratar
+                        Simular
                       </Button>
                     </div>
                   ))}
@@ -97,7 +97,7 @@ export default function Boost() {
           <Star className="h-5 w-5 text-gold" />
           <h2 className="font-display font-bold text-xl">Destaques de marca</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {highlightCatalog.map((h) => (
             <Card key={h.scope} className="p-5 flex flex-col">
               <Badge tone="gold" className="self-start mb-2 capitalize">Destaque {h.scope}</Badge>
@@ -109,10 +109,10 @@ export default function Boost() {
                   variant="outline"
                   onClick={() => {
                     applyHighlight(h.scope as "local" | "cidade" | "pais", 15);
-                    toast.success(`Destaque ${h.scope} ativado por 15 dias`);
+                    toast.success(`Simulação local: destaque ${h.scope} por 15 dias. Nenhuma cobrança foi feita.`);
                   }}
                 >
-                  Ativar
+                  Simular
                 </Button>
               </div>
             </Card>
@@ -121,11 +121,11 @@ export default function Boost() {
       </section>
 
       <Card className="p-6">
-        <h2 className="font-display font-bold text-lg mb-3">Entrega paga da página</h2>
+        <h2 className="font-display font-bold text-lg mb-3">Entrega paga da página — indisponível</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Sua página da casa aparecerá diretamente no feed de usuários com interesses compatíveis.
+          Esta modalidade não está implementada. As estimativas de alcance abaixo são ilustrativas e não podem ser contratadas neste protótipo.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
           {[
             { name: "Entrega local", price: 19.9, reach: "500 usuários" },
             { name: "Entrega ampla", price: 59.9, reach: "5 mil usuários" },
@@ -136,7 +136,7 @@ export default function Boost() {
               <div className="font-display font-bold text-lg">{e.name}</div>
               <div className="flex items-center justify-between mt-3">
                 <div className="font-display font-bold text-primary text-xl">{formatBRL(e.price)}</div>
-                <Button size="sm" onClick={() => toast.success(`${e.name} contratada`)}>Contratar</Button>
+                <Button size="sm" disabled title="Entrega paga não implementada">Indisponível</Button>
               </div>
             </div>
           ))}

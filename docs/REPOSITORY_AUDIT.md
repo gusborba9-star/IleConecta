@@ -97,8 +97,8 @@ A conta conectada lista os projetos `ile-conecta`, `ile-conecta-tdfx`, `ile-cone
 | Casas/perfis/descoberta | Dados iniciais vêm de `src/lib/mockData.ts`; contexto fornece acesso local | Simulado com dados fictícios | Não comprova cadastro real, verificação de casa ou fonte persistente. |
 | Mensagens | Conversas e mensagens são atualizadas em estado local | Simulado/local | Sem entrega entre dispositivos, autorização server-side ou proteção de conteúdo. |
 | Reserva/compra de ritual | `src/components/ritual/RitualPurchaseModal.tsx` usa timer local, chama `buyRitual` e declara “Pagamento simulado no ambiente demo” | Simulada; sem provedor real | Não cobrar nem anunciar confirmação financeira real; capacidade/vagas não são transacionais no servidor. |
-| Comissão e repasse | Modal/contexto usam `ritual.platformFeePct` e aritmética JS com `toFixed(2)` | Demonstração incompatível com a nova regra aprovada | A execução financeira futura deve usar 17%/83%, centavos inteiros e backend; esta ordem não autoriza alterar o fluxo de pagamento. |
-| Boost/destaque | Atualizações locais no contexto | Simulado/local | Sem cobrança, autorização server-side ou expiração confiável. |
+| Comissão e repasse | O protótipo não deve calcular nem exibir divisão financeira como real; percentuais fictícios removidos do modelo local nesta correção | Não implementado; sem ledger, cobrança ou provedor | A implementação financeira futura deve seguir FIN-D03-01–FIN-D03-11, com centavos inteiros, ledger, idempotência e autorização específica. |
+| Boost/destaque | Atualizações locais no contexto; a interface agora ignora boosts expirados | Simulado/local | Sem cobrança ou autorização server-side; a expiração corrigida vale apenas para o estado local do navegador. |
 | Rotas protegidas | `src/App.tsx` usa componente `Protected` baseado em `currentUser` no frontend | Proteção de navegação somente | Não equivale a autorização; todo acesso a dados sensíveis precisa ser validado no servidor. |
 | Backend/API/banco | Nenhuma API própria, migrations Supabase ou Edge Functions foi confirmada no snapshot examinado | Não localizado nesta árvore | Não declarar backend operacional; validar em nova inspeção quando arquitetura for aprovada. |
 | Acessibilidade/responsividade e console | Não executados em navegador automatizado nesta sessão | Não validado | Requer smoke tests em viewport móvel/desktop, console sem erros, teclado, foco e leitores de tela. |
@@ -300,3 +300,128 @@ Advisories relevantes no relatório:
 ### Estado honesto após a remediação
 
 A instalação limpa reproduzível foi demonstrada. Build, lint e TypeScript passaram no mesmo runner e na mesma execução. A auditoria de dependências continua com riscos moderados e um advisory alto no inventário completo relacionado ao tooling Vite. Por isso, a PR é **apresentável para revisão do CTO, mas não é declarada livre de vulnerabilidades nem pronta para lançamento**. Nenhuma PR foi mesclada e nenhuma infraestrutura/integração financeira foi configurada.
+
+
+## 14. Correção integrada de fluxos locais — branch `fix/integrated-demo-flows`
+
+Esta entrega corrige inconsistências de comportamento no protótipo sem declarar o produto operacional e sem iniciar backend, infraestrutura ou pagamentos reais.
+
+- Cadastro local: e-mail normalizado e duplicidades detectadas antes de criar uma conta demonstrativa.
+- Mensagens: removido o temporizador que criava uma mensagem vazia para o próprio usuário; envio agora rejeita texto vazio, destinatário inexistente e autoenvio, e atualiza conversas com setter funcional para reduzir perda de atualização por estado obsoleto.
+- Busca: a busca do cabeçalho navega para Descobrir e aplica o termo na filtragem.
+- Impulsionamento: os componentes de descoberta, página da casa e trilho lateral só consideram ativo um boost cuja expiração ainda não passou.
+- Reserva/financeiro: removidos percentuais fictícios do modelo de ritual e do cálculo local; o fluxo é identificado como simulação e não afirma que houve pagamento, notificação à casa ou reserva real.
+- Ações sem implementação: controles identificados como indisponíveis foram desabilitados em vez de parecerem operações concluídas.
+- Aviso global e avisos de autenticação esclarecem que o estado é local, não há autenticação server-side nem sincronização entre usuários e não se devem inserir credenciais reais.
+
+**Limite de segurança:** contas e senhas ainda fazem parte do modelo local de demonstração. O aviso reduz o risco de uso indevido, mas não substitui a implementação autorizada de identidade e autorização server-side. Nenhuma credencial real deve ser usada.
+
+**Validação CI no SHA `7ed07cdd62a0dc493919979cd8712ba029260a90`:** [Run #30](https://github.com/gusborba9-star/IleConecta/actions/runs/40229989125). `npm ci` passou; build passou em 3,30 s; lint passou com 0 erros e 8 avisos; `npx tsc -b` passou; `npm test` passou em 5/5 testes de domínio. O gate final falhou exclusivamente porque `npm audit --omit=dev` encontrou 6 vulnerabilidades moderadas: cadeia `postcss-selector-parser` e React Router 6. O inventário completo permanece em 9 entradas (8 moderadas, 1 alta, 0 críticas). Nenhum teste de navegador/E2E foi executado; busca, mensagens, expiração e reserva ainda precisam de validação de ponta a ponta. O SHA de CI é o commit testado; uma atualização documental posterior exige nova execução para afirmar validação do HEAD mais recente.
+
+
+## 15. Segunda entrega integrada — ciclo de simulação de reserva
+
+Revisão focada no caminho `Rituais → Detalhe → Modal → AppContext → Perfil`.
+
+### Causa raiz
+A regra de elegibilidade para simular reserva estava distribuída entre a tela e o contexto. O contexto aceitava qualquer tipo de conta e não verificava se o evento já havia começado; a interface só bloqueava vagas esgotadas. O modal também usava um temporizador artificial para executar uma operação síncrona, aumentando a complexidade e mantendo estado de conclusão ao reabrir.
+
+### Correção
+- Adicionada a função de domínio `canReserveDemoRitual`, compartilhada entre detalhe, modal e contexto.
+- A simulação agora exige conta do tipo `personal`, data válida no futuro e pelo menos uma vaga disponível.
+- O contexto revalida a elegibilidade antes de gravar a simulação, em vez de confiar apenas no botão da interface.
+- Removido o temporizador artificial; a operação local é síncrona e o modal reinicia o estado de conclusão ao abrir uma nova simulação.
+- Adicionados testes de domínio para perfil comercial, ausência de perfil, evento passado, data inválida e ausência de vagas.
+
+### Limites
+A reserva continua sendo apenas um registro local; a regra não oferece bloqueio transacional, reserva de vaga concorrente, sincronização entre abas/usuários ou confirmação real. Esses comportamentos exigem backend e não são simulados como se existissem.
+
+### Validação CI no SHA `4c5be44bdb0f6f42039db5c0d18f1b4264f3eace`
+[Run #32](https://github.com/gusborba9-star/IleConecta/actions/runs/40232069665). `npm ci`, build (2,08 s), lint (0 erros; 8 avisos), `npx tsc -b` e 6/6 testes de domínio passaram. `npm audit --omit=dev` encontrou 6 vulnerabilidades moderadas e manteve o gate geral em falha. Testes de navegador ainda não foram executados.
+
+
+## 16. Terceira entrega integrada — descoberta global e navegação
+
+### Causa raiz
+O campo global anunciava busca por casas, rituais e orixás, mas encaminhava todas as consultas para um filtro que só examinava nome/cidade de casas. Além disso, a comparação não ignorava acentos e a tela podia exibir um estado vazio de casas mesmo quando havia rituais correspondentes. A página de login também navegava durante a renderização, e o botão de criar story não executava nenhuma ação.
+
+### Correção
+- A busca de Descobrir agora compara nome, cidade, estado, categoria, descrição e tags de casas e compara título, descrição, categoria e casa responsável dos rituais.
+- Normalização de busca remove diacríticos e espaços extras, permitindo consultas como `sao paulo` e `xango`.
+- O estado vazio global só aparece quando não há casas nem rituais correspondentes.
+- O redirecionamento da página de login foi movido para `useEffect`, evitando navegação como efeito colateral do render.
+- O botão de stories sem implementação foi desabilitado e identificado.
+- Publicações de pessoas deixam de usar links `#` que provocavam navegação para o topo; a própria publicação pode levar ao perfil do autor, quando disponível.
+- Foram adicionados testes de normalização e correspondência de busca.
+
+### Validação CI no SHA `90c248b2447a00ab43d50a06475fecbca5e6c26f`
+[Run #34](https://github.com/gusborba9-star/IleConecta/actions/runs/40232438763):
+- `npm ci`: PASS.
+- Build: PASS, 3,26 s.
+- Lint: PASS, 0 erros e 8 avisos.
+- TypeScript: PASS.
+- Testes de domínio: PASS, 7/7.
+- `npm audit --omit=dev`: FAIL, 6 vulnerabilidades moderadas; gate geral FAIL.
+
+### Limites
+Não foi executado teste de navegador. A busca foi validada por função de domínio e build, não por interação real de rota/campo. A navegação login → feed, stories desabilitados, criação de publicação, curtidas/comentários, persistência após recarga e layout responsivo continuam sem prova E2E.
+
+
+## 17. Quarta entrega integrada — integridade de referências no perfil
+
+### Causa raiz
+A lista de reservas demonstrativas em `Profile.tsx` usava uma asserção de não-nulidade para localizar o ritual (`rituals.find(...)!`). Como o estado é persistido localmente e pode sobreviver a mudanças de dados/versão, uma reserva antiga sem ritual correspondente poderia provocar erro de renderização e quebrar a página de perfil.
+
+### Correção
+- A lista agora trata explicitamente a ausência do ritual e renderiza um registro residual sem tentar acessar propriedades inexistentes.
+- A ausência da casa responsável também é tratada sem gerar rota `/mensagens/undefined`.
+- O valor e a data do registro local são preservados como histórico demonstrativo, sem alegar que a reserva continua válida.
+
+### Validação CI no SHA `60468827811b04bf73b814df107e074ce7071a76`
+[Run #36](https://github.com/gusborba9-star/IleConecta/actions/runs/40232827299):
+- `npm ci`: PASS.
+- Build: PASS, 3,24 s.
+- Lint: PASS, 0 erros e 8 avisos.
+- TypeScript: PASS.
+- Testes de domínio: PASS, 7/7.
+- `npm audit --omit=dev`: FAIL, 6 vulnerabilidades moderadas; gate geral FAIL.
+
+### Limites
+A correção evita o crash de renderização para uma referência ausente, mas não adiciona validação de esquema completa a `localStorage`. Dados persistidos malformados, migração de versões, quota, armazenamento indisponível e sincronização entre abas continuam sem testes de integração.
+
+
+## 18. Validação integrada — persistência, navegador, UI compartilhada e dependências
+
+### Persistência: causas e correções
+- `src/lib/storage.ts` agora delega a `src/lib/storageCore.js`: JSON inválido ou incompatível com o esquema retorna fallback seguro, guarda uma cópia de recuperação quando possível e remove a chave inválida do caminho de leitura.
+- `saveKey` e `clearAll` retornam sucesso/falha em vez de ocultar o resultado. `AppContext` registra aviso quando uma gravação não funciona.
+- `src/lib/persistedState.js` valida estrutura e relações entre usuários, casas, rituais, publicações, stories, conversas, mensagens, reservas e sessão. IDs órfãos e duplicados fazem o registro persistido ser rejeitado, evitando que referências inválidas entrem no estado ativo.
+- Testes adicionados: `tests/storage.test.mjs`, `tests/persisted-state.test.mjs` e `tests/security-floor.test.mjs`.
+
+### Fluxos reais de navegador
+- `playwright.config.mjs` fixa a configuração e usa servidor Vite local, sem configurar serviços de produção.
+- `tests/e2e/flows.spec.mjs` cobre nove cenários com recarga: cadastro/sessão, login, busca global, publicação, mensagens, reserva demonstrativa, fechamento de modal com Escape, expiração de impulsionamento, layout móvel e recuperação de JSON inválido.
+- A execução anterior no SHA `45877421e3fcb352cc70ec971da5e2041d58e050` expôs três defeitos nos próprios testes e na disposição dos cartões: seletores ambíguos, texto repetido no perfil e cartões de impulsionamento estreitos na coluna central. Os seletores foram desambiguados e a grade de impulsionamento passou a usar duas colunas em telas grandes antes de chegar a três em telas muito largas. O run #71 do SHA `c6606c583533f7f55fb99603ff1c354488a41059` foi interrompido por uma atualização documental subsequente; nenhum resultado E2E é atribuído àquele SHA. O HEAD atual precisa de um run completo próprio antes de se declarar E2E validado.
+
+### Componentes compartilhados examinados e correções
+- `src/components/base/index.tsx` — modal agora usa semântica de diálogo, foco inicial, contenção de Tab, Escape, restauração do foco e bloqueio/restauração de scroll do body.
+- `src/components/ui/dialog.tsx`, `alert-dialog.tsx` e `sheet.tsx` — conteúdo limitado à altura disponível e rolável em viewports baixos.
+- `Login.tsx` e `Register.tsx` — labels associados aos controles por IDs.
+- `PostComposer.tsx` e `Messages.tsx` — nomes acessíveis para campo de publicação, entrada de mensagem e botão de envio.
+- `Boost.tsx` — grade responsiva ajustada à largura real da coluna principal com navegação lateral e painel direito.
+- Os primitivos Radix compartilhados já fornecem controles de foco/teclado; não foram reescritos. O restante de `src/components/ui/**` não foi auditado arquivo por arquivo.
+
+### Segurança de dependências: bloqueador independente
+- `postcss-selector-parser` foi fixado em `6.1.5` com override restrito à dependência `@tailwindcss/typography`, cujo manifesto publicado fixa `6.0.10`. A versão `6.1.5` é a correção compatível da linha 6.x; `npm ci` e o teste de piso de segurança passaram. O relatório de `npm audit` ainda sinaliza `<7.1.6` porque a faixa do aviso não reconhece esse backport. Não ocultar nem remover esse aviso do gate.
+- `react-router` / `react-router-dom` continuam em 6.30.6. Os avisos GHSA-wrjc-x8rr-h8h6 e GHSA-337j-9hxr-rhxg indicam correção a partir de 7.18.0; o `npm audit` sugere 7.18.4, que é major. Nenhuma migração major foi aplicada sem uma entrega de compatibilidade dedicada.
+- A cadeia Vite / `launch-editor` mantém uma vulnerabilidade alta, GHSA-fx2h-pf6j-xcff, além de avisos moderados; o fix sugerido pelo audit é Vite 8.3.5, também major. A atualização permanece pendente de migração e validação próprias.
+- Relatório integral do CI: 9 vulnerabilidades (8 moderadas, 1 alta); `npm audit --omit=dev`: 6 moderadas. O gate continua falhando corretamente.
+
+### Pendências explícitas
+- Aguardar e registrar o resultado final de E2E no SHA atual; não declarar fluxo integral validado antes disso.
+- Auditar individualmente `src/hooks/**`, `src/App.css`, `src/index.css`, `tailwind.config.ts`, `postcss.config.js`, `tsconfig*.json`, assets, `public/**` e os componentes restantes de `src/components/ui/**`.
+- Ainda não foram validados sincronização entre abas, migração de esquemas antigos, quota e falhas persistentes de armazenamento com feedback visual, foco em todos os formulários, navegação responsiva de todas as rotas ou todos os estados de erro.
+- Stories, seguir casas, edição completa de perfil, notificações e criação completa de rituais continuam incompletos/indisponíveis. Não há backend provado, autenticação server-side, ledger, webhook, pagamentos ou repasses reais.
+- Regras financeiras de 17%/83%, reserva de 2% e retenção de 72h continuam sem implementação financeira real; não confundir simulação local com conformidade de produção.
+
+A revisão integral continua **NÃO CONCLUÍDA**.

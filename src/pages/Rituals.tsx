@@ -31,7 +31,7 @@ export default function Rituals() {
           <h1 className="font-display font-bold text-2xl">Rituais & Trabalhos</h1>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Encontre rituais coletivos e trabalhos personalizados oferecidos pelas casas. Vagas atualizadas em tempo real.
+          Encontre rituais coletivos e trabalhos personalizados oferecidos pelas casas. Dados de demonstração; disponibilidade não é sincronizada entre usuários.
         </p>
       </Card>
 

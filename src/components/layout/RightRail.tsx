@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card } from "@/components/base";
 import { Flame, Sparkles, Star } from "lucide-react";
-import { formatBRL } from "@/lib/utils";
+import { formatBRL, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
 
 export default function RightRail() {
   const { users, rituals, conversations, currentUser } = useApp();
 
   const promoted = users
-    .filter((u): u is HouseUser => u.type === "commercial" && Boolean(u.boost))
+    .filter((u): u is HouseUser => u.type === "commercial" && isPromotionActive(u.boost?.expiresAt))
     .slice(0, 3);
 
   const hotRituals = rituals
@@ -28,7 +28,7 @@ export default function RightRail() {
           <div className="flex items-center gap-2 font-display font-bold">
             <Flame className="h-4 w-4 text-primary" /> Casas em destaque
           </div>
-          <Badge tone="gold">Impulsionadas</Badge>
+          <Badge tone="gold">Demonstração</Badge>
         </div>
         <div className="space-y-3">
           {promoted.map((h) => (
@@ -40,7 +40,7 @@ export default function RightRail() {
                   {h.city}, {h.state} · {h.category}
                 </div>
               </div>
-              <Badge tone="primary" className="capitalize">{h.boost?.level}</Badge>
+              <Badge tone="primary" className="capitalize">Simulado · {h.boost?.level}</Badge>
             </Link>
           ))}
         </div>

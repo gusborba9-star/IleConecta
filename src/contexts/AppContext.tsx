@@ -3,6 +3,16 @@ import type { AccountType, Conversation, HouseUser, Message, Post, Purchase, Rit
 import { loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
+import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
+import {
+  isAuthState,
+  isConversationsState,
+  isPostsState,
+  isPurchasesState,
+  isRitualsState,
+  isStoriesState,
+  isUsersState,
+} from "@/lib/persistedState.js";
 
 interface AppState {
   currentUser: User | null;
@@ -23,7 +33,7 @@ interface AppState {
     state: string;
     country: string;
     category?: string;
-  }) => User;
+  }) => User | null;
   createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Post;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
   toggleLike: (postId: string) => void;
@@ -31,7 +41,7 @@ interface AppState {
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
   applyHighlight: (scope: "local" | "cidade" | "pais", days: number) => void;
-  sendMessage: (toUserId: string, text: string) => Conversation;
+  sendMessage: (toUserId: string, text: string) => boolean;
   getConversationWith: (otherId: string) => Conversation | null;
   getHouse: (id: string) => HouseUser | null;
   getUser: (id: string) => User | null;
@@ -41,21 +51,27 @@ interface AppState {
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<User[]>(() => loadKey("users", seedUsers));
-  const [posts, setPosts] = useState<Post[]>(() => loadKey("posts", seedPosts));
-  const [stories, setStories] = useState<Story[]>(() => loadKey("stories", seedStories));
-  const [rituals, setRituals] = useState<Ritual[]>(() => loadKey("rituals", seedRituals));
-  const [conversations, setConversations] = useState<Conversation[]>(() => loadKey("conversations", seedConversations));
-  const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", []));
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null));
+  const [users, setUsers] = useState<User[]>(() => loadKey("users", seedUsers, isUsersState));
+  const [rituals, setRituals] = useState<Ritual[]>(() => loadKey("rituals", seedRituals, (value): value is Ritual[] => isRitualsState(value, users)));
+  const [posts, setPosts] = useState<Post[]>(() => loadKey("posts", seedPosts, (value): value is Post[] => isPostsState(value, users, rituals)));
+  const [stories, setStories] = useState<Story[]>(() => loadKey("stories", seedStories, (value): value is Story[] => isStoriesState(value, users)));
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadKey("conversations", seedConversations, (value): value is Conversation[] => isConversationsState(value, users)));
+  const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", [], (value): value is Purchase[] => isPurchasesState(value, users, rituals)));
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null, (value): value is string | null => isAuthState(value, users)));
 
-  useEffect(() => saveKey("users", users), [users]);
-  useEffect(() => saveKey("posts", posts), [posts]);
-  useEffect(() => saveKey("stories", stories), [stories]);
-  useEffect(() => saveKey("rituals", rituals), [rituals]);
-  useEffect(() => saveKey("conversations", conversations), [conversations]);
-  useEffect(() => saveKey("purchases", purchases), [purchases]);
-  useEffect(() => saveKey("auth", currentUserId), [currentUserId]);
+  const persist = (key: string, value: unknown) => {
+    if (!saveKey(key, value)) {
+      console.warn(`Ilê Conecta: não foi possível persistir "${key}" neste navegador.`);
+    }
+  };
+
+  useEffect(() => persist("users", users), [users]);
+  useEffect(() => persist("posts", posts), [posts]);
+  useEffect(() => persist("stories", stories), [stories]);
+  useEffect(() => persist("rituals", rituals), [rituals]);
+  useEffect(() => persist("conversations", conversations), [conversations]);
+  useEffect(() => persist("purchases", purchases), [purchases]);
+  useEffect(() => persist("auth", currentUserId), [currentUserId]);
 
   const currentUser = useMemo(() => users.find((u) => u.id === currentUserId) || null, [users, currentUserId]);
 
@@ -68,7 +84,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     conversations,
     purchases,
     login(email, password) {
-      const u = users.find((x) => x.email.toLowerCase() === email.toLowerCase() && x.password === password);
+      const normalizedEmail = normalizeDemoEmail(email);
+      const u = users.find((x) => x.email.trim().toLowerCase() === normalizedEmail && x.password === password);
       if (u) setCurrentUserId(u.id);
       return u ?? null;
     },
@@ -76,11 +93,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserId(null);
     },
     register(data) {
+      const normalizedEmail = normalizeDemoEmail(data.email);
+      if (!normalizedEmail || users.some((existing) => existing.email.trim().toLowerCase() === normalizedEmail)) {
+        return null;
+      }
       const base = {
         id: uid(data.type === "commercial" ? "casa" : "user"),
-        email: data.email,
+        email: normalizedEmail,
         password: data.password,
-        name: data.name,
+        name: data.name.trim(),
         city: data.city,
         state: data.state,
         country: data.country,
@@ -142,16 +163,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     buyRitual(ritualId) {
       if (!currentUser) return null;
       const rit = rituals.find((r) => r.id === ritualId);
-      if (!rit) return null;
-      if (rit.vagasVendidas >= rit.vagasTotal) return null;
-      const fee = +(rit.price * (rit.platformFeePct / 100)).toFixed(2);
+      if (!rit || !canReserveDemoRitual(currentUser.type, rit.date, rit.vagasTotal - rit.vagasVendidas)) return null;
       const purchase: Purchase = {
-        id: uid("pur"),
+        id: uid("demo_reservation"),
         ritualId,
         userId: currentUser.id,
         amount: rit.price,
-        fee,
         createdAt: new Date().toISOString(),
+        mode: "demo",
       };
       setPurchases((prev) => [purchase, ...prev]);
       setRituals((prev) => prev.map((r) => (r.id === ritualId ? { ...r, vagasVendidas: r.vagasVendidas + 1 } : r)));
@@ -168,25 +187,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id && u.type === "commercial" ? { ...u, highlight: { scope, expiresAt } } : u)));
     },
     sendMessage(toUserId, text) {
-      if (!currentUser) throw new Error("no user");
-      const now = new Date().toISOString();
-      const existing = conversations.find(
-        (c) => c.participantIds.includes(currentUser.id) && c.participantIds.includes(toUserId)
-      );
-      const msg: Message = { id: uid("m"), from: currentUser.id, to: toUserId, text, createdAt: now };
-      if (existing) {
-        const updated: Conversation = { ...existing, messages: [...existing.messages, msg], updatedAt: now };
-        setConversations((prev) => prev.map((c) => (c.id === existing.id ? updated : c)));
-        return updated;
+      const normalizedText = text.trim();
+      if (!canSendDemoMessage(currentUser?.id, toUserId, normalizedText, users.some((u) => u.id === toUserId))) {
+        return false;
       }
-      const created: Conversation = {
+      if (!currentUser) return false;
+
+      const now = new Date().toISOString();
+      const message: Message = {
+        id: uid("m"),
+        from: currentUser.id,
+        to: toUserId,
+        text: normalizedText,
+        createdAt: now,
+      };
+      const newConversation: Conversation = {
         id: uid("conv"),
         participantIds: [currentUser.id, toUserId],
-        messages: [msg],
+        messages: [message],
         updatedAt: now,
       };
-      setConversations((prev) => [created, ...prev]);
-      return created;
+
+      setConversations((prev) => mergeDemoMessage(prev, message, newConversation));
+      return true;
     },
     getConversationWith(otherId) {
       if (!currentUser) return null;

@@ -17,12 +17,12 @@ export default function StoryRail() {
   return (
     <div className="scroll-x -mx-1 px-1">
       <div className="flex gap-3 pb-1">
-        <button className="shrink-0 w-28 h-44 rounded-2xl border-2 border-dashed border-border bg-card hover:border-primary hover:bg-primary/5 transition flex flex-col items-center justify-center gap-2">
+        <button disabled title="Criação de stories ainda não está implementada" className="shrink-0 w-28 h-44 rounded-2xl border-2 border-dashed border-border bg-card opacity-60 cursor-not-allowed flex flex-col items-center justify-center gap-2">
           <div className="h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center">
             <Plus className="h-5 w-5" />
           </div>
           <div className="text-xs font-semibold text-center px-2">
-            {currentUser?.type === "commercial" ? "Novo story da casa" : "Publicar momento"}
+            {currentUser?.type === "commercial" ? "Story indisponível" : "Momento indisponível"}
           </div>
         </button>
         {items.map(({ story, house }) => (

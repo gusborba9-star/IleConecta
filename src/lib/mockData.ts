@@ -140,7 +140,6 @@ export const seedRituals: Ritual[] = [
     vagasVendidas: 214,
     mode: "hibrido",
     date: iso(-60 * 60 * 24 * 20),
-    platformFeePct: 12,
     category: "prosperidade",
   },
   {
@@ -154,7 +153,6 @@ export const seedRituals: Ritual[] = [
     vagasVendidas: 78,
     mode: "distancia",
     date: iso(-60 * 60 * 24 * 10),
-    platformFeePct: 10,
     category: "justiça",
   },
   {
@@ -168,7 +166,6 @@ export const seedRituals: Ritual[] = [
     vagasVendidas: 342,
     mode: "distancia",
     date: iso(-60 * 60 * 24 * 5),
-    platformFeePct: 15,
     category: "cura",
   },
   {
@@ -182,7 +179,6 @@ export const seedRituals: Ritual[] = [
     vagasVendidas: 187,
     mode: "presencial",
     date: iso(-60 * 60 * 24 * 15),
-    platformFeePct: 12,
     category: "proteção",
   },
   {
@@ -196,7 +192,6 @@ export const seedRituals: Ritual[] = [
     vagasVendidas: 41,
     mode: "hibrido",
     date: iso(-60 * 60 * 24 * 8),
-    platformFeePct: 10,
     category: "consulta",
   },
 ];
