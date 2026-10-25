@@ -1,94 +1,93 @@
-# Ilê Conecta — Regras financeiras
+# Ilê Conecta — Regras financeiras e ciclo de repasse
 
-> **Estado:** regras de alto nível confirmadas pela ordem do CTO DOC-02; especificação operacional incompleta e não aprovada como implementação. Este documento não confirma capacidade do Asaas nem constitui parecer jurídico/contábil.
+> **Autoridade:** decisão explícita do CTO na ordem DOC-03.  
+> **Estado:** ESPECIFICAÇÃO FINANCEIRA APROVADA; implementação, integração e validação operacional PENDENTES.  
+> **Escopo:** regras de negócio e arquitetura proposta. Não representa integração Asaas concluída, saldo real, escrow contratado ou capacidade já comprovada do provedor.
 
-## 1. Regras explicitamente confirmadas pelo CTO
+## 1. Regras financeiras obrigatórias
 
-| ID | Regra | Estado/evidência |
+| ID | Regra aprovada | Estado |
 |---|---|---|
-| FIN-01 | Meio de pagamento previsto para lançamento: Pix | **Confirmada pelo CTO** na ordem DOC-02 |
-| FIN-02 | Distribuição econômica: 17% para Ilê Conecta e 83% para a casa religiosa | **Confirmada pelo CTO** na ordem DOC-02 |
-| FIN-03 | Reserva interna de 2% é alocada dentro da parcela de 17% da plataforma; não é uma terceira parcela | **Confirmada pelo CTO** na ordem DOC-02 |
-| FIN-04 | Liberação de repasse planejada após o evento, com janela operacional de até três dias após encerramento | **Confirmada como intenção de negócio**, sujeita às regras aplicáveis de cancelamento, reembolso e direitos do consumidor |
-| FIN-05 | Integração inicial Asaas deve permanecer em Sandbox até autorização posterior | **Confirmada pelo CTO** na ordem DOC-02 |
-| SEC-SECRET-01 | Credenciais, segredos e chaves privadas não podem aparecer em documentos, código público ou logs | **Confirmada pelo CTO** na ordem DOC-02 |
+| FIN-01 | Comissão da plataforma: 17% do valor bruto de cada transação elegível. | APROVADO-CTO |
+| FIN-02 | Direito bruto da casa religiosa: 83% do valor bruto da transação. | APROVADO-CTO |
+| FIN-03 | Taxas do provedor de pagamento são despesa integral da plataforma e não reduzem o direito bruto de 83% da casa. | APROVADO-CTO |
+| FIN-04 | Reserva financeira de 2% permanece dentro da parcela de 17% da plataforma; não é cobrança adicional. Finalidade, saldo, movimentações e liberações devem ser auditáveis. | APROVADO-CTO |
+| FIN-05 | Valores monetários são calculados e persistidos em centavos inteiros; política de arredondamento deve ser explícita, consistente e testada. | APROVADO-CTO |
+| FIN-06 | Ledger deve registrar bruto, comissão, direito da casa, taxas do provedor, reembolsos, ajustes, saldo retido, saldo elegível e repasses. | APROVADO-CTO |
+| FIN-07 | Retenção de segurança: 72 horas após o encerramento efetivo do evento, com horário calculado em `America/Sao_Paulo`. | APROVADO-CTO |
+| FIN-08 | Só liberar valor elegível após a retenção, conferência de reembolsos/contestações e confirmação de saldo real disponível. | APROVADO-CTO |
+| FIN-09 | Contestação pendente bloqueia o valor afetado até resolução. | APROVADO-CTO |
+| FIN-10 | Cada repasse registra identificador, valor, destinatário, data, estado e evidência de confirmação do provedor. | APROVADO-CTO |
+| FIN-11 | Asaas é o provedor prioritário para avaliação; adequação ao fluxo depende de documentação oficial, contrato e testes Sandbox. | PRIORIDADE APROVADA; CAPACIDADE NÃO COMPROVADA |
 
-## 2. Interpretação aritmética da reserva
+A distribuição incide sobre o valor bruto da transação, antes de descontar taxa do provedor. Exemplo: em R$ 100,00, comissão da plataforma = R$ 17,00 e direito bruto da casa = R$ 83,00. Se o provedor cobrar R$ 3,00, os R$ 3,00 são despesa da plataforma; o direito da casa continua R$ 83,00, antes de ajustes legítimos de reembolso/contestação previstos na política aplicável.
 
-A reserva de 2% é uma alocação interna dentro dos 17% da plataforma. A base exata de cálculo precisa ser confirmada se a intenção não for “2% do valor bruto da venda”. A interpretação literal mais consistente com “2% dentro da parcela de 17%” é **2% da parcela da plataforma**, mas isso é cálculo derivado, não decisão financeira adicional.
+### 1.1 Reserva interna de 2%
 
-Exemplo meramente ilustrativo, se o CTO confirmar que a reserva é 2% da parcela de 17%:
-- Venda bruta: R$ 100,00.
-- Parcela da casa (83%): R$ 83,00.
-- Parcela bruta da plataforma (17%): R$ 17,00.
-- Reserva interna (2% de R$ 17,00): R$ 0,34.
-- Parcela restante da plataforma após reserva: R$ 16,66.
+Os 2% são uma alocação interna dentro dos 17% da plataforma, nunca uma terceira parcela. A ordem DOC-03 não define de modo suficiente se a base é 2% do valor bruto ou 2% da comissão de 17%; não fixar silenciosamente essa base. Antes da implementação, registrar ADR/decisão complementar que especifique base exata, finalidade, titularidade contábil, conta/ledger, regras de uso e liberação. Em qualquer interpretação, a casa não pode ter seu direito bruto de 83% reduzido por essa reserva.
 
-Este exemplo não define a quem pertence contabilmente a reserva, em qual conta fica, quando pode ser utilizada, nem a base de cálculo final. Esses pontos requerem decisão.
+### 1.2 Centavos e arredondamento
 
-## 3. Itens não confirmados e bloqueadores
+- Usar inteiros em centavos em persistência, APIs internas e ledger; nunca usar ponto flutuante binário para dinheiro.
+- Registrar moeda e valores de origem; converter reais para centavos na fronteira de entrada usando parser decimal determinístico.
+- Calcular 17%/83% sobre a base bruta em centavos. Definir e documentar arredondamento half-up para cada parcela e garantir que comissão + parcela da casa = bruto em centavos; se arredondamentos causarem diferença, aplicar regra determinística versionada e auditável sem reduzir arbitrariamente a parcela da casa.
+- Persistir a versão da regra financeira aplicada em cada transação para preservar histórico.
+- Testar valores de R$ 0,01, valores ímpares em centavos, valores altos dentro dos limites aprovados, reembolsos parciais e múltiplas operações repetidas.
 
-- Se a taxa de processamento do provedor é absorvida pela plataforma, casa ou comprador.
-- Se a divisão 17%/83% deve ocorrer automaticamente pelo provedor, via saldo/contas vinculadas, ou por processo posterior.
-- Se o Asaas suporta no produto/contrato aplicável o split exato, Pix, retenção e prazo desejados.
-- Identidade/KYC da plataforma e das casas, habilitação de subcontas e requisitos de compliance.
-- Quem figura como vendedor/fornecedor perante o consumidor e como a cobrança aparece no extrato.
-- Base de cálculo para taxas, arredondamento, descontos, cupons, chargebacks e estornos parciais.
-- Base, titularidade, uso, liberação e contabilização da reserva interna de 2%.
-- Momento exato de início e término dos “até três dias”: fuso horário, dia corrido ou útil, feriados e definição do encerramento do evento.
-- Regras para evento cancelado, adiado, não realizado, parcialmente realizado ou contestado.
-- Cancelamento pelo participante/casa, prazos de solicitação, reembolso integral/parcial, custos não reembolsáveis (se legalmente admissíveis) e tratamento de disputa.
-- Regras de elegibilidade e bloqueio de repasse enquanto houver solicitação de cancelamento, suspeita de fraude ou conciliação pendente.
-- Procedimentos para falha, duplicidade ou indisponibilidade do provedor.
-- Documentação jurídica, fiscal e contábil aplicável; validação profissional necessária.
+## 2. Ciclo financeiro e retenção
 
-## 4. Modelo de estados proposto (não implementado/validado)
+1. A confirmação autenticada do pagamento, após validar referência, valor, moeda e estado no provedor, registra de forma idempotente a transação e suas parcelas no ledger.
+2. O valor bruto devido à casa permanece reservado e indisponível para repasse.
+3. O instante de elegibilidade é **encerramento efetivo do evento + 72 horas**, calculado e persistido com fuso `America/Sao_Paulo`; conservar também timestamp UTC para auditoria. Não contar 72 horas a partir do pagamento.
+4. Antes de liberar, recalcular saldo devido, reembolsos, ajustes, contestações, retenções e saldo real disponível. Elegibilidade temporal não equivale a autorização automática para transferir.
+5. Contestação pendente bloqueia o valor afetado. Se o valor afetado não puder ser isolado com segurança, bloquear a parcela inteira da transação até revisão.
+6. Criar ordem de repasse idempotente com identificador próprio, destinatário validado, valor, timestamps, estado e referência do provedor. Marcar como concluído somente após confirmação verificável do provedor; timeout/estado desconhecido permanece pendente e vai para reconciliação.
+7. Notificar a casa sobre pagamento confirmado, reembolso, contestação, bloqueio, repasse pendente/concluído/falhou e ajustes relevantes.
 
-### Pagamento
-`CRIADO → AGUARDANDO_PAGAMENTO → CONFIRMADO`; caminhos alternativos: `EXPIRADO`, `CANCELADO`, `FALHOU`, `ESTORNO_PENDENTE`, `ESTORNADO`, `EM_DISPUTA`.
+## 3. Reembolsos, contestações e exceções
 
-### Reserva
-`INICIADA → AGUARDANDO_PAGAMENTO → CONFIRMADA`; alternativas: `EXPIRADA`, `CANCELADA`, `REEMBOLSO_PENDENTE`, `REEMBOLSADA`.
+| Caso | Tratamento obrigatório |
+|---|---|
+| Reembolso integral antes do repasse | Registrar solicitação e resultado do provedor; bloquear repasse; reverter/ajustar os lançamentos de forma auditável e idempotente. |
+| Reembolso parcial antes do repasse | Registrar valor solicitado e confirmado; recalcular obrigação e saldo elegível conforme política versionada; manter trilha do bruto original e ajustes. |
+| Reembolso solicitado durante a retenção | Bloquear o valor afetado enquanto a solicitação estiver pendente; não liberar apenas porque as 72 horas venceram. |
+| Contestação/chargeback pendente | Bloquear o valor afetado, registrar evidência, prazo, estado e notificações; liberar somente após resolução e reconciliação. |
+| Reembolso solicitado após repasse | Não presumir que o provedor possa retirar automaticamente o dinheiro já transferido. Abrir caso de recuperação, registrar responsável/valor/prazo e aplicar somente procedimento contratual e legalmente permitido. |
+| Operação falha ou com timeout | Estado permanece pendente/desconhecido até consulta/reconciliação; não assumir sucesso nem disparar repetição não idempotente. |
+| Evento/webhook duplicado | Deduplicar por identificador externo e chave idempotente; reprocessamento não pode duplicar cobrança, reembolso, ledger ou repasse. |
+| Taxa do provedor não recuperada no reembolso | Registrar a taxa efetivamente cobrada/não recuperada como despesa da plataforma, salvo decisão posterior expressa e legalmente validada; não descontar automaticamente do direito da casa. |
+| Saldo insuficiente para estorno/recuperação | Não inventar saldo nem efetuar transferência negativa. Marcar exceção, bloquear valores elegíveis quando apropriado, alertar operação e casa e exigir resolução/reconciliação documentada. |
+| Divergência entre ledger e provedor | Suspender o movimento afetado, reconciliar com estado oficial do provedor e registrar ajuste com motivo e autor. |
 
-### Repasse
-`BLOQUEADO → ELEGÍVEL → SOLICITADO → PROCESSANDO → PAGO`; caminhos alternativos: `RETIDO`, `FALHOU`, `CANCELADO`, `RECONCILIAÇÃO_PENDENTE`.
+A política final de responsabilidade econômica por cancelamentos, fraude, chargebacks, eventos não realizados e recuperação após repasse depende de revisão jurídica/contábil e decisão específica. Não presumir que a plataforma possa debitar saldo futuro da casa sem base contratual/legal e mecanismo comprovado.
 
-Os nomes e transições são propostas. Estados do provedor devem ser mapeados para estados internos sem perder o evento original, horário, identificador e histórico. Não tratar um retorno de navegador como prova de pagamento.
+## 4. Conceitos que não podem ser confundidos
 
-## 5. Requisitos financeiros propostos para implementação
+- **Split:** instrução de distribuição de uma transação pelo provedor segundo as regras do produto contratado. Não comprova por si só retenção pós-evento, disponibilidade real nem garantia de 83% bruto para a casa.
+- **Escrow/conta de garantia:** estrutura jurídica/financeira específica de custódia; não chamar um saldo bloqueado de escrow sem confirmação contratual e regulatória.
+- **Saldo disponível:** montante que o provedor informa como disponível para movimentação no momento da consulta; não é sinônimo do valor contábil devido à casa.
+- **Transferência/repasse:** ordem de movimentação de saldo para destinatário. Solicitação enviada não significa transferência concluída.
+- **Reembolso:** operação de devolução da cobrança, sujeita ao estado da transação, saldo e recursos reais do provedor; não garante recuperação de taxa ou de valor previamente transferido.
+- **Ledger interno:** registro contábil/auditável de direitos, despesas, bloqueios e movimentos; não substitui o saldo oficial do provedor nem cria dinheiro.
 
-1. Calcular valores em unidades monetárias inteiras (centavos) ou decimal de precisão controlada; não usar aritmética binária de ponto flutuante para liquidação.
-2. Registrar snapshots de preço, percentuais e política aplicáveis à transação, para que alteração futura de configuração não reescreva transações antigas.
-3. Gerar identificadores únicos e chaves de idempotência para criação de cobrança, cancelamento, reembolso e repasse.
-4. Não confirmar reserva até evento confiável do provedor e reconciliação do valor, moeda, destinatário e referência esperados.
-5. Controlar concorrência de vagas com transação/constraint no backend.
-6. Processar webhooks repetidos ou fora de ordem sem duplicar efeitos; manter eventos recebidos e resultado de processamento auditáveis.
-7. Conciliar cobranças, tarifas, split, reembolsos e repasses contra extratos/relatórios do provedor.
-8. Nunca registrar tokens, segredos, dados de pagamento desnecessários ou payloads sensíveis em logs.
-9. Aplicar elegibilidade de repasse somente após o evento encerrado e dentro da janela operacional pretendida, respeitando pendências legais/operacionais e política aprovada.
-10. Separar o ledger interno dos saldos apresentados pelo provedor; toda diferença deve gerar exceção reconciliável.
-11. Definir comportamento de falha parcial, retries, intervenção manual e dupla aprovação para operações financeiras de alto risco.
-12. Disponibilizar comprovantes e histórico com acesso limitado ao participante, à casa e à equipe autorizada.
+O split percentual padrão só poderá ser considerado adequado depois de provar, em documentação oficial e Sandbox, a base de cálculo bruta, a absorção das taxas pela plataforma, o comportamento de reembolsos/chargebacks e a compatibilidade com a retenção de 72 horas após encerramento do evento.
 
-## 6. Segurança e ambiente
+## 5. Avaliação do Asaas — pendente de comprovação
 
-- Sandbox Asaas somente até autorização expressa posterior.
-- Segredos apenas em armazenamento seguro de ambiente/secret manager e acessíveis somente a serviços autorizados.
-- Proibido publicar chaves em frontend, Git, documentação, screenshots ou logs.
-- Dados de Sandbox não podem ser tratados como transações reais.
-- A mudança para produção exige validação técnica, contratual, jurídica/contábil, teste de ponta a ponta e autorização explícita do CTO.
+Asaas permanece prioridade de avaliação, não integração aprovada ou concluída. Antes de escolher desenho final, verificar na documentação oficial atual e no Sandbox: produtos de split aplicáveis ao contrato; destinatários/subcontas e requisitos de cadastro; base bruta e taxas; disponibilidade e bloqueios de saldo; transferências; Pix; reembolsos integrais/parciais; contestação/chargeback; autenticação de webhooks; idempotência; limites e estados assíncronos; reconciliação; retenção de fundos até evento + 72 horas.
 
-## 7. Critérios de aceite propostos
+A decisão técnica deve registrar links e data da documentação consultada, resultados de testes Sandbox e limitações contratuais. Se o provedor não suportar a retenção exigida, bloquear o lançamento financeiro e apresentar alternativa de arquitetura/negócio ao CTO. Não prometer retenção como escrow nem contornar regras do provedor.
 
-- Testes de divisão para valores baixos, altos, descontos e arredondamentos; soma das parcelas consistente com o valor bruto e custos explicitamente tratados.
-- Repetição da mesma solicitação não cria cobranças, reembolsos ou repasses duplicados.
-- Webhooks inválidos não mudam estado; eventos válidos repetidos não duplicam efeitos.
-- Pagamento de valor/referência incorretos não confirma a reserva.
-- Cancelamento e reembolso obedecem à matriz aprovada e mantêm trilha auditável.
-- Repasse não se torna elegível antes do encerramento do evento nem ignora pendências aplicáveis.
-- Conciliação identifica divergências e não as resolve silenciosamente.
-- Evidências de testes e logs sanitizados ficam vinculadas ao commit/execução.
+## 6. Requisitos de implementação e testes
 
-## 8. Aprovações ainda necessárias
+- Ledger transacional imutável por lançamentos compensatórios, com IDs internos/externos, moeda, bruto, 17%, 83%, taxa, reserva, reembolsos, retenções, ajustes e repasses.
+- Idempotência para criação de cobrança, processamento de webhook, reembolso e repasse.
+- Webhooks autenticados conforme documentação oficial; persistir evento antes de processamento, validar montante/referência/estado e reconciliar quando ambíguo.
+- Separar estado do pagamento, estado do reembolso, estado da contestação, elegibilidade de repasse e estado da transferência.
+- Controle de acesso server-side, trilha de auditoria, notificações e alertas de exceção.
+- Testes: 17/83 sobre bruto; taxa do provedor absorvida pela plataforma; reserva sem cobrança adicional; arredondamento em centavos; retenção não iniciada no pagamento; liberação exatamente após evento + 72h; DST/fuso e horários de fronteira; reembolso parcial/integral; contestação; falha e timeout; duplicidade; saldo insuficiente; taxa não recuperada; reembolso após repasse; divergência de conciliação; notificação da casa.
+- Nenhuma integração financeira real, cobrança, transferência, credencial de produção ou alteração em banco faz parte da DOC-03.
 
-O CTO deve confirmar: base da reserva de 2%; titularidade/uso da reserva; tratamento de taxas do provedor; política de cancelamento e reembolso; definição operacional de “até três dias”; modelo de split/repasse; estados finais; regras de arredondamento e conciliação. A capacidade e os termos do Asaas devem ser confirmados diretamente na documentação/contrato aplicáveis antes de desenhar uma integração dependente deles.
+## 7. Fontes e estado de evidência
+
+A especificação financeira deriva da ordem DOC-03. A capacidade efetiva do Asaas e os termos do produto não foram comprovados nesta execução; devem ser verificados em documentação oficial e Sandbox antes de implementação. A existência de SDK ou de UI de pagamento no frontend não prova integração financeira.
