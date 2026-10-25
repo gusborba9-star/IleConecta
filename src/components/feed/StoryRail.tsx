@@ -2,14 +2,15 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar } from "@/components/base";
 import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import type { HouseUser, Story } from "@/types";
 
 export default function StoryRail() {
   const { stories, users, currentUser } = useApp();
 
-  const byHouse = new Map<string, { story: any; house: any }>();
+  const byHouse = new Map<string, { story: Story; house: HouseUser }>();
   stories.forEach((s) => {
     const h = users.find((u) => u.id === s.houseId);
-    if (h && !byHouse.has(h.id)) byHouse.set(h.id, { story: s, house: h });
+    if (h?.type === "commercial" && !byHouse.has(h.id)) byHouse.set(h.id, { story: s, house: h });
   });
   const items = Array.from(byHouse.values()).slice(0, 12);
 
