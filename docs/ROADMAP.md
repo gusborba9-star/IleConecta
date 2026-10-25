@@ -98,3 +98,7 @@ A ordem DOC-03 aprova a especificação financeira FIN-01–FIN-11 em [FINANCIAL
 - BUILD-01: comandos reais e resultados preservados; nenhuma fase marcada concluída por documentação apenas.
 
 Não alterar o estado de EXEC-01 nem de fases anteriores sem novas evidências. Não iniciar EXEC-02 nem a etapa de infraestrutura por inferência.
+
+### Evidência Asaas incorporada ao gate P-PAY-ARCH-01
+
+A documentação oficial consultada em 2026-10-25 informa que o Split padrão é processado quando a cobrança é recebida e não permite agendar data futura ([FAQ de Split](https://docs.asaas.com/docs/split-faq)). Logo, não é aceito como evidência de retenção de 72 horas após o evento. P-PAY-ARCH-01 deve comparar o fluxo de Split com um fluxo de transferência posterior, provar comportamento de saldo, taxas, estornos, chargebacks e destinatários por documentação/contrato e testes Sandbox. **Estado: bloqueado até comprovação; nenhum Sandbox foi executado nesta DOC-03.**
