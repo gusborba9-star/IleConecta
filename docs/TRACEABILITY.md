@@ -116,4 +116,8 @@
 Os estados “APROVADO-CTO” indicam aprovação da regra, não conclusão de código. Nenhuma linha pode ser marcada validada sem teste/evidência real e revisão exigida.
 
 
+## DOC-03 — Requisito de compatibilidade Asaas
+
+| ID | Requisito verificável | Blueprint | Roadmap | Execução prevista | Teste/evidência obrigatória | Estado |
+|---|---|---|---|---|---|---|
 | PAY-AS-01 | O desenho Asaas atende retenção evento + 72h e regra financeira? | FINANCIAL_RULES.md §8; BACKEND_ARCHITECTURE.md §19 | P-PAY-ARCH-01 | Avaliação oficial + Sandbox em execução autorizada futura | Documentação oficial datada, prova de fluxo de transferência, testes de saldo/estorno/split/chargeback e ADR | BLOQUEADO; Split padrão não permite data futura segundo FAQ oficial |
