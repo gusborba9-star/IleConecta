@@ -45,9 +45,9 @@ test("busca pelo campo global abre resultados e preserva a consulta após recarg
   await search.fill("xango");
   await search.press("Enter");
   await expect(page).toHaveURL(/\/descobrir\?q=xango/);
-  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ }).first()).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Terreiro de Xangô Airá.*Candomblé Nagô/ }).first()).toBeVisible();
 });
 
 test("publicação aparece no feed e permanece após recarga", async ({ page }) => {
@@ -95,9 +95,9 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
   await expect(page.getByText("Reserva demonstrativa registrada")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Fechar", exact: true }).click();
   await page.goto("/perfil", { waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada")).toBeVisible();
+  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada").first()).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada")).toBeVisible();
+  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada").first()).toBeVisible();
 });
 
 test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ page }) => {
