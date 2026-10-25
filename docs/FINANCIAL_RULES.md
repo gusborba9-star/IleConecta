@@ -8,17 +8,17 @@
 
 | ID | Regra aprovada | Estado |
 |---|---|---|
-| FIN-01 | Comissão da plataforma: 17% do valor bruto de cada transação elegível. | APROVADO-CTO |
-| FIN-02 | Direito bruto da casa religiosa: 83% do valor bruto da transação. | APROVADO-CTO |
-| FIN-03 | Taxas do provedor de pagamento são despesa integral da plataforma e não reduzem o direito bruto de 83% da casa. | APROVADO-CTO |
-| FIN-04 | Reserva financeira de 2% permanece dentro da parcela de 17% da plataforma; não é cobrança adicional. Finalidade, saldo, movimentações e liberações devem ser auditáveis. | APROVADO-CTO |
-| FIN-05 | Valores monetários são calculados e persistidos em centavos inteiros; política de arredondamento deve ser explícita, consistente e testada. | APROVADO-CTO |
-| FIN-06 | Ledger deve registrar bruto, comissão, direito da casa, taxas do provedor, reembolsos, ajustes, saldo retido, saldo elegível e repasses. | APROVADO-CTO |
-| FIN-07 | Retenção de segurança: 72 horas após o encerramento efetivo do evento, com horário calculado em `America/Sao_Paulo`. | APROVADO-CTO |
-| FIN-08 | Só liberar valor elegível após a retenção, conferência de reembolsos/contestações e confirmação de saldo real disponível. | APROVADO-CTO |
-| FIN-09 | Contestação pendente bloqueia o valor afetado até resolução. | APROVADO-CTO |
-| FIN-10 | Cada repasse registra identificador, valor, destinatário, data, estado e evidência de confirmação do provedor. | APROVADO-CTO |
-| FIN-11 | Asaas é o provedor prioritário para avaliação; adequação ao fluxo depende de documentação oficial, contrato e testes Sandbox. | PRIORIDADE APROVADA; CAPACIDADE NÃO COMPROVADA |
+| FIN-D03-01 | Comissão da plataforma: 17% do valor bruto de cada transação elegível. | APROVADO-CTO |
+| FIN-D03-02 | Direito bruto da casa religiosa: 83% do valor bruto da transação. | APROVADO-CTO |
+| FIN-D03-03 | Taxas do provedor de pagamento são despesa integral da plataforma e não reduzem o direito bruto de 83% da casa. | APROVADO-CTO |
+| FIN-D03-04 | Reserva financeira de 2% permanece dentro da parcela de 17% da plataforma; não é cobrança adicional. Finalidade, saldo, movimentações e liberações devem ser auditáveis. | APROVADO-CTO |
+| FIN-D03-05 | Valores monetários são calculados e persistidos em centavos inteiros; política de arredondamento deve ser explícita, consistente e testada. | APROVADO-CTO |
+| FIN-D03-06 | Ledger deve registrar bruto, comissão, direito da casa, taxas do provedor, reembolsos, ajustes, saldo retido, saldo elegível e repasses. | APROVADO-CTO |
+| FIN-D03-07 | Retenção de segurança: 72 horas após o encerramento efetivo do evento, com horário calculado em `America/Sao_Paulo`. | APROVADO-CTO |
+| FIN-D03-08 | Só liberar valor elegível após a retenção, conferência de reembolsos/contestações e confirmação de saldo real disponível. | APROVADO-CTO |
+| FIN-D03-09 | Contestação pendente bloqueia o valor afetado até resolução. | APROVADO-CTO |
+| FIN-D03-10 | Cada repasse registra identificador, valor, destinatário, data, estado e evidência de confirmação do provedor. | APROVADO-CTO |
+| FIN-D03-11 | Asaas é o provedor prioritário para avaliação; adequação ao fluxo depende de documentação oficial, contrato e testes Sandbox. | PRIORIDADE APROVADA; CAPACIDADE NÃO COMPROVADA |
 
 A distribuição incide sobre o valor bruto da transação, antes de descontar taxa do provedor. Exemplo: em R$ 100,00, comissão da plataforma = R$ 17,00 e direito bruto da casa = R$ 83,00. Se o provedor cobrar R$ 3,00, os R$ 3,00 são despesa da plataforma; o direito da casa continua R$ 83,00, antes de ajustes legítimos de reembolso/contestação previstos na política aplicável.
 
