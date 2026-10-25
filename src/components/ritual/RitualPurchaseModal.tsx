@@ -58,10 +58,7 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
           </div>
 
           <div className="rounded-xl border border-border p-4 bg-muted/40 space-y-2 text-sm">
-            <Row label="Valor da vaga" value={formatBRL(ritual.price)} />
-                        <div className="border-t border-border pt-2 mt-2">
-              <Row label="Total a pagar" value={formatBRL(ritual.price)} bold />
-            </div>
+            <Row label="Valor ilustrativo" value={formatBRL(ritual.price)} />
           </div>
 
           <div className="rounded-xl border border-border p-3 flex items-center gap-3">
@@ -69,7 +66,7 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
               <CreditCard className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold">Cartão de crédito · Pix</div>
+              <div className="text-sm font-semibold">Meios de pagamento futuros</div>
               <div className="text-xs text-muted-foreground">Protótipo local: não há integração com Pix/cartão nem cobrança real.</div>
             </div>
             <span className="text-[10px] text-muted-foreground">DEMO</span>

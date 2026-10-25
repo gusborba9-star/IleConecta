@@ -38,7 +38,7 @@ export default function Profile() {
         <p className="text-xs text-muted-foreground mb-3">Registros locais de simulação. Não representam pagamento ou reserva real.</p>
         {myPurchases.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
-            Você ainda não contratou nenhum ritual.{" "}
+            Você ainda não criou uma simulação de reserva.{" "}
             <Link to="/rituais" className="text-primary font-semibold hover:underline">Descubra rituais →</Link>
           </div>
         ) : (
