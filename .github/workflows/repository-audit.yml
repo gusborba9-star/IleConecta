@@ -58,6 +58,21 @@ jobs:
         id: typescript
         continue-on-error: true
         run: npx tsc -b
+      - name: Inventory all dependency advisories
+        id: full_audit
+        continue-on-error: true
+        run: |
+          npm audit --json > /tmp/npm-audit-full.json || true
+          node -e 'const r=require("/tmp/npm-audit-full.json"); console.log(JSON.stringify({metadata:r.metadata?.vulnerabilities, vulnerabilities:Object.entries(r.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,isDirect:v.isDirect,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range,severity:x.severity})}))},null,2))'
+          cp /tmp/npm-audit-full.json npm-audit-full.json
+      - name: Upload full dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-dependency-audit
+          path: npm-audit-full.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Audit production dependencies
         id: audit
         continue-on-error: true
