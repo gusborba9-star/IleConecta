@@ -110,7 +110,11 @@ test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ pa
     const users = JSON.parse(localStorage.getItem(key) || "[]");
     const house = users.find((user) => user.email === "oxum@ile.app");
     if (!house) throw new Error("Conta comercial não foi persistida");
-    house.boost = { ...(house.boost || {}), level: "cidade", expiresAt: new Date(Date.now() - 60_000).toISOString() };
+    const expiredAt = new Date(Date.now() - 60_000).toISOString();
+    users.forEach((user) => {
+      if (user.boost) user.boost.expiresAt = expiredAt;
+    });
+    house.boost = { ...(house.boost || {}), level: "cidade", expiresAt: expiredAt };
     localStorage.setItem(key, JSON.stringify(users));
   });
   await page.reload();
