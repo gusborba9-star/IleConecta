@@ -3,10 +3,13 @@ import { Avatar, Badge, Button, Card } from "@/components/base";
 import { formatBRL, timeAgo } from "@/lib/utils";
 import { Sparkles, Ticket, Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import EditProfileModal from "@/components/profile/EditProfileModal";
 
 export default function Profile() {
   const { currentUser, purchases, rituals, getHouse, posts } = useApp();
   const nav = useNavigate();
+  const [editing, setEditing] = useState(false);
   if (!currentUser) return null;
 
   const myPurchases = purchases.filter((p) => p.userId === currentUser.id);
@@ -26,9 +29,11 @@ export default function Profile() {
               ))}
             </div>
           </div>
-          <Button variant="outline" disabled title="Edição de perfil ainda não está disponível no protótipo">Edição indisponível</Button>
+          <Button variant="outline" onClick={() => setEditing(true)}>Editar perfil</Button>
         </div>
+        {currentUser.bio && <p className="mt-4 text-sm text-muted-foreground">{currentUser.bio}</p>}
       </Card>
+      <EditProfileModal open={editing} onClose={() => setEditing(false)} />
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
