@@ -13,7 +13,7 @@ export default function HouseHome() {
 
   const tiles = [
     { icon: Plus, title: "Novo serviço", text: "Búzios, cartas, trabalhos, consultas", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
-    { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas (em breve)", disabled: true },
+    { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
     { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
     { icon: TrendingUp, title: "Divulgar a casa", text: "Impulsionar ou destacar", onClick: () => nav("/impulsionar") },
     { icon: Pencil, title: "Editar perfil", text: "Foto, capa e apresentação da casa", onClick: () => nav(`/casa/${house.id}?editar=1`) },
@@ -35,9 +35,8 @@ export default function HouseHome() {
           <button
             key={t.title}
             type="button"
-            disabled={t.disabled}
             onClick={t.onClick}
-            className="text-left rounded-2xl border border-border bg-card p-4 min-h-24 transition hover:bg-muted disabled:opacity-60 disabled:pointer-events-none"
+            className="text-left rounded-2xl border border-border bg-card p-4 min-h-24 transition hover:bg-muted"
           >
             <span className="flex items-center gap-2 font-semibold"><t.icon className="h-4 w-4 text-primary" />{t.title}</span>
             <span className="block text-sm text-muted-foreground mt-1">{t.text}</span>
