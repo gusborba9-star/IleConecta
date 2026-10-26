@@ -71,7 +71,7 @@ create or replace function public.reserve_event(p_event uuid, p_answers jsonb de
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
   ev public.events%rowtype;
-  f jsonb;
+  fld jsonb;
   v text;
   rid uuid;
 begin
@@ -82,17 +82,17 @@ begin
   if public.is_house_owner(ev.house_id) then raise exception 'A casa não reserva vaga no próprio ritual.'; end if;
   if public.event_taken(p_event) >= ev.seats_total then raise exception 'Vagas esgotadas.'; end if;
   if jsonb_typeof(coalesce(p_answers, '{}'::jsonb)) <> 'object' then raise exception 'Respostas inválidas.'; end if;
-  for f in select * from jsonb_array_elements(ev.intake_fields) loop
-    v := btrim(coalesce(p_answers ->> (f ->> 'id'), ''));
-    if coalesce((f ->> 'required')::boolean, false) and v = '' then
-      raise exception 'Preencha: %', f ->> 'label';
+  for fld in select * from jsonb_array_elements(ev.intake_fields) loop
+    v := btrim(coalesce(p_answers ->> (fld ->> 'id'), ''));
+    if coalesce((fld ->> 'required')::boolean, false) and v = '' then
+      raise exception 'Preencha: %', fld ->> 'label';
     end if;
-    if char_length(v) > 500 then raise exception 'Resposta muito longa: %', f ->> 'label'; end if;
+    if char_length(v) > 500 then raise exception 'Resposta muito longa: %', fld ->> 'label'; end if;
   end loop;
   insert into public.reservations (event_id, user_id, status, answers)
   values (p_event, auth.uid(), 'confirmada',
-          (select coalesce(jsonb_object_agg(f ->> 'id', btrim(coalesce(p_answers ->> (f ->> 'id'), ''))), '{}'::jsonb)
-             from jsonb_array_elements(ev.intake_fields) f))
+          (select coalesce(jsonb_object_agg(x ->> 'id', btrim(coalesce(p_answers ->> (x ->> 'id'), ''))), '{}'::jsonb)
+             from jsonb_array_elements(ev.intake_fields) as x))
   returning id into rid;
   return rid;
 exception when unique_violation then
