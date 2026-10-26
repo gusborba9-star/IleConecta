@@ -5,24 +5,31 @@ import { Image, Sparkles, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PostComposer() {
-  const { currentUser, createPost } = useApp();
+  const { currentUser, createPost, isRemoteAuth } = useApp();
+  const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
   const isHouse = currentUser?.type === "commercial";
 
   if (!currentUser) return null;
 
-  const submit = () => {
+  // Na conta real só casas publicam (regra do servidor); clientes interagem curtindo e comentando.
+  if (isRemoteAuth && !isHouse) return null;
+
+  const submit = async () => {
     if (!text.trim()) return toast.error("Escreva algo antes de publicar");
-    createPost({
+    setSending(true);
+    const saved = await createPost({
       houseId: currentUser.id,
       content: text.trim(),
       kind: "geral",
       image: image || undefined,
     });
+    setSending(false);
+    if (!saved) return toast.error("Não foi possível publicar agora. Tente novamente.");
     setText("");
     setImage("");
-    toast.success("Publicação adicionada ao feed local de demonstração.");
+    toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");
   };
 
   return (
@@ -49,6 +56,7 @@ export default function PostComposer() {
           )}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-1">
+              {!isRemoteAuth && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -64,6 +72,7 @@ export default function PostComposer() {
               >
                 <Image className="h-4 w-4" /> Foto
               </Button>
+              )}
               {isHouse && (
                 <>
                   <Button variant="ghost" size="sm" disabled title="Publicação de rituais ainda não está disponível no protótipo">
@@ -75,7 +84,7 @@ export default function PostComposer() {
                 </>
               )}
             </div>
-            <Button onClick={submit}>Publicar</Button>
+            <Button onClick={submit} disabled={sending}>{sending ? "Publicando…" : "Publicar"}</Button>
           </div>
         </div>
       </div>

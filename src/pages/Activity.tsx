@@ -1,0 +1,56 @@
+import { Link } from "react-router-dom";
+import { Card } from "@/components/base";
+import { useApp } from "@/contexts/AppContext";
+import { formatBRL, timeAgo } from "@/lib/utils";
+import { CalendarClock, Ticket } from "lucide-react";
+
+export default function Activity() {
+  const { currentUser, purchases, rituals, getHouse } = useApp();
+  if (!currentUser) return null;
+  const mine = purchases.filter((p) => p.userId === currentUser.id).slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+
+  return (
+    <div className="space-y-4 pb-16 lg:pb-4">
+      <Card className="p-6">
+        <h1 className="font-display font-bold text-2xl">Minha atividade</h1>
+        <p className="text-sm text-muted-foreground mt-1">Tudo o que você fez na plataforma, em um só lugar.</p>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <CalendarClock className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-bold text-lg">Consultas agendadas</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">O agendamento de consultas ainda não está disponível. Quando estiver, elas aparecerão aqui.</p>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Ticket className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-bold text-lg">Histórico</h2>
+        </div>
+        {mine.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nada por aqui ainda. <Link to="/rituais" className="text-primary font-semibold hover:underline">Conheça os rituais →</Link>
+          </p>
+        ) : (
+          <div className="divide-y divide-border">
+            {mine.map((p) => {
+              const r = rituals.find((x) => x.id === p.ritualId);
+              const h = r ? getHouse(r.houseId) : null;
+              return (
+                <div key={p.id} className="py-3 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{r?.title ?? "Ritual não encontrado"}</div>
+                    <div className="text-xs text-muted-foreground">{h?.name ?? "Casa não encontrada"} · {timeAgo(p.createdAt)} · registro demonstrativo</div>
+                  </div>
+                  <div className="font-display font-bold">{formatBRL(p.amount)}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

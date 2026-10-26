@@ -135,8 +135,12 @@ function HouseTile({ h }: { h: HouseUser }) {
               <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {h.city}, {h.state}</span>
               <span>·</span>
               <span>{h.category}</span>
-              <span>·</span>
-              <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {h.rating.toFixed(1)}</span>
+              {h.rating > 0 && (
+                <>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {h.rating.toFixed(1)}</span>
+                </>
+              )}
             </div>
           </div>
         </div>

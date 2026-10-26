@@ -27,7 +27,7 @@ export interface HouseUser extends BaseUser {
     expiresAt: string;
   };
   highlight?: {
-    scope: "local" | "cidade" | "pais";
+    scope: "local" | "cidade" | "estado" | "pais";
     expiresAt: string;
   };
 }

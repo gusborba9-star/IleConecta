@@ -5,10 +5,17 @@ import PostCard from "@/components/feed/PostCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import type { Post } from "@/types";
 
 export default function Feed() {
-  const { posts, users } = useApp();
+  const { posts, refreshRemote } = useApp();
+
+  // Traz publicações novas de outras casas ao abrir o feed.
+  useEffect(() => {
+    void refreshRemote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Insert a promoted card between posts
   const feedItems: ({ kind: "post"; data: Post } | { kind: "promo" })[] = [];

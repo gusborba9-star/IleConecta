@@ -13,6 +13,14 @@ import {
   type AuthResult,
   type RegisterInput,
 } from "@/lib/remoteAuth";
+import {
+  fetchRemoteHouses,
+  fetchRemotePosts,
+  isRemoteId,
+  remoteAddComment,
+  remoteCreatePost,
+  remoteSetLike,
+} from "@/lib/remoteData";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 import {
   isAuthState,
@@ -39,18 +47,21 @@ interface AppState {
   login: (email: string, password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   register: (data: RegisterInput) => Promise<AuthResult>;
-  createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Post;
+  createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Promise<Post | null>;
+  /** Recarrega casas e publicações reais do servidor (sem efeito no modo demonstração). */
+  refreshRemote: () => Promise<void>;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
   toggleLike: (postId: string) => void;
   commentPost: (postId: string, text: string) => void;
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
-  applyHighlight: (scope: "local" | "cidade" | "pais", days: number) => void;
+  applyHighlight: (scope: "local" | "cidade" | "estado" | "pais", days: number) => void;
   sendMessage: (toUserId: string, text: string) => boolean;
   getConversationWith: (otherId: string) => Conversation | null;
   getHouse: (id: string) => HouseUser | null;
   getUser: (id: string) => User | null;
-  updateUser: (patch: Partial<User>) => void;
+  /** Salva alterações do perfil. Devolve false se o servidor recusar (modo real). */
+  updateUser: (patch: Partial<User>) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -65,6 +76,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null, (value): value is string | null => isAuthState(value, users)));
 
   const [remoteUser, setRemoteUser] = useState<User | null>(null);
+  const [remoteHouses, setRemoteHouses] = useState<HouseUser[]>([]);
+  const [remotePosts, setRemotePosts] = useState<Post[]>([]);
+  const [remoteCommenters, setRemoteCommenters] = useState<User[]>([]);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
 
   useEffect(() => {
@@ -89,6 +103,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const refreshRemote = async () => {
+    if (!isSupabaseConfigured) return;
+    const [houses, feed] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts()]);
+    setRemoteHouses(houses);
+    setRemotePosts(feed.posts);
+    setRemoteCommenters(feed.commenters);
+  };
+
+  const remoteUserId = remoteUser?.id ?? null;
+  useEffect(() => {
+    if (remoteUserId) void refreshRemote();
+    else {
+      setRemoteHouses([]);
+      setRemotePosts([]);
+      setRemoteCommenters([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteUserId]);
+
   const persist = (key: string, value: unknown) => {
     if (!saveKey(key, value)) {
       console.warn(`Ilê Conecta: não foi possível persistir "${key}" neste navegador.`);
@@ -108,9 +141,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => (isSupabaseConfigured ? remoteUser : users.find((u) => u.id === currentUserId) || null),
     [users, currentUserId, remoteUser]
   );
-  const allUsers = useMemo(
-    () => (remoteUser ? [...users.filter((u) => u.id !== remoteUser.id), remoteUser] : users),
-    [users, remoteUser]
+  const allUsers = useMemo(() => {
+    // Dados reais do servidor têm prioridade; o usuário logado vem por último para refletir edições locais.
+    const real = new Map<string, User>();
+    [...remoteHouses, ...remoteCommenters].forEach((u) => real.set(u.id, u));
+    if (remoteUser) real.set(remoteUser.id, remoteUser);
+    return [...users.filter((u) => !real.has(u.id)), ...Array.from(real.values())];
+  }, [users, remoteUser, remoteHouses, remoteCommenters]);
+
+  const allPosts = useMemo(
+    () => [...remotePosts, ...posts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [remotePosts, posts]
   );
 
   const value: AppState = {
@@ -118,7 +159,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     users: allUsers,
     isRemoteAuth: isSupabaseConfigured,
     authReady,
-    posts,
+    refreshRemote,
+    posts: allPosts,
     stories,
     rituals,
     conversations,
@@ -180,7 +222,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserId(user.id);
       return { ok: true, user };
     },
-    createPost(post) {
+    async createPost(post) {
+      if (isSupabaseConfigured) {
+        if (!currentUser) return null;
+        const saved = await remoteCreatePost(currentUser.id, { content: post.content, kind: post.kind, image: post.image });
+        if (saved) setRemotePosts((prev) => [saved, ...prev]);
+        return saved;
+      }
       const p: Post = { ...post, id: uid("post"), createdAt: new Date().toISOString(), likes: [], comments: [] };
       setPosts((prev) => [p, ...prev]);
       return p;
@@ -192,25 +240,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     toggleLike(postId) {
       if (!currentUser) return;
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id !== postId) return p;
-          const has = p.likes.includes(currentUser.id);
-          return { ...p, likes: has ? p.likes.filter((id) => id !== currentUser.id) : [...p.likes, currentUser.id] };
-        })
-      );
+      const uidNow = currentUser.id;
+      const flip = (p: Post): Post => {
+        if (p.id !== postId) return p;
+        const has = p.likes.includes(uidNow);
+        return { ...p, likes: has ? p.likes.filter((id) => id !== uidNow) : [...p.likes, uidNow] };
+      };
+      if (isRemoteId(postId)) {
+        const current = remotePosts.find((p) => p.id === postId);
+        if (!current) return;
+        const willLike = !current.likes.includes(uidNow);
+        setRemotePosts((prev) => prev.map(flip));
+        // Reverte a curtida na tela se o servidor recusar.
+        void remoteSetLike(postId, uidNow, willLike).then((ok) => {
+          if (!ok) setRemotePosts((prev) => prev.map(flip));
+        });
+        return;
+      }
+      setPosts((prev) => prev.map(flip));
     },
     commentPost(postId, text) {
       if (!currentUser) return;
+      const author = currentUser.id;
+      if (isRemoteId(postId)) {
+        void remoteAddComment(postId, author, text).then((saved) => {
+          if (!saved) return;
+          setRemotePosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? { ...p, comments: [...p.comments, { id: saved.id, userId: author, text, createdAt: saved.createdAt }] }
+                : p
+            )
+          );
+        });
+        return;
+      }
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId
             ? {
                 ...p,
-                comments: [
-                  ...p.comments,
-                  { id: uid("c"), userId: currentUser.id, text, createdAt: new Date().toISOString() },
-                ],
+                comments: [...p.comments, { id: uid("c"), userId: author, text, createdAt: new Date().toISOString() }],
               }
             : p
         )
@@ -288,14 +358,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     getUser(id) {
       return allUsers.find((x) => x.id === id) ?? null;
     },
-    updateUser(patch) {
-      if (!currentUser) return;
+    async updateUser(patch) {
+      if (!currentUser) return false;
       if (isSupabaseConfigured) {
-        setRemoteUser((prev) => (prev ? ({ ...prev, ...patch } as User) : prev));
-        void remoteUpdateProfile(currentUser.id, patch);
-        return;
+        const saved = await remoteUpdateProfile(currentUser.id, patch);
+        if (saved) setRemoteUser((prev) => (prev ? ({ ...prev, ...patch } as User) : prev));
+        return saved;
       }
       setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? ({ ...u, ...patch } as User) : u)));
+      return true;
     },
   };
 
