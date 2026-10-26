@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    --build-id: 2026-10-26b;
     --background: 30 25% 97%;
     --foreground: 22 40% 12%;
 
