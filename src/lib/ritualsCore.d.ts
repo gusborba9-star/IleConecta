@@ -29,16 +29,16 @@ export type AnswersValidation =
   | { ok: true; errors: Record<string, never>; value: Record<string, string> }
   | { ok: false; errors: Record<string, string>; value: null };
 
-export const RITUAL_MODES: { id: RitualMode; label: string; hint: string }[];
-export const FIELD_PRESETS: { id: string; label: string }[];
-export const MAX_FIELDS: number;
-export const MAX_SEATS: number;
-export function modeLabel(mode: string): string;
-export function seatsLeft(total: number, taken: number): number;
-export function seatsState(total: number, taken: number): "esgotado" | "ultimas" | "abertas";
-export function grossCents(priceCents: number, taken: number): number;
-export function toStartsAtIso(dateText: string, timeText: string): string | null;
-export function fromIsoToBrt(iso: string): { date: string; time: string };
-export function normalizeFields(fields: unknown): IntakeField[];
-export function validateRitual(input: RitualFormInput, now?: Date): RitualValidation;
-export function validateAnswers(fields: IntakeField[], answers: Record<string, string>): AnswersValidation;
+export declare const RITUAL_MODES: { id: RitualMode; label: string; hint: string }[];
+export declare const FIELD_PRESETS: { id: string; label: string }[];
+export declare const MAX_FIELDS: number;
+export declare const MAX_SEATS: number;
+export declare function modeLabel(mode: string): string;
+export declare function seatsLeft(total: number, taken: number): number;
+export declare function seatsState(total: number, taken: number): "esgotado" | "ultimas" | "abertas";
+export declare function grossCents(priceCents: number, taken: number): number;
+export declare function toStartsAtIso(dateText: string, timeText: string): string | null;
+export declare function fromIsoToBrt(iso: string): { date: string; time: string };
+export declare function normalizeFields(fields: unknown): IntakeField[];
+export declare function validateRitual(input: RitualFormInput, now?: Date): RitualValidation;
+export declare function validateAnswers(fields: IntakeField[], answers: Record<string, string>): AnswersValidation;
