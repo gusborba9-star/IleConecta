@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { CheckCircle2, MapPin, MessageCircle, Star, TrendingUp, UserPlus } from "lucide-react";
+import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserPlus } from "lucide-react";
+import EditProfileModal from "@/components/profile/EditProfileModal";
 import PostCard from "@/components/feed/PostCard";
 import RitualCard from "@/components/feed/RitualCard";
 import { cn, isPromotionActive } from "@/lib/utils";
@@ -13,6 +14,7 @@ export default function HousePage() {
   const house = getHouse(id ?? "");
   const nav = useNavigate();
   const [tab, setTab] = useState<"feed" | "rituais" | "sobre">("feed");
+  const [editing, setEditing] = useState(false);
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
 
@@ -51,13 +53,20 @@ export default function HousePage() {
                 <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {house.city}, {house.state}</span>
                 <span>·</span>
                 <span>{house.category}</span>
-                <span>·</span>
-                <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {house.rating.toFixed(1)} · {house.followers.toLocaleString("pt-BR")} seguidores</span>
+                {house.rating > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {house.rating.toFixed(1)} · {house.followers.toLocaleString("pt-BR")} seguidores</span>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex gap-2 pt-14">
               {isOwn ? (
-                <Button onClick={() => nav("/impulsionar")}><TrendingUp className="h-4 w-4" /> Impulsionar</Button>
+                <>
+                  <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" /> Editar página</Button>
+                  <Button onClick={() => nav("/impulsionar")}><TrendingUp className="h-4 w-4" /> Impulsionar</Button>
+                </>
               ) : (
                 <>
                   <Button variant="outline" disabled title="A função de seguir ainda não está disponível no protótipo"><UserPlus className="h-4 w-4" /> Seguir indisponível</Button>
@@ -90,6 +99,8 @@ export default function HousePage() {
         </div>
       </Card>
 
+      {isOwn && <EditProfileModal open={editing} onClose={() => setEditing(false)} />}
+
       <div className="mt-4 space-y-4">
         {tab === "feed" && housePosts.map((p) => <PostCard key={p.id} post={p} />)}
         {tab === "feed" && housePosts.length === 0 && (
@@ -108,8 +119,8 @@ export default function HousePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat label="Categoria" value={house.category} />
               <Stat label="Localização" value={`${house.city} · ${house.state}`} />
-              <Stat label="Seguidores" value={house.followers.toLocaleString("pt-BR")} />
-              <Stat label="Avaliação" value={`${house.rating.toFixed(1)} ★`} />
+              {house.rating > 0 && <Stat label="Seguidores" value={house.followers.toLocaleString("pt-BR")} />}
+              {house.rating > 0 && <Stat label="Avaliação" value={`${house.rating.toFixed(1)} ★`} />}
             </div>
           </Card>
         )}

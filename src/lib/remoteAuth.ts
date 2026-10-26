@@ -80,7 +80,7 @@ export async function fetchRemoteUser(userId: string, email: string): Promise<Us
       cover: (house?.cover_url as string | null) || DEFAULT_COVER,
       category: (house?.category as string | null) || "Casa Espiritual",
       tags: (house?.tags as string[] | null) ?? [],
-      rating: 5,
+      rating: 0,
       followers: 0,
       verified: Boolean(house?.verified),
     };
@@ -136,8 +136,9 @@ export async function remoteLogout(): Promise<void> {
 }
 
 /** Atualiza apenas campos seguros do perfil/casa. Imagens só quando são URLs (upload real vem com o Storage). */
-export async function remoteUpdateProfile(userId: string, patch: Partial<User>): Promise<void> {
-  if (!supabase) return;
+export async function remoteUpdateProfile(userId: string, patch: Partial<User>): Promise<boolean> {
+  if (!supabase) return false;
+  let ok = true;
   const isUrl = (v: unknown): v is string => typeof v === "string" && /^https?:\/\//.test(v);
 
   const profile: Record<string, unknown> = {};
@@ -148,7 +149,10 @@ export async function remoteUpdateProfile(userId: string, patch: Partial<User>):
   if (isUrl(patch.avatar)) profile.avatar_url = patch.avatar;
   if (Object.keys(profile).length) {
     const { error } = await supabase.from("profiles").update(profile).eq("id", userId);
-    if (error) console.warn("Ilê Conecta: não foi possível salvar o perfil.", error.message);
+    if (error) {
+      ok = false;
+      console.warn("Ilê Conecta: não foi possível salvar o perfil.", error.message);
+    }
   }
 
   const house: Record<string, unknown> = {};
@@ -158,6 +162,10 @@ export async function remoteUpdateProfile(userId: string, patch: Partial<User>):
   if (Array.isArray(h.tags)) house.tags = h.tags.filter((t) => typeof t === "string").slice(0, 20);
   if (Object.keys(house).length) {
     const { error } = await supabase.from("houses").update(house).eq("owner_id", userId);
-    if (error) console.warn("Ilê Conecta: não foi possível salvar a casa.", error.message);
+    if (error) {
+      ok = false;
+      console.warn("Ilê Conecta: não foi possível salvar a casa.", error.message);
+    }
   }
+  return ok;
 }
