@@ -1,5 +1,5 @@
-import { createSafeStorage } from "@/lib/storageCore.js";
-import type { StorageValidator } from "@/lib/storageCore.js";
+import { createSafeStorage } from "@/lib/storageCore";
+import type { StorageValidator } from "@/lib/storageCore";
 
 const NS = "ile-conecta:v1";
 const storage = createSafeStorage(() => globalThis.localStorage, NS);

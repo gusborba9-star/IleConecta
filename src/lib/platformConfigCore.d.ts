@@ -18,11 +18,11 @@ export interface PlatformConfig {
   scopes: { boost: Record<ScopeKey, boolean>; highlight: Record<ScopeKey, boolean> };
 }
 
-export const FEATURE_KEYS: FeatureKey[];
-export const SCOPE_KEYS: ScopeKey[];
-export const PLAN_IDS: PlanId[];
-export const FEATURE_STATES: FeatureState[];
-export const DEFAULT_CONFIG: PlatformConfig;
-export function sanitizeConfig(raw: unknown): PlatformConfig;
-export function isFeatureOn(config: PlatformConfig, key: FeatureKey, ownerId?: string): boolean;
-export function availableScopes(config: PlatformConfig, kind: "boost" | "highlight"): ScopeKey[];
+export declare const FEATURE_KEYS: FeatureKey[];
+export declare const SCOPE_KEYS: ScopeKey[];
+export declare const PLAN_IDS: PlanId[];
+export declare const FEATURE_STATES: FeatureState[];
+export declare const DEFAULT_CONFIG: PlatformConfig;
+export declare function sanitizeConfig(raw: unknown): PlatformConfig;
+export declare function isFeatureOn(config: PlatformConfig, key: FeatureKey, ownerId?: string): boolean;
+export declare function availableScopes(config: PlatformConfig, kind: "boost" | "highlight"): ScopeKey[];
