@@ -8,6 +8,7 @@ import Profile from "@/pages/Profile";
 import Rituals from "@/pages/Rituals";
 import RitualDetail from "@/pages/RitualDetail";
 import Messages from "@/pages/Messages";
+import RealMessages from "@/pages/RealMessages";
 import Boost from "@/pages/Boost";
 import Discover from "@/pages/Discover";
 import Highlights from "@/pages/Highlights";
@@ -32,6 +33,12 @@ function Protected({ children }: { children: JSX.Element }) {
   }
   if (!currentUser) return <Navigate to="/login" replace />;
   return children;
+}
+
+/** Conta real usa mensagens reais (com a assistente); o modo demonstração mantém as de exemplo. */
+function MessagesRoute() {
+  const { isRemoteAuth } = useApp();
+  return isRemoteAuth ? <RealMessages /> : <Messages />;
 }
 
 /** Casa com conta real começa na página da casa; as demais, no feed. */
@@ -59,8 +66,8 @@ export default function App() {
         <Route path="/rituais/:id" element={<RitualDetail />} />
         <Route path="/casa/:id" element={<HousePage />} />
         <Route path="/perfil" element={<Profile />} />
-        <Route path="/mensagens" element={<Messages />} />
-        <Route path="/mensagens/:id" element={<Messages />} />
+        <Route path="/mensagens" element={<MessagesRoute />} />
+        <Route path="/mensagens/:id" element={<MessagesRoute />} />
         <Route path="/impulsionar" element={<Boost />} />
         <Route path="/destaques" element={<Highlights />} />
         <Route path="/planos" element={<Plans />} />
