@@ -5,6 +5,7 @@ import { Sparkles, Ticket, Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
+import AssistantSettings from "@/components/assistant/AssistantSettings";
 
 export default function Profile() {
   const { currentUser, purchases, rituals, getHouse, posts } = useApp();
@@ -34,6 +35,7 @@ export default function Profile() {
         {currentUser.bio && <p className="mt-4 text-sm text-muted-foreground">{currentUser.bio}</p>}
       </Card>
       <EditProfileModal open={editing} onClose={() => setEditing(false)} />
+      <AssistantSettings />
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">

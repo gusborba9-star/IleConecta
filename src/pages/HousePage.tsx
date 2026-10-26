@@ -7,13 +7,15 @@ import EditProfileModal from "@/components/profile/EditProfileModal";
 import PostCard from "@/components/feed/PostCard";
 import RitualCard from "@/components/feed/RitualCard";
 import { cn, isPromotionActive } from "@/lib/utils";
+import { isRemoteId } from "@/lib/remoteData";
+import AssistantChat from "@/components/assistant/AssistantChat";
 
 export default function HousePage() {
   const { id } = useParams();
-  const { getHouse, posts, rituals, currentUser } = useApp();
+  const { getHouse, posts, rituals, currentUser, isRemoteAuth } = useApp();
   const house = getHouse(id ?? "");
   const nav = useNavigate();
-  const [tab, setTab] = useState<"feed" | "rituais" | "sobre">("feed");
+  const [tab, setTab] = useState<"feed" | "rituais" | "assistente" | "sobre">("feed");
   const [editing, setEditing] = useState(false);
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
@@ -27,6 +29,8 @@ export default function HousePage() {
     );
 
   const isOwn = currentUser?.id === house.id;
+  const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn;
+  const tabs = (hasAssistant ? ["feed", "rituais", "assistente", "sobre"] : ["feed", "rituais", "sobre"]) as ("feed" | "rituais" | "assistente" | "sobre")[];
   const activeBoost = isPromotionActive(house.boost?.expiresAt) ? house.boost : undefined;
 
   return (
@@ -83,7 +87,7 @@ export default function HousePage() {
           </div>
 
           <div className="mt-6 flex gap-1 border-b border-border">
-            {(["feed", "rituais", "sobre"] as const).map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -110,6 +114,7 @@ export default function HousePage() {
         {tab === "rituais" && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
+        {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
           <Card className="p-6 space-y-4">
             <div>
