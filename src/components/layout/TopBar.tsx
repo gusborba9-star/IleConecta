@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, Settings, Crown, Star, History, LifeBuoy } from "lucide-react";
+import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, Settings, Crown, Star, History, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { Avatar, Button } from "@/components/base";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
   const { currentUser, logout } = useApp();
+  const { isAdmin } = usePlatformConfig();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,6 +83,7 @@ export default function TopBar() {
                   ) : (
                     <MenuItem onClick={() => { setMenu(false); nav("/atividade"); }} icon={History} label="Minha atividade" />
                   )}
+                  {isAdmin && <MenuItem onClick={() => { setMenu(false); nav("/admin"); }} icon={ShieldCheck} label="Painel administrativo" />}
                   <MenuItem onClick={() => { setMenu(false); nav("/suporte"); }} icon={LifeBuoy} label="Suporte e informações" />
                   <MenuItem onClick={() => { logout(); nav("/login"); }} icon={LogOut} label="Sair" tone="danger" />
                 </div>

@@ -14,7 +14,7 @@ export function isUserRecord(value) {
   if (!isNonEmptyString(value.cover) || !isNonEmptyString(value.category) || !isStringArray(value.tags)) return false;
   if (!isFiniteNumber(value.rating) || !isFiniteNumber(value.followers)) return false;
   if (value.boost !== undefined && (!isRecord(value.boost) || !["cidade", "estado", "pais"].includes(value.boost.level) || !isTimestamp(value.boost.expiresAt))) return false;
-  if (value.highlight !== undefined && (!isRecord(value.highlight) || !["local", "cidade", "pais"].includes(value.highlight.scope) || !isTimestamp(value.highlight.expiresAt))) return false;
+  if (value.highlight !== undefined && (!isRecord(value.highlight) || !["local", "cidade", "estado", "pais"].includes(value.highlight.scope) || !isTimestamp(value.highlight.expiresAt))) return false;
   return true;
 }
 

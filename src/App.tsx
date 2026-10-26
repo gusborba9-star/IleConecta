@@ -15,6 +15,7 @@ import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
 import Info from "@/pages/Info";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/sobre/:slug" element={<Info />} />
+        <Route path="/admin" element={<Admin />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

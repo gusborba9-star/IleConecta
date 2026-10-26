@@ -3,13 +3,14 @@ import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { isFeatureOn } from "@/lib/platformConfig";
 import { DAYS, fetchMyAssistant, saveMyAssistant, type AssistantConfig } from "@/lib/assistant";
-
-const PLAN_LABEL = { base: "Base", intermediario: "Intermediário", maximo: "Máximo" } as const;
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
 export default function AssistantSettings() {
   const { currentUser, isRemoteAuth } = useApp();
+  const { config } = usePlatformConfig();
   const [cfg, setCfg] = useState<AssistantConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,9 @@ export default function AssistantSettings() {
   }, [show, userId]);
 
   if (!show) return null;
+  if (!isFeatureOn(config, "assistant", userId)) {
+    return <Card className="p-5 text-sm text-muted-foreground">A assistente virtual ainda não foi liberada para a sua casa.</Card>;
+  }
   if (loading) return <Card className="p-5 text-sm text-muted-foreground">Carregando assistente…</Card>;
   if (!cfg) return null;
 
@@ -51,17 +55,17 @@ export default function AssistantSettings() {
       <div className="flex items-center gap-2">
         <Bot className="h-5 w-5 text-primary" />
         <h2 className="font-display font-bold text-lg flex-1">Assistente virtual</h2>
-        <Badge tone={available ? "primary" : "muted"}>Plano {PLAN_LABEL[cfg.plan]}</Badge>
+        <Badge tone={available ? "primary" : "muted"}>Plano {config.pricing.plans[cfg.plan].name}</Badge>
       </div>
 
       {!available && (
         <p className="text-sm text-muted-foreground">
-          O plano Base não inclui a assistente. Você já pode deixar tudo configurado; ela passa a responder quando o plano for atualizado.
+          O plano {config.pricing.plans.base.name} não inclui a assistente. Você já pode deixar tudo configurado; ela passa a responder quando o plano for atualizado.
         </p>
       )}
       {cfg.plan === "intermediario" && (
         <p className="text-sm text-muted-foreground">
-          No plano Intermediário a assistente informa e orienta (até 300 respostas por mês). Venda pelo chat e descontos são do plano Máximo.
+          No plano {config.pricing.plans.intermediario.name} a assistente informa e orienta (até 300 respostas por mês). Venda pelo chat e descontos são do plano {config.pricing.plans.maximo.name}.
         </p>
       )}
 

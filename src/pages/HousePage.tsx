@@ -9,10 +9,13 @@ import RitualCard from "@/components/feed/RitualCard";
 import { cn, isPromotionActive } from "@/lib/utils";
 import { isRemoteId } from "@/lib/remoteData";
 import AssistantChat from "@/components/assistant/AssistantChat";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { isFeatureOn } from "@/lib/platformConfig";
 
 export default function HousePage() {
   const { id } = useParams();
   const { getHouse, posts, rituals, currentUser, isRemoteAuth } = useApp();
+  const { config } = usePlatformConfig();
   const house = getHouse(id ?? "");
   const nav = useNavigate();
   const [tab, setTab] = useState<"feed" | "rituais" | "assistente" | "sobre">("feed");
@@ -29,7 +32,7 @@ export default function HousePage() {
     );
 
   const isOwn = currentUser?.id === house.id;
-  const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn;
+  const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn && isFeatureOn(config, "assistant", house.id);
   const tabs = (hasAssistant ? ["feed", "rituais", "assistente", "sobre"] : ["feed", "rituais", "sobre"]) as ("feed" | "rituais" | "assistente" | "sobre")[];
   const activeBoost = isPromotionActive(house.boost?.expiresAt) ? house.boost : undefined;
 

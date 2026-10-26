@@ -4,11 +4,13 @@ import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchMyAssistant } from "@/lib/assistant";
 import { PLANS, formatMoney, type PlanId } from "@/lib/pricing";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate } from "react-router-dom";
 
 export default function Plans() {
   const { currentUser, isRemoteAuth } = useApp();
   const nav = useNavigate();
+  const { config } = usePlatformConfig();
   const [mine, setMine] = useState<PlanId | null>(null);
   const isHouse = currentUser?.type === "commercial";
   const userId = currentUser?.id;
@@ -32,16 +34,18 @@ export default function Plans() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {PLANS.map((p) => (
+        {PLANS.map((p) => {
+          const info = config.pricing.plans[p.id];
+          return (
           <Card key={p.id} className={`p-5 flex flex-col ${mine === p.id ? "border-primary" : ""}`}>
             <div className="flex items-center gap-2">
-              <h2 className="font-display font-bold text-xl flex-1">{p.name}</h2>
+              <h2 className="font-display font-bold text-xl flex-1">{info.name}</h2>
               {mine === p.id && <Badge tone="primary">Seu plano</Badge>}
             </div>
             <p className="text-sm text-muted-foreground">{p.tagline}</p>
             <div className="mt-3">
-              <span className="font-display font-bold text-2xl text-primary">{formatMoney(p.monthly)}</span>
-              {p.monthly !== null && <span className="text-sm text-muted-foreground"> / mês</span>}
+              <span className="font-display font-bold text-2xl text-primary">{formatMoney(info.monthly)}</span>
+              {info.monthly !== null && <span className="text-sm text-muted-foreground"> / mês</span>}
             </div>
             <ul className="mt-4 space-y-2 text-sm flex-1">
               {p.benefits.map((b) => (
@@ -54,7 +58,8 @@ export default function Plans() {
               </Button>
             ) : null}
           </Card>
-        ))}
+          );
+        })}
       </div>
       <p className="text-xs text-muted-foreground">A contratação de planos pela plataforma ainda não está disponível; por enquanto a troca é feita pelo suporte.</p>
     </div>

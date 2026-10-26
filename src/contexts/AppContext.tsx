@@ -55,7 +55,7 @@ interface AppState {
   commentPost: (postId: string, text: string) => void;
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
-  applyHighlight: (scope: "local" | "cidade" | "pais", days: number) => void;
+  applyHighlight: (scope: "local" | "cidade" | "estado" | "pais", days: number) => void;
   sendMessage: (toUserId: string, text: string) => boolean;
   getConversationWith: (otherId: string) => Conversation | null;
   getHouse: (id: string) => HouseUser | null;
