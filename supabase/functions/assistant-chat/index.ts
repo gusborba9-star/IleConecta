@@ -124,14 +124,20 @@ Deno.serve(async (req) => {
   const [{ data: history }, { data: services }, { data: events }] = await Promise.all([
     admin.from("messages").select("sender_id, from_assistant, text, created_at")
       .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
-    admin.from("services").select("kind, title, description, price_cents").eq("house_id", house.id).eq("active", true).limit(30),
-    admin.from("events").select("title, description, price_cents, mode, starts_at")
+    admin.from("services").select("kind, custom_kind, delivery, title, description, price_cents").eq("house_id", house.id).eq("active", true).limit(30),
+    admin.from("events").select("id, title, description, price_cents, mode, starts_at, seats_total, intake_fields")
       .eq("house_id", house.id).eq("status", "publicado").gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true }).limit(15),
   ]);
 
+  // Vagas restantes vêm do banco (nunca da IA).
+  const eventsWithSeats = await Promise.all((events ?? []).map(async (e) => {
+    const { data: taken } = await admin.rpc("event_taken", { p_event: e.id });
+    return { ...e, seats_left: Number(e.seats_total) - Number(taken ?? 0) };
+  }));
+
   const system = buildSystemPrompt({
-    house, assistant, services: services ?? [], events: events ?? [], plan: house.plan,
+    house, assistant, services: services ?? [], events: eventsWithSeats, plan: house.plan,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 

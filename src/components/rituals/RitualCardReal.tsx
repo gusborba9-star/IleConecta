@@ -12,6 +12,7 @@ interface Props {
   onReserve: () => void;
   onCancelMine: () => void;
   onChat: () => void;
+  onAsk?: () => void;
   onEdit: () => void;
   onAttendees: () => void;
   onPublish: () => void;
@@ -26,7 +27,7 @@ const when = (iso: string) =>
 
 const STATUS_LABEL = { rascunho: "Rascunho", publicado: "Publicado", encerrado: "Encerrado", cancelado: "Cancelado" } as const;
 
-export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCancelMine, onChat, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
+export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCancelMine, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
   const left = seatsLeft(r.seatsTotal, r.taken);
   const state = seatsState(r.seatsTotal, r.taken);
   const pct = r.seatsTotal ? Math.round((r.taken / r.seatsTotal) * 100) : 0;
@@ -94,10 +95,12 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
           </>
         ) : mine ? (
           open && <Button size="sm" variant="outline" onClick={onCancelMine}>Cancelar minha vaga</Button>
-        ) : open && state !== "esgotado" ? (
-          <Button size="sm" onClick={onReserve}>Reservar vaga</Button>
         ) : (
-          <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
+          <>
+            {open && state !== "esgotado" && <Button size="sm" onClick={onReserve}>Reservar vaga</Button>}
+            {onAsk && <Button size="sm" variant="outline" onClick={onAsk}>Perguntar à assistente</Button>}
+            <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
+          </>
         )}
       </div>
     </Card>

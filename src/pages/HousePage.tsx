@@ -125,12 +125,12 @@ export default function HousePage() {
         {tab === "feed" && housePosts.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Ainda não há publicações desta casa.</Card>
         )}
-        {tab === "rituais" && hasServices && <RitualsTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} />}
+        {tab === "rituais" && hasServices && <RitualsTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} />}
         {tab === "rituais" && !hasServices && houseRituals.map((r) => <RitualCard key={r.id} ritual={r} />)}
         {tab === "rituais" && !hasServices && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
-        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} />}
+        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
           <Card className="p-6 space-y-4">

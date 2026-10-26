@@ -18,9 +18,10 @@ interface Props {
   ownerId: string;
   isOwn: boolean;
   startNew?: boolean;
+  onAskAssistant?: () => void;
 }
 
-export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
+export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
   const { currentUser } = useApp();
   const nav = useNavigate();
   const [items, setItems] = useState<RealRitual[] | null>(null);
@@ -131,6 +132,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
           onReserve={() => setReserving(r)}
           onCancelMine={() => void cancelMine(r)}
           onChat={() => nav(`/mensagens/${ownerId}`)}
+          onAsk={onAskAssistant}
           onEdit={() => void openEdit(r)}
           onAttendees={() => setAttendeesOf(r)}
           onPublish={() => void act(() => setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
