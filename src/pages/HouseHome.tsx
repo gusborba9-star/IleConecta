@@ -29,9 +29,9 @@ export default function HouseHome() {
   if (!house) return null;
 
   const steps = [
-    { done: hasOwnPhoto(house.avatar), label: "Adicione a foto da casa", to: "/perfil" },
-    { done: hasOwnCover(house.cover), label: "Escolha uma capa", to: "/perfil" },
-    { done: Boolean(house.bio?.trim()), label: "Escreva a apresentação da casa", to: "/perfil" },
+    { done: hasOwnPhoto(house.avatar), label: "Adicione a foto da casa", to: `/casa/${house.id}?editar=1` },
+    { done: hasOwnCover(house.cover), label: "Escolha uma capa", to: `/casa/${house.id}?editar=1` },
+    { done: Boolean(house.bio?.trim()), label: "Escreva a apresentação da casa", to: `/casa/${house.id}?editar=1` },
     { done: (serviceCount ?? 0) > 0, label: "Cadastre o primeiro serviço", to: `/casa/${house.id}?aba=servicos&novo=1` },
   ];
   const remaining = steps.filter((s) => !s.done).length;
