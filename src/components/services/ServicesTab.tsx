@@ -12,9 +12,11 @@ interface Props {
   ownerId: string;
   isOwn: boolean;
   startNew?: boolean;
+  /** Quando a casa tem assistente, leva o cliente até ela. */
+  onAskAssistant?: () => void;
 }
 
-export default function ServicesTab({ ownerId, isOwn, startNew }: Props) {
+export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
   const nav = useNavigate();
   const [items, setItems] = useState<Service[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -103,7 +105,10 @@ export default function ServicesTab({ ownerId, isOwn, startNew }: Props) {
                     <Button size="sm" variant="ghost" onClick={() => remove(s)}>Excluir</Button>
                   </>
                 ) : (
-                  <Button size="sm" onClick={() => nav(`/mensagens/${ownerId}`)}>Conversar para agendar</Button>
+                  <>
+                    {onAskAssistant && <Button size="sm" variant="outline" onClick={onAskAssistant}>Perguntar à assistente</Button>}
+                    <Button size="sm" onClick={() => nav(`/mensagens/${ownerId}`)}>Conversar para agendar</Button>
+                  </>
                 )}
               </div>
             </div>
