@@ -44,10 +44,13 @@ export async function fetchRemoteHouses(): Promise<HouseUser[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("houses")
-    .select("id, owner_id, name, category, tags, cover_url, verified, created_at, profiles(avatar_url, bio, city, state, country, created_at)")
+    .select("id, owner_id, name, category, tags, cover_url, verified, created_at, profiles!houses_owner_id_fkey(avatar_url, bio, city, state, country, created_at)")
     .order("created_at", { ascending: false })
     .limit(200);
-  if (error || !data) return [];
+  if (error || !data) {
+    console.error("Ilê Conecta: não foi possível carregar as casas.", error?.message);
+    return [];
+  }
   return (data as Row[]).map(toHouse);
 }
 
