@@ -9,6 +9,7 @@ import {
   checkGate,
   cleanReply,
   cleanUserText,
+  featureEnabled,
   monthStartISO,
   planLimits,
   toChatMessages,
@@ -68,6 +69,12 @@ Deno.serve(async (req) => {
     .eq("owner_id", body.house_id)
     .maybeSingle();
   if (!house) return json(404, { error: "casa_nao_encontrada" });
+
+  // Interruptor do painel admin: desligado (ou em teste para outras casas) bloqueia antes de qualquer custo.
+  const { data: featRow } = await admin.from("platform_settings").select("value").eq("key", "features").maybeSingle();
+  if (!featureEnabled(featRow?.value, "assistant", house.owner_id)) {
+    return json(403, { error: "recurso_desativado", message: "A assistente está temporariamente indisponível." });
+  }
 
   const { data: assistant } = await admin
     .from("assistants")

@@ -10,6 +10,7 @@ import {
   checkGate,
   cleanReply,
   cleanUserText,
+  featureEnabled,
   formatCents,
   monthStartISO,
   toChatMessages,
@@ -109,4 +110,14 @@ test("histórico: limita, mantém ordem e separa assistente de cliente", () => {
 
 test("cota mensal começa no dia 1 em UTC", () => {
   assert.equal(monthStartISO(new Date("2026-10-25T23:59:00Z")), "2026-10-01T00:00:00.000Z");
+});
+
+test("interruptor do painel: sem configuração liga; desligado bloqueia; beta só para casas listadas", () => {
+  assert.equal(featureEnabled(undefined, "assistant", "a"), true);
+  assert.equal(featureEnabled({}, "assistant", "a"), true);
+  assert.equal(featureEnabled({ assistant: { state: "off" } }, "assistant", "a"), false);
+  assert.equal(featureEnabled({ assistant: { state: "on" } }, "assistant", "a"), true);
+  assert.equal(featureEnabled({ assistant: { state: "beta", beta_houses: ["a"] } }, "assistant", "a"), true);
+  assert.equal(featureEnabled({ assistant: { state: "beta", beta_houses: ["a"] } }, "assistant", "b"), false);
+  assert.equal(featureEnabled({ assistant: { state: "beta" } }, "assistant", "a"), false);
 });

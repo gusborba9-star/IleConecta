@@ -17,6 +17,18 @@ export function planLimits(plan) {
   return PLAN_LIMITS[plan] ?? PLAN_LIMITS.base;
 }
 
+/**
+ * Interruptor do painel admin (platform_settings.features). Sem configuração válida, o recurso fica ligado.
+ * "beta" liga só para os donos de casa listados em beta_houses.
+ */
+export function featureEnabled(features, name, ownerId) {
+  const f = features && typeof features === "object" ? features[name] : undefined;
+  if (!f || typeof f !== "object") return true;
+  if (f.state === "off") return false;
+  if (f.state === "beta") return Array.isArray(f.beta_houses) && f.beta_houses.includes(ownerId);
+  return true;
+}
+
 /** Texto do cliente: remove controles, normaliza espaços e corta no limite. Devolve "" se vazio. */
 export function cleanUserText(raw) {
   if (typeof raw !== "string") return "";
