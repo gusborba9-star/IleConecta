@@ -16,6 +16,7 @@ import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
 import Info from "@/pages/Info";
 import Admin from "@/pages/Admin";
+import HouseHome from "@/pages/HouseHome";
 import AdminUsers from "@/components/admin/AdminUsers";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
@@ -33,6 +34,12 @@ function Protected({ children }: { children: JSX.Element }) {
   return children;
 }
 
+/** Casa com conta real começa na página da casa; as demais, no feed. */
+function Home() {
+  const { currentUser, isRemoteAuth } = useApp();
+  return isRemoteAuth && currentUser?.type === "commercial" ? <HouseHome /> : <Feed />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -45,7 +52,8 @@ export default function App() {
           </Protected>
         }
       >
-        <Route path="/" element={<Feed />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/comunidade" element={<Feed />} />
         <Route path="/descobrir" element={<Discover />} />
         <Route path="/rituais" element={<Rituals />} />
         <Route path="/rituais/:id" element={<RitualDetail />} />

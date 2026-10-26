@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserPlus } from "lucide-react";
@@ -9,8 +9,12 @@ import RitualCard from "@/components/feed/RitualCard";
 import { cn, isPromotionActive } from "@/lib/utils";
 import { isRemoteId } from "@/lib/remoteData";
 import AssistantChat from "@/components/assistant/AssistantChat";
+import ServicesTab from "@/components/services/ServicesTab";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
+
+type Tab = "feed" | "servicos" | "rituais" | "assistente" | "sobre";
+const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", assistente: "Assistente", sobre: "Sobre" };
 
 export default function HousePage() {
   const { id } = useParams();
@@ -18,7 +22,9 @@ export default function HousePage() {
   const { config } = usePlatformConfig();
   const house = getHouse(id ?? "");
   const nav = useNavigate();
-  const [tab, setTab] = useState<"feed" | "rituais" | "assistente" | "sobre">("feed");
+  const [params] = useSearchParams();
+  const startTab = params.get("aba");
+  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : "feed");
   const [editing, setEditing] = useState(false);
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
@@ -33,7 +39,8 @@ export default function HousePage() {
 
   const isOwn = currentUser?.id === house.id;
   const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn && isFeatureOn(config, "assistant", house.id);
-  const tabs = (hasAssistant ? ["feed", "rituais", "assistente", "sobre"] : ["feed", "rituais", "sobre"]) as ("feed" | "rituais" | "assistente" | "sobre")[];
+  const hasServices = isRemoteAuth && isRemoteId(house.id);
+  const tabs: Tab[] = ["feed", ...(hasServices ? (["servicos"] as Tab[]) : []), "rituais", ...(hasAssistant ? (["assistente"] as Tab[]) : []), "sobre"];
   const activeBoost = isPromotionActive(house.boost?.expiresAt) ? house.boost : undefined;
 
   return (
@@ -50,7 +57,9 @@ export default function HousePage() {
         </div>
         <div className="px-6 pb-6">
           <div className="flex flex-wrap items-end gap-4 -mt-12">
-            <Avatar src={house.avatar} name={house.name} size={112} ring="gold" />
+            <div className="relative z-10">
+              <Avatar src={house.avatar} name={house.name} size={112} ring="gold" />
+            </div>
             <div className="flex-1 min-w-0 pt-14">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-display font-bold text-2xl md:text-3xl">{house.name}</h1>
@@ -68,7 +77,7 @@ export default function HousePage() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 pt-14">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto pt-1 sm:pt-14">
               {isOwn ? (
                 <>
                   <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" /> Editar página</Button>
@@ -89,17 +98,19 @@ export default function HousePage() {
             ))}
           </div>
 
-          <div className="mt-6 flex gap-1 border-b border-border">
+          <div className="mt-6 flex gap-1 border-b border-border overflow-x-auto whitespace-nowrap" role="tablist">
             {tabs.map((t) => (
               <button
                 key={t}
+                role="tab"
+                aria-selected={tab === t}
                 onClick={() => setTab(t)}
                 className={cn(
-                  "px-4 py-3 text-sm font-semibold capitalize transition -mb-px",
+                  "px-4 py-3 text-sm font-semibold transition -mb-px shrink-0",
                   tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {t === "feed" ? "Publicações" : t}
+                {TAB_LABEL[t]}
               </button>
             ))}
           </div>
@@ -117,6 +128,7 @@ export default function HousePage() {
         {tab === "rituais" && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
+        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
           <Card className="p-6 space-y-4">
