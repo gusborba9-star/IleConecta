@@ -1,15 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import RitualCard from "@/components/feed/RitualCard";
 import { Card, Input, Badge } from "@/components/base";
 import { Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
+import { modeLabel, seatsLeft } from "@/lib/ritualsCore";
+import { formatCents } from "@/lib/servicesCore";
 
 const CATEGORIES = ["Todos", "prosperidade", "amor", "cura", "proteção", "justiça", "consulta"];
 const MODES = ["Todos", "presencial", "distancia", "hibrido"] as const;
 
 export default function Rituals() {
-  const { rituals } = useApp();
+  const { rituals, isRemoteAuth } = useApp();
+  const [real, setReal] = useState<RealRitual[]>([]);
+  useEffect(() => {
+    if (!isRemoteAuth) return;
+    let alive = true;
+    void fetchPublishedRituals().then((r) => alive && setReal(r));
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todos");
   const [mode, setMode] = useState<typeof MODES[number]>("Todos");
@@ -69,6 +82,27 @@ export default function Rituals() {
           ))}
         </div>
       </Card>
+
+      {real.length > 0 && (
+        <section aria-label="Rituais das casas" className="space-y-3">
+          <h2 className="font-display font-bold text-lg">Próximos rituais das casas</h2>
+          {real.map((r) => (
+            <Card key={r.id} className="p-4">
+              <div className="flex flex-wrap items-center gap-3 justify-between">
+                <div className="min-w-0">
+                  <div className="font-semibold">{r.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {r.houseName} · {modeLabel(r.mode)} · {new Date(r.startsAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })} · {seatsLeft(r.seatsTotal, r.taken)} vagas · {formatCents(r.priceCents)}
+                  </div>
+                </div>
+                {r.ownerId && (
+                  <Link to={`/casa/${r.ownerId}?aba=rituais`} className="text-sm font-semibold text-primary underline">Ver e reservar</Link>
+                )}
+              </div>
+            </Card>
+          ))}
+        </section>
+      )}
 
       <div className="space-y-3">
         {filtered.map((r) => (
