@@ -109,6 +109,8 @@ export async function remoteRegister(input: RegisterInput): Promise<AuthResult> 
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
+      // O link de confirmação volta para este site (precisa estar em Redirect URLs no Supabase).
+      emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
       // Lido pelo gatilho handle_new_user no banco (cria perfil, casa e assistente).
       data: {
         account_type: input.type === "commercial" ? "casa" : "cliente",
