@@ -21,11 +21,11 @@ export type ServiceValidation =
   | { ok: true; errors: Record<string, never>; value: ServiceValue }
   | { ok: false; errors: Partial<Record<"kind" | "customKind" | "title" | "description" | "price" | "delivery", string>>; value: null };
 
-export const SERVICE_KINDS: { id: ServiceKind; label: string }[];
-export const SERVICE_DELIVERIES: { id: ServiceDelivery; label: string; hint: string }[];
-export const MAX_PRICE_CENTS: number;
-export function parsePriceToCents(text: string): number | null;
-export function formatCents(cents: number): string;
-export function kindLabel(kind: string, customKind?: string | null): string;
-export function deliveryLabel(delivery: string): string;
-export function validateService(input: ServiceFormInput): ServiceValidation;
+export declare const SERVICE_KINDS: { id: ServiceKind; label: string }[];
+export declare const SERVICE_DELIVERIES: { id: ServiceDelivery; label: string; hint: string }[];
+export declare const MAX_PRICE_CENTS: number;
+export declare function parsePriceToCents(text: string): number | null;
+export declare function formatCents(cents: number): string;
+export declare function kindLabel(kind: string, customKind?: string | null): string;
+export declare function deliveryLabel(delivery: string): string;
+export declare function validateService(input: ServiceFormInput): ServiceValidation;
