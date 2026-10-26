@@ -22,7 +22,7 @@ import {
   isRitualsState,
   isStoriesState,
   isUsersState,
-} from "@/lib/persistedState";
+} from "@/lib/persistedState.js";
 
 interface AppState {
   currentUser: User | null;
