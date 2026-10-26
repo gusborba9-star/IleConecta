@@ -10,6 +10,7 @@ import { cn, isPromotionActive } from "@/lib/utils";
 import { isRemoteId } from "@/lib/remoteData";
 import AssistantChat from "@/components/assistant/AssistantChat";
 import ServicesTab from "@/components/services/ServicesTab";
+import RitualsTab from "@/components/rituals/RitualsTab";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 
@@ -24,7 +25,7 @@ export default function HousePage() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const startTab = params.get("aba");
-  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : "feed");
+  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : "feed");
   const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
@@ -124,8 +125,9 @@ export default function HousePage() {
         {tab === "feed" && housePosts.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Ainda não há publicações desta casa.</Card>
         )}
-        {tab === "rituais" && houseRituals.map((r) => <RitualCard key={r.id} ritual={r} />)}
-        {tab === "rituais" && houseRituals.length === 0 && (
+        {tab === "rituais" && hasServices && <RitualsTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} />}
+        {tab === "rituais" && !hasServices && houseRituals.map((r) => <RitualCard key={r.id} ritual={r} />)}
+        {tab === "rituais" && !hasServices && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
         {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} />}
