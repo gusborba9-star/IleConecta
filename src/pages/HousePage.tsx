@@ -25,7 +25,7 @@ export default function HousePage() {
   const [params] = useSearchParams();
   const startTab = params.get("aba");
   const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : "feed");
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
 
