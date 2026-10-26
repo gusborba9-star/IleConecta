@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy } from "lucide-react";
+import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Card } from "@/components/base";
 import { INFO_PAGES } from "@/content/institutional";
@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 export default function SideNav() {
-  const { currentUser } = useApp();
+  const { currentUser, isRemoteAuth } = useApp();
   const isHouse = currentUser?.type === "commercial";
 
   return (
@@ -23,6 +23,7 @@ export default function SideNav() {
         <div className="altar-divider my-3 rounded" />
         <nav className="flex flex-col gap-1">
           <NavItem to="/" icon={Home} label="Início" />
+          {isHouse && isRemoteAuth && <NavItem to="/comunidade" icon={Newspaper} label="Comunidade" />}
           <NavItem to="/descobrir" icon={Compass} label="Casas" />
           <NavItem to="/rituais" icon={Sparkles} label="Rituais & Trabalhos" />
           <NavItem to="/mensagens" icon={MessageCircle} label="Mensagens" />
