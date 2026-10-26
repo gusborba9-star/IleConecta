@@ -10,6 +10,11 @@ import RitualDetail from "@/pages/RitualDetail";
 import Messages from "@/pages/Messages";
 import Boost from "@/pages/Boost";
 import Discover from "@/pages/Discover";
+import Highlights from "@/pages/Highlights";
+import Plans from "@/pages/Plans";
+import Activity from "@/pages/Activity";
+import Support from "@/pages/Support";
+import Info from "@/pages/Info";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 
@@ -47,6 +52,11 @@ export default function App() {
         <Route path="/mensagens" element={<Messages />} />
         <Route path="/mensagens/:id" element={<Messages />} />
         <Route path="/impulsionar" element={<Boost />} />
+        <Route path="/destaques" element={<Highlights />} />
+        <Route path="/planos" element={<Plans />} />
+        <Route path="/atividade" element={<Activity />} />
+        <Route path="/suporte" element={<Support />} />
+        <Route path="/sobre/:slug" element={<Info />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

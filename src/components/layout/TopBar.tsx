@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame } from "lucide-react";
+import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, Settings, Crown, Star, History, LifeBuoy } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button } from "@/components/base";
 import { useState } from "react";
@@ -71,9 +71,17 @@ export default function TopBar() {
                 </div>
                 <div className="py-2">
                   <MenuItem onClick={() => { setMenu(false); nav(currentUser?.type === "commercial" ? `/casa/${currentUser.id}` : "/perfil"); }} icon={User} label="Meu perfil" />
-                  {currentUser?.type === "commercial" && (
-                    <MenuItem onClick={() => { setMenu(false); nav("/impulsionar"); }} icon={Sparkles} label="Impulsionar minha casa" />
+                  {currentUser?.type === "commercial" ? (
+                    <>
+                      <MenuItem onClick={() => { setMenu(false); nav("/perfil"); }} icon={Settings} label="Perfil e assistente" />
+                      <MenuItem onClick={() => { setMenu(false); nav("/planos"); }} icon={Crown} label="Planos e upgrade" />
+                      <MenuItem onClick={() => { setMenu(false); nav("/impulsionar"); }} icon={Sparkles} label="Impulsionar" />
+                      <MenuItem onClick={() => { setMenu(false); nav("/destaques"); }} icon={Star} label="Destaques nos feeds" />
+                    </>
+                  ) : (
+                    <MenuItem onClick={() => { setMenu(false); nav("/atividade"); }} icon={History} label="Minha atividade" />
                   )}
+                  <MenuItem onClick={() => { setMenu(false); nav("/suporte"); }} icon={LifeBuoy} label="Suporte e informações" />
                   <MenuItem onClick={() => { logout(); nav("/login"); }} icon={LogOut} label="Sair" tone="danger" />
                 </div>
               </div>

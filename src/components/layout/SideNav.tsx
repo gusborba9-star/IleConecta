@@ -1,7 +1,8 @@
 import { Link, NavLink } from "react-router-dom";
-import { Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Bookmark, Users } from "lucide-react";
+import { Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { Avatar, Badge, Card } from "@/components/base";
+import { Avatar, Card } from "@/components/base";
+import { INFO_PAGES } from "@/content/institutional";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -16,53 +17,53 @@ export default function SideNav() {
           <Avatar src={currentUser?.avatar} name={currentUser?.name} size={44} ring={isHouse ? "gold" : "none"} />
           <div className="min-w-0">
             <div className="font-semibold truncate">{currentUser?.name}</div>
-            <div className="text-xs text-muted-foreground">{isHouse ? "Casa · Comercial" : "Cliente"}</div>
+            <div className="text-xs text-muted-foreground">{isHouse ? "Minha casa" : "Cliente"}</div>
           </div>
         </Link>
         <div className="altar-divider my-3 rounded" />
         <nav className="flex flex-col gap-1">
-          <NavItem to="/" icon={Home} label="Feed" />
-          <NavItem to="/descobrir" icon={Compass} label="Descobrir Casas" />
+          <NavItem to="/" icon={Home} label="Início" />
+          <NavItem to="/descobrir" icon={Compass} label="Casas" />
           <NavItem to="/rituais" icon={Sparkles} label="Rituais & Trabalhos" />
           <NavItem to="/mensagens" icon={MessageCircle} label="Mensagens" />
           {isHouse ? (
             <>
-              <NavItem to="/impulsionar" icon={TrendingUp} label="Impulsionar" tone="gold" />
-              <NavItem to={`/casa/${currentUser?.id}`} icon={User} label="Página da Casa" />
+              <NavItem to={`/casa/${currentUser?.id}`} icon={User} label="Minha página" />
+              <NavItem to="/perfil" icon={Settings} label="Perfil e assistente" />
             </>
           ) : (
-            <NavItem to="/perfil" icon={User} label="Meu Perfil" />
+            <>
+              <NavItem to="/atividade" icon={History} label="Minha atividade" />
+              <NavItem to="/perfil" icon={User} label="Meu perfil" />
+            </>
           )}
         </nav>
       </Card>
 
       {isHouse && (
-        <Card className="p-4 bg-gradient-to-br from-gold/20 via-transparent to-primary/10 border-gold/40">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <div className="text-sm font-semibold">Simule o alcance da sua casa</div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Visualize opções demonstrativas de alcance por cidade, estado ou país. Não há compra de mídia.
-          </p>
-          <Link to="/impulsionar" className="block mt-3 text-sm font-semibold text-primary hover:underline">
-            Ver simulações →
-          </Link>
+        <Card className="p-3">
+          <div className="px-3 pb-1 text-xs uppercase tracking-widest text-muted-foreground">Crescer</div>
+          <nav className="flex flex-col gap-1">
+            <NavItem to="/planos" icon={Crown} label="Planos e upgrade" tone="gold" />
+            <NavItem to="/impulsionar" icon={TrendingUp} label="Impulsionar" tone="gold" />
+            <NavItem to="/destaques" icon={Star} label="Destaques nos feeds" tone="gold" />
+          </nav>
         </Card>
       )}
 
-      <Card className="p-4">
-        <div className="flex items-center gap-2 mb-2 text-sm font-semibold">
-          <Users className="h-4 w-4" /> Atalhos
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Badge tone="primary">Prosperidade</Badge>
-          <Badge tone="gold">Amor</Badge>
-          <Badge tone="forest">Cura</Badge>
-          <Badge tone="muted">Búzios</Badge>
-          <Badge tone="muted">Ogum</Badge>
-          <Badge tone="muted">Oxum</Badge>
-        </div>
+      <Card className="p-3">
+        <nav className="flex flex-col gap-0.5">
+          <NavItem to="/suporte" icon={LifeBuoy} label="Suporte" />
+          {INFO_PAGES.map((p) => (
+            <NavLink
+              key={p.slug}
+              to={`/sobre/${p.slug}`}
+              className={({ isActive }) => cn("px-3 py-1.5 rounded-lg text-xs transition", isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground")}
+            >
+              {p.title}
+            </NavLink>
+          ))}
+        </nav>
       </Card>
     </div>
   );
