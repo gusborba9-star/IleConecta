@@ -1,3 +1,5 @@
+import RefundModal from "@/components/refunds/RefundModal";
+import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, withdrawRefund, type RefundRequest } from "@/lib/refunds";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -31,11 +33,18 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
   const [editStream, setEditStream] = useState("");
   const [attendeesOf, setAttendeesOf] = useState<RealRitual | null>(null);
   const [reserving, setReserving] = useState<RealRitual | null>(null);
+  const [refunding, setRefunding] = useState<{ kind: "reserva"; id: string; title: string } | null>(null);
+  const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [refunds, setRefunds] = useState<RefundRequest[]>([]);
   const userId = currentUser?.id;
 
   const load = useCallback(async () => {
     setItems(await fetchHouseRituals(ownerId));
-    if (userId && !isOwn) setMine(await fetchMyReservations(userId));
+    if (userId && !isOwn) {
+      setMine(await fetchMyReservations(userId));
+      setPaid(await fetchMyPaidSources());
+      setRefunds(await fetchMyRefunds(userId));
+    }
   }, [ownerId, userId, isOwn]);
 
   const loadRef = useRef(load);
@@ -108,6 +117,16 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
     }
   };
 
+  const withdrawMine = async (id: string) => {
+    if (!window.confirm("Retirar o pedido de reembolso?")) return;
+    const error = await withdrawRefund(id);
+    if (error) toast.error(error);
+    else {
+      toast.success("Pedido retirado.");
+      await load();
+    }
+  };
+
   if (items === null) return <Card className="p-8 text-center text-muted-foreground">Carregando rituais…</Card>;
 
   const visible = isOwn ? items : items.filter((r) => r.status === "publicado" || r.status === "encerrado");
@@ -139,6 +158,10 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
           mine={mine[r.id]}
           onReserve={() => setReserving(r)}
           onCancelMine={() => void cancelMine(r)}
+          refund={mine[r.id] ? refunds.find((x) => x.reservationId === mine[r.id].id) : undefined}
+          canRefund={Boolean(mine[r.id]) && mine[r.id].status === "confirmada" && paid.has(mine[r.id].id) && (r.startedAt !== null || new Date(r.startsAt) <= new Date()) && !refunds.some((x) => x.reservationId === mine[r.id].id && isOpenRefund(x.status))}
+          onRefund={() => setRefunding({ kind: "reserva", id: mine[r.id].id, title: r.title })}
+          onWithdrawRefund={(id) => void withdrawMine(id)}
           onChat={() => nav(`/mensagens/${ownerId}`)}
           onAsk={onAskAssistant}
           onEdit={() => void openEdit(r)}
@@ -159,6 +182,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
 
       {isOwn && <RitualForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} initialStreamUrl={editStream} onSubmit={save} />}
       {isOwn && <Attendees ritual={attendeesOf} onClose={() => setAttendeesOf(null)} />}
+      <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ReserveModal ritual={reserving} onClose={() => setReserving(null)} onDone={() => void load()} />
     </div>
   );

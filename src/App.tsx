@@ -19,6 +19,7 @@ import Info from "@/pages/Info";
 import Admin from "@/pages/Admin";
 import HouseHome from "@/pages/HouseHome";
 import AdminUsers from "@/components/admin/AdminUsers";
+import AdminRefunds from "@/components/refunds/AdminRefunds";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 
@@ -74,7 +75,7 @@ export default function App() {
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/sobre/:slug" element={<Info />} />
-        <Route path="/admin" element={<><Admin /><div className="mt-4 pb-16 lg:pb-4"><AdminUsers /></div></>} />
+        <Route path="/admin" element={<><Admin /><div className="mt-4 space-y-4"><AdminRefunds /></div><div className="mt-4 pb-16 lg:pb-4"><AdminUsers /></div></>} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

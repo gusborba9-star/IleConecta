@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Users } from "lucide-react";
 import { Badge, Button, Card, Progress } from "@/components/base";
+import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
 import { grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
@@ -11,6 +12,10 @@ interface Props {
   mine?: MyReservation;
   onReserve: () => void;
   onCancelMine: () => void;
+  refund?: RefundRequest;
+  canRefund?: boolean;
+  onRefund?: () => void;
+  onWithdrawRefund?: (id: string) => void;
   onChat: () => void;
   onAsk?: () => void;
   onEdit: () => void;
@@ -27,7 +32,7 @@ const when = (iso: string) =>
 
 const STATUS_LABEL = { rascunho: "Rascunho", publicado: "Publicado", encerrado: "Encerrado", cancelado: "Cancelado" } as const;
 
-export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCancelMine, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
+export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
   const left = seatsLeft(r.seatsTotal, r.taken);
   const state = seatsState(r.seatsTotal, r.taken);
   const pct = r.seatsTotal ? Math.round((r.taken / r.seatsTotal) * 100) : 0;
@@ -94,7 +99,12 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
             {(r.status === "rascunho" || r.status === "publicado") && <Button size="sm" variant="ghost" onClick={onCancelRitual}>Cancelar ritual</Button>}
           </>
         ) : mine ? (
-          open && <Button size="sm" variant="outline" onClick={onCancelMine}>Cancelar minha vaga</Button>
+          <>
+            {open && <Button size="sm" variant="outline" onClick={onCancelMine}>Cancelar minha vaga</Button>}
+            {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
+            {canRefund && onRefund && <Button size="sm" variant="outline" onClick={onRefund}>Pedir reembolso</Button>}
+            {refund?.status === "pendente" && onWithdrawRefund && <Button size="sm" variant="ghost" onClick={() => onWithdrawRefund(refund.id)}>Retirar pedido</Button>}
+          </>
         ) : (
           <>
             {open && state !== "esgotado" && <Button size="sm" onClick={onReserve}>Reservar vaga</Button>}
