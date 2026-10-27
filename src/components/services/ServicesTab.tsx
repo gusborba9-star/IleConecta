@@ -152,8 +152,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                     {refund?.status === "recusado" && refund.decisionNote && <p className="text-xs text-muted-foreground mt-1">{refund.decisionNote}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Pedir reembolso</Button>}
-                    {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o pedido de reembolso?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar pedido</Button>}
+                    {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
+                    {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o relato?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar relato</Button>}
                   </div>
                 </div>
               );

@@ -102,8 +102,8 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
           <>
             {open && <Button size="sm" variant="outline" onClick={onCancelMine}>Cancelar minha vaga</Button>}
             {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
-            {canRefund && onRefund && <Button size="sm" variant="outline" onClick={onRefund}>Pedir reembolso</Button>}
-            {refund?.status === "pendente" && onWithdrawRefund && <Button size="sm" variant="ghost" onClick={() => onWithdrawRefund(refund.id)}>Retirar pedido</Button>}
+            {canRefund && onRefund && <Button size="sm" variant="outline" onClick={onRefund}>Relatar problema com a entrega</Button>}
+            {refund?.status === "pendente" && onWithdrawRefund && <Button size="sm" variant="ghost" onClick={() => onWithdrawRefund(refund.id)}>Retirar relato</Button>}
           </>
         ) : (
           <>
