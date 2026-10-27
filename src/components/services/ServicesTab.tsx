@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
+import ContractModal from "@/components/services/ContractModal";
 import { createService, deleteService, fetchServices, updateService, type Service } from "@/lib/services";
+import {
+  ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, finishOrder, isOpenOrder, startOrder, subscribeOrders, type ServiceOrder,
+} from "@/lib/serviceOrders";
+import { useApp } from "@/contexts/AppContext";
 import { deliveryLabel, formatCents, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
 
 interface Props {
@@ -21,11 +26,38 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
   const [items, setItems] = useState<Service[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
+  const [orders, setOrders] = useState<ServiceOrder[]>([]);
+  const [contracting, setContracting] = useState<Service | null>(null);
+  const { currentUser } = useApp();
 
-  const load = useCallback(async () => setItems(await fetchServices(ownerId)), [ownerId]);
+  const load = useCallback(async () => {
+    setItems(await fetchServices(ownerId));
+    setOrders(await fetchHouseOrders(ownerId));
+  }, [ownerId]);
+  const loadRef = useRef(load);
+  loadRef.current = load;
   useEffect(() => {
     void load();
+    // Pedidos ao vivo: assinatura em tempo real + atualização periódica de segurança.
+    const stop = subscribeOrders(() => void loadRef.current());
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadRef.current();
+    }, 20000);
+    return () => {
+      stop();
+      window.clearInterval(timer);
+    };
   }, [load]);
+
+  const orderAct = async (fn: () => Promise<string | null>, okMsg: string) => {
+    const error = await fn();
+    if (error) toast.error(error);
+    else {
+      toast.success(okMsg);
+      await load();
+    }
+  };
+  const myOpenOrder = (serviceId: string) => orders.find((o) => o.serviceId === serviceId && o.clientId === currentUser?.id && isOpenOrder(o.status));
   useEffect(() => {
     if (startNew && isOwn) {
       setEditing(null);
@@ -70,6 +102,28 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </div>
       )}
 
+      {isOwn && orders.length > 0 && (
+        <Card className="p-5">
+          <h3 className="font-display font-bold text-lg mb-3">Pedidos recebidos</h3>
+          <div className="space-y-3">
+            {orders.map((o) => (
+              <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
+                <div className="min-w-[200px] flex-1">
+                  <div className="font-semibold">{o.title} <span className="font-normal text-muted-foreground">· {o.clientName}</span></div>
+                  {o.note && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{o.note}</p>}
+                  <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span></div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {o.status === "confirmado" && <Button size="sm" onClick={() => { if (window.confirm("Iniciar o trabalho agora? O cliente será avisado.")) void orderAct(() => startOrder(o.id), "Trabalho iniciado. O cliente foi avisado."); }}>Iniciar</Button>}
+                  {o.status === "em_andamento" && <Button size="sm" onClick={() => { if (window.confirm("Concluir o trabalho? O cliente será avisado.")) void orderAct(() => finishOrder(o.id), "Trabalho concluído. O cliente foi avisado."); }}>Concluir</Button>}
+                  {canCancelOrder(o.status) && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Cancelar este pedido? O cliente será avisado.")) void orderAct(() => cancelOrder(o.id), "Pedido cancelado."); }}>Cancelar</Button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {items.length === 0 && (
         <Card className="p-8 text-center">
           <div className="font-display text-xl mb-1">{isOwn ? "Cadastre o primeiro serviço" : "Esta casa ainda não cadastrou serviços"}</div>
@@ -93,7 +147,14 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 {!s.active && <Badge tone="muted">Pausado</Badge>}
               </div>
               {s.description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{s.description}</p>}
-              <p className="text-xs text-muted-foreground mt-2">O pagamento é combinado diretamente com a casa.</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {s.delivery === "presencial"
+                  ? "Atendimento presencial: combine e pague direto com a casa."
+                  : "Contrate pela plataforma: a casa inicia e conclui o trabalho e você é avisado em cada etapa."}
+              </p>
+              {!isOwn && myOpenOrder(s.id) && (
+                <div className="mt-2"><Badge tone="primary">Seu pedido: {ORDER_LABEL[myOpenOrder(s.id)!.status]}</Badge></div>
+              )}
             </div>
             <div className="text-right">
               <div className="font-display font-bold text-2xl">{formatCents(s.priceCents)}</div>
@@ -107,7 +168,11 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 ) : (
                   <>
                     {onAskAssistant && <Button size="sm" variant="outline" onClick={onAskAssistant}>Perguntar à assistente</Button>}
-                    <Button size="sm" onClick={() => nav(`/mensagens/${ownerId}`)}>Conversar para agendar</Button>
+                    {s.active && s.delivery !== "presencial" && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>Contratar</Button>}
+                    {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
+                      <Button size="sm" variant="outline" onClick={() => { if (window.confirm("Cancelar o seu pedido?")) void orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."); }}>Cancelar pedido</Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => nav(`/mensagens/${ownerId}`)}>{s.delivery === "presencial" ? "Conversar para agendar" : "Conversar com a casa"}</Button>
                   </>
                 )}
               </div>
@@ -116,6 +181,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </Card>
       ))}
 
+      <ContractModal service={contracting} onClose={() => setContracting(null)} onDone={() => void load()} />
       {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} />}
     </div>
   );
