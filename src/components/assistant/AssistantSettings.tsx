@@ -5,7 +5,7 @@ import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
-import { DAYS, fetchMyAssistant, saveMyAssistant, type AssistantConfig } from "@/lib/assistant";
+import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
 export default function AssistantSettings() {
@@ -39,6 +39,9 @@ export default function AssistantSettings() {
   if (!cfg) return null;
 
   const patch = (p: Partial<AssistantConfig>) => setCfg({ ...cfg, ...p });
+  const patchProfile = (p: Partial<HouseProfile>) => setCfg({ ...cfg, profile: { ...cfg.profile, ...p } });
+  const setFaq = (i: number, field: "q" | "a", value: string) =>
+    patchProfile({ faq: cfg.profile.faq.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)) });
   const available = cfg.plan !== "base";
   const fullPlan = cfg.plan === "maximo";
 
@@ -91,6 +94,52 @@ export default function AssistantSettings() {
         <p className="text-xs text-muted-foreground mt-1">
           Preços e datas vêm dos seus serviços e rituais cadastrados; a assistente não inventa valores.
         </p>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-border/70 p-4">
+        <div>
+          <h3 className="font-semibold">Conheça a sua casa para a assistente</h3>
+          <p className="text-xs text-muted-foreground">Quanto mais você escrever, melhor ela atende. Ela só fala do que está aqui e nos seus serviços e rituais.</p>
+        </div>
+        <div>
+          <Label htmlFor="pf-trad">Tradição ou linha da casa</Label>
+          <Input id="pf-trad" maxLength={PROFILE_MAX.tradition} value={cfg.profile.tradition} onChange={(e) => patchProfile({ tradition: e.target.value })} placeholder="ex.: Umbanda, Candomblé de Ketu…" />
+        </div>
+        <div>
+          <Label htmlFor="pf-about">Sobre a casa</Label>
+          <Textarea id="pf-about" rows={3} maxLength={PROFILE_MAX.about} value={cfg.profile.about} onChange={(e) => patchProfile({ about: e.target.value })} placeholder="História, quem conduz, como é o atendimento…" />
+        </div>
+        <div>
+          <Label htmlFor="pf-tone">Tom da conversa</Label>
+          <select id="pf-tone" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={cfg.profile.tone} onChange={(e) => patchProfile({ tone: e.target.value as Tone })}>
+            {(Object.keys(TONE_LABEL) as Tone[]).map((t) => <option key={t} value={t}>{TONE_LABEL[t]}</option>)}
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="pf-addr">Como chegar e onde fica</Label>
+          <Textarea id="pf-addr" rows={2} maxLength={PROFILE_MAX.address} value={cfg.profile.address} onChange={(e) => patchProfile({ address: e.target.value })} placeholder="Endereço, referência, estacionamento, o que levar…" />
+        </div>
+        <div>
+          <Label htmlFor="pf-dont">O que a casa não faz</Label>
+          <Textarea id="pf-dont" rows={2} maxLength={PROFILE_MAX.dont} value={cfg.profile.dont} onChange={(e) => patchProfile({ dont: e.target.value })} placeholder="ex.: não faz trabalhos para prejudicar ninguém, não atende menores sozinhos…" />
+        </div>
+        <div>
+          <Label htmlFor="pf-hand">Assuntos que você quer atender pessoalmente</Label>
+          <Textarea id="pf-hand" rows={2} maxLength={PROFILE_MAX.handoff} value={cfg.profile.handoff} onChange={(e) => patchProfile({ handoff: e.target.value })} placeholder="Além de luto, crise, saúde e reclamações, que já passam para você." />
+        </div>
+        <div className="space-y-2">
+          <Label>Perguntas frequentes</Label>
+          {cfg.profile.faq.map((f, i) => (
+            <div key={i} className="space-y-1 rounded-md bg-muted/40 p-2">
+              <Input aria-label={`Pergunta ${i + 1}`} maxLength={PROFILE_MAX.faqQ} value={f.q} onChange={(e) => setFaq(i, "q", e.target.value)} placeholder="Pergunta" />
+              <Textarea aria-label={`Resposta ${i + 1}`} rows={2} maxLength={PROFILE_MAX.faqA} value={f.a} onChange={(e) => setFaq(i, "a", e.target.value)} placeholder="Resposta da casa" />
+              <Button type="button" size="sm" variant="ghost" onClick={() => patchProfile({ faq: cfg.profile.faq.filter((_, idx) => idx !== i) })}>Remover</Button>
+            </div>
+          ))}
+          {cfg.profile.faq.length < PROFILE_MAX.faq && (
+            <Button type="button" size="sm" variant="outline" onClick={() => patchProfile({ faq: [...cfg.profile.faq, { q: "", a: "" }] })}>Adicionar pergunta</Button>
+          )}
+        </div>
       </div>
 
       <div>
