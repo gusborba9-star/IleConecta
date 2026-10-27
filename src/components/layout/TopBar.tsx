@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, Settings, Crown, Star, History, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import NotificationBell from "@/components/layout/NotificationBell";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { Avatar, Button } from "@/components/base";
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, isRemoteAuth } = useApp();
   const { isAdmin } = usePlatformConfig();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
@@ -53,9 +54,13 @@ export default function TopBar() {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" aria-label="Notificações indisponíveis na demonstração" disabled title="Notificações ainda não estão implementadas">
-            <Bell className="h-5 w-5" />
-          </Button>
+          {isRemoteAuth && currentUser ? (
+            <NotificationBell userId={currentUser.id} />
+          ) : (
+            <Button variant="ghost" size="icon" aria-label="Notificações indisponíveis na demonstração" disabled title="Notificações ainda não estão implementadas">
+              <Bell className="h-5 w-5" />
+            </Button>
+          )}
           <div className="relative">
             <button onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-muted transition">
               <Avatar src={currentUser?.avatar} name={currentUser?.name} size={34} ring={currentUser?.type === "commercial" ? "gold" : "none"} />

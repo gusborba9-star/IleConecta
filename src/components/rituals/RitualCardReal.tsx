@@ -89,7 +89,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
             <Button size="sm" variant="outline" onClick={onEdit}>Editar</Button>
             {r.status === "rascunho" && <Button size="sm" onClick={onPublish}>Publicar</Button>}
             {r.status === "publicado" && !live && <Button size="sm" onClick={onStart}>Iniciar ritual</Button>}
-            {r.status === "publicado" && live && <Button size="sm" onClick={onFinish}>Encerrar ritual</Button>}
+            {r.status === "publicado" && live && <Button size="sm" onClick={onFinish}>Concluir ritual</Button>}
             {r.status === "publicado" && !live && <Button size="sm" variant="ghost" onClick={onUnpublish}>Voltar a rascunho</Button>}
             {(r.status === "rascunho" || r.status === "publicado") && <Button size="sm" variant="ghost" onClick={onCancelRitual}>Cancelar ritual</Button>}
           </>
