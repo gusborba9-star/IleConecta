@@ -1,7 +1,5 @@
 export const FEE_RULE_VERSION: string;
 export const FEE_BPS: { ritual: number; servico_pix: number };
-export const PLATFORM_BPS: number;
-export const RESERVE_BPS: number;
 export const HOLD_HOURS: number;
 export const PIX_HOLD_MINUTES: number;
 export type SaleKind = "ritual" | "servico_pix";
@@ -10,4 +8,3 @@ export function splitSale(grossCents: number, kind: SaleKind): { gross: number; 
 export function payoutEligibleAt(endsAtIso: string | null, startsAtIso: string, startedAtIso?: string | null): string;
 export function holdExpiresAt(now?: Date): string;
 export function ritualRevenue(priceCents: number, confirmedSeats: number): { gross: number; fee: number; net: number };
-export function ritualSplit(grossCents: number): { gross: number; platform: number; reserve: number; house: number };
