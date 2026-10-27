@@ -4,8 +4,37 @@ import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchMyAssistant } from "@/lib/assistant";
 import { PLANS, formatMoney, type PlanId } from "@/lib/pricing";
+import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate } from "react-router-dom";
+
+/** Quanto custaria pessoas para o mesmo atendimento. Calculado com os preços atuais dos planos. */
+function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label: string }[] }) {
+  const { config } = usePlatformConfig();
+  const shown = rows.flatMap((r) => {
+    const info = config.pricing.plans[r.plan];
+    const times = staffMultiple(info.monthly, r.people);
+    return times === null ? [] : [{ ...r, name: info.name, times }];
+  });
+  if (shown.length === 0) return null;
+  return (
+    <Card className="p-6">
+      <h2 className="font-display font-bold text-xl">Quanto custaria uma pessoa para fazer isso?</h2>
+      <p className="text-sm text-muted-foreground mt-1">Receber, informar e orientar os seus clientes, todos os dias.</p>
+      <ul className="mt-4 space-y-3 text-sm">
+        {shown.map((r) => (
+          <li key={r.plan} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <span className="flex-1">{r.label}: <strong>{formatMoney(staffCost(r.people))}</strong> por mês só de salário.</span>
+            <Badge tone="gold">Mais de {r.times} vezes o plano {r.name}</Badge>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground mt-4">
+        Estimativa com base no salário médio de assistente de atendimento no Brasil (cerca de R$ 2.000 por mês), sem encargos, férias nem 13º. Compara só o atendimento; o trabalho espiritual continua sendo da casa.
+      </p>
+    </Card>
+  );
+}
 
 export default function Plans() {
   const { currentUser, isRemoteAuth } = useApp();
@@ -29,7 +58,7 @@ export default function Plans() {
       <Card className="p-6">
         <h1 className="font-display font-bold text-2xl">Planos</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Escolha o plano da sua casa. A taxa de 17% vale somente para eventos e rituais; búzios e trabalhos não têm taxa sobre a venda.
+          Escolha o plano da sua casa. Quando o pagamento pela plataforma estiver disponível: rituais com vagas têm taxa de 17% e serviços contratados pela plataforma têm 5% no Pix. Atendimentos combinados direto com a casa não têm taxa da plataforma.
         </p>
       </Card>
 
@@ -61,6 +90,12 @@ export default function Plans() {
           );
         })}
       </div>
+      <ComparisonCard
+        rows={[
+          { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },
+          { plan: "maximo", people: PEOPLE_FOR_24H, label: `Uma equipe de cerca de ${PEOPLE_FOR_24H} pessoas para cobrir 24 horas, 7 dias por semana` },
+        ]}
+      />
       <p className="text-xs text-muted-foreground">A contratação de planos pela plataforma ainda não está disponível; por enquanto a troca é feita pelo suporte.</p>
     </div>
   );
