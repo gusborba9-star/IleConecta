@@ -25,12 +25,12 @@ function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label:
         {shown.map((r) => (
           <li key={r.plan} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             <span className="flex-1">{r.label}: <strong>{formatMoney(staffCost(r.people))}</strong> por mês só de salário.</span>
-            <Badge tone="gold">Mais de {r.times} vezes o plano {r.name}</Badge>
+            <Badge tone="gold">Cerca de {r.times} vezes o plano {r.name}</Badge>
           </li>
         ))}
       </ul>
       <p className="text-xs text-muted-foreground mt-4">
-        Estimativa com base no salário médio de assistente de atendimento no Brasil (cerca de R$ 2.000 por mês), sem encargos, férias nem 13º. Compara só o atendimento; o trabalho espiritual continua sendo da casa.
+        Estimativa referencial com base na média salarial de assistente de atendimento no Brasil (cerca de R$ 2.000 por mês; fontes: Glassdoor e Catho, consulta em outubro de 2026), considerando só o salário, sem encargos, férias nem 13º. Os custos reais variam conforme a região e o regime de contratação. Compara só o atendimento; o trabalho espiritual continua sendo da casa.
       </p>
     </Card>
   );

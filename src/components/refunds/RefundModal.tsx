@@ -67,7 +67,7 @@ export default function RefundModal({ target, onClose, onDone }: Props) {
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          A equipe analisa o seu relato e você é avisado da decisão. Enquanto isso, o valor fica retido e não é repassado à casa. O relato pode ser feito até 7 dias após a conclusão. Relatos sem fundamento são recusados.
+          A equipe analisa o seu relato e você é avisado da decisão. Enquanto isso, o valor fica retido e não é repassado à casa. O relato pode ser feito até 30 dias após a conclusão. Relatos sem fundamento são recusados.
         </p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Voltar</Button>
