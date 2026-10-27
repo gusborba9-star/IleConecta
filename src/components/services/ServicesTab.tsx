@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
 import ContractModal from "@/components/services/ContractModal";
+import RefundModal from "@/components/refunds/RefundModal";
+import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, REFUND_LABEL, withdrawRefund, type RefundRequest } from "@/lib/refunds";
 import { createService, deleteService, fetchServices, updateService, type Service } from "@/lib/services";
 import {
   ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, finishOrder, isOpenOrder, startOrder, subscribeOrders, type ServiceOrder,
@@ -28,12 +30,19 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
   const [editing, setEditing] = useState<Service | null>(null);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [contracting, setContracting] = useState<Service | null>(null);
+  const [refunding, setRefunding] = useState<{ kind: "pedido"; id: string; title: string } | null>(null);
+  const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [refunds, setRefunds] = useState<RefundRequest[]>([]);
   const { currentUser } = useApp();
 
   const load = useCallback(async () => {
     setItems(await fetchServices(ownerId));
     setOrders(await fetchHouseOrders(ownerId));
-  }, [ownerId]);
+    if (!isOwn && currentUser?.id) {
+      setPaid(await fetchMyPaidSources());
+      setRefunds(await fetchMyRefunds(currentUser.id));
+    }
+  }, [ownerId, isOwn, currentUser?.id]);
   const loadRef = useRef(load);
   loadRef.current = load;
   useEffect(() => {
@@ -124,6 +133,35 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </Card>
       )}
 
+      {!isOwn && orders.some((o) => o.clientId === currentUser?.id && ["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status)) && (
+        <Card className="p-5">
+          <h3 className="font-display font-bold text-lg mb-3">Meus pedidos</h3>
+          <div className="space-y-3">
+            {orders.filter((o) => o.clientId === currentUser?.id && ["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status)).map((o) => {
+              const refund = refunds.find((r) => r.orderId === o.id);
+              const canAsk = paid.has(o.id) && (o.status === "em_andamento" || o.status === "concluido") && !(refund && isOpenRefund(refund.status));
+              return (
+                <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
+                  <div className="min-w-[200px] flex-1">
+                    <div className="font-semibold">{o.title}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <Badge tone={o.status === "concluido" ? "forest" : "primary"}>{ORDER_LABEL[o.status]}</Badge>
+                      {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
+                      <span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>
+                    </div>
+                    {refund?.status === "recusado" && refund.decisionNote && <p className="text-xs text-muted-foreground mt-1">{refund.decisionNote}</p>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Pedir reembolso</Button>}
+                    {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o pedido de reembolso?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar pedido</Button>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {items.length === 0 && (
         <Card className="p-8 text-center">
           <div className="font-display text-xl mb-1">{isOwn ? "Cadastre o primeiro serviço" : "Esta casa ainda não cadastrou serviços"}</div>
@@ -181,6 +219,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </Card>
       ))}
 
+      <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ContractModal service={contracting} onClose={() => setContracting(null)} onDone={() => void load()} />
       {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} />}
     </div>
