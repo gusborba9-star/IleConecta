@@ -9,7 +9,7 @@ import {
   checkGate,
   cleanReply,
   cleanUserText,
-  extractHandoff,
+  finalizeReply,
   featureEnabled,
   monthStartISO,
   planLimits,
@@ -181,22 +181,28 @@ Deno.serve(async (req) => {
   } finally {
     clearTimeout(timer);
   }
-  const handoff = extractHandoff(reply);
+  const handoff = finalizeReply(reply, text);
   reply = handoff.text;
-  if (handoff.handoff && !reply) reply = "Entendi. Vou passar a nossa conversa para a casa, que vai te responder em breve.";
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
   await admin.from("messages").insert({
     conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true,
   });
-  if (handoff.handoff) {
+  // Um aviso por conversa a cada 30 minutos (evita encher a casa de notificações iguais).
+  const handoffHref = `/mensagens/${user.id}`;
+  const { count: recentHandoffs } = handoff.handoff
+    ? await admin.from("notifications").select("id", { count: "exact", head: true })
+      .eq("user_id", house.owner_id).eq("href", handoffHref).like("text", "%precisa de você%")
+      .gte("created_at", new Date(Date.now() - 30 * 60_000).toISOString())
+    : { count: 0 };
+  if (handoff.handoff && (recentHandoffs ?? 0) === 0) {
     const { data: who } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
     const name = (who?.display_name as string | undefined)?.trim() || "Um cliente";
     await admin.from("notifications").insert({
       user_id: house.owner_id,
       text: `${name} precisa de você: a assistente passou a conversa para a casa.`,
-      href: `/mensagens/${user.id}`,
+      href: handoffHref,
     });
   }
   await admin.from("assistant_usage").insert({
