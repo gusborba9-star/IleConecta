@@ -36,3 +36,29 @@ test("marcador de repasse é removido do texto e detectado", () => {
   assert.deepEqual(extractHandoff("Tudo certo."), { handoff: false, text: "Tudo certo." });
   assert.equal(extractHandoff(undefined).text, "");
 });
+
+import { CRISIS_NOTE, HANDOFF_NOTE, detectCrisis, finalizeReply } from "../supabase/functions/assistant-chat/logic.js";
+
+test("repasse: o servidor garante o aviso de que a casa assume, mesmo se o modelo esquecer", () => {
+  const r = finalizeReply(`Sinto muito pela sua perda. ${HANDOFF_MARK}`, "Perdi minha mãe");
+  assert.equal(r.handoff, true);
+  assert.ok(r.text.includes(HANDOFF_NOTE));
+  assert.ok(!r.text.includes(HANDOFF_MARK));
+  const ja = finalizeReply(`A casa vai assumir daqui. ${HANDOFF_MARK}`, "Perdi minha mãe");
+  assert.equal(ja.text, "A casa vai assumir daqui.");
+  const normal = finalizeReply("A casa fica em Porto Alegre.", "Onde fica?");
+  assert.deepEqual(normal, { handoff: false, text: "A casa fica em Porto Alegre." });
+  assert.equal(finalizeReply(HANDOFF_MARK, "x").text, HANDOFF_NOTE);
+});
+
+test("risco de vida: sempre passa para a casa e traz o CVV, mesmo sem o marcador do modelo", () => {
+  assert.equal(detectCrisis("não quero mais viver"), true);
+  assert.equal(detectCrisis("vou me matar"), true);
+  assert.equal(detectCrisis("qual o valor da consulta?"), false);
+  const r = finalizeReply("Estou com você.", "quero morrer");
+  assert.equal(r.handoff, true);
+  assert.ok(r.text.includes(CRISIS_NOTE));
+  assert.ok(r.text.includes(HANDOFF_NOTE));
+  const com188 = finalizeReply("Ligue 188 agora. A casa vai assumir.", "quero morrer");
+  assert.equal(com188.text.includes(CRISIS_NOTE), false);
+});
