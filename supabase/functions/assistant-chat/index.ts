@@ -9,6 +9,7 @@ import {
   checkGate,
   cleanReply,
   cleanUserText,
+  extractHandoff,
   featureEnabled,
   monthStartISO,
   planLimits,
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
 
   const { data: assistant } = await admin
     .from("assistants")
-    .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model")
+    .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
     .eq("house_id", house.id)
     .maybeSingle();
 
@@ -180,12 +181,24 @@ Deno.serve(async (req) => {
   } finally {
     clearTimeout(timer);
   }
+  const handoff = extractHandoff(reply);
+  reply = handoff.text;
+  if (handoff.handoff && !reply) reply = "Entendi. Vou passar a nossa conversa para a casa, que vai te responder em breve.";
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
   await admin.from("messages").insert({
     conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true,
   });
+  if (handoff.handoff) {
+    const { data: who } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    const name = (who?.display_name as string | undefined)?.trim() || "Um cliente";
+    await admin.from("notifications").insert({
+      user_id: house.owner_id,
+      text: `${name} precisa de você: a assistente passou a conversa para a casa.`,
+      href: `/mensagens/${user.id}`,
+    });
+  }
   await admin.from("assistant_usage").insert({
     house_id: house.id, user_id: user.id, model: usedModel,
     prompt_tokens: promptTokens, completion_tokens: completionTokens,
