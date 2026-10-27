@@ -1,15 +1,42 @@
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import ConsentBox from "@/components/legal/ConsentBox";
+import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
 import type { HouseUser } from "@/types";
 
 /** Página inicial da conta de casa: o que fazer agora, e não o feed da comunidade. */
 export default function HouseHome() {
-  const { currentUser } = useApp();
+  const { currentUser, isRemoteAuth } = useApp();
   const nav = useNavigate();
   const house = currentUser?.type === "commercial" ? (currentUser as HouseUser) : null;
+  const [termsOk, setTermsOk] = useState(true);
+  const [agree, setAgree] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const houseId = house?.id;
+
+  useEffect(() => {
+    if (!isRemoteAuth || !houseId) return;
+    let alive = true;
+    void fetchHouseTermsAccepted(houseId).then((ok) => alive && setTermsOk(ok));
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth, houseId]);
+
   if (!house) return null;
+
+  const acceptTerms = async () => {
+    setSaving(true);
+    const error = await recordConsents(["termos_casa"]);
+    setSaving(false);
+    if (error) return void toast.error(error);
+    toast.success("Termos aceitos.");
+    setTermsOk(true);
+  };
 
   const tiles = [
     { icon: Plus, title: "Novo serviço", text: "Búzios, cartas, trabalhos, consultas", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
@@ -29,6 +56,15 @@ export default function HouseHome() {
           <Button variant="outline" onClick={() => nav("/comunidade")}>Ir para a comunidade</Button>
         </div>
       </Card>
+
+      {!termsOk && (
+        <Card className="p-5 border-gold/50">
+          <h2 className="font-display font-bold text-lg">Termos de Uso da Casa Espiritual</h2>
+          <p className="text-sm text-muted-foreground mt-1 mb-3">Para vender rituais e serviços pela plataforma, leia e aceite os termos. Seu aceite fica registrado com data e versão.</p>
+          <ConsentBox doc="termos_casa" checked={agree} onChange={setAgree} />
+          <Button className="mt-3" disabled={!agree || saving} onClick={() => void acceptTerms()}>{saving ? "Salvando…" : "Aceitar e continuar"}</Button>
+        </Card>
+      )}
 
       <section aria-label="Atalhos" className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         {tiles.map((t) => (
