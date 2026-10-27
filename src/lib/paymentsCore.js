@@ -3,6 +3,8 @@
 
 export const FEE_RULE_VERSION = "v1-2026-10";
 export const FEE_BPS = { ritual: 1700, servico_pix: 500 };
+export const PLATFORM_BPS = 1500; // comissão da plataforma (cobre a taxa do provedor)
+export const RESERVE_BPS = 200; // reserva interna para reembolsos
 export const HOLD_HOURS = 72;
 export const PIX_HOLD_MINUTES = 15;
 
@@ -18,6 +20,13 @@ export function feeCents(grossCents, kind) {
 export function splitSale(grossCents, kind) {
   const fee = feeCents(grossCents, kind);
   return { gross: Number(grossCents), fee, net: Number(grossCents) - fee };
+}
+
+/** Dos 17% de um ritual: 15% comissão (arredondada) e o resto (≈2%) vai para a reserva de reembolsos. */
+export function ritualSplit(grossCents) {
+  const { gross, fee, net } = splitSale(grossCents, "ritual");
+  const platform = Math.floor((gross * PLATFORM_BPS + 5000) / 10000);
+  return { gross, platform, reserve: fee - platform, house: net };
 }
 
 /** Quando o repasse fica elegível: 72h depois do fim do ritual (ou do início, se não houver fim). */

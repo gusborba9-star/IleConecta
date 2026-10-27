@@ -106,6 +106,7 @@ declare
   res public.reservations%rowtype;
   ev public.events%rowtype;
   fee bigint;
+  reserve bigint;
 begin
   if coalesce(auth.role(), '') <> 'service_role' then raise exception 'Não autorizado.'; end if;
   select * into pay from public.payments where provider_ref = p_provider_ref for update;
@@ -133,10 +134,13 @@ begin
   update public.reservations set status = 'confirmada' where id = res.id;
 
   fee := public.fee_cents(pay.gross_cents, 'ritual');
-  -- Três lançamentos por venda: bruto = plataforma (taxa) + casa (líquido).
+  -- Dos 17%: 15% é comissão da plataforma (já cobre a taxa do provedor) e 2% vai para a reserva de reembolsos.
+  reserve := fee - (pay.gross_cents * 1500 + 5000) / 10000;
+  -- Quatro lançamentos por venda: bruto = plataforma + reserva_interna + casa (líquido).
   insert into public.ledger_entries (payment_id, house_id, entry_type, amount_cents, fee_rule_version, note)
   values (pay.id, ev.house_id, 'bruto', pay.gross_cents, pay.fee_rule_version, 'Vaga em ritual'),
-         (pay.id, ev.house_id, 'plataforma', fee, pay.fee_rule_version, 'Taxa de 17% em rituais'),
+         (pay.id, ev.house_id, 'plataforma', fee - reserve, pay.fee_rule_version, 'Comissão de 15% (cobre a taxa do provedor)'),
+         (pay.id, ev.house_id, 'reserva_interna', reserve, pay.fee_rule_version, 'Reserva de 2% para reembolsos'),
          (pay.id, ev.house_id, 'casa', pay.gross_cents - fee, pay.fee_rule_version, 'Líquido da casa (retido até 72h após o ritual)');
 
   insert into public.payouts (house_id, event_id, amount_cents, eligible_at, status)
