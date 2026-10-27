@@ -9,8 +9,8 @@ import Attendees from "@/components/rituals/Attendees";
 import ReserveModal from "@/components/rituals/ReserveModal";
 import { useApp } from "@/contexts/AppContext";
 import {
-  cancelSeat, createRitual, fetchHouseRituals, fetchMyReservations, fetchStreamUrl, setRitualStatus, startRitual, subscribeReservations, updateRitual,
-  type MyReservation, type RealRitual,
+  cancelSeat, createRitual, fetchHouseRituals, fetchMyReservations, fetchStreamUrl, finishRitual, setRitualStatus, startRitual, subscribeReservations, updateRitual,
+  type LifecycleResult, type MyReservation, type RealRitual,
 } from "@/lib/rituals";
 import type { RitualValue } from "@/lib/ritualsCore";
 
@@ -89,6 +89,14 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
     } else toast.error("Não foi possível concluir. Verifique se a migração dos rituais foi aplicada.");
   };
 
+  const lifecycleAct = async (fn: () => Promise<LifecycleResult>, okMsg: (n: number) => string) => {
+    const res = await fn();
+    if (res.ok) {
+      toast.success(okMsg(res.notified));
+      await load();
+    } else toast.error(res.message);
+  };
+
   const cancelMine = async (r: RealRitual) => {
     const res = mine[r.id];
     if (!res || !window.confirm("Cancelar a sua vaga?")) return;
@@ -137,8 +145,14 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
           onAttendees={() => setAttendeesOf(r)}
           onPublish={() => void act(() => setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
           onUnpublish={() => void act(() => setRitualStatus(r.id, "rascunho"), "Ritual voltou para rascunho.")}
-          onStart={() => { if (window.confirm("Iniciar o ritual agora? As reservas serão encerradas.")) void act(() => startRitual(r.id), "Ritual iniciado."); }}
-          onFinish={() => { if (window.confirm("Encerrar o ritual?")) void act(() => setRitualStatus(r.id, "encerrado"), "Ritual encerrado."); }}
+          onStart={() => {
+            if (window.confirm(`Iniciar o ritual agora? As reservas serão encerradas e os ${r.taken} participantes serão avisados.`))
+              void lifecycleAct(() => startRitual(r.id), (n) => `Ritual iniciado. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
+          }}
+          onFinish={() => {
+            if (window.confirm("Concluir o ritual? Os participantes serão avisados e o prazo de 72h do repasse começa a contar."))
+              void lifecycleAct(() => finishRitual(r.id), (n) => `Ritual concluído. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
+          }}
           onCancelRitual={() => { if (window.confirm("Cancelar este ritual? Ele deixa de aparecer para os clientes.")) void act(() => setRitualStatus(r.id, "cancelado"), "Ritual cancelado."); }}
         />
       ))}
