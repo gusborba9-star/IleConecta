@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   DEFAULT_MODELS,
   HISTORY_LIMIT,
+  buildGreeting,
   buildSystemPrompt,
   checkGate,
   cleanReply,
@@ -183,6 +184,18 @@ Deno.serve(async (req) => {
   }
   const handoff = finalizeReply(reply, text);
   reply = handoff.text;
+  // Primeira resposta da assistente nesta conversa: saudação e apresentação escritas pelo servidor
+  // (em assunto delicado vai direto ao acolhimento).
+  if (reply && !handoff.handoff) {
+    const { count: priorReplies } = await admin.from("messages").select("id", { count: "exact", head: true })
+      .eq("conversation_id", conversationId).eq("from_assistant", true);
+    if ((priorReplies ?? 0) === 0) {
+      const { data: me } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+      reply = `${buildGreeting({
+        clientName: me?.display_name, assistantName: assistant?.display_name, houseName: house.name,
+      })}\n\n${reply}`;
+    }
+  }
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
