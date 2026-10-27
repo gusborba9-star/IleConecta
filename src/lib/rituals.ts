@@ -106,11 +106,19 @@ export async function setRitualStatus(id: string, status: EventStatus): Promise<
   return !error;
 }
 
-export async function startRitual(id: string): Promise<boolean> {
-  if (!supabase) return false;
-  const { error } = await supabase.from("events").update({ started_at: new Date().toISOString() }).eq("id", id);
-  return !error;
+export type LifecycleResult = { ok: true; notified: number } | { ok: false; message: string };
+
+async function lifecycle(fn: "start_event" | "finish_event", id: string): Promise<LifecycleResult> {
+  if (!supabase) return { ok: false, message: "Indisponível." };
+  const { data, error } = await supabase.rpc(fn, { p_event: id });
+  if (error) return { ok: false, message: error.message || "Não foi possível concluir." };
+  return { ok: true, notified: Number(data ?? 0) };
 }
+
+/** A casa inicia o ritual: fecha as reservas e avisa todos os participantes. */
+export const startRitual = (id: string) => lifecycle("start_event", id);
+/** A casa conclui o ritual: encerra e avisa todos os participantes. */
+export const finishRitual = (id: string) => lifecycle("finish_event", id);
 
 export async function fetchStreamUrl(id: string): Promise<string | null> {
   if (!supabase) return null;
