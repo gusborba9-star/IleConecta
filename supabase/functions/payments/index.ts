@@ -1,6 +1,6 @@
 // Pagamentos pelo Stripe (cobrança direta na conta da casa). Fica atrás de features.payments (desligado por padrão).
 // Uma função, duas portas:
-//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | sync | refund
+//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | sync | refund | refund_cancelled | refund_pending
 //  - avisos do Stripe (cabeçalho Stripe-Signature): confirmam pagamento, registram tarifa e concluem reembolso.
 // Segredos (Supabase > Edge Functions > Secrets): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, APP_URL (opcional).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -197,6 +197,77 @@ async function syncPayment(userId: string, paymentId: string) {
   return json({ status: pay.status, stripe_status: session.payment_status });
 }
 
+// ---------- reembolso integral de cancelamentos (antes do início) ----------
+async function isAdminUser(userId: string) {
+  const { data } = await admin.from("admins").select("user_id").eq("user_id", userId).maybeSingle();
+  return Boolean(data);
+}
+
+/** Devolve ao cliente, pelo Stripe, todos os pagamentos confirmados de uma reserva ou pedido que está em "reembolso_pendente". */
+async function settleSource(kind: "reserva" | "pedido", sourceId: string): Promise<{ refunded: number; failed: number }> {
+  const col = kind === "reserva" ? "reservation_id" : "order_id";
+  const { data: pays } = await admin.from("payments").select("id, provider_ref, stripe_account_id").eq(col, sourceId).eq("status", "confirmado").order("stage_no");
+  let refunded = 0, failed = 0;
+  for (const pay of pays ?? []) {
+    try {
+      if (!pay.provider_ref || !pay.stripe_account_id) { failed++; continue; }
+      const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
+      if (!session.payment_intent) { failed++; continue; }
+      await stripe("/v1/refunds", {
+        form: { payment_intent: session.payment_intent, refund_application_fee: true, metadata: { payment_id: pay.id, reason: "cancelamento" } },
+        account: pay.stripe_account_id, idem: `cancel_refund_${pay.id}`,
+      });
+      const { error } = await admin.rpc("complete_cancel_refund", { p_payment: pay.id });
+      if (error) throw new Error(error.message);
+      refunded++;
+    } catch (e) {
+      console.error("settle_failed", pay.id, String(e));
+      failed++;
+    }
+  }
+  return { refunded, failed };
+}
+
+async function mayRefundSource(userId: string, kind: "reserva" | "pedido", sourceId: string): Promise<{ ok: boolean; pending: boolean }> {
+  let clientId: string | null = null, houseId: string | null = null, status: string | null = null;
+  if (kind === "reserva") {
+    const { data: r } = await admin.from("reservations").select("user_id, status, events(house_id)").eq("id", sourceId).maybeSingle();
+    clientId = r?.user_id ?? null; status = r?.status ?? null; houseId = (r?.events as Obj | null)?.house_id ?? null;
+  } else {
+    const { data: o } = await admin.from("service_orders").select("client_id, house_id, status").eq("id", sourceId).maybeSingle();
+    clientId = o?.client_id ?? null; status = o?.status ?? null; houseId = o?.house_id ?? null;
+  }
+  if (!status) return { ok: false, pending: false };
+  let ok = clientId === userId;
+  if (!ok && houseId) {
+    const { data: h } = await admin.from("houses").select("owner_id").eq("id", houseId).maybeSingle();
+    ok = h?.owner_id === userId;
+  }
+  if (!ok) ok = await isAdminUser(userId);
+  return { ok, pending: status === "reembolso_pendente" };
+}
+
+async function refundCancelled(userId: string, kind: string, sourceId: string) {
+  if (kind !== "reserva" && kind !== "pedido") return fail("Tipo inválido.");
+  const { ok, pending } = await mayRefundSource(userId, kind, sourceId);
+  if (!ok) return fail("Não autorizado.", 403);
+  if (!pending) return json({ refunded: 0, failed: 0 });
+  return json(await settleSource(kind, sourceId));
+}
+
+/** Conclui os reembolsos pendentes da pessoa (ou de todos, para a administração). Roda ao abrir "Minha atividade" e a fila de reembolsos. */
+async function refundPending(userId: string) {
+  const all = await isAdminUser(userId);
+  let rq = admin.from("reservations").select("id").eq("status", "reembolso_pendente").limit(50);
+  let oq = admin.from("service_orders").select("id").eq("status", "reembolso_pendente").limit(50);
+  if (!all) { rq = rq.eq("user_id", userId); oq = oq.eq("client_id", userId); }
+  const [{ data: rs }, { data: os }] = await Promise.all([rq, oq]);
+  let refunded = 0, failed = 0;
+  for (const r of rs ?? []) { const x = await settleSource("reserva", r.id); refunded += x.refunded; failed += x.failed; }
+  for (const o of os ?? []) { const x = await settleSource("pedido", o.id); refunded += x.refunded; failed += x.failed; }
+  return json({ refunded, failed });
+}
+
 async function refund(userId: string, refundId: string) {
   const { data: rr } = await admin.from("refund_requests").select("id, status, payment_id, client_id").eq("id", refundId).maybeSingle();
   if (!rr) return fail("Pedido de reembolso não encontrado.", 404);
@@ -295,6 +366,8 @@ Deno.serve(async (req) => {
       case "checkout": return await checkout(user.id, user.email, input);
       case "sync": return await syncPayment(user.id, String(input.payment_id ?? ""));
       case "refund": return await refund(user.id, String(input.refund_id ?? ""));
+      case "refund_cancelled": return await refundCancelled(user.id, String(input.kind ?? ""), String(input.source_id ?? ""));
+      case "refund_pending": return await refundPending(user.id);
       default: return fail("Ação desconhecida.");
     }
   } catch (e) {

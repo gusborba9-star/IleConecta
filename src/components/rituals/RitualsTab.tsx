@@ -173,7 +173,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
               void lifecycleAct(() => startRitual(r.id), (n) => `Ritual iniciado. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
           }}
           onFinish={() => {
-            if (window.confirm("Concluir o ritual? Os participantes serão avisados e o prazo de 72h do repasse começa a contar."))
+            if (window.confirm("Concluir o ritual? Os participantes serão avisados."))
               void lifecycleAct(() => finishRitual(r.id), (n) => `Ritual concluído. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
           }}
           onCancelRitual={() => { if (window.confirm("Cancelar este ritual? Ele deixa de aparecer para os clientes.")) void act(() => setRitualStatus(r.id, "cancelado"), "Ritual cancelado."); }}

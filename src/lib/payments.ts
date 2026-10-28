@@ -56,6 +56,17 @@ export async function sendRefund(refundId: string): Promise<string | null> {
   return r.error ?? null;
 }
 
+/** Devolve pelo Stripe, na hora, o valor de uma reserva ou pedido pago que acabou de ser cancelado. Não bloqueia o cancelamento: se falhar, "Minha atividade" tenta de novo. */
+export async function refundCancelled(kind: "reserva" | "pedido", sourceId: string): Promise<void> {
+  await call({ action: "refund_cancelled", kind, source_id: sourceId });
+}
+
+/** Conclui os reembolsos pendentes da pessoa (a administração conclui os de todos). */
+export async function settleRefunds(): Promise<number> {
+  const r = (await call({ action: "refund_pending" })) as Reply & { refunded?: number };
+  return r.refunded ?? 0;
+}
+
 /** Confere no Stripe se o pagamento foi feito (rede de segurança se o aviso automático atrasar). Devolve o estado ou o erro. */
 export async function syncPayment(paymentId: string): Promise<{ status: string } | string> {
   const r = await call({ action: "sync", payment_id: paymentId });

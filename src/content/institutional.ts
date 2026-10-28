@@ -87,14 +87,14 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: "Quando há taxa",
         paragraphs: [
-          "Vagas de rituais vendidas pela plataforma têm taxa de 17%. Serviços à distância contratados pela plataforma e pagos por Pix têm taxa de 5%. Atendimentos presenciais ou combinados direto com a casa não têm taxa da plataforma.",
+          "Vagas de rituais vendidas pela plataforma têm taxa de 15%. Serviços contratados pela plataforma têm taxa de 4%. Atendimentos combinados direto com a casa, fora da plataforma, não têm taxa.",
         ],
       },
       {
         heading: "Quando a casa recebe",
         paragraphs: [
-          "O valor da casa fica retido por até 72 horas úteis (segunda a sexta, sem feriados) depois que ela conclui o ritual ou o trabalho. Esse prazo existe para o caso de problemas na entrega.",
-          "Se o cliente relatar falha na entrega dentro de 30 dias após a conclusão (art. 26 do Código de Defesa do Consumidor), a plataforma analisa. Se o reembolso for aprovado depois do repasse, o valor vira débito da casa e é descontado dos próximos repasses.",
+          "O pagamento do cliente vai direto para a conta de pagamento da casa, sem retenção pela plataforma. A comissão da plataforma é descontada automaticamente em cada pagamento, e a tarifa do processador de pagamento (Stripe) é cobrada da casa.",
+          "Se o cliente relatar falha na entrega dentro de 30 dias após a conclusão (art. 26 do Código de Defesa do Consumidor), a plataforma analisa. Se o reembolso for aprovado, o valor integral é devolvido ao cliente a partir da conta de pagamento da casa.",
         ],
       },
       {
@@ -107,7 +107,7 @@ export const INFO_PAGES: InfoPage[] = [
       },
       {
         heading: "Pagamentos",
-        paragraphs: ["A contratação paga ainda está em preparação. Quando for liberada, estas regras passam a valer."],
+        paragraphs: ["Os pagamentos são processados pelo Stripe, por cartão ou Pix. Cada pagamento tem um valor máximo definido pela plataforma; serviços acima dele podem ser pagos em etapas. A contratação paga está em fase de testes e será liberada aos poucos."],
       },
     ],
   },
@@ -163,15 +163,15 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
-        heading: "Repasses, retenção e liquidação",
+        heading: "Recebimento, tarifas e comissão",
         paragraphs: [
-          "Os valores são processados por instituição de pagamento parceira, com divisão automática do valor. A parte líquida da casa fica retida por até 72 horas úteis depois da conclusão confirmada do serviço, para segurança operacional. A taxa da plataforma (17% para rituais com vagas e 5% para serviços à distância pagos por Pix, conforme o caso) é descontada na liquidação.",
+          "Os pagamentos são processados pelo Stripe e caem direto na conta de pagamento da casa, sem retenção pela plataforma. A tarifa do Stripe é cobrada da casa. A comissão da plataforma (15% sobre rituais com vagas e 4% sobre serviços contratados pela plataforma) é descontada automaticamente em cada pagamento. Para receber, a casa cadastra a sua conta de pagamento no Stripe e mantém os dados em dia.",
         ],
       },
       {
         heading: "Reembolsos, estornos e débitos futuros",
         paragraphs: [
-          "Em cancelamento antes do início, o estorno ao cliente é automático. Se for constatada falha na prestação, ausência da casa ou for aprovado reembolso fundamentado do cliente depois do repasse, o valor pago passa a ser débito da casa perante a plataforma, que fica autorizada a compensá-lo em repasses futuros ou a cobrá-lo.",
+          "Em cancelamento antes do início, o valor integral é devolvido ao cliente automaticamente, a partir da conta de pagamento da casa, junto com a comissão da plataforma. O mesmo vale quando for constatada falha na prestação, ausência da casa ou for aprovado reembolso fundamentado do cliente: o valor integral é devolvido a partir da conta da casa.",
           "A casa deve guardar comprovação da execução (por exemplo, registro de horário ou confirmação de envio) para eventual análise de relato de problema, que o cliente pode fazer em até 30 dias após a conclusão.",
         ],
       },

@@ -11,6 +11,15 @@ export async function recordConsents(docs: ConsentDocKey[], contextId?: string):
   return null;
 }
 
+/** Documentos que a pessoa já aceitou na versão atual dos textos (o aceite vale uma vez; muda a versão, pede de novo). */
+export async function fetchAcceptedDocs(userId: string): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!supabase) return out;
+  const { data } = await supabase.from("legal_consents").select("doc_key").eq("user_id", userId).eq("doc_version", LEGAL_VERSION).limit(50);
+  for (const r of data ?? []) out.add(String(r.doc_key));
+  return out;
+}
+
 /** A casa já aceitou os termos da casa (em qualquer versão)? */
 export async function fetchHouseTermsAccepted(userId: string): Promise<boolean> {
   if (!supabase) return true;

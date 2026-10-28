@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { refundCancelled } from "@/lib/payments";
 
 export type OrderStatus =
   | "aguardando_pagamento" | "confirmado" | "em_andamento" | "concluido" | "cancelado" | "expirado" | "reembolso_pendente" | "reembolsado";
@@ -83,7 +84,12 @@ export async function createOrder(serviceId: string, note: string): Promise<{ er
 }
 export const startOrder = (id: string) => call("start_service_order", { p_order: id });
 export const finishOrder = (id: string) => call("finish_service_order", { p_order: id });
-export const cancelOrder = (id: string) => call("cancel_service_order", { p_order: id });
+/** Cancela o pedido; se já estava pago, devolve o valor integral pelo Stripe. */
+export async function cancelOrder(id: string): Promise<string | null> {
+  const error = await call("cancel_service_order", { p_order: id });
+  if (!error) await refundCancelled("pedido", id);
+  return error;
+}
 
 /** Etapas já pagas por pedido (só dos pedidos que a pessoa enxerga). */
 export async function fetchStageProgress(orderIds: string[]): Promise<Map<string, number>> {

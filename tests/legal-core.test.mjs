@@ -9,15 +9,20 @@ test("todo documento de aceite tem texto e links", () => {
   }
 });
 
-test("checkout exige o aceite certo mais os dados sensíveis, e há versão", () => {
-  assert.deepEqual(CHECKOUT_DOCS.ritual, ["checkout_ritual", "dados_sensiveis"]);
-  assert.deepEqual(CHECKOUT_DOCS.servico, ["checkout_servico", "dados_sensiveis"]);
+test("checkout exige o aceite único dos termos do cliente mais os dados sensíveis, e há versão", () => {
+  assert.deepEqual(CHECKOUT_DOCS.ritual, ["termos_cliente", "dados_sensiveis"]);
+  assert.deepEqual(CHECKOUT_DOCS.servico, ["termos_cliente", "dados_sensiveis"]);
   assert.match(LEGAL_VERSION, /rascunho|^\d{4}/);
 });
 
-test("os textos de aceite não prometem resultado e citam a regra de reembolso", () => {
-  for (const key of ["checkout_ritual", "checkout_servico"]) {
-    assert.match(CONSENT_DOCS[key].text, /reembolso/i);
-    assert.match(CONSENT_DOCS[key].text, /insatisfação|frustração/i);
-  }
+test("os termos do cliente citam cancelamento e reembolso, e levam aos regulamentos", () => {
+  assert.match(CONSENT_DOCS.termos_cliente.text, /cancelamento e reembolso/i);
+  assert.ok(CONSENT_DOCS.termos_cliente.links.includes("termos-do-cliente"));
+});
+
+test("os termos da casa refletem o Stripe: sem retenção de 72h e com as comissões vigentes", () => {
+  const t = CONSENT_DOCS.termos_casa.text;
+  assert.doesNotMatch(t, /72/);
+  assert.match(t, /15%/);
+  assert.match(t, /4%/);
 });
