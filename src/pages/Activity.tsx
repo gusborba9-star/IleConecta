@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ORDER_LABEL, fetchMyOrders, subscribeOrders, type ServiceOrder } from "@/lib/serviceOrders";
 import { Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import { settleRefunds } from "@/lib/payments";
 import { formatBRL, timeAgo } from "@/lib/utils";
 import { CalendarClock, HandHeart, Ticket } from "lucide-react";
 
@@ -15,6 +16,8 @@ export default function Activity() {
     let alive = true;
     const load = () => void fetchMyOrders(uid).then((o) => alive && setOrders(o));
     load();
+    // Conclui no Stripe qualquer reembolso integral que tenha ficado pendente (cancelamento, vaga cheia, ritual cancelado…).
+    void settleRefunds().then((n) => alive && n > 0 && load());
     const off = subscribeOrders(load);
     return () => {
       alive = false;
