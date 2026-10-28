@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-interface Reply { url?: string; error?: string; registered?: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; requirements_due?: boolean }
+interface Reply { status?: string; stripe_status?: string; url?: string; error?: string; registered?: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; requirements_due?: boolean }
 
 /** Chama a função de pagamentos. Erros 4xx/5xx trazem a mensagem em português no corpo. */
 async function call(body: Record<string, unknown>): Promise<Reply> {
@@ -54,4 +54,11 @@ export async function startOnboarding(): Promise<string | null> {
 export async function sendRefund(refundId: string): Promise<string | null> {
   const r = await call({ action: "refund", refund_id: refundId });
   return r.error ?? null;
+}
+
+/** Confere no Stripe se o pagamento foi feito (rede de segurança se o aviso automático atrasar). Devolve o estado ou o erro. */
+export async function syncPayment(paymentId: string): Promise<{ status: string } | string> {
+  const r = await call({ action: "sync", payment_id: paymentId });
+  if (r.error) return r.error;
+  return { status: r.status ?? "pendente" };
 }

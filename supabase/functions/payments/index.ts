@@ -1,6 +1,6 @@
 // Pagamentos pelo Stripe (cobrança direta na conta da casa). Fica atrás de features.payments (desligado por padrão).
 // Uma função, duas portas:
-//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | refund
+//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | sync | refund
 //  - avisos do Stripe (cabeçalho Stripe-Signature): confirmam pagamento, registram tarifa e concluem reembolso.
 // Segredos (Supabase > Edge Functions > Secrets): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, APP_URL (opcional).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -173,6 +173,30 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
   return json({ url: session.url });
 }
 
+// Confere no Stripe se o pagamento foi feito (rede de segurança caso o aviso automático atrase ou falhe).
+async function syncPayment(userId: string, paymentId: string) {
+  const { data: pay } = await admin.from("payments").select("id, status, provider_ref, stripe_account_id, reservation_id, order_id").eq("id", paymentId).maybeSingle();
+  if (!pay) return fail("Pagamento não encontrado.", 404);
+  let clientId: string | null = null;
+  if (pay.reservation_id) {
+    const { data: r } = await admin.from("reservations").select("user_id").eq("id", pay.reservation_id).maybeSingle();
+    clientId = r?.user_id ?? null;
+  } else if (pay.order_id) {
+    const { data: o } = await admin.from("service_orders").select("client_id").eq("id", pay.order_id).maybeSingle();
+    clientId = o?.client_id ?? null;
+  }
+  if (clientId !== userId) return fail("Este pagamento não é seu.", 403);
+  if (pay.status !== "pendente" || !pay.provider_ref || !pay.stripe_account_id) return json({ status: pay.status });
+  const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
+  if (session.payment_status === "paid") {
+    const { error } = await admin.rpc("confirm_payment", { p_provider_ref: pay.provider_ref });
+    if (error) return fail(error.message, 500);
+    await recordFee(session, pay.stripe_account_id);
+    return json({ status: "confirmado" });
+  }
+  return json({ status: pay.status, stripe_status: session.payment_status });
+}
+
 async function refund(userId: string, refundId: string) {
   const { data: rr } = await admin.from("refund_requests").select("id, status, payment_id, client_id").eq("id", refundId).maybeSingle();
   if (!rr) return fail("Pedido de reembolso não encontrado.", 404);
@@ -269,6 +293,7 @@ Deno.serve(async (req) => {
       case "onboard": return await onboard(user.id, user.email);
       case "status": return await refreshStatus(user.id);
       case "checkout": return await checkout(user.id, user.email, input);
+      case "sync": return await syncPayment(user.id, String(input.payment_id ?? ""));
       case "refund": return await refund(user.id, String(input.refund_id ?? ""));
       default: return fail("Ação desconhecida.");
     }
