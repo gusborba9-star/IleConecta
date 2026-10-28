@@ -36,6 +36,7 @@ function toHouse(row: Row): HouseUser {
     rating: 0,
     followers: 0,
     verified: Boolean(row.verified),
+    offerings: row.offerings ? String(row.offerings) : undefined,
     createdAt: p.created_at ?? row.created_at,
   };
 }
@@ -44,7 +45,7 @@ export async function fetchRemoteHouses(): Promise<HouseUser[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("houses")
-    .select("id, owner_id, name, category, tags, cover_url, verified, created_at, profiles!houses_owner_id_fkey(avatar_url, bio, city, state, country, created_at)")
+    .select("id, owner_id, name, category, tags, cover_url, verified, offerings, created_at, profiles!houses_owner_id_fkey(avatar_url, bio, city, state, country, created_at)")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error || !data) {

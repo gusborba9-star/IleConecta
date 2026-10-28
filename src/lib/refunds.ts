@@ -14,6 +14,7 @@ export interface RefundRequest {
   createdAt: string;
   clientName: string;
   houseName: string;
+  houseResponse: string | null;
 }
 
 export const REFUND_LABEL: Record<RefundStatus, string> = {
@@ -28,7 +29,7 @@ export const REFUND_LABEL: Record<RefundStatus, string> = {
 export const isOpenRefund = (s: RefundStatus) => s === "pendente" || s === "aprovado";
 
 const COLS =
-  "id, reservation_id, order_id, kind, reason, amount_cents, status, decision_note, created_at, profiles!refund_requests_client_id_fkey(display_name), houses(name)";
+  "id, reservation_id, order_id, kind, reason, amount_cents, status, decision_note, created_at, house_response, profiles!refund_requests_client_id_fkey(display_name), houses(name)";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toRefund = (r: Record<string, any>): RefundRequest => ({
@@ -43,7 +44,17 @@ const toRefund = (r: Record<string, any>): RefundRequest => ({
   createdAt: String(r.created_at),
   clientName: r.profiles?.display_name ? String(r.profiles.display_name) : "Cliente",
   houseName: r.houses?.name ? String(r.houses.name) : "Casa",
+  houseResponse: r.house_response ? String(r.house_response) : null,
 });
+
+/** Relatos de clientes ainda em análise sobre esta casa (a dona responde; a administração decide). */
+export async function fetchHouseOpenRefunds(ownerId: string): Promise<RefundRequest[]> {
+  if (!supabase) return [];
+  const { data: h } = await supabase.from("houses").select("id").eq("owner_id", ownerId).maybeSingle();
+  if (!h) return [];
+  const { data } = await supabase.from("refund_requests").select(COLS).eq("house_id", h.id).eq("status", "pendente").order("created_at", { ascending: false }).limit(20);
+  return (data ?? []).map(toRefund);
+}
 
 /** Os pedidos de reembolso que a pessoa pode ver (a regra do banco limita ao cliente, à casa dona e à administração). */
 export async function fetchMyRefunds(userId: string): Promise<RefundRequest[]> {
@@ -87,6 +98,7 @@ export interface RefundContext {
   house: string;
   client: string;
   same_person: boolean;
+  house_response: string | null;
   timeline: { label: string; at: string }[];
   messages: { at: string; from: "cliente" | "casa" | "assistente"; text: string }[];
 }
@@ -107,6 +119,7 @@ async function call(fn: string, args: Record<string, unknown>): Promise<string |
 /** Devolvem null em caso de sucesso, ou a mensagem de erro em português. */
 export const requestRefund = (kind: "reserva" | "pedido", sourceId: string, reason: string) =>
   call("request_refund", { p_kind: kind, p_source: sourceId, p_reason: reason });
+export const respondRefund = (id: string, text: string) => call("respond_refund", { p_id: id, p_text: text });
 export const withdrawRefund = (id: string) => call("withdraw_refund_request", { p_id: id });
 export const decideRefund = (id: string, approve: boolean, note: string) => call("decide_refund", { p_id: id, p_approve: approve, p_note: note });
 export const completeRefund = (id: string) => call("complete_refund", { p_id: id });

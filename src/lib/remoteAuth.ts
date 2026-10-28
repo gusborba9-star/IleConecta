@@ -71,7 +71,7 @@ export async function fetchRemoteUser(userId: string, email: string): Promise<Us
   if (profile.account_type === "casa") {
     const { data: house } = await supabase
       .from("houses")
-      .select("cover_url, category, tags, verified")
+      .select("cover_url, category, tags, verified, offerings")
       .eq("owner_id", userId)
       .maybeSingle();
     const houseUser: HouseUser = {
@@ -83,6 +83,7 @@ export async function fetchRemoteUser(userId: string, email: string): Promise<Us
       rating: 0,
       followers: 0,
       verified: Boolean(house?.verified),
+      offerings: (house?.offerings as string | null) || undefined,
     };
     return houseUser;
   }
@@ -160,6 +161,7 @@ export async function remoteUpdateProfile(userId: string, patch: Partial<User>):
   if (isUrl(h.cover)) house.cover_url = h.cover;
   if (typeof h.category === "string") house.category = h.category.slice(0, 80);
   if (Array.isArray(h.tags)) house.tags = h.tags.filter((t) => typeof t === "string").slice(0, 20);
+  if (typeof h.offerings === "string") house.offerings = h.offerings.trim().slice(0, 800) || null;
   if (Object.keys(house).length) {
     const { error } = await supabase.from("houses").update(house).eq("owner_id", userId);
     if (error) {
