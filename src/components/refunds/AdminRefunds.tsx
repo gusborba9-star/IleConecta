@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Textarea } from "@/components/base";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import CaseContext from "@/components/refunds/CaseContext";
 import { REFUND_LABEL, decideRefund, fetchRefundHistory, fetchRefundQueue, subscribeRefunds, type RefundRequest } from "@/lib/refunds";
 import { sendRefund, settleRefunds } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
@@ -60,6 +61,7 @@ export default function AdminRefunds() {
               {r.reservationId ? "Vaga em ritual" : "Pedido de serviço"} · {r.kind === "antes_do_inicio" ? "cancelado antes do início" : "pedido depois do início"} · {new Date(r.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
             </div>
             {r.reason && <p className="text-sm mt-2 whitespace-pre-line">{r.reason}</p>}
+            <CaseContext refundId={r.id} />
             {r.status === "pendente" ? (
               <div className="mt-3 space-y-2">
                 <Textarea rows={2} maxLength={800} value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Justificativa (obrigatória para recusar; o cliente lê)" />
