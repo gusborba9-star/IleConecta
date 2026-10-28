@@ -28,7 +28,7 @@ const ok = { kind: "buzios", customKind: "", title: "  Jogo de búzios ", descri
 test("formulário válido devolve o valor limpo para gravar", () => {
   const r = validateService(ok);
   assert.equal(r.ok, true);
-  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa", price_cents: 20000, delivery: "presencial" });
+  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa", price_cents: 20000, delivery: "presencial", stages: 1 });
 });
 
 test("tipo Outro exige nome livre; os demais descartam o nome livre", () => {
@@ -45,4 +45,11 @@ test("erros por campo", () => {
   const r = validateService({ kind: "", customKind: "", title: "a", description: "x".repeat(601), priceText: "0", delivery: "" });
   assert.equal(r.ok, false);
   assert.deepEqual(Object.keys(r.errors).sort(), ["delivery", "description", "kind", "price", "title"]);
+});
+
+test("etapas do serviço: padrão 1, aceita de 1 a 4, recusa o resto", () => {
+  assert.equal(validateService(ok).value.stages, 1);
+  assert.equal(validateService({ ...ok, stages: 2 }).value.stages, 2);
+  assert.equal(validateService({ ...ok, stages: "4" }).value.stages, 4);
+  for (const bad of [0, 5, 1.5, "x"]) assert.equal(validateService({ ...ok, stages: bad }).errors.stages !== undefined, true);
 });

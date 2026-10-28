@@ -9,9 +9,10 @@ import RefundModal from "@/components/refunds/RefundModal";
 import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, REFUND_LABEL, withdrawRefund, type RefundRequest } from "@/lib/refunds";
 import { createService, deleteService, fetchServices, updateService, type Service } from "@/lib/services";
 import {
-  ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, finishOrder, isOpenOrder, startOrder, subscribeOrders, type ServiceOrder,
+  ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, fetchStageProgress, finishOrder, isOpenOrder, payNextStage, remindNextStage, startOrder, subscribeOrders, type ServiceOrder,
 } from "@/lib/serviceOrders";
 import { useApp } from "@/contexts/AppContext";
+import { stagePlan } from "@/lib/paymentsCore";
 import { deliveryLabel, formatCents, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
 
 interface Props {
@@ -32,12 +33,15 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
   const [contracting, setContracting] = useState<Service | null>(null);
   const [refunding, setRefunding] = useState<{ kind: "pedido"; id: string; title: string } | null>(null);
   const [paid, setPaid] = useState<Set<string>>(new Set());
+  const [stageDone, setStageDone] = useState<Map<string, number>>(new Map());
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
   const { currentUser } = useApp();
 
   const load = useCallback(async () => {
     setItems(await fetchServices(ownerId));
-    setOrders(await fetchHouseOrders(ownerId));
+    const os = await fetchHouseOrders(ownerId);
+    setOrders(os);
+    setStageDone(await fetchStageProgress(os.filter((o) => o.stagesTotal > 1).map((o) => o.id)));
     if (!isOwn && currentUser?.id) {
       setPaid(await fetchMyPaidSources());
       setRefunds(await fetchMyRefunds(currentUser.id));
@@ -66,6 +70,11 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
       await load();
     }
   };
+  const stageOpen = (o: ServiceOrder) =>
+    o.stagesTotal > 1 && ["confirmado", "em_andamento", "concluido"].includes(o.status) && (stageDone.get(o.id) ?? 0) < o.stagesTotal;
+  const showMine = (o: ServiceOrder) =>
+    o.clientId === currentUser?.id &&
+    (["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status) || (o.status === "confirmado" && o.stagesTotal > 1));
   const myOpenOrder = (serviceId: string) => orders.find((o) => o.serviceId === serviceId && o.clientId === currentUser?.id && isOpenOrder(o.status));
   useEffect(() => {
     if (startNew && isOwn) {
@@ -120,9 +129,10 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 <div className="min-w-[200px] flex-1">
                   <div className="font-semibold">{o.title} <span className="font-normal text-muted-foreground">· {o.clientName}</span></div>
                   {o.note && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{o.note}</p>}
-                  <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span></div>
+                  <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>{o.stagesTotal > 1 && <Badge tone="gold">Etapas pagas: {stageDone.get(o.id) ?? 0}/{o.stagesTotal}</Badge>}</div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {stageOpen(o) && <Button size="sm" variant="outline" onClick={() => void orderAct(() => remindNextStage(o.id), "O cliente foi lembrado da próxima etapa.")}>Lembrar próxima etapa</Button>}
                   {o.status === "confirmado" && <Button size="sm" onClick={() => { if (window.confirm("Iniciar o trabalho agora? O cliente será avisado.")) void orderAct(() => startOrder(o.id), "Trabalho iniciado. O cliente foi avisado."); }}>Iniciar</Button>}
                   {o.status === "em_andamento" && <Button size="sm" onClick={() => { if (window.confirm("Concluir o trabalho? O cliente será avisado.")) void orderAct(() => finishOrder(o.id), "Trabalho concluído. O cliente foi avisado."); }}>Concluir</Button>}
                   {canCancelOrder(o.status) && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Cancelar este pedido? O cliente será avisado.")) void orderAct(() => cancelOrder(o.id), "Pedido cancelado."); }}>Cancelar</Button>}
@@ -133,11 +143,11 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </Card>
       )}
 
-      {!isOwn && orders.some((o) => o.clientId === currentUser?.id && ["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status)) && (
+      {!isOwn && orders.some(showMine) && (
         <Card className="p-5">
           <h3 className="font-display font-bold text-lg mb-3">Meus pedidos</h3>
           <div className="space-y-3">
-            {orders.filter((o) => o.clientId === currentUser?.id && ["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status)).map((o) => {
+            {orders.filter(showMine).map((o) => {
               const refund = refunds.find((r) => r.orderId === o.id);
               const canAsk = paid.has(o.id) && (o.status === "em_andamento" || o.status === "concluido") && !(refund && isOpenRefund(refund.status));
               return (
@@ -148,10 +158,12 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                       <Badge tone={o.status === "concluido" ? "forest" : "primary"}>{ORDER_LABEL[o.status]}</Badge>
                       {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
                       <span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>
+                      {o.stagesTotal > 1 && <Badge tone="gold">Etapas pagas: {stageDone.get(o.id) ?? 0}/{o.stagesTotal}</Badge>}
                     </div>
                     {refund?.status === "recusado" && refund.decisionNote && <p className="text-xs text-muted-foreground mt-1">{refund.decisionNote}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {stageOpen(o) && <Button size="sm" onClick={() => void orderAct(() => payNextStage(o.id), "Etapa liberada para pagamento. A abertura do pagamento pela plataforma chega em breve.")}>Pagar próxima etapa</Button>}
                     {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
                     {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o relato?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar relato</Button>}
                   </div>
@@ -196,6 +208,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
             </div>
             <div className="text-right">
               <div className="font-display font-bold text-2xl">{formatCents(s.priceCents)}</div>
+              {s.stages > 1 && <div className="text-xs text-muted-foreground">Em {s.stages} etapas: {stagePlan(s.priceCents, s.stages).map((v) => formatCents(v)).join(" + ")}</div>}
               <div className="mt-2 flex flex-wrap justify-end gap-2">
                 {isOwn ? (
                   <>

@@ -8,6 +8,7 @@ import { CHECKOUT_DOCS } from "@/lib/legalCore";
 import type { Service } from "@/lib/services";
 import { createOrder } from "@/lib/serviceOrders";
 import { formatCents } from "@/lib/servicesCore";
+import { stagePlan } from "@/lib/paymentsCore";
 
 interface Props {
   service: Service | null;
@@ -67,6 +68,12 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
           Valor: {formatCents(service.priceCents)}. A casa inicia e conclui o trabalho e você é avisado em cada etapa.{" "}
           {payOn ? "O pagamento é feito pela plataforma, logo após o pedido." : "Por enquanto não há cobrança no app: o pagamento é combinado com a casa."}
         </p>
+        {payOn && service.stages > 1 && (
+          <p className="text-sm rounded-xl border border-border p-3">
+            Pagamento em {service.stages} etapas: {stagePlan(service.priceCents, service.stages).map((v) => formatCents(v)).join(" + ")}.
+            Você paga a 1ª etapa agora; as seguintes são combinadas com a casa e você as paga pelo seu pedido.
+          </p>
+        )}
         {payOn && <ConsentBox doc="checkout_servico" checked={okCheckout} onChange={setOkCheckout} />}
         <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />
         <div className="flex justify-end gap-2">

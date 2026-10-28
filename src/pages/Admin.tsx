@@ -20,6 +20,7 @@ import {
   type PlatformConfig,
   type ScopeKey,
 } from "@/lib/platformConfig";
+import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 
 const FEATURE_LABEL: Record<FeatureKey, string> = {
@@ -163,6 +164,8 @@ export default function Admin() {
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
       </Card>
+
+      <PaymentLimitCard />
 
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Alcance por região</h2>

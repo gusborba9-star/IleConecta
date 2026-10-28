@@ -13,6 +13,7 @@ export interface ServiceOrder {
   clientId: string;
   clientName: string;
   createdAt: string;
+  stagesTotal: number;
 }
 
 export const ORDER_LABEL: Record<OrderStatus, string> = {
@@ -30,7 +31,7 @@ export const ORDER_LABEL: Record<OrderStatus, string> = {
 export const isOpenOrder = (s: OrderStatus) => s === "aguardando_pagamento" || s === "confirmado" || s === "em_andamento";
 export const canCancelOrder = (s: OrderStatus) => s === "aguardando_pagamento" || s === "confirmado";
 
-const COLS = "id, service_id, title, price_cents, note, status, client_id, created_at, profiles!service_orders_client_id_fkey(display_name)";
+const COLS = "id, service_id, title, price_cents, note, status, client_id, created_at, stages_total, profiles!service_orders_client_id_fkey(display_name)";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toOrder = (r: Record<string, any>): ServiceOrder => ({
@@ -43,6 +44,7 @@ const toOrder = (r: Record<string, any>): ServiceOrder => ({
   clientId: String(r.client_id),
   clientName: r.profiles?.display_name ? String(r.profiles.display_name) : "Cliente",
   createdAt: String(r.created_at),
+  stagesTotal: Number(r.stages_total ?? 1),
 });
 
 /** Pedidos desta casa que a pessoa pode ver: a dona vê todos; um cliente vê só os próprios (regra do banco). */
@@ -65,6 +67,21 @@ export const createOrder = (serviceId: string, note: string) => call("create_ser
 export const startOrder = (id: string) => call("start_service_order", { p_order: id });
 export const finishOrder = (id: string) => call("finish_service_order", { p_order: id });
 export const cancelOrder = (id: string) => call("cancel_service_order", { p_order: id });
+
+/** Etapas já pagas por pedido (só dos pedidos que a pessoa enxerga). */
+export async function fetchStageProgress(orderIds: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (!supabase || orderIds.length === 0) return out;
+  const { data } = await supabase.rpc("order_stage_progress", { p_orders: orderIds });
+  for (const r of (data ?? []) as { order_id: string; paid: number }[]) out.set(String(r.order_id), Number(r.paid));
+  return out;
+}
+
+/** A casa lembra o cliente da próxima etapa (no máximo uma vez por dia). */
+export const remindNextStage = (id: string) => call("remind_next_stage", { p_order: id });
+
+/** O cliente abre a cobrança da próxima etapa. Devolve o erro em português ou null. */
+export const payNextStage = (id: string) => call("pay_next_stage", { p_order: id });
 
 export function subscribeOrders(onChange: () => void): () => void {
   if (!supabase) return () => {};

@@ -10,9 +10,10 @@ export interface Service {
   priceCents: number;
   delivery: ServiceDelivery;
   active: boolean;
+  stages: number;
 }
 
-const COLS = "id, kind, custom_kind, title, description, price_cents, delivery, active";
+const COLS = "id, kind, custom_kind, title, description, price_cents, delivery, active, stages";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toService = (r: Record<string, any>): Service => ({
@@ -24,6 +25,7 @@ const toService = (r: Record<string, any>): Service => ({
   priceCents: Number(r.price_cents),
   delivery: r.delivery,
   active: Boolean(r.active),
+  stages: Number(r.stages ?? 1),
 });
 
 /** No app a casa é identificada pelo id do dono; no banco, serviços usam houses.id. */

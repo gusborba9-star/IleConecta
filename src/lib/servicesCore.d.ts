@@ -8,6 +8,8 @@ export interface ServiceFormInput {
   description: string;
   priceText: string;
   delivery: ServiceDelivery | "";
+  /** Em quantas etapas de pagamento o serviço é pago (1 a 4). */
+  stages?: number | string;
 }
 export interface ServiceValue {
   kind: ServiceKind;
@@ -16,10 +18,11 @@ export interface ServiceValue {
   description: string | null;
   price_cents: number;
   delivery: ServiceDelivery;
+  stages: number;
 }
 export type ServiceValidation =
   | { ok: true; errors: Record<string, never>; value: ServiceValue }
-  | { ok: false; errors: Partial<Record<"kind" | "customKind" | "title" | "description" | "price" | "delivery", string>>; value: null };
+  | { ok: false; errors: Partial<Record<"kind" | "customKind" | "title" | "description" | "price" | "delivery" | "stages", string>>; value: null };
 
 export declare const SERVICE_KINDS: { id: ServiceKind; label: string }[];
 export declare const SERVICE_DELIVERIES: { id: ServiceDelivery; label: string; hint: string }[];
