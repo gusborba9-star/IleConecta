@@ -118,7 +118,7 @@ async function refreshStatus(userId: string) {
   if (!house) return fail("Somente a casa consulta o recebimento.", 403);
   const { data: row } = await admin.from("house_payment_accounts").select("stripe_account_id").eq("house_id", house.id).maybeSingle();
   if (!row?.stripe_account_id) return json({ registered: false, charges_enabled: false, payouts_enabled: false, requirements_due: false });
-  const acct = await stripe(`/v2/core/accounts/${row.stripe_account_id}?include[]=configuration.merchant&include[]=requirements`);
+  const acct = await stripe(`/v2/core/accounts/${row.stripe_account_id}?include[0]=configuration.merchant&include[1]=requirements`);
   const st = accountState(acct);
   await admin.from("house_payment_accounts").update({
     ...st, status: st.charges_enabled ? "ativa" : st.requirements_due ? "pendente" : "em_analise", updated_at: new Date().toISOString(),
@@ -245,7 +245,7 @@ async function handleEvent(event: Obj) {
 async function recordFee(session: Obj, account: string | null) {
   try {
     if (!session.payment_intent || !account) return;
-    const pi = await stripe(`/v1/payment_intents/${session.payment_intent}?expand[]=latest_charge.balance_transaction`, { account });
+    const pi = await stripe(`/v1/payment_intents/${session.payment_intent}?expand[0]=latest_charge.balance_transaction`, { account });
     const details: Obj[] = pi.latest_charge?.balance_transaction?.fee_details ?? [];
     const stripeFee = details.filter((d) => d.type === "stripe_fee").reduce((a, d) => a + Number(d.amount), 0);
     const method = pi.latest_charge?.payment_method_details?.type;
