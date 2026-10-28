@@ -1,10 +1,15 @@
 export declare const FEE_RULE_VERSION: string;
-export declare const FEE_BPS: { ritual: number; servico_pix: number };
+export declare const FEE_BPS: { ritual: number; servico: number; servico_pix: number };
+export declare const MAX_PAYMENT_CENTS: number;
 export declare const HOLD_HOURS: number;
 export declare const PIX_HOLD_MINUTES: number;
-export type SaleKind = "ritual" | "servico_pix";
+export declare const PROCESSOR_FEE: { pix: { bps: number; fixed: number }; card: { bps: number; fixed: number } };
+export type SaleKind = "ritual" | "servico" | "servico_pix";
+export type PayMethod = "pix" | "card";
 export declare function feeCents(grossCents: number, kind: SaleKind): number;
 export declare function splitSale(grossCents: number, kind: SaleKind): { gross: number; fee: number; net: number };
+export declare function processorFeeEstimate(grossCents: number, method: PayMethod): number;
+export declare function houseReceives(grossCents: number, kind: SaleKind, method: PayMethod): { gross: number; platformFee: number; processorFee: number; net: number };
 export declare function payoutEligibleAt(endsAtIso: string | null, startsAtIso: string, startedAtIso?: string | null): string;
 export declare function holdExpiresAt(now?: Date): string;
 export declare function ritualRevenue(priceCents: number, confirmedSeats: number): { gross: number; fee: number; net: number };
