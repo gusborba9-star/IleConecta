@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { refundCancelled } from "@/lib/payments";
 import type { IntakeField, RitualMode, RitualValue } from "@/lib/ritualsCore";
 
 export type EventStatus = "rascunho" | "publicado" | "encerrado" | "cancelado";
@@ -147,7 +148,9 @@ export async function reserveSeat(eventId: string, answers: Record<string, strin
 export async function cancelSeat(reservationId: string): Promise<string | null> {
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc("cancel_reservation", { p_id: reservationId });
-  return error ? error.message : null;
+  if (error) return error.message;
+  await refundCancelled("reserva", reservationId); // se já estava paga, devolve o valor integral pelo Stripe
+  return null;
 }
 
 export interface Attendee { reservationId: string; name: string; status: string; answers: Record<string, string>; createdAt: string }

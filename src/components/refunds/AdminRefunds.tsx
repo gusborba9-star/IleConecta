@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Textarea } from "@/components/base";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
-import { completeRefund, decideRefund, fetchRefundQueue, subscribeRefunds, type RefundRequest } from "@/lib/refunds";
+import { decideRefund, fetchRefundQueue, subscribeRefunds, type RefundRequest } from "@/lib/refunds";
+import { sendRefund, settleRefunds } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
 
 /** Fila de reembolsos: decidir pedidos e registrar o estorno depois que o dinheiro voltou ao cliente. */
@@ -18,6 +19,7 @@ export default function AdminRefunds() {
   useEffect(() => {
     if (!isAdmin) return;
     void load();
+    void settleRefunds().then((n) => n > 0 && void loadRef.current());
     const stop = subscribeRefunds(() => void loadRef.current());
     return stop;
   }, [isAdmin, load]);
@@ -37,7 +39,7 @@ export default function AdminRefunds() {
     <Card className="p-5">
       <h2 className="font-display font-bold text-xl">Reembolsos</h2>
       <p className="text-sm text-muted-foreground mt-1">
-        Pedidos depois do início ficam aqui. Aprovar avisa o cliente e a casa; o repasse fica retido. Depois de devolver o dinheiro pelo meio de pagamento, clique em “Registrar estorno” para atualizar o razão e o repasse.
+        Pedidos depois do início ficam aqui. “Aprovar e devolver” avisa o cliente e a casa e devolve o valor integral pelo Stripe, a partir da conta da casa. Se a devolução falhar, o pedido continua aprovado e você pode tentar de novo em “Devolver ao cliente”.
       </p>
       {rows === null && <p className="text-sm text-muted-foreground mt-4">Carregando…</p>}
       {rows !== null && rows.length === 0 && <p className="text-sm text-muted-foreground mt-4">Nenhum pedido em aberto.</p>}
@@ -58,7 +60,13 @@ export default function AdminRefunds() {
               <div className="mt-3 space-y-2">
                 <Textarea rows={2} maxLength={800} value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Justificativa (obrigatória para recusar; o cliente lê)" />
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" disabled={busy === r.id} onClick={() => void run(r.id, () => decideRefund(r.id, true, notes[r.id] ?? ""), "Reembolso aprovado. Cliente e casa foram avisados.")}>Aprovar</Button>
+                  <Button
+                    size="sm"
+                    disabled={busy === r.id}
+                    onClick={() => void run(r.id, async () => (await decideRefund(r.id, true, notes[r.id] ?? "")) ?? (await sendRefund(r.id)), "Reembolso aprovado e valor devolvido ao cliente.")}
+                  >
+                    Aprovar e devolver
+                  </Button>
                   <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => void run(r.id, () => decideRefund(r.id, false, notes[r.id] ?? ""), "Pedido recusado. Cliente e casa foram avisados.")}>Recusar</Button>
                 </div>
               </div>
@@ -67,9 +75,9 @@ export default function AdminRefunds() {
                 <Button
                   size="sm"
                   disabled={busy === r.id}
-                  onClick={() => { if (window.confirm("Confirma que o dinheiro já foi devolvido ao cliente? Isso estorna o razão e o repasse da casa e não pode ser desfeito.")) void run(r.id, () => completeRefund(r.id), "Estorno registrado."); }}
+                  onClick={() => { if (window.confirm("Devolver o valor integral ao cliente pelo Stripe? A devolução sai da conta da casa e não pode ser desfeita.")) void run(r.id, () => sendRefund(r.id), "Valor devolvido ao cliente."); }}
                 >
-                  Registrar estorno
+                  Devolver ao cliente
                 </Button>
               </div>
             )}
