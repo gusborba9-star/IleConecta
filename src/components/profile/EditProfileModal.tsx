@@ -23,6 +23,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
   const [state, setState] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
+  const [offerings, setOfferings] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
     setState(currentUser.state);
     setCategory(house?.category ?? "");
     setTags(house?.tags.join(", ") ?? "");
+    setOfferings(house?.offerings ?? "");
     setAvatarFile(null);
     setCoverFile(null);
     setSaving(false);
@@ -92,6 +94,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
         .map((t) => t.trim())
         .filter(Boolean)
         .slice(0, 20);
+      patch.offerings = offerings.trim();
     }
 
     if (isRemoteAuth) {
@@ -197,6 +200,20 @@ export default function EditProfileModal({ open, onClose }: Props) {
             <div>
               <Label htmlFor="ep-cat">Tradição / categoria</Label>
               <Input id="ep-cat" value={category} maxLength={80} placeholder="Ex.: Candomblé Ketu, Umbanda" onChange={(e) => setCategory(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="ep-off">Trabalhos e serviços que a casa realiza</Label>
+              <Textarea
+                id="ep-off"
+                value={offerings}
+                maxLength={800}
+                rows={4}
+                placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogo de búzios."
+                onChange={(e) => setOfferings(e.target.value)}
+              />
+              <div className="text-[11px] text-muted-foreground">
+                Aparece na sua página mesmo sem nada publicado, e a assistente usa para atender quem pergunta sobre a casa. {offerings.length}/800
+              </div>
             </div>
             <div>
               <Label htmlFor="ep-tags">Temas (separados por vírgula)</Label>
