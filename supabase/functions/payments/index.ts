@@ -28,6 +28,9 @@ const fail = (message: string, status = 400) => json({ error: message }, status)
 // deno-lint-ignore no-explicit-any
 type Obj = Record<string, any>;
 
+/** Erro devolvido pelo Stripe: a mensagem é segura para mostrar (não traz segredos) e ajuda a achar o problema. */
+class StripeError extends Error {}
+
 async function stripe(path: string, opts: { method?: string; body?: Obj; form?: Obj; account?: string; idem?: string } = {}) {
   const headers: Record<string, string> = { Authorization: `Bearer ${SECRET}`, "Stripe-Version": API_VERSION };
   if (opts.account) headers["Stripe-Account"] = opts.account;
@@ -44,7 +47,7 @@ async function stripe(path: string, opts: { method?: string; body?: Obj; form?: 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     console.error("stripe_error", path, res.status, JSON.stringify(data?.error ?? data).slice(0, 500));
-    throw new Error(data?.error?.message ?? "Falha ao falar com o Stripe.");
+    throw new StripeError(data?.error?.message ?? "Falha ao falar com o Stripe.");
   }
   return data as Obj;
 }
@@ -272,6 +275,7 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("payments_error", String(e));
+    if (e instanceof StripeError) return fail(`Stripe: ${e.message}`.slice(0, 300), 502);
     return fail("Não foi possível concluir agora. Tente de novo.", 500);
   }
 });
