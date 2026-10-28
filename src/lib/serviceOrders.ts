@@ -56,6 +56,19 @@ export async function fetchHouseOrders(ownerId: string): Promise<ServiceOrder[]>
   return (data ?? []).map(toOrder);
 }
 
+/** Serviços que a própria pessoa contratou, de qualquer casa. */
+export async function fetchMyOrders(userId: string): Promise<(ServiceOrder & { houseName: string })[]> {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("service_orders")
+    .select(`${COLS}, houses(name)`)
+    .eq("client_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: Record<string, any>) => ({ ...toOrder(r), houseName: r.houses?.name ? String(r.houses.name) : "Casa" }));
+}
+
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc(fn, args);
