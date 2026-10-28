@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { feeCents, splitSale, payoutEligibleAt, holdExpiresAt, ritualRevenue, processorFeeEstimate, houseReceives, MAX_PAYMENT_CENTS } from "../src/lib/paymentsCore.js";
+import { feeCents, splitSale, payoutEligibleAt, holdExpiresAt, ritualRevenue, processorFeeEstimate, houseReceives, MAX_PAYMENT_CENTS, MAX_STAGES, stageAmount, stagePlan, stagesNeeded } from "../src/lib/paymentsCore.js";
 
 test("comissão de 15% em rituais e 4% em serviços (Pix ou cartão à vista)", () => {
   assert.deepEqual(splitSale(10000, "ritual"), { gross: 10000, fee: 1500, net: 8500 });
@@ -52,4 +52,23 @@ test("LEGADO: repasse libera 72h após o fim do ritual (só para quem seguraria 
 test("vaga segurada por 15 minutos e receita de ritual", () => {
   assert.equal(holdExpiresAt(new Date("2026-10-26T12:00:00Z")), "2026-10-26T12:15:00.000Z");
   assert.deepEqual(ritualRevenue(19900, 287), { gross: 5711300, fee: 856695, net: 4854605 });
+});
+
+test("etapas: soma sempre igual ao total, 1ª etapa leva a sobra", () => {
+  assert.deepEqual(stagePlan(1100000, 2), [550000, 550000]);
+  assert.deepEqual(stagePlan(1000001, 3), [333335, 333333, 333333]);
+  for (const [t, n] of [[1, 4], [999999, 4], [2400000, 3], [5711300, 2]]) {
+    assert.equal(stagePlan(t, n).reduce((a, b) => a + b, 0), t);
+  }
+  assert.throws(() => stageAmount(100, 2, 3));
+  assert.throws(() => stageAmount(100, 5, 1));
+  assert.equal(MAX_STAGES, 4);
+});
+
+test("quantas etapas cabem no teto (R$ 11 mil = 2; R$ 7 mil = 1; R$ 41 mil = não cabe)", () => {
+  assert.equal(stagesNeeded(700000), 1);
+  assert.equal(stagesNeeded(1100000), 2);
+  assert.equal(stagesNeeded(4000000), 4);
+  assert.equal(stagesNeeded(4000001), null);
+  assert.equal(stagesNeeded(4000001, 2000000), 3);
 });

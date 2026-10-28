@@ -7,6 +7,8 @@ export const FEE_RULE_VERSION = "v2-2026-10";
 export const FEE_BPS = { ritual: 1500, servico: 400, servico_pix: 400 };
 // Teto por pagamento pela plataforma (o Pix do Stripe tem limite por pagamento). Ajustável no banco (payment_limits).
 export const MAX_PAYMENT_CENTS = 1000000;
+// Um serviço de valor alto pode ser pago em até 4 etapas (cada uma é um pagamento dentro do teto).
+export const MAX_STAGES = 4;
 // LEGADO: a retenção de 72h valia quando a plataforma segurava o dinheiro. Em pagamentos Stripe a casa recebe direto.
 export const HOLD_HOURS = 72;
 export const PIX_HOLD_MINUTES = 15;
@@ -40,6 +42,30 @@ export function houseReceives(grossCents, kind, method) {
   const sale = splitSale(grossCents, kind);
   const processor = processorFeeEstimate(grossCents, method);
   return { gross: sale.gross, platformFee: sale.fee, processorFee: processor, net: sale.gross - sale.fee - processor };
+}
+
+/** Valor da etapa k (1..n) de um total: centavos inteiros, a 1ª etapa leva a sobra. Mesma regra de stage_amount_cents() no banco. */
+export function stageAmount(totalCents, stages, stage) {
+  const t = Number(totalCents);
+  if (!Number.isInteger(t) || t < 0 || !Number.isInteger(stages) || stages < 1 || stages > MAX_STAGES || !Number.isInteger(stage) || stage < 1 || stage > stages) {
+    throw new Error("Etapa inválida.");
+  }
+  const base = Math.floor(t / stages);
+  return stage === 1 ? base + (t - base * stages) : base;
+}
+
+/** Todas as etapas de um pedido (a soma é sempre o total). */
+export function stagePlan(totalCents, stages) {
+  return Array.from({ length: stages }, (_, i) => stageAmount(totalCents, stages, i + 1));
+}
+
+/** Menor número de etapas para que cada pagamento caiba no teto; null se passar de MAX_STAGES (combinar direto com a casa). */
+export function stagesNeeded(totalCents, capCents = MAX_PAYMENT_CENTS) {
+  const t = Number(totalCents);
+  const cap = Number(capCents);
+  if (!Number.isInteger(t) || t < 0 || !Number.isInteger(cap) || cap <= 0) throw new Error("Valor inválido.");
+  for (let n = 1; n <= MAX_STAGES; n++) if (stageAmount(t, n, 1) <= cap) return n;
+  return null;
 }
 
 /** LEGADO (plataforma segurando o dinheiro): repasse elegível 72h depois do fim do ritual (ou do início, se não houver fim). */

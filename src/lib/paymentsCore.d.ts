@@ -1,6 +1,7 @@
 export declare const FEE_RULE_VERSION: string;
 export declare const FEE_BPS: { ritual: number; servico: number; servico_pix: number };
 export declare const MAX_PAYMENT_CENTS: number;
+export declare const MAX_STAGES: number;
 export declare const HOLD_HOURS: number;
 export declare const PIX_HOLD_MINUTES: number;
 export declare const PROCESSOR_FEE: { pix: { bps: number; fixed: number }; card: { bps: number; fixed: number } };
@@ -13,3 +14,6 @@ export declare function houseReceives(grossCents: number, kind: SaleKind, method
 export declare function payoutEligibleAt(endsAtIso: string | null, startsAtIso: string, startedAtIso?: string | null): string;
 export declare function holdExpiresAt(now?: Date): string;
 export declare function ritualRevenue(priceCents: number, confirmedSeats: number): { gross: number; fee: number; net: number };
+export declare function stageAmount(totalCents: number, stages: number, stage: number): number;
+export declare function stagePlan(totalCents: number, stages: number): number[];
+export declare function stagesNeeded(totalCents: number, capCents?: number): number | null;
