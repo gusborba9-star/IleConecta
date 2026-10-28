@@ -58,7 +58,7 @@ export default function Plans() {
       <Card className="p-6">
         <h1 className="font-display font-bold text-2xl">Planos</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Escolha o plano da sua casa. Quando o pagamento pela plataforma estiver disponível: rituais com vagas têm taxa de 17% e serviços contratados pela plataforma têm 5% no Pix. Atendimentos combinados direto com a casa não têm taxa da plataforma.
+          Escolha o plano da sua casa. Quando o pagamento pela plataforma estiver disponível: rituais com vagas têm taxa de 15% e serviços contratados pela plataforma têm 4%. Atendimentos combinados direto com a casa não têm taxa da plataforma.
         </p>
       </Card>
 
