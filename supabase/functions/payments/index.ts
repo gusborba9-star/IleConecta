@@ -104,7 +104,6 @@ async function onboard(userId: string, email: string | undefined) {
       use_case: {
         type: "account_onboarding",
         account_onboarding: {
-          configurations: ["merchant"],
           return_url: `${APP_URL}/pagamento/conta?s=ok`,
           refresh_url: `${APP_URL}/pagamento/conta?s=refresh`,
         },
