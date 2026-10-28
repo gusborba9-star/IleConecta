@@ -7,6 +7,7 @@ import { paymentsEnabledFor, recordConsents } from "@/lib/consents";
 import { CHECKOUT_DOCS } from "@/lib/legalCore";
 import type { Service } from "@/lib/services";
 import { createOrder } from "@/lib/serviceOrders";
+import { goToCheckout } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
 import { stagePlan } from "@/lib/paymentsCore";
 
@@ -49,9 +50,23 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
       setSaving(false);
       return void toast.error(consentError);
     }
-    const error = await createOrder(service.id, note);
+    const { error, id } = await createOrder(service.id, note);
+    if (error) {
+      setSaving(false);
+      return void toast.error(error);
+    }
+    if (payOn && id) {
+      toast.success("Pedido enviado! Abrindo o pagamento…");
+      const payError = await goToCheckout({ orderId: id });
+      if (payError) {
+        setSaving(false);
+        toast.error(`${payError} Seu pedido ficou registrado; tente pagar de novo em instantes.`);
+        onDone();
+        onClose();
+      }
+      return;
+    }
     setSaving(false);
-    if (error) return void toast.error(error);
     toast.success("Pedido enviado! A casa será avisada.");
     onDone();
     onClose();

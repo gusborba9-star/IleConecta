@@ -6,6 +6,7 @@ import ConsentBox from "@/components/legal/ConsentBox";
 import { paymentsEnabledFor, recordConsents } from "@/lib/consents";
 import { CHECKOUT_DOCS } from "@/lib/legalCore";
 import { reserveSeat, type RealRitual } from "@/lib/rituals";
+import { goToCheckout } from "@/lib/payments";
 import { validateAnswers } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
 
@@ -51,9 +52,24 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
       setSaving(false);
       return void toast.error(consentError);
     }
-    const error = await reserveSeat(ritual.id, v.value);
+    const { error, id } = await reserveSeat(ritual.id, v.value);
+    if (error) {
+      setSaving(false);
+      return void toast.error(error);
+    }
+    if (payOn && ritual.priceCents > 0 && id) {
+      // A vaga fica segurada por 15 min enquanto o cliente paga na página do Stripe.
+      toast.success("Vaga segurada. Abrindo o pagamento…");
+      const payError = await goToCheckout({ reservationId: id });
+      if (payError) {
+        setSaving(false);
+        toast.error(`${payError} Sua vaga fica segurada por 15 minutos.`);
+        onDone();
+        onClose();
+      }
+      return;
+    }
     setSaving(false);
-    if (error) return void toast.error(error);
     toast.success("Vaga reservada!");
     onDone();
     onClose();

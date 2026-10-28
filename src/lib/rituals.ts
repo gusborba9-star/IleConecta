@@ -137,10 +137,11 @@ export async function fetchMyReservations(userId: string): Promise<Record<string
 }
 
 /** Devolve null em caso de sucesso, ou a mensagem de erro em português. */
-export async function reserveSeat(eventId: string, answers: Record<string, string>): Promise<string | null> {
-  if (!supabase) return "Indisponível.";
-  const { error } = await supabase.rpc("reserve_event", { p_event: eventId, p_answers: answers });
-  return error ? error.message : null;
+/** Reserva a vaga. Devolve o erro (ou null) e o id da reserva, usado para abrir o pagamento. */
+export async function reserveSeat(eventId: string, answers: Record<string, string>): Promise<{ error: string | null; id: string | null }> {
+  if (!supabase) return { error: "Indisponível.", id: null };
+  const { data, error } = await supabase.rpc("reserve_event", { p_event: eventId, p_answers: answers });
+  return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
 }
 
 export async function cancelSeat(reservationId: string): Promise<string | null> {
