@@ -1,11 +1,26 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ORDER_LABEL, fetchMyOrders, subscribeOrders, type ServiceOrder } from "@/lib/serviceOrders";
 import { Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { formatBRL, timeAgo } from "@/lib/utils";
-import { CalendarClock, Ticket } from "lucide-react";
+import { CalendarClock, HandHeart, Ticket } from "lucide-react";
 
 export default function Activity() {
   const { currentUser, purchases, rituals, getHouse } = useApp();
+  const [orders, setOrders] = useState<(ServiceOrder & { houseName: string })[]>([]);
+  const uid = currentUser?.id;
+  useEffect(() => {
+    if (!uid) return;
+    let alive = true;
+    const load = () => void fetchMyOrders(uid).then((o) => alive && setOrders(o));
+    load();
+    const off = subscribeOrders(load);
+    return () => {
+      alive = false;
+      off();
+    };
+  }, [uid]);
   if (!currentUser) return null;
   const mine = purchases.filter((p) => p.userId === currentUser.id).slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
@@ -23,6 +38,26 @@ export default function Activity() {
         </div>
         <p className="text-sm text-muted-foreground">O agendamento de consultas ainda não está disponível. Quando estiver, elas aparecerão aqui.</p>
       </Card>
+
+      {orders.length > 0 && (
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <HandHeart className="h-5 w-5 text-primary" />
+            <h2 className="font-display font-bold text-lg">Meus serviços</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {orders.map((o) => (
+              <div key={o.id} className="py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{o.title}</div>
+                  <div className="text-xs text-muted-foreground">{o.houseName} · {ORDER_LABEL[o.status]} · {timeAgo(o.createdAt)}</div>
+                </div>
+                <div className="font-display font-bold">{formatBRL(o.priceCents / 100)}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-3">
