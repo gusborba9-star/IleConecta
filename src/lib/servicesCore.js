@@ -1,4 +1,5 @@
 // Regras puras do catálogo de serviços da casa (sem rede), testáveis em Node.
+import { MAX_STAGES } from "./paymentsCore.js";
 
 export const SERVICE_KINDS = [
   { id: "trabalho", label: "Trabalho" },
@@ -77,6 +78,9 @@ export function validateService(input) {
   const delivery = SERVICE_DELIVERIES.some((d) => d.id === input?.delivery) ? input.delivery : null;
   if (!delivery) errors.delivery = "Escolha como o serviço é realizado.";
 
+  const stagesRaw = input?.stages === undefined || input?.stages === "" ? 1 : Number(input.stages);
+  if (!Number.isInteger(stagesRaw) || stagesRaw < 1 || stagesRaw > MAX_STAGES) errors.stages = `Escolha de 1 a ${MAX_STAGES} etapas.`;
+
   if (Object.keys(errors).length > 0) return { ok: false, errors, value: null };
   return {
     ok: true,
@@ -88,6 +92,7 @@ export function validateService(input) {
       description: description || null,
       price_cents: priceCents,
       delivery,
+      stages: stagesRaw,
     },
   };
 }
