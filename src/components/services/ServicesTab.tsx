@@ -135,6 +135,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
               <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
                 <div className="min-w-[200px] flex-1">
                   <div className="font-semibold">{o.title} <span className="font-normal text-muted-foreground">· {o.clientName}</span></div>
+                  {o.modality && <p className="text-sm mt-1"><span className="text-muted-foreground">Modalidade: </span>{o.modality === "presencial" ? "Presencial" : "À distância"}</p>}
                   {o.note && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{o.note}</p>}
                   <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>{o.stagesTotal > 1 && <Badge tone="gold">Etapas pagas: {stageDone.get(o.id) ?? 0}/{o.stagesTotal}</Badge>}</div>
                 </div>
@@ -208,6 +209,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
               <p className="text-xs text-muted-foreground mt-2">
                 {s.delivery === "presencial"
                   ? "Atendimento presencial: combine e pague direto com a casa."
+                  : s.delivery === "hibrido"
+                  ? "Presencial ou à distância: você escolhe ao contratar pela plataforma."
                   : "Contrate pela plataforma: a casa inicia e conclui o trabalho e você é avisado em cada etapa."}
               </p>
               {!isOwn && myOpenOrder(s.id) && (
