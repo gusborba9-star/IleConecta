@@ -5,12 +5,16 @@ import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
+import type { HouseUser, User } from "@/types";
 import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
 export default function AssistantSettings() {
-  const { currentUser, isRemoteAuth } = useApp();
+  const { currentUser, isRemoteAuth, updateUser } = useApp();
   const { config } = usePlatformConfig();
+  const currentOfferings = (currentUser as HouseUser | null)?.offerings ?? "";
+  const [offerings, setOfferings] = useState<string | null>(null);
+  const offeringsValue = offerings ?? currentOfferings;
   const [cfg, setCfg] = useState<AssistantConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,7 +51,9 @@ export default function AssistantSettings() {
 
   const save = async () => {
     setSaving(true);
-    const ok = await saveMyAssistant(cfg);
+    // "O que a casa faz" é o mesmo texto da página da casa (houses.offerings).
+    const okOffer = offeringsValue.trim() === currentOfferings.trim() ? true : await updateUser({ offerings: offeringsValue.trim() } as Partial<User>);
+    const ok = (await saveMyAssistant(cfg)) && okOffer;
     setSaving(false);
     if (ok) toast.success("Assistente salva.");
     else toast.error("Não foi possível salvar. Tente novamente.");
@@ -100,6 +106,20 @@ export default function AssistantSettings() {
         <div>
           <h3 className="font-semibold">Conheça a sua casa para a assistente</h3>
           <p className="text-xs text-muted-foreground">Quanto mais você escrever, melhor ela atende. Ela só fala do que está aqui e nos seus serviços e rituais.</p>
+        </div>
+        <div>
+          <Label htmlFor="pf-off">Trabalhos e serviços que a casa realiza</Label>
+          <Textarea
+            id="pf-off"
+            rows={4}
+            maxLength={800}
+            value={offeringsValue}
+            onChange={(e) => setOfferings(e.target.value)}
+            placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogo de búzios."
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            É o mesmo texto da sua página. Mesmo sem nada publicado, a assistente apresenta o que a casa faz e chama você para combinar valores e horários. Ela nunca inventa preço.
+          </p>
         </div>
         <div>
           <Label htmlFor="pf-trad">Tradição ou linha da casa</Label>

@@ -22,6 +22,8 @@ export interface HouseUser extends BaseUser {
   rating: number;
   followers: number;
   verified?: boolean;
+  /** Texto livre da casa sobre os trabalhos que realiza, mesmo sem estarem publicados. */
+  offerings?: string;
   boost?: {
     level: "cidade" | "estado" | "pais";
     expiresAt: string;

@@ -56,6 +56,15 @@ export default function CaseContext({ refundId }: { refundId: string }) {
       </div>
 
       <div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Resposta da casa</div>
+        {ctx.house_response ? (
+          <p className="whitespace-pre-line">{ctx.house_response}</p>
+        ) : (
+          <p className="text-muted-foreground">A casa ainda não respondeu. Se não houver resposta, considere dar um prazo curto antes de decidir.</p>
+        )}
+      </div>
+
+      <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Conversa entre cliente e casa (desde a contratação)</div>
         {ctx.same_person ? (
           <p className="text-muted-foreground">Cliente e casa são a mesma conta (teste): não há conversa para mostrar.</p>

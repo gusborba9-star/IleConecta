@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   // No app, a casa é identificada pelo id do dono (profiles.id).
   const { data: house } = await admin
     .from("houses")
-    .select("id, owner_id, name, category, plan")
+    .select("id, owner_id, name, category, plan, offerings")
     .eq("owner_id", body.house_id)
     .maybeSingle();
   if (!house) return json(404, { error: "casa_nao_encontrada" });

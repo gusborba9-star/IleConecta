@@ -11,6 +11,7 @@ import { isRemoteId } from "@/lib/remoteData";
 import AssistantChat from "@/components/assistant/AssistantChat";
 import ServicesTab from "@/components/services/ServicesTab";
 import RitualsTab from "@/components/rituals/RitualsTab";
+import HouseRefundCases from "@/components/refunds/HouseRefundCases";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 
@@ -93,6 +94,13 @@ export default function HousePage() {
             </div>
           </div>
           <p className="mt-4 text-sm text-muted-foreground max-w-3xl">{house.bio}</p>
+          {house.offerings && (
+            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 max-w-3xl">
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">Trabalhos que a casa realiza</div>
+              <p className="mt-1 text-sm whitespace-pre-line">{house.offerings}</p>
+              {!isOwn && <p className="mt-2 text-xs text-muted-foreground">Não encontrou o que procura nas publicações? Fale com a casa ou com a assistente.</p>}
+            </div>
+          )}
           <div className="flex gap-1.5 mt-3 flex-wrap">
             {house.tags.map((t) => (
               <Badge key={t} tone="muted">{t}</Badge>
@@ -119,6 +127,7 @@ export default function HousePage() {
       </Card>
 
       {isOwn && <EditProfileModal open={editing} onClose={() => setEditing(false)} />}
+      {isOwn && hasServices && <HouseRefundCases ownerId={house.id} />}
 
       <div className="mt-4 space-y-4">
         {tab === "feed" && housePosts.map((p) => <PostCard key={p.id} post={p} />)}
