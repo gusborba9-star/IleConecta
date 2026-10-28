@@ -5,6 +5,7 @@ import { Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp } from "lucide
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import ConsentBox from "@/components/legal/ConsentBox";
+import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
 import type { HouseUser } from "@/types";
 
@@ -65,6 +66,8 @@ export default function HouseHome() {
           <Button className="mt-3" disabled={!agree || saving} onClick={() => void acceptTerms()}>{saving ? "Salvando…" : "Aceitar e continuar"}</Button>
         </Card>
       )}
+
+      {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} />}
 
       <section aria-label="Atalhos" className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         {tiles.map((t) => (
