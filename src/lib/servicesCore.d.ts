@@ -1,5 +1,5 @@
 export type ServiceKind = "trabalho" | "buzios" | "cartas" | "consulta" | "limpeza" | "outro";
-export type ServiceDelivery = "presencial" | "transmissao" | "sigilo";
+export type ServiceDelivery = "presencial" | "transmissao" | "hibrido" | "sigilo";
 
 export interface ServiceFormInput {
   kind: ServiceKind | "";

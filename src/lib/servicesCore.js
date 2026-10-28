@@ -13,6 +13,7 @@ export const SERVICE_KINDS = [
 export const SERVICE_DELIVERIES = [
   { id: "presencial", label: "Presencial", hint: "O cliente vai até a casa." },
   { id: "transmissao", label: "Transmissão", hint: "À distância, por vídeo ou chamada." },
+  { id: "hibrido", label: "Híbrido", hint: "Presencial ou à distância: o cliente escolhe ao contratar." },
   { id: "sigilo", label: "Sigilo", hint: "A casa realiza com discrição e avisa o cliente." },
 ];
 
