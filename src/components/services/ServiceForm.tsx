@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
-import { SERVICE_DELIVERIES, SERVICE_KINDS, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
+import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
 import type { Service } from "@/lib/services";
+import { fetchPaymentMaxCents } from "@/lib/paymentLimit";
+import { MAX_PAYMENT_CENTS, MAX_STAGES, stagePlan, stagesNeeded } from "@/lib/paymentsCore";
 
 interface Props {
   open: boolean;
@@ -12,12 +14,17 @@ interface Props {
   onSubmit: (value: ServiceValue) => Promise<boolean>;
 }
 
-const EMPTY: ServiceFormInput = { kind: "", customKind: "", title: "", description: "", priceText: "", delivery: "" };
+const EMPTY: ServiceFormInput = { kind: "", customKind: "", title: "", description: "", priceText: "", delivery: "", stages: 1 };
 
 export default function ServiceForm({ open, onClose, initial, onSubmit }: Props) {
   const [form, setForm] = useState<ServiceFormInput>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [saving, setSaving] = useState(false);
+  const [cap, setCap] = useState(MAX_PAYMENT_CENTS);
+
+  useEffect(() => {
+    if (open) void fetchPaymentMaxCents().then(setCap);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -32,10 +39,16 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
             description: initial.description ?? "",
             priceText: (initial.priceCents / 100).toFixed(2).replace(".", ","),
             delivery: initial.delivery,
+            stages: initial.stages,
           }
         : EMPTY
     );
   }, [open, initial]);
+
+  const priceCents = parsePriceToCents(form.priceText);
+  const stages = Number(form.stages ?? 1);
+  const needed = priceCents ? stagesNeeded(priceCents, cap) : 1;
+  const plan = priceCents && stages > 1 ? stagePlan(priceCents, stages) : null;
 
   const set = (patch: Partial<ServiceFormInput>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -98,6 +111,28 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           <Label htmlFor="sv-price">Valor (R$)</Label>
           <Input id="sv-price" inputMode="decimal" value={form.priceText} onChange={(e) => set({ priceText: e.target.value })} placeholder="200,00" />
           {errors.price && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.price}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="sv-stages">Pagamento em etapas</Label>
+          <select
+            id="sv-stages"
+            className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+            value={stages}
+            onChange={(e) => set({ stages: Number(e.target.value) })}
+          >
+            {Array.from({ length: MAX_STAGES }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>{n === 1 ? "À vista (1 pagamento)" : `${n} etapas`}</option>
+            ))}
+          </select>
+          {plan && <p className="text-sm text-muted-foreground mt-1">Etapas: {plan.map((v) => formatCents(v)).join(" + ")}. O cliente vê esse plano antes de pagar; as datas das etapas seguintes vocês combinam.</p>}
+          {needed === null && priceCents !== null && (
+            <p className="text-sm text-[hsl(var(--danger))] mt-1">Este valor passa do que a plataforma recebe ({formatCents(cap * MAX_STAGES)}). Combine o pagamento direto com o cliente.</p>
+          )}
+          {needed !== null && needed > stages && (
+            <p className="text-sm text-[hsl(var(--danger))] mt-1">Cada pagamento pela plataforma vai até {formatCents(cap)}. Para este valor, escolha pelo menos {needed} etapas; senão o cliente não consegue contratar pela plataforma.</p>
+          )}
+          {errors.stages && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.stages}</p>}
         </div>
 
         <fieldset>
