@@ -58,16 +58,16 @@ export async function fetchHouseOrders(ownerId: string): Promise<ServiceOrder[]>
 }
 
 /** Serviços que a própria pessoa contratou, de qualquer casa. */
-export async function fetchMyOrders(userId: string): Promise<(ServiceOrder & { houseName: string })[]> {
+export async function fetchMyOrders(userId: string): Promise<(ServiceOrder & { houseName: string; houseOwnerId: string | null })[]> {
   if (!supabase) return [];
   const { data } = await supabase
     .from("service_orders")
-    .select(`${COLS}, houses(name)`)
+    .select(`${COLS}, houses(name, owner_id)`)
     .eq("client_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((r: Record<string, any>) => ({ ...toOrder(r), houseName: r.houses?.name ? String(r.houses.name) : "Casa" }));
+  return (data ?? []).map((r: Record<string, any>) => ({ ...toOrder(r), houseName: r.houses?.name ? String(r.houses.name) : "Casa", houseOwnerId: r.houses?.owner_id ? String(r.houses.owner_id) : null }));
 }
 
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {

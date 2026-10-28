@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ORDER_LABEL, fetchMyOrders, subscribeOrders, type ServiceOrder } from "@/lib/serviceOrders";
-import { Card } from "@/components/base";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { ORDER_LABEL, canCancelOrder, cancelOrder, fetchMyOrders, subscribeOrders, type ServiceOrder } from "@/lib/serviceOrders";
+import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { settleRefunds } from "@/lib/payments";
 import { formatBRL, timeAgo } from "@/lib/utils";
@@ -9,8 +10,24 @@ import { CalendarClock, HandHeart, Ticket } from "lucide-react";
 
 export default function Activity() {
   const { currentUser, purchases, rituals, getHouse } = useApp();
-  const [orders, setOrders] = useState<(ServiceOrder & { houseName: string })[]>([]);
+  const nav = useNavigate();
+  const [orders, setOrders] = useState<(ServiceOrder & { houseName: string; houseOwnerId: string | null })[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const uid = currentUser?.id;
+  const reload = useCallback(async () => {
+    if (uid) setOrders(await fetchMyOrders(uid));
+  }, [uid]);
+
+  const cancel = async (id: string) => {
+    if (!window.confirm("Cancelar o seu pedido? Se já foi pago, o valor é devolvido integralmente.")) return;
+    setBusy(id);
+    const error = await cancelOrder(id);
+    setBusy(null);
+    if (error) toast.error(error);
+    else toast.success("Pedido cancelado.");
+    await reload();
+  };
+
   useEffect(() => {
     if (!uid) return;
     let alive = true;
@@ -52,8 +69,21 @@ export default function Activity() {
             {orders.map((o) => (
               <div key={o.id} className="py-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{o.title}</div>
+                  {o.houseOwnerId ? (
+                    <Link to={`/casa/${o.houseOwnerId}`} className="font-semibold truncate block hover:underline">{o.title}</Link>
+                  ) : (
+                    <div className="font-semibold truncate">{o.title}</div>
+                  )}
                   <div className="text-xs text-muted-foreground">{o.houseName} · {ORDER_LABEL[o.status]} · {timeAgo(o.createdAt)}</div>
+                  {o.status === "reembolsado" && <div className="text-xs text-forest mt-0.5">Valor devolvido integralmente.</div>}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {o.houseOwnerId && <Button size="sm" variant="outline" onClick={() => nav(`/casa/${o.houseOwnerId}`)}>Ver na casa</Button>}
+                    {canCancelOrder(o.status) && (
+                      <Button size="sm" variant="outline" disabled={busy === o.id} onClick={() => void cancel(o.id)}>
+                        {busy === o.id ? "Cancelando…" : "Cancelar pedido"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="font-display font-bold">{formatBRL(o.priceCents / 100)}</div>
               </div>
