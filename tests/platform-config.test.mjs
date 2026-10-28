@@ -40,3 +40,11 @@ test("começa só com cidade e estado; país liga pelo painel; sem preço não a
   const priced = sanitizeConfig({ scopes: { boost: { exterior: true } }, pricing: { boost_per_day: { exterior: 59.9 } } });
   assert.deepEqual(availableScopes(priced, "boost"), ["cidade", "estado", "exterior"]);
 });
+
+test("pagamentos: padrão DESLIGADO e 'beta' liga só para as casas escolhidas", () => {
+  assert.equal(sanitizeConfig({}).features.payments.state, "off");
+  assert.equal(isFeatureOn(sanitizeConfig({}), "payments", "casa1"), false);
+  const cfg = sanitizeConfig({ features: { payments: { state: "beta", beta_houses: ["casa1"] } } });
+  assert.equal(isFeatureOn(cfg, "payments", "casa1"), true);
+  assert.equal(isFeatureOn(cfg, "payments", "casa2"), false);
+});

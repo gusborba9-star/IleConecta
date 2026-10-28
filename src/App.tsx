@@ -20,6 +20,8 @@ import Admin from "@/pages/Admin";
 import HouseHome from "@/pages/HouseHome";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminRefunds from "@/components/refunds/AdminRefunds";
+import PaymentReturn from "@/pages/PaymentReturn";
+import PaymentAccountReturn from "@/pages/PaymentAccountReturn";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 
@@ -74,6 +76,8 @@ export default function App() {
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
+        <Route path="/pagamento/retorno" element={<PaymentReturn />} />
+        <Route path="/pagamento/conta" element={<PaymentAccountReturn />} />
         <Route path="/sobre/:slug" element={<Info />} />
         <Route path="/admin" element={<><Admin /><div className="mt-4 space-y-4"><AdminRefunds /></div><div className="mt-4 pb-16 lg:pb-4"><AdminUsers /></div></>} />
       </Route>

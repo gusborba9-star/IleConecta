@@ -12,6 +12,7 @@ import {
   ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, fetchStageProgress, finishOrder, isOpenOrder, payNextStage, remindNextStage, startOrder, subscribeOrders, type ServiceOrder,
 } from "@/lib/serviceOrders";
 import { useApp } from "@/contexts/AppContext";
+import { goToCheckout } from "@/lib/payments";
 import { stagePlan } from "@/lib/paymentsCore";
 import { deliveryLabel, formatCents, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
 
@@ -70,11 +71,17 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
       await load();
     }
   };
+  const payStage = async (orderId: string) => {
+    const error = await payNextStage(orderId);
+    if (error) return void toast.error(error);
+    const payError = await goToCheckout({ orderId });
+    if (payError) toast.error(payError);
+  };
   const stageOpen = (o: ServiceOrder) =>
     o.stagesTotal > 1 && ["confirmado", "em_andamento", "concluido"].includes(o.status) && (stageDone.get(o.id) ?? 0) < o.stagesTotal;
   const showMine = (o: ServiceOrder) =>
     o.clientId === currentUser?.id &&
-    (["em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status) || (o.status === "confirmado" && o.stagesTotal > 1));
+    (["aguardando_pagamento", "em_andamento", "concluido", "reembolso_pendente", "reembolsado"].includes(o.status) || (o.status === "confirmado" && o.stagesTotal > 1));
   const myOpenOrder = (serviceId: string) => orders.find((o) => o.serviceId === serviceId && o.clientId === currentUser?.id && isOpenOrder(o.status));
   useEffect(() => {
     if (startNew && isOwn) {
@@ -163,7 +170,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                     {refund?.status === "recusado" && refund.decisionNote && <p className="text-xs text-muted-foreground mt-1">{refund.decisionNote}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {stageOpen(o) && <Button size="sm" onClick={() => void orderAct(() => payNextStage(o.id), "Etapa liberada para pagamento. A abertura do pagamento pela plataforma chega em breve.")}>Pagar próxima etapa</Button>}
+                    {o.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ orderId: o.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
+                    {stageOpen(o) && <Button size="sm" onClick={() => void payStage(o.id)}>Pagar próxima etapa</Button>}
                     {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
                     {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o relato?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar relato</Button>}
                   </div>

@@ -63,7 +63,11 @@ async function call(fn: string, args: Record<string, unknown>): Promise<string |
 }
 
 /** Devolvem null em caso de sucesso, ou a mensagem de erro em português. */
-export const createOrder = (serviceId: string, note: string) => call("create_service_order", { p_service: serviceId, p_note: note });
+export async function createOrder(serviceId: string, note: string): Promise<{ error: string | null; id: string | null }> {
+  if (!supabase) return { error: "Indisponível.", id: null };
+  const { data, error } = await supabase.rpc("create_service_order", { p_service: serviceId, p_note: note });
+  return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
+}
 export const startOrder = (id: string) => call("start_service_order", { p_order: id });
 export const finishOrder = (id: string) => call("finish_service_order", { p_order: id });
 export const cancelOrder = (id: string) => call("cancel_service_order", { p_order: id });
