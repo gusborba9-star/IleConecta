@@ -1,6 +1,6 @@
 // Pagamentos pelo Stripe (cobrança direta na conta da casa). Fica atrás de features.payments (desligado por padrão).
 // Uma função, duas portas:
-//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | refund
+//  - chamadas do app (cabeçalho Authorization do usuário): onboard | status | checkout | sync | refund
 //  - avisos do Stripe (cabeçalho Stripe-Signature): confirmam pagamento, registram tarifa e concluem reembolso.
 // Segredos (Supabase > Edge Functions > Secrets): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, APP_URL (opcional).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -28,6 +28,9 @@ const fail = (message: string, status = 400) => json({ error: message }, status)
 // deno-lint-ignore no-explicit-any
 type Obj = Record<string, any>;
 
+/** Erro devolvido pelo Stripe: a mensagem é segura para mostrar (não traz segredos) e ajuda a achar o problema. */
+class StripeError extends Error {}
+
 async function stripe(path: string, opts: { method?: string; body?: Obj; form?: Obj; account?: string; idem?: string } = {}) {
   const headers: Record<string, string> = { Authorization: `Bearer ${SECRET}`, "Stripe-Version": API_VERSION };
   if (opts.account) headers["Stripe-Account"] = opts.account;
@@ -44,7 +47,7 @@ async function stripe(path: string, opts: { method?: string; body?: Obj; form?: 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     console.error("stripe_error", path, res.status, JSON.stringify(data?.error ?? data).slice(0, 500));
-    throw new Error(data?.error?.message ?? "Falha ao falar com o Stripe.");
+    throw new StripeError(data?.error?.message ?? "Falha ao falar com o Stripe.");
   }
   return data as Obj;
 }
@@ -101,7 +104,6 @@ async function onboard(userId: string, email: string | undefined) {
       use_case: {
         type: "account_onboarding",
         account_onboarding: {
-          configurations: ["merchant"],
           return_url: `${APP_URL}/pagamento/conta?s=ok`,
           refresh_url: `${APP_URL}/pagamento/conta?s=refresh`,
         },
@@ -116,7 +118,7 @@ async function refreshStatus(userId: string) {
   if (!house) return fail("Somente a casa consulta o recebimento.", 403);
   const { data: row } = await admin.from("house_payment_accounts").select("stripe_account_id").eq("house_id", house.id).maybeSingle();
   if (!row?.stripe_account_id) return json({ registered: false, charges_enabled: false, payouts_enabled: false, requirements_due: false });
-  const acct = await stripe(`/v2/core/accounts/${row.stripe_account_id}?include[]=configuration.merchant&include[]=requirements`);
+  const acct = await stripe(`/v2/core/accounts/${row.stripe_account_id}?include[0]=configuration.merchant&include[1]=requirements`);
   const st = accountState(acct);
   await admin.from("house_payment_accounts").update({
     ...st, status: st.charges_enabled ? "ativa" : st.requirements_due ? "pendente" : "em_analise", updated_at: new Date().toISOString(),
@@ -169,6 +171,30 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
   const { error } = await admin.from("payments").update({ provider_ref: session.id, stripe_account_id: acc.stripe_account_id, payment_method: null }).eq("id", pay.id).eq("status", "pendente");
   if (error) return fail("Não foi possível abrir o pagamento.", 500);
   return json({ url: session.url });
+}
+
+// Confere no Stripe se o pagamento foi feito (rede de segurança caso o aviso automático atrase ou falhe).
+async function syncPayment(userId: string, paymentId: string) {
+  const { data: pay } = await admin.from("payments").select("id, status, provider_ref, stripe_account_id, reservation_id, order_id").eq("id", paymentId).maybeSingle();
+  if (!pay) return fail("Pagamento não encontrado.", 404);
+  let clientId: string | null = null;
+  if (pay.reservation_id) {
+    const { data: r } = await admin.from("reservations").select("user_id").eq("id", pay.reservation_id).maybeSingle();
+    clientId = r?.user_id ?? null;
+  } else if (pay.order_id) {
+    const { data: o } = await admin.from("service_orders").select("client_id").eq("id", pay.order_id).maybeSingle();
+    clientId = o?.client_id ?? null;
+  }
+  if (clientId !== userId) return fail("Este pagamento não é seu.", 403);
+  if (pay.status !== "pendente" || !pay.provider_ref || !pay.stripe_account_id) return json({ status: pay.status });
+  const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
+  if (session.payment_status === "paid") {
+    const { error } = await admin.rpc("confirm_payment", { p_provider_ref: pay.provider_ref });
+    if (error) return fail(error.message, 500);
+    await recordFee(session, pay.stripe_account_id);
+    return json({ status: "confirmado" });
+  }
+  return json({ status: pay.status, stripe_status: session.payment_status });
 }
 
 async function refund(userId: string, refundId: string) {
@@ -243,7 +269,7 @@ async function handleEvent(event: Obj) {
 async function recordFee(session: Obj, account: string | null) {
   try {
     if (!session.payment_intent || !account) return;
-    const pi = await stripe(`/v1/payment_intents/${session.payment_intent}?expand[]=latest_charge.balance_transaction`, { account });
+    const pi = await stripe(`/v1/payment_intents/${session.payment_intent}?expand[0]=latest_charge.balance_transaction`, { account });
     const details: Obj[] = pi.latest_charge?.balance_transaction?.fee_details ?? [];
     const stripeFee = details.filter((d) => d.type === "stripe_fee").reduce((a, d) => a + Number(d.amount), 0);
     const method = pi.latest_charge?.payment_method_details?.type;
@@ -267,11 +293,13 @@ Deno.serve(async (req) => {
       case "onboard": return await onboard(user.id, user.email);
       case "status": return await refreshStatus(user.id);
       case "checkout": return await checkout(user.id, user.email, input);
+      case "sync": return await syncPayment(user.id, String(input.payment_id ?? ""));
       case "refund": return await refund(user.id, String(input.refund_id ?? ""));
       default: return fail("Ação desconhecida.");
     }
   } catch (e) {
     console.error("payments_error", String(e));
+    if (e instanceof StripeError) return fail(`Stripe: ${e.message}`.slice(0, 300), 502);
     return fail("Não foi possível concluir agora. Tente de novo.", 500);
   }
 });
