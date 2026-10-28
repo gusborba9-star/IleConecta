@@ -78,6 +78,26 @@ export async function fetchRefundHistory(): Promise<RefundRequest[]> {
   return (data ?? []).map(toRefund);
 }
 
+export interface RefundContext {
+  kind: "pedido" | "reserva";
+  title: string;
+  description: string | null;
+  price_cents: number;
+  client_note: string | null;
+  house: string;
+  client: string;
+  same_person: boolean;
+  timeline: { label: string; at: string }[];
+  messages: { at: string; from: "cliente" | "casa" | "assistente"; text: string }[];
+}
+
+/** Só a administração e só para pedidos em aberto; cada abertura fica registrada. */
+export async function fetchRefundContext(id: string): Promise<{ context: RefundContext | null; error: string | null }> {
+  if (!supabase) return { context: null, error: "Indisponível." };
+  const { data, error } = await supabase.rpc("admin_refund_context", { p_id: id });
+  return error ? { context: null, error: error.message } : { context: data as RefundContext, error: null };
+}
+
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc(fn, args);
