@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Textarea } from "@/components/base";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
-import { decideRefund, fetchRefundQueue, subscribeRefunds, type RefundRequest } from "@/lib/refunds";
+import { REFUND_LABEL, decideRefund, fetchRefundHistory, fetchRefundQueue, subscribeRefunds, type RefundRequest } from "@/lib/refunds";
 import { sendRefund, settleRefunds } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
 
@@ -12,8 +12,12 @@ export default function AdminRefunds() {
   const [rows, setRows] = useState<RefundRequest[] | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [history, setHistory] = useState<RefundRequest[]>([]);
 
-  const load = useCallback(async () => setRows(await fetchRefundQueue()), []);
+  const load = useCallback(async () => {
+    setRows(await fetchRefundQueue());
+    setHistory(await fetchRefundHistory());
+  }, []);
   const loadRef = useRef(load);
   loadRef.current = load;
   useEffect(() => {
@@ -84,6 +88,23 @@ export default function AdminRefunds() {
           </div>
         ))}
       </div>
+      {history.length > 0 && (
+        <div className="mt-6 border-t border-border/60 pt-4">
+          <h3 className="font-display font-bold text-base">Histórico</h3>
+          <p className="text-xs text-muted-foreground mt-1">Cancelamentos antes do início são devolvidos automaticamente e aparecem aqui como registro.</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {history.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center gap-2">
+                <strong>{r.clientName}</strong>
+                <span className="text-muted-foreground">→ {r.houseName}</span>
+                <Badge tone={r.status === "reembolsado" ? "forest" : "muted"}>{REFUND_LABEL[r.status]}</Badge>
+                <span className="text-xs text-muted-foreground">{r.kind === "antes_do_inicio" ? "antes do início" : "depois do início"} · {new Date(r.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+                <span className="ml-auto font-semibold">{formatCents(r.amountCents)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Card>
   );
 }

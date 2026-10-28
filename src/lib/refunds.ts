@@ -71,6 +71,13 @@ export async function fetchRefundQueue(): Promise<RefundRequest[]> {
   return (data ?? []).map(toRefund);
 }
 
+/** Histórico da administração: reembolsos já devolvidos (inclui os automáticos de cancelamento) e pedidos recusados. */
+export async function fetchRefundHistory(): Promise<RefundRequest[]> {
+  if (!supabase) return [];
+  const { data } = await supabase.from("refund_requests").select(COLS).in("status", ["reembolsado", "recusado"]).order("created_at", { ascending: false }).limit(30);
+  return (data ?? []).map(toRefund);
+}
+
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc(fn, args);
