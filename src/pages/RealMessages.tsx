@@ -3,11 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Bot, Check, CheckCheck, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
+import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
 import { fetchAssistantName } from "@/lib/catalog";
 import {
-  deleteMessage, fetchMessages, fetchPeer, markConversationRead, listConversations, openConversation, sendDirect, subscribeMessages,
+  deleteMessage, fetchIBlocked, fetchMessages, fetchPeer, markConversationRead, listConversations, openConversation, sendDirect, subscribeMessages,
   type ChatMessage, type ConversationRow, type Peer,
 } from "@/lib/messaging";
 import { cn, timeAgo } from "@/lib/utils";
@@ -27,6 +28,7 @@ export default function RealMessages() {
   const [notice, setNotice] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [iBlocked, setIBlocked] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const refreshList = useCallback(async () => setConvos(await listConversations()), []);
@@ -53,6 +55,16 @@ export default function RealMessages() {
         if (me && list.some((m) => m.senderId !== me && !m.read)) void markConversationRead(cid);
       }
     })();
+    return () => {
+      alive = false;
+    };
+  }, [otherId, me]);
+
+  useEffect(() => {
+    setIBlocked(false);
+    if (!otherId || !me) return;
+    let alive = true;
+    void fetchIBlocked(otherId).then((b) => alive && setIBlocked(b));
     return () => {
       alive = false;
     };
@@ -119,7 +131,7 @@ export default function RealMessages() {
     if (!delivered) {
       const ok = await sendDirect(convId, me, msg);
       if (!ok) {
-        toast.error("Não foi possível enviar. Tente novamente.");
+        toast.error("Não foi possível enviar esta mensagem.");
         setText(msg);
       } else if (houseOffline && !notice) setNotice("A casa está offline e verá a sua mensagem quando voltar.");
     }
@@ -171,6 +183,7 @@ export default function RealMessages() {
                 <button onClick={() => peer.isHouse && nav(`/casa/${peer.id}`)} className="font-semibold hover:underline truncate block max-w-full text-left">{peer.name}</button>
                 <div className="text-xs text-muted-foreground">{peer.isHouse ? (peer.online ? "Casa online" : assistantName ? "Casa offline · a assistente atende" : "Casa offline") : "Cliente"}</div>
               </div>
+              <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} onBlockedChange={setIBlocked} />
             </header>
 
             <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/30" aria-live="polite">
@@ -213,18 +226,24 @@ export default function RealMessages() {
               {notice && <div role="alert" className="text-sm text-center text-muted-foreground">{notice}</div>}
             </div>
 
-            <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
-              <input
-                aria-label="Mensagem"
-                value={text}
-                maxLength={1000}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void send()}
-                placeholder="Escreva sua mensagem..."
-                className="flex-1 h-11 px-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm"
-              />
-              <Button size="icon" aria-label="Enviar mensagem" disabled={busy || !convId} onClick={() => void send()}><Send className="h-4 w-4" /></Button>
-            </div>
+            {iBlocked ? (
+              <div className="p-3 border-t border-border bg-card text-sm text-center text-muted-foreground">
+                Você bloqueou este contato. Use o menu (⋮) para desbloquear.
+              </div>
+            ) : (
+              <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
+                <input
+                  aria-label="Mensagem"
+                  value={text}
+                  maxLength={1000}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void send()}
+                  placeholder="Escreva sua mensagem..."
+                  className="flex-1 h-11 px-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm"
+                />
+                <Button size="icon" aria-label="Enviar mensagem" disabled={busy || !convId} onClick={() => void send()}><Send className="h-4 w-4" /></Button>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 grid place-items-center text-muted-foreground text-sm p-6 text-center">{otherId ? "Abrindo conversa…" : "Selecione uma conversa para começar."}</div>

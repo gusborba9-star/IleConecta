@@ -21,6 +21,7 @@ import {
   type ScopeKey,
 } from "@/lib/platformConfig";
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
+import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 
@@ -171,6 +172,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </Card>
 
       <HousePlansCard />
+
+      <ChatReportsCard />
 
       <PaymentLimitCard />
 
