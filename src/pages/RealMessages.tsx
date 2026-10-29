@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Bot, Send } from "lucide-react";
+import { Bot, Check, CheckCheck, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
 import { fetchAssistantName } from "@/lib/catalog";
 import {
-  fetchMessages, fetchPeer, listConversations, openConversation, sendDirect, subscribeMessages,
+  deleteMessage, fetchMessages, fetchPeer, markConversationRead, listConversations, openConversation, sendDirect, subscribeMessages,
   type ChatMessage, type ConversationRow, type Peer,
 } from "@/lib/messaging";
 import { cn, timeAgo } from "@/lib/utils";
@@ -26,6 +26,7 @@ export default function RealMessages() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const refreshList = useCallback(async () => setConvos(await listConversations()), []);
@@ -45,7 +46,12 @@ export default function RealMessages() {
       if (!alive) return;
       setConvId(cid);
       setPeer(p);
-      if (cid) setMsgs(await fetchMessages(cid));
+      if (cid) {
+        const list = await fetchMessages(cid);
+        if (!alive) return;
+        setMsgs(list);
+        if (me && list.some((m) => m.senderId !== me && !m.read)) void markConversationRead(cid);
+      }
     })();
     return () => {
       alive = false;
@@ -66,10 +72,14 @@ export default function RealMessages() {
   }, [otherId, peerIsHouse]);
 
   const refreshThread = useCallback(async () => {
-    if (convId) setMsgs(await fetchMessages(convId));
+    if (convId) {
+      const list = await fetchMessages(convId);
+      setMsgs(list);
+      if (me && document.visibilityState === "visible" && list.some((m) => m.senderId !== me && !m.read)) void markConversationRead(convId);
+    }
     if (otherId) setPeer(await fetchPeer(otherId));
     await refreshList();
-  }, [convId, otherId, refreshList]);
+  }, [convId, otherId, me, refreshList]);
 
   const refreshRef = useRef(refreshThread);
   refreshRef.current = refreshThread;
@@ -117,6 +127,13 @@ export default function RealMessages() {
     setBusy(false);
   };
 
+  const removeMsg = async (id: string) => {
+    setSelected(null);
+    const ok = await deleteMessage(id);
+    if (!ok) toast.error("Não foi possível apagar. Só dá para apagar mensagens suas dos últimos 2 dias.");
+    await refreshRef.current();
+  };
+
   const offlineHouse = Boolean(peer?.isHouse && !peer.online);
 
   return (
@@ -162,13 +179,32 @@ export default function RealMessages() {
               )}
               {msgs.map((m) => {
                 const mine = m.senderId === me && !m.fromAssistant;
+                const deleted = Boolean(m.deletedAt);
                 return (
-                  <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
-                    <div className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-card border border-border rounded-bl-md")}>
+                  <div key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
+                    <div
+                      onClick={() => mine && !deleted && setSelected(selected === m.id ? null : m.id)}
+                      className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md cursor-pointer" : "bg-card border border-border rounded-bl-md", deleted && "italic opacity-70")}
+                    >
                       {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
-                      {m.text}
-                      <div className={cn("text-[10px] mt-1", mine ? "text-primary-foreground/70" : "text-muted-foreground")}>{timeAgo(m.createdAt)}</div>
+                      {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : m.text}
+                      <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-primary-foreground/70" : "text-muted-foreground")}>
+                        {timeAgo(m.createdAt)}
+                        {mine && !deleted && (
+                          m.read
+                            ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" aria-label="Lida" />
+                            : m.deliveredAt
+                              ? <CheckCheck className="h-3.5 w-3.5" aria-label="Entregue" />
+                              : <Check className="h-3.5 w-3.5" aria-label="Enviada" />
+                        )}
+                      </div>
                     </div>
+                    {mine && selected === m.id && (
+                      <div className="flex gap-3 mt-1 text-xs">
+                        <button className="font-semibold text-destructive" onClick={() => void removeMsg(m.id)}>Apagar para todos</button>
+                        <button className="text-muted-foreground" onClick={() => setSelected(null)}>Cancelar</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
