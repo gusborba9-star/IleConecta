@@ -174,11 +174,24 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
   if (pay.provider_ref) {
     try {
       const s = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: acc.stripe_account_id });
-      if (s.status === "open" && s.url) return json({ url: s.url });
+      if (s.status === "open" && s.url) {
+        // Sessão aberta antes de o Pix existir na conta: só tem cartão. Encerra e cria outra, já com Pix.
+        if ((s.payment_method_types ?? []).includes("pix")) return json({ url: s.url });
+        try { await stripe(`/v1/checkout/sessions/${s.id}/expire`, { method: "POST", form: {}, account: acc.stripe_account_id }); } catch (_) { /* segue */ }
+      }
     } catch (_) { /* cria outra abaixo */ }
   }
   const params = buildCheckoutParams({ payment: pay, title, appUrl: APP_URL, clientEmail: email, expiresAt: sessionExpiry() });
-  const session = await stripe("/v1/checkout/sessions", { form: params, account: acc.stripe_account_id, idem: `cs_${pay.id}_${pay.provider_ref ?? "0"}` });
+  const idem = `cs_${pay.id}_${pay.provider_ref ?? "0"}`;
+  let session: Obj;
+  try {
+    // Lista as formas explicitamente: se o Pix não puder ser usado, o Stripe diz o motivo.
+    session = await stripe("/v1/checkout/sessions", { form: { ...params, payment_method_types: ["card", "pix"] }, account: acc.stripe_account_id, idem: `${idem}_pix` });
+  } catch (e) {
+    console.error("checkout_with_pix_failed", String(e));
+    await admin.from("stripe_events").insert({ id: `diag_cs_err_${Date.now()}`, type: "diag.checkout_pix", account_id: acc.stripe_account_id, payload: {}, error: String(e).slice(0, 500) });
+    session = await stripe("/v1/checkout/sessions", { form: params, account: acc.stripe_account_id, idem });
+  }
   const { error } = await admin.from("payments").update({ provider_ref: session.id, stripe_account_id: acc.stripe_account_id, payment_method: null }).eq("id", pay.id).eq("status", "pendente");
   if (error) return fail("Não foi possível abrir o pagamento.", 500);
   return json({ url: session.url });
