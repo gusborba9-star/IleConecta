@@ -100,8 +100,8 @@ export default function RealMessages() {
     if (fresh) setPeer(fresh);
     const houseOffline = Boolean(fresh?.isHouse && !fresh.online);
     let delivered = false;
-    if (houseOffline) {
-      // A casa está offline: a assistente responde (a função grava a pergunta e a resposta).
+    if (houseOffline && assistantName) {
+      // A casa está offline e tem assistente disponível: ela responde (a função grava a pergunta e a resposta).
       const res = await askAssistant(otherId, msg, convId);
       delivered = res.ok;
       if (!res.ok) setNotice(res.message ? `${res.message} A casa verá a sua mensagem quando voltar.` : null);
@@ -152,12 +152,12 @@ export default function RealMessages() {
               <Avatar src={peer.avatar ?? undefined} name={peer.name} size={40} ring={peer.isHouse ? "gold" : "none"} />
               <div className="min-w-0 flex-1">
                 <button onClick={() => peer.isHouse && nav(`/casa/${peer.id}`)} className="font-semibold hover:underline truncate block max-w-full text-left">{peer.name}</button>
-                <div className="text-xs text-muted-foreground">{peer.isHouse ? (peer.online ? "Casa online" : "Casa offline · a assistente atende") : "Cliente"}</div>
+                <div className="text-xs text-muted-foreground">{peer.isHouse ? (peer.online ? "Casa online" : assistantName ? "Casa offline · a assistente atende" : "Casa offline") : "Cliente"}</div>
               </div>
             </header>
 
             <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/30" aria-live="polite">
-              {offlineHouse && (
+              {offlineHouse && assistantName && (
                 <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1"><Bot className="h-3 w-3" /> A casa está offline agora. A assistente responde sobre serviços, rituais, vagas e valores.</div>
               )}
               {msgs.map((m) => {
@@ -173,7 +173,7 @@ export default function RealMessages() {
                 );
               })}
               {msgs.length === 0 && <div className="text-center text-sm text-muted-foreground py-10">Inicie a conversa enviando uma mensagem.</div>}
-              {busy && offlineHouse && <div className="text-xs text-muted-foreground">{assistantName ?? "A assistente"} está escrevendo…</div>}
+              {busy && offlineHouse && assistantName && <div className="text-xs text-muted-foreground">{assistantName} está escrevendo…</div>}
               {notice && <div role="alert" className="text-sm text-center text-muted-foreground">{notice}</div>}
             </div>
 
