@@ -34,7 +34,9 @@ const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pri
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
-export default function Admin() {
+export type AdminSection = "visao" | "config" | "historico";
+
+export default function Admin({ section = "visao" }: { section?: AdminSection }) {
   const { isRemoteAuth } = useApp();
   const { config, isAdmin, reload } = usePlatformConfig();
   const [draft, setDraft] = useState<PlatformConfig>(() => clone(config));
@@ -78,15 +80,15 @@ export default function Admin() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6">
+      {section === "visao" && <Card className="p-6">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
           <h1 className="font-display font-bold text-2xl">Painel administrativo</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">As mudanças valem na hora, sem deploy. Tudo fica registrado no histórico.</p>
-      </Card>
+      </Card>}
 
-      <Card className="p-5">
+      {section === "visao" && <Card className="p-5">
         <h2 className="font-display font-bold text-lg mb-3">Métricas</h2>
         {!metrics ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -123,8 +125,9 @@ export default function Admin() {
             </div>
           </div>
         )}
-      </Card>
+      </Card>}
 
+      {section === "config" && <>
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Funcionalidades</h2>
         {FEATURE_KEYS.map((k) => {
@@ -222,8 +225,9 @@ export default function Admin() {
         ))}
         <Button onClick={() => save("pricing")} disabled={saving !== null}>{saving === "pricing" ? "Salvando…" : "Salvar preços"}</Button>
       </Card>
+      </>}
 
-      <Card className="p-5">
+      {section === "historico" && <Card className="p-5">
         <h2 className="font-display font-bold text-lg mb-2">Histórico de alterações</h2>
         {audit.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma alteração ainda.</p>
@@ -234,7 +238,7 @@ export default function Admin() {
             ))}
           </ul>
         )}
-      </Card>
+      </Card>}
     </div>
   );
 }
