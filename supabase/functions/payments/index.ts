@@ -293,6 +293,21 @@ async function refundPending(userId: string) {
   return json({ refunded, failed });
 }
 
+/** Rotina agendada (pg_cron): conclui os reembolsos de cancelamento pendentes de qualquer pessoa. Só roda com o segredo da rotina. */
+async function sweep(req: Request) {
+  // A senha da rotina fica no Vault do banco (a mesma que o agendamento usa).
+  const { data: okSecret } = await admin.rpc("check_cron_secret", { p_secret: req.headers.get("x-cron-secret") ?? "" });
+  if (okSecret !== true) return fail("Não autorizado.", 401);
+  const [{ data: rs }, { data: os }] = await Promise.all([
+    admin.from("reservations").select("id").eq("status", "reembolso_pendente").limit(50),
+    admin.from("service_orders").select("id").eq("status", "reembolso_pendente").limit(50),
+  ]);
+  let refunded = 0, failed = 0;
+  for (const r of rs ?? []) { const x = await settleSource("reserva", r.id); refunded += x.refunded; failed += x.failed; }
+  for (const o of os ?? []) { const x = await settleSource("pedido", o.id); refunded += x.refunded; failed += x.failed; }
+  return json({ refunded, failed });
+}
+
 async function refund(userId: string, refundId: string) {
   const { data: rr } = await admin.from("refund_requests").select("id, status, payment_id, client_id").eq("id", refundId).maybeSingle();
   if (!rr) return fail("Pedido de reembolso não encontrado.", 404);
@@ -381,6 +396,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return fail("Método não permitido.", 405);
   if (!SECRET) return fail("Pagamentos ainda não configurados.", 503);
   if (req.headers.get("stripe-signature")) return await webhook(req);
+  if (req.headers.get("x-cron-secret")) return await sweep(req);
   try {
     const user = await userOf(req);
     if (!user) return fail("Entre na sua conta.", 401);
