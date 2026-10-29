@@ -28,6 +28,8 @@ export function buildCheckoutParams({ payment, title, appUrl, clientEmail, expir
     line_items: [{ quantity: 1, price_data: { currency: "brl", unit_amount: gross, product_data: { name: String(title).slice(0, 120) } } }],
     payment_intent_data: { metadata: meta, ...(fee > 0 ? { application_fee_amount: fee } : {}) },
     metadata: meta,
+    // O Pix só é oferecido se o código expirar antes da sessão (a sessão dura 31 min).
+    payment_method_options: { pix: { expires_after_seconds: 1800 } },
     success_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=ok`,
     cancel_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=cancel`,
     expires_at: expiresAt,
