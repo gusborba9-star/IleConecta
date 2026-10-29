@@ -105,3 +105,30 @@ export function subscribeMessages(onChange: () => void): () => void {
     void client.removeChannel(channel);
   };
 }
+
+/** Eu bloqueei este contato? */
+export async function fetchIBlocked(otherId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data } = await supabase.rpc("chat_block_state", { p_other: otherId });
+  return data === true;
+}
+
+export async function setBlocked(otherId: string, blocked: boolean): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = blocked ? await supabase.rpc("block_user", { p_other: otherId }) : await supabase.rpc("unblock_user", { p_other: otherId });
+  return !error;
+}
+
+export const REPORT_REASONS = [
+  { id: "spam", label: "Spam ou propaganda" },
+  { id: "ofensa", label: "Ofensa ou assédio" },
+  { id: "golpe", label: "Golpe ou pedido de dinheiro por fora" },
+  { id: "conteudo_improprio", label: "Conteúdo impróprio" },
+  { id: "outro", label: "Outro motivo" },
+] as const;
+
+export async function reportUser(otherId: string, reason: string, details: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc("report_user", { p_other: otherId, p_reason: reason, p_details: details });
+  return !error;
+}
