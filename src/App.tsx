@@ -16,10 +16,8 @@ import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
 import Info from "@/pages/Info";
-import Admin from "@/pages/Admin";
+import AdminShell from "@/pages/AdminShell";
 import HouseHome from "@/pages/HouseHome";
-import AdminUsers from "@/components/admin/AdminUsers";
-import AdminRefunds from "@/components/refunds/AdminRefunds";
 import PaymentReturn from "@/pages/PaymentReturn";
 import PaymentAccountReturn from "@/pages/PaymentAccountReturn";
 import NotFound from "@/pages/NotFound";
@@ -79,7 +77,7 @@ export default function App() {
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />
         <Route path="/pagamento/conta" element={<PaymentAccountReturn />} />
         <Route path="/sobre/:slug" element={<Info />} />
-        <Route path="/admin" element={<><Admin /><div className="mt-4 space-y-4"><AdminRefunds /></div><div className="mt-4 pb-16 lg:pb-4"><AdminUsers /></div></>} />
+        <Route path="/admin" element={<AdminShell />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

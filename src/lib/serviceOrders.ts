@@ -16,6 +16,8 @@ export interface ServiceOrder {
   createdAt: string;
   stagesTotal: number;
   modality: "presencial" | "distancia" | null;
+  /** Horário marcado (serviços com agenda). */
+  scheduledAt: string | null;
 }
 
 export const ORDER_LABEL: Record<OrderStatus, string> = {
@@ -33,7 +35,7 @@ export const ORDER_LABEL: Record<OrderStatus, string> = {
 export const isOpenOrder = (s: OrderStatus) => s === "aguardando_pagamento" || s === "confirmado" || s === "em_andamento";
 export const canCancelOrder = (s: OrderStatus) => s === "aguardando_pagamento" || s === "confirmado";
 
-const COLS = "id, service_id, title, price_cents, note, status, client_id, created_at, stages_total, modality, profiles!service_orders_client_id_fkey(display_name)";
+const COLS = "id, service_id, title, price_cents, note, status, client_id, created_at, stages_total, modality, scheduled_at, profiles!service_orders_client_id_fkey(display_name)";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toOrder = (r: Record<string, any>): ServiceOrder => ({
@@ -48,6 +50,7 @@ const toOrder = (r: Record<string, any>): ServiceOrder => ({
   createdAt: String(r.created_at),
   stagesTotal: Number(r.stages_total ?? 1),
   modality: r.modality === "presencial" || r.modality === "distancia" ? r.modality : null,
+  scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null,
 });
 
 /** Pedidos desta casa que a pessoa pode ver: a dona vê todos; um cliente vê só os próprios (regra do banco). */
@@ -82,6 +85,12 @@ async function call(fn: string, args: Record<string, unknown>): Promise<string |
 export async function createOrder(serviceId: string, note: string): Promise<{ error: string | null; id: string | null }> {
   if (!supabase) return { error: "Indisponível.", id: null };
   const { data, error } = await supabase.rpc("create_service_order", { p_service: serviceId, p_note: note });
+  return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
+}
+/** Agenda um horário (a casa precisa ter liberado o serviço para agenda). */
+export async function createBooking(serviceId: string, slotIso: string, note: string): Promise<{ error: string | null; id: string | null }> {
+  if (!supabase) return { error: "Indisponível.", id: null };
+  const { data, error } = await supabase.rpc("create_booking", { p_service: serviceId, p_slot: slotIso, p_note: note });
   return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
 }
 export const setOrderModality = (id: string, modality: "presencial" | "distancia") => call("set_order_modality", { p_order: id, p_modality: modality });

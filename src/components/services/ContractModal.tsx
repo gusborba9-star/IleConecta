@@ -8,10 +8,12 @@ import { useApp } from "@/contexts/AppContext";
 import { Link } from "react-router-dom";
 import { CHECKOUT_DOCS } from "@/lib/legalCore";
 import type { Service } from "@/lib/services";
-import { createOrder, setOrderModality } from "@/lib/serviceOrders";
+import { createBooking, createOrder, setOrderModality } from "@/lib/serviceOrders";
 import { goToCheckout } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
 import { stagePlan } from "@/lib/paymentsCore";
+import { fetchSlots } from "@/lib/agenda";
+import { formatSlot, groupSlots } from "@/lib/agendaCore";
 
 interface Props {
   service: Service | null;
@@ -30,6 +32,9 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
   const [okSensitive, setOkSensitive] = useState(false);
   const { currentUser } = useApp();
   const [termsDone, setTermsDone] = useState(false);
+  const [slots, setSlots] = useState<string[] | null>(null);
+  const [slot, setSlot] = useState("");
+  const [dayPick, setDayPick] = useState("");
 
   useEffect(() => {
     setNote("");
@@ -37,8 +42,12 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
     setSaving(false);
     setOkCheckout(false);
     setOkSensitive(false);
+    setSlots(null);
+    setSlot("");
+    setDayPick("");
     if (!service) return;
     let alive = true;
+    if (service.bookable) void fetchSlots(service.id).then((r) => alive && setSlots(r));
     void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
     if (currentUser?.id) void fetchAcceptedDocs(currentUser.id).then((d) => alive && setTermsDone(d.has("termos_cliente")));
     return () => {
@@ -51,6 +60,7 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!okSensitive || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
+    if (service.bookable && !slot) return void toast.error("Escolha o dia e o horário.");
     if (service.delivery === "hibrido" && !modality) return void toast.error("Escolha como quer receber: presencial ou à distância.");
     setSaving(true);
     const consentError = await recordConsents(payOn ? CHECKOUT_DOCS.servico.filter((d) => !(termsDone && d === "termos_cliente")) : ["dados_sensiveis"], service.id);
@@ -58,7 +68,7 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
       setSaving(false);
       return void toast.error(consentError);
     }
-    const { error, id } = await createOrder(service.id, note);
+    const { error, id } = service.bookable ? await createBooking(service.id, slot, note) : await createOrder(service.id, note);
     if (error) {
       setSaving(false);
       return void toast.error(error);
@@ -87,6 +97,36 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
   return (
     <Modal open onClose={onClose} title={`Contratar — ${service.title}`} maxWidth="max-w-lg">
       <form onSubmit={submit} className="space-y-4">
+        {service.bookable && (
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">Escolha o dia e o horário</legend>
+            {slots === null && <p className="text-sm text-muted-foreground">Carregando horários…</p>}
+            {slots && slots.length === 0 && <p className="text-sm text-muted-foreground">Não há horários livres nos próximos dias. Fale com a casa pelo chat.</p>}
+            {slots && slots.length > 0 && (() => {
+              const days = groupSlots(slots);
+              const current = days.find((d) => d.day === dayPick) ?? null;
+              return (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {days.map((d) => (
+                      <button key={d.day} type="button" onClick={() => { setDayPick(d.day); setSlot(""); }}
+                        className={`px-3 min-h-10 rounded-full border text-sm ${dayPick === d.day ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>{d.label}</button>
+                    ))}
+                  </div>
+                  {current && (
+                    <div className="flex flex-wrap gap-2">
+                      {current.slots.map((s) => (
+                        <button key={s.iso} type="button" onClick={() => setSlot(s.iso)}
+                          className={`px-3 min-h-10 rounded-lg border text-sm ${slot === s.iso ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>{s.time}</button>
+                      ))}
+                    </div>
+                  )}
+                  {slot && <p className="text-sm">Horário escolhido: <strong>{formatSlot(slot)}</strong> (Brasília)</p>}
+                </>
+              );
+            })()}
+          </fieldset>
+        )}
         {service.delivery === "hibrido" && (
           <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Como você quer receber?</legend>
@@ -122,7 +162,7 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
         <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving}>{saving ? "Enviando…" : "Enviar pedido"}</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
         </div>
       </form>
     </Modal>

@@ -5,6 +5,7 @@ import SideNav from "./SideNav";
 import RightRail from "./RightRail";
 import { useApp } from "@/contexts/AppContext";
 import { touchPresence } from "@/lib/messaging";
+import InstallPrompt from "./InstallPrompt";
 
 export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
@@ -38,6 +39,7 @@ export default function AppShell() {
           <SideNav />
         </aside>
         <main className="min-w-0">
+          {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
           <Outlet />
         </main>
         <aside className="hidden lg:block sticky top-20 self-start">

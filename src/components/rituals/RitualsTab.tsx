@@ -11,7 +11,7 @@ import Attendees from "@/components/rituals/Attendees";
 import ReserveModal from "@/components/rituals/ReserveModal";
 import { useApp } from "@/contexts/AppContext";
 import {
-  cancelSeat, createRitual, fetchHouseRituals, fetchMyReservations, fetchStreamUrl, finishRitual, setRitualStatus, startRitual, subscribeReservations, updateRitual,
+  cancelSeat, createRitual, fetchHouseRituals, fetchMyReservations, fetchMyWaitlist, fetchStreamUrl, fetchWaitlistCounts, joinWaitlist, leaveWaitlist, finishRitual, setRitualStatus, startRitual, subscribeReservations, updateRitual,
   type LifecycleResult, type MyReservation, type RealRitual,
 } from "@/lib/rituals";
 import type { RitualValue } from "@/lib/ritualsCore";
@@ -36,6 +36,8 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
   const [refunding, setRefunding] = useState<{ kind: "reserva"; id: string; title: string } | null>(null);
   const [paid, setPaid] = useState<Set<string>>(new Set());
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
+  const [waiting, setWaiting] = useState<Set<string>>(new Set());
+  const [waitCounts, setWaitCounts] = useState<Record<string, number>>({});
   const userId = currentUser?.id;
 
   const load = useCallback(async () => {
@@ -44,7 +46,9 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
       setMine(await fetchMyReservations(userId));
       setPaid(await fetchMyPaidSources());
       setRefunds(await fetchMyRefunds(userId));
+      setWaiting(await fetchMyWaitlist(userId));
     }
+    if (isOwn) setWaitCounts(await fetchWaitlistCounts());
   }, [ownerId, userId, isOwn]);
 
   const loadRef = useRef(load);
@@ -117,6 +121,14 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
     }
   };
 
+  const toggleWait = async (r: RealRitual) => {
+    const joined = waiting.has(r.id);
+    const error = joined ? await leaveWaitlist(r.id) : await joinWaitlist(r.id);
+    if (error) return void toast.error(error);
+    toast.success(joined ? "Você saiu da fila." : "Você entrou na fila. Avisamos se abrir uma vaga.");
+    await load();
+  };
+
   const withdrawMine = async (id: string) => {
     if (!window.confirm("Retirar o pedido de reembolso?")) return;
     const error = await withdrawRefund(id);
@@ -157,6 +169,9 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
           isOwn={isOwn}
           mine={mine[r.id]}
           onReserve={() => setReserving(r)}
+          waiting={waiting.has(r.id)}
+          waitCount={waitCounts[r.id] ?? 0}
+          onToggleWait={() => void toggleWait(r)}
           onCancelMine={() => void cancelMine(r)}
           refund={mine[r.id] ? refunds.find((x) => x.reservationId === mine[r.id].id) : undefined}
           canRefund={Boolean(mine[r.id]) && mine[r.id].status === "confirmada" && paid.has(mine[r.id].id) && (r.startedAt !== null || new Date(r.startsAt) <= new Date()) && !refunds.some((x) => x.reservationId === mine[r.id].id && isOpenRefund(x.status))}

@@ -171,3 +171,32 @@ export function subscribeReservations(onChange: () => void): () => void {
     void client.removeChannel(channel);
   };
 }
+
+/** Eventos em que a pessoa está na fila de espera. */
+export async function fetchMyWaitlist(userId: string): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  const { data } = await supabase.from("event_waitlist").select("event_id").eq("user_id", userId);
+  return new Set((data ?? []).map((r) => String(r.event_id)));
+}
+
+/** Quantas pessoas esperam vaga em cada ritual (só a dona da casa enxerga). */
+export async function fetchWaitlistCounts(): Promise<Record<string, number>> {
+  if (!supabase) return {};
+  const { data } = await supabase.from("event_waitlist").select("event_id");
+  const out: Record<string, number> = {};
+  for (const r of data ?? []) out[String(r.event_id)] = (out[String(r.event_id)] ?? 0) + 1;
+  return out;
+}
+
+/** Entra na fila. Devolve o erro em português ou null. */
+export async function joinWaitlist(eventId: string): Promise<string | null> {
+  if (!supabase) return "Indisponível.";
+  const { error } = await supabase.rpc("join_event_waitlist", { p_event: eventId });
+  return error ? error.message : null;
+}
+
+export async function leaveWaitlist(eventId: string): Promise<string | null> {
+  if (!supabase) return "Indisponível.";
+  const { error } = await supabase.rpc("leave_event_waitlist", { p_event: eventId });
+  return error ? error.message : null;
+}
