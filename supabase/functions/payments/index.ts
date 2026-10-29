@@ -123,7 +123,20 @@ async function refreshStatus(userId: string) {
   await admin.from("house_payment_accounts").update({
     ...st, status: st.charges_enabled ? "ativa" : st.requirements_due ? "pendente" : "em_analise", updated_at: new Date().toISOString(),
   }).eq("house_id", house.id);
-  return json({ registered: true, ...st });
+  // Contas criadas antes do Pix (ou cujo pedido de Pix falhou) nunca pediram a capacidade: pede agora, sem travar o status.
+  let pix: string | null = acct?.configuration?.merchant?.capabilities?.pix_payments?.status ?? null;
+  if (pix === null && st.charges_enabled) {
+    try {
+      const upd = await stripe(`/v2/core/accounts/${row.stripe_account_id}`, {
+        body: { include: ["configuration.merchant"], configuration: { merchant: { capabilities: { pix_payments: { requested: true } } } } },
+      });
+      pix = upd?.configuration?.merchant?.capabilities?.pix_payments?.status ?? "requested";
+    } catch (e) {
+      console.error("pix_request_failed", String(e));
+      pix = "error";
+    }
+  }
+  return json({ registered: true, ...st, pix_status: pix });
 }
 
 async function checkout(userId: string, email: string | undefined, input: Obj) {
