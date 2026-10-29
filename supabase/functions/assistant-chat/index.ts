@@ -123,13 +123,15 @@ Deno.serve(async (req) => {
   });
   if (insErr) return json(500, { error: "falha_mensagem" });
 
-  const [{ data: history }, { data: services }, { data: events }] = await Promise.all([
+  const [{ data: history }, { data: services }, { data: events }, { data: catalog }] = await Promise.all([
     admin.from("messages").select("sender_id, from_assistant, text, created_at")
       .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
     admin.from("services").select("kind, custom_kind, delivery, title, description, price_cents").eq("house_id", house.id).eq("active", true).limit(30),
     admin.from("events").select("id, title, description, price_cents, mode, starts_at, seats_total, intake_fields")
       .eq("house_id", house.id).eq("status", "publicado").gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true }).limit(15),
+    admin.from("house_catalog_items").select("name, description, price_cents, show_price, active")
+      .eq("house_id", house.id).eq("active", true).order("created_at", { ascending: true }).limit(30),
   ]);
 
   // Vagas restantes vêm do banco (nunca da IA).
@@ -139,7 +141,7 @@ Deno.serve(async (req) => {
   }));
 
   const system = buildSystemPrompt({
-    house, assistant, services: services ?? [], events: eventsWithSeats, plan: house.plan,
+    house, assistant, services: services ?? [], events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [],
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 
