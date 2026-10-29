@@ -28,6 +28,10 @@ export interface ChatMessage {
   read: boolean;
   deliveredAt: string | null;
   deletedAt: string | null;
+  attachmentPath: string | null;
+  attachmentType: string | null;
+  attachmentName: string | null;
+  attachmentSize: number | null;
 }
 
 export async function touchPresence(): Promise<void> {
@@ -82,11 +86,11 @@ export async function fetchMessages(conversationId: string): Promise<ChatMessage
   if (!supabase) return [];
   const { data } = await supabase
     .from("messages")
-    .select("id, sender_id, text, from_assistant, created_at, read, delivered_at, deleted_at")
+    .select("id, sender_id, text, from_assistant, created_at, read, delivered_at, deleted_at, attachment_path, attachment_type, attachment_name, attachment_size")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .limit(200);
-  return (data ?? []).map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null }));
+  return (data ?? []).map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null, attachmentPath: m.attachment_path ?? null, attachmentType: m.attachment_type ?? null, attachmentName: m.attachment_name ?? null, attachmentSize: m.attachment_size ?? null }));
 }
 
 /** Mensagem direta (sem assistente). "blocked" quando o destinatário bloqueou quem envia. */
@@ -128,8 +132,8 @@ export const REPORT_REASONS = [
   { id: "outro", label: "Outro motivo" },
 ] as const;
 
-export async function reportUser(otherId: string, reason: string, details: string): Promise<boolean> {
+export async function reportUser(otherId: string, reason: string, details: string, evidence: { path: string; name: string; type: string }[] = []): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.rpc("report_user", { p_other: otherId, p_reason: reason, p_details: details });
+  const { error } = await supabase.rpc("report_user", { p_other: otherId, p_reason: reason, p_details: details, p_evidence: evidence });
   return !error;
 }

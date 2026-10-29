@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Bot, Check, CheckCheck, Send } from "lucide-react";
+import { Bot, Check, CheckCheck, Paperclip, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
+import ChatAttachment from "@/components/chat/ChatAttachment";
 import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
 import { fetchAssistantName } from "@/lib/catalog";
+import { isPlaceholderText, prepareFile, sendAttachment, uploadFile } from "@/lib/chatFiles";
 import {
   deleteMessage, fetchIBlocked, fetchMessages, fetchPeer, markConversationRead, listConversations, openConversation, sendDirect, subscribeMessages,
   type ChatMessage, type ConversationRow, type Peer,
@@ -31,6 +33,7 @@ export default function RealMessages() {
   const [iBlocked, setIBlocked] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const refreshList = useCallback(async () => setConvos(await listConversations()), []);
 
@@ -148,6 +151,30 @@ export default function RealMessages() {
     setBusy(false);
   };
 
+  const attach = async (file: File | undefined) => {
+    if (!file || !convId || !me || busy) return;
+    setBusy(true);
+    setNotice(null);
+    const prep = await prepareFile(file);
+    if (!prep.ok) {
+      toast.error(prep.message);
+      setBusy(false);
+      return;
+    }
+    const up = await uploadFile("chat-files", convId, prep.file);
+    if (!up) {
+      toast.error("Não foi possível enviar o arquivo. Tente novamente.");
+      setBusy(false);
+      return;
+    }
+    const res = await sendAttachment(convId, me, up, text);
+    if (res === "ok") setText("");
+    else if (res === "blocked") setNotice("Não é possível enviar mensagens nesta conversa.");
+    else toast.error("Não foi possível enviar o arquivo. Tente novamente.");
+    await refreshRef.current();
+    setBusy(false);
+  };
+
   const removeMsg = async (id: string) => {
     setSelected(null);
     const ok = await deleteMessage(id);
@@ -210,7 +237,12 @@ export default function RealMessages() {
                       className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md cursor-pointer" : "bg-card border border-border rounded-bl-md", deleted && "italic opacity-70")}
                     >
                       {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
-                      {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : m.text}
+                      {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : (
+                        <>
+                          {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}
+                          {!(m.attachmentPath && isPlaceholderText(m.text)) && m.text}
+                        </>
+                      )}
                       <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-primary-foreground/70" : "text-muted-foreground")}>
                         {timeAgo(m.createdAt)}
                         {mine && !deleted && (
@@ -242,6 +274,8 @@ export default function RealMessages() {
               </div>
             ) : (
               <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
+                <input ref={fileRef} type="file" hidden accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void attach(f); }} />
+                <Button size="icon" variant="ghost" aria-label="Anexar foto ou PDF" disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
                 <input
                   aria-label="Mensagem"
                   value={text}
