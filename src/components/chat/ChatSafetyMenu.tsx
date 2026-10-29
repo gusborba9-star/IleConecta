@@ -2,6 +2,8 @@ import { useState } from "react";
 import { MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/base";
+import { useApp } from "@/contexts/AppContext";
+import { prepareFile, uploadFile, type UploadedFile } from "@/lib/chatFiles";
 import { REPORT_REASONS, reportUser, setBlocked } from "@/lib/messaging";
 
 interface Props {
@@ -18,6 +20,8 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
   const [reason, setReason] = useState<string>(REPORT_REASONS[0].id);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const { currentUser } = useApp();
 
   const toggleBlock = async () => {
     setOpen(false);
@@ -32,11 +36,22 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
   const sendReport = async () => {
     if (reason === "outro" && details.trim().length < 10) return void toast.error("Conte o que aconteceu (pelo menos 10 letras) para a equipe poder avaliar.");
     setBusy(true);
-    const ok = await reportUser(otherId, reason, details.trim());
+    const evidence: UploadedFile[] = [];
+    for (const f of files) {
+      const prep = await prepareFile(f);
+      const up = prep.ok && currentUser ? await uploadFile("report-evidence", currentUser.id, prep.file) : null;
+      if (!up) {
+        setBusy(false);
+        return void toast.error(`Não foi possível enviar "${f.name}". Remova o arquivo ou tente de novo.`);
+      }
+      evidence.push(up);
+    }
+    const ok = await reportUser(otherId, reason, details.trim(), evidence.map((e) => ({ path: e.path, name: e.name, type: e.type })));
     setBusy(false);
     if (!ok) return void toast.error("Não foi possível enviar a denúncia. Tente novamente.");
     setReporting(false);
     setDetails("");
+    setFiles([]);
     toast.success("Denúncia enviada. A equipe vai avaliar.");
   };
 
@@ -64,6 +79,13 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
             </select>
             <label className="block text-sm font-semibold" htmlFor="rp-details">{reason === "outro" ? "Conte o que aconteceu" : "Detalhes (opcional)"}</label>
             <textarea id="rp-details" rows={3} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <div>
+              <label className="block text-sm font-semibold" htmlFor="rp-files">Provas (opcional)</label>
+              <input id="rp-files" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="text-xs mt-1"
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 5))} />
+              <p className="text-[11px] text-muted-foreground mt-1">Até 5 arquivos (foto ou PDF, 10 MB cada): prints, comprovantes, extratos. As fotos e PDFs enviados nesta conversa já seguem junto.</p>
+              {files.length > 0 && <p className="text-[11px] mt-1">{files.length} arquivo(s) selecionado(s)</p>}
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setReporting(false)} disabled={busy}>Cancelar</Button>
               <Button onClick={() => void sendReport()} disabled={busy}>{busy ? "Enviando…" : "Enviar denúncia"}</Button>

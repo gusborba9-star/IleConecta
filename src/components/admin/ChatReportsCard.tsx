@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
+import ChatAttachment from "@/components/chat/ChatAttachment";
 import { REPORT_REASONS } from "@/lib/messaging";
 import { supabase } from "@/lib/supabase";
 
-interface Snap { at: string; sender: string; assistant: boolean; text: string; deleted?: boolean }
+interface Att { path: string; name: string; type: string }
+interface Snap { at: string; sender: string; assistant: boolean; text: string; deleted?: boolean; attachment?: Att | null }
 interface Row {
   id: string; reporter_name: string; reported_name: string; reason: string; details: string | null;
-  snapshot: Snap[]; status: "aberta" | "resolvida"; admin_note: string | null; created_at: string;
+  snapshot: Snap[]; evidence: Att[]; status: "aberta" | "resolvida"; admin_note: string | null; created_at: string;
 }
 
 /** Denúncias do chat. Só aparecem as conversas que alguém denunciou (últimas 30 mensagens). */
@@ -52,8 +54,16 @@ export default function ChatReportsCard() {
           {open === r.id && (
             <div className="max-h-64 overflow-y-auto rounded-md bg-muted/40 p-2 space-y-1">
               {r.snapshot.map((m, i) => (
-                <div key={i} className="text-xs"><span className="text-muted-foreground">{new Date(m.at).toLocaleString("pt-BR")}{m.assistant ? " · assistente" : ""}{m.deleted ? " · apagada pelo autor" : ""}:</span> {m.text}</div>
+                <div key={i} className="text-xs"><span className="text-muted-foreground">{new Date(m.at).toLocaleString("pt-BR")}{m.assistant ? " · assistente" : ""}{m.deleted ? " · apagada pelo autor" : ""}:</span> {m.text}
+                  {m.attachment && <div className="mt-1"><ChatAttachment path={m.attachment.path} type={m.attachment.type} name={m.attachment.name} /></div>}
+                </div>
               ))}
+            </div>
+          )}
+          {r.evidence?.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold">Provas enviadas por quem denunciou</div>
+              <div className="flex flex-wrap gap-2">{r.evidence.map((e, i) => <ChatAttachment key={i} bucket="report-evidence" path={e.path} type={e.type} name={e.name} />)}</div>
             </div>
           )}
           {r.status === "aberta" ? (
