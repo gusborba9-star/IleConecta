@@ -4,7 +4,7 @@ import { Button, Card, Input } from "@/components/base";
 import { REPORT_REASONS } from "@/lib/messaging";
 import { supabase } from "@/lib/supabase";
 
-interface Snap { at: string; sender: string; assistant: boolean; text: string }
+interface Snap { at: string; sender: string; assistant: boolean; text: string; deleted?: boolean }
 interface Row {
   id: string; reporter_name: string; reported_name: string; reason: string; details: string | null;
   snapshot: Snap[]; status: "aberta" | "resolvida"; admin_note: string | null; created_at: string;
@@ -52,7 +52,7 @@ export default function ChatReportsCard() {
           {open === r.id && (
             <div className="max-h-64 overflow-y-auto rounded-md bg-muted/40 p-2 space-y-1">
               {r.snapshot.map((m, i) => (
-                <div key={i} className="text-xs"><span className="text-muted-foreground">{new Date(m.at).toLocaleString("pt-BR")}{m.assistant ? " · assistente" : ""}:</span> {m.text}</div>
+                <div key={i} className="text-xs"><span className="text-muted-foreground">{new Date(m.at).toLocaleString("pt-BR")}{m.assistant ? " · assistente" : ""}{m.deleted ? " · apagada pelo autor" : ""}:</span> {m.text}</div>
               ))}
             </div>
           )}

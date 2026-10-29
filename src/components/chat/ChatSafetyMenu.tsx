@@ -30,6 +30,7 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
   };
 
   const sendReport = async () => {
+    if (reason === "outro" && details.trim().length < 10) return void toast.error("Conte o que aconteceu (pelo menos 10 letras) para a equipe poder avaliar.");
     setBusy(true);
     const ok = await reportUser(otherId, reason, details.trim());
     setBusy(false);
@@ -61,7 +62,7 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
             <select id="rp-reason" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={reason} onChange={(e) => setReason(e.target.value)}>
               {REPORT_REASONS.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
-            <label className="block text-sm font-semibold" htmlFor="rp-details">Detalhes (opcional)</label>
+            <label className="block text-sm font-semibold" htmlFor="rp-details">{reason === "outro" ? "Conte o que aconteceu" : "Detalhes (opcional)"}</label>
             <textarea id="rp-details" rows={3} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setReporting(false)} disabled={busy}>Cancelar</Button>
