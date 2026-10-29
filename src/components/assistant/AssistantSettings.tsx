@@ -6,6 +6,7 @@ import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 import type { HouseUser, User } from "@/types";
+import InternalCatalog from "@/components/assistant/InternalCatalog";
 import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
@@ -161,6 +162,8 @@ export default function AssistantSettings() {
           )}
         </div>
       </div>
+
+      <InternalCatalog houseId={cfg.houseId} />
 
       <div>
         <Label>Horário de atendimento</Label>

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
+import { fetchAssistantName } from "@/lib/catalog";
 import {
   fetchMessages, fetchPeer, listConversations, openConversation, sendDirect, subscribeMessages,
   type ChatMessage, type ConversationRow, type Peer,
@@ -24,6 +25,7 @@ export default function RealMessages() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [assistantName, setAssistantName] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const refreshList = useCallback(async () => setConvos(await listConversations()), []);
@@ -49,6 +51,19 @@ export default function RealMessages() {
       alive = false;
     };
   }, [otherId, me]);
+
+  const peerIsHouse = peer?.isHouse ?? false;
+  useEffect(() => {
+    if (!otherId || !peerIsHouse) {
+      setAssistantName(null);
+      return;
+    }
+    let alive = true;
+    void fetchAssistantName(otherId).then((n) => alive && setAssistantName(n));
+    return () => {
+      alive = false;
+    };
+  }, [otherId, peerIsHouse]);
 
   const refreshThread = useCallback(async () => {
     if (convId) setMsgs(await fetchMessages(convId));
@@ -150,7 +165,7 @@ export default function RealMessages() {
                 return (
                   <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
                     <div className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-card border border-border rounded-bl-md")}>
-                      {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> Assistente da casa</div>}
+                      {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
                       {m.text}
                       <div className={cn("text-[10px] mt-1", mine ? "text-primary-foreground/70" : "text-muted-foreground")}>{timeAgo(m.createdAt)}</div>
                     </div>
@@ -158,7 +173,7 @@ export default function RealMessages() {
                 );
               })}
               {msgs.length === 0 && <div className="text-center text-sm text-muted-foreground py-10">Inicie a conversa enviando uma mensagem.</div>}
-              {busy && offlineHouse && <div className="text-xs text-muted-foreground">A assistente está escrevendo…</div>}
+              {busy && offlineHouse && <div className="text-xs text-muted-foreground">{assistantName ?? "A assistente"} está escrevendo…</div>}
               {notice && <div role="alert" className="text-sm text-center text-muted-foreground">{notice}</div>}
             </div>
 
