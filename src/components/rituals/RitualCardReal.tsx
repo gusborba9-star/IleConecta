@@ -11,6 +11,9 @@ interface Props {
   isOwn: boolean;
   mine?: MyReservation;
   onReserve: () => void;
+  waiting?: boolean;
+  waitCount?: number;
+  onToggleWait?: () => void;
   onCancelMine: () => void;
   refund?: RefundRequest;
   canRefund?: boolean;
@@ -32,7 +35,7 @@ const when = (iso: string) =>
 
 const STATUS_LABEL = { rascunho: "Rascunho", publicado: "Publicado", encerrado: "Encerrado", cancelado: "Cancelado" } as const;
 
-export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
+export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, waiting, waitCount, onToggleWait, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
   const left = seatsLeft(r.seatsTotal, r.taken);
   const state = seatsState(r.seatsTotal, r.taken);
   const pct = r.seatsTotal ? Math.round((r.taken / r.seatsTotal) * 100) : 0;
@@ -85,6 +88,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
         </div>
         <Progress value={pct} tone={state === "abertas" ? "forest" : "primary"} />
         {isOwn && <p className="text-xs text-muted-foreground mt-2">Valor das vagas reservadas: <strong>{formatCents(grossCents(r.priceCents, r.taken))}</strong> (combinado direto com os participantes por enquanto).</p>}
+        {isOwn && (waitCount ?? 0) > 0 && <p className="text-xs mt-1"><Badge tone="gold">Fila de espera: {waitCount}</Badge></p>}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -108,6 +112,9 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, onCa
         ) : (
           <>
             {open && state !== "esgotado" && <Button size="sm" onClick={onReserve}>Reservar vaga</Button>}
+            {open && state === "esgotado" && onToggleWait && (
+              <Button size="sm" variant={waiting ? "outline" : "default"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
+            )}
             {onAsk && <Button size="sm" variant="outline" onClick={onAsk}>Perguntar à assistente</Button>}
             <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
           </>

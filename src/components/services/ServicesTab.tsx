@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
 import ContractModal from "@/components/services/ContractModal";
+import AgendaManager from "@/components/services/AgendaManager";
+import { formatSlot } from "@/lib/agendaCore";
 import RefundModal from "@/components/refunds/RefundModal";
 import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, REFUND_LABEL, withdrawRefund, type RefundRequest } from "@/lib/refunds";
 import { createService, deleteService, fetchServices, updateService, type Service } from "@/lib/services";
@@ -127,6 +129,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
         </div>
       )}
 
+      {isOwn && <AgendaManager ownerId={ownerId} />}
+
       {isOwn && orders.length > 0 && (
         <Card className="p-5">
           <h3 className="font-display font-bold text-lg mb-3">Pedidos recebidos</h3>
@@ -135,6 +139,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
               <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
                 <div className="min-w-[200px] flex-1">
                   <div className="font-semibold">{o.title} <span className="font-normal text-muted-foreground">· {o.clientName}</span></div>
+                  {o.scheduledAt && <p className="text-sm mt-1"><span className="text-muted-foreground">Horário: </span><strong>{formatSlot(o.scheduledAt)}</strong></p>}
                   {o.modality && <p className="text-sm mt-1"><span className="text-muted-foreground">Modalidade: </span>{o.modality === "presencial" ? "Presencial" : "À distância"}</p>}
                   {o.note && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{o.note}</p>}
                   <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>{o.stagesTotal > 1 && <Badge tone="gold">Etapas pagas: {stageDone.get(o.id) ?? 0}/{o.stagesTotal}</Badge>}</div>
@@ -162,6 +167,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
                   <div className="min-w-[200px] flex-1">
                     <div className="font-semibold">{o.title}</div>
+                    {o.scheduledAt && <p className="text-sm">Horário: <strong>{formatSlot(o.scheduledAt)}</strong></p>}
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <Badge tone={o.status === "concluido" ? "forest" : "primary"}>{ORDER_LABEL[o.status]}</Badge>
                       {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
@@ -203,11 +209,14 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 <h3 className="font-display font-bold text-xl">{s.title}</h3>
                 <Badge tone="gold">{kindLabel(s.kind, s.customKind)}</Badge>
                 <Badge tone="muted">{deliveryLabel(s.delivery)}</Badge>
+                {s.bookable && <Badge tone="primary">Com agenda · {s.durationMin} min</Badge>}
                 {!s.active && <Badge tone="muted">Pausado</Badge>}
               </div>
               {s.description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{s.description}</p>}
               <p className="text-xs text-muted-foreground mt-2">
-                {s.delivery === "presencial"
+                {s.bookable
+                  ? "Escolha um horário livre da agenda da casa e pague pela plataforma para confirmar."
+                  : s.delivery === "presencial"
                   ? "Atendimento presencial: combine e pague direto com a casa."
                   : s.delivery === "hibrido"
                   ? "Presencial ou à distância: você escolhe ao contratar pela plataforma."
@@ -230,7 +239,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 ) : (
                   <>
                     {onAskAssistant && <Button size="sm" variant="outline" onClick={onAskAssistant}>Perguntar à assistente</Button>}
-                    {s.active && s.delivery !== "presencial" && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>Contratar</Button>}
+                    {s.active && (s.delivery !== "presencial" || s.bookable) && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>{s.bookable ? "Agendar horário" : "Contratar"}</Button>}
                     {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
                       <Button size="sm" variant="outline" onClick={() => { if (window.confirm("Cancelar o seu pedido?")) void orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."); }}>Cancelar pedido</Button>
                     )}
