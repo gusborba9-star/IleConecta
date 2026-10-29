@@ -2,6 +2,9 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
+// Sem cache: deixa a rede responder (necessário só para o app ser instalável).
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
