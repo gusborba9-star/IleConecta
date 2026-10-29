@@ -27,7 +27,7 @@ export const ORDER_LABEL: Record<OrderStatus, string> = {
   concluido: "Concluído",
   cancelado: "Cancelado",
   expirado: "Expirado",
-  reembolso_pendente: "Reembolso em análise",
+  reembolso_pendente: "Reembolso em andamento",
   reembolsado: "Reembolsado",
 };
 
