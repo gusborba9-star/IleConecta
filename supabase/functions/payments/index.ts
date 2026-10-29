@@ -134,7 +134,28 @@ async function refreshStatus(userId: string) {
       await admin.from("stripe_events").insert({ id: `diag_pix_err_${Date.now()}`, type: "diag.pix_v1", account_id: row.stripe_account_id, payload: {}, error: String(e).slice(0, 500) });
     }
   }
+  if (pix === "active") await ensurePixOn(row.stripe_account_id);
   return json({ registered: true, ...st, pix_status: pix });
+}
+
+/** Liga o Pix nas configurações de formas de pagamento da conta da casa (a mãe da plataforma não consegue ligar sozinha). */
+async function ensurePixOn(account: string) {
+  try {
+    const list = await stripe("/v1/payment_method_configurations", { account });
+    const out: Obj[] = [];
+    for (const c of (list.data ?? []) as Obj[]) {
+      if (!c.active || c.pix?.display_preference?.preference === "on") continue;
+      try {
+        const upd = await stripe(`/v1/payment_method_configurations/${c.id}`, { form: { pix: { display_preference: { preference: "on" } } }, account });
+        out.push({ id: c.id, pix: upd.pix });
+      } catch (e) {
+        out.push({ id: c.id, error: String(e).slice(0, 300) });
+      }
+    }
+    if (out.length) await admin.from("stripe_events").insert({ id: `diag_pmc_${Date.now()}`, type: "diag.pix_pmc", account_id: account, payload: { out } });
+  } catch (e) {
+    await admin.from("stripe_events").insert({ id: `diag_pmc_e_${Date.now()}`, type: "diag.pix_pmc", account_id: account, payload: {}, error: String(e).slice(0, 300) });
+  }
 }
 
 async function checkout(userId: string, email: string | undefined, input: Obj) {
