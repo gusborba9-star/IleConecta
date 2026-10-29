@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
   const [{ data: history }, { data: services }, { data: events }, { data: catalog }] = await Promise.all([
     admin.from("messages").select("sender_id, from_assistant, text, created_at")
       .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
-    admin.from("services").select("kind, custom_kind, delivery, title, description, price_cents").eq("house_id", house.id).eq("active", true).limit(30),
+    admin.from("services").select("id, kind, custom_kind, delivery, title, description, price_cents, bookable, duration_min").eq("house_id", house.id).eq("active", true).limit(30),
     admin.from("events").select("id, title, description, price_cents, mode, starts_at, seats_total, intake_fields")
       .eq("house_id", house.id).eq("status", "publicado").gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true }).limit(15),
@@ -140,8 +140,15 @@ Deno.serve(async (req) => {
     return { ...e, seats_left: Number(e.seats_total) - Number(taken ?? 0) };
   }));
 
+  // Próximos horários livres dos serviços com agenda (vêm do banco, nunca da IA).
+  const servicesWithSlots = await Promise.all((services ?? []).map(async (s) => {
+    if (!s.bookable) return s;
+    const { data: slots } = await admin.rpc("available_slots", { p_service: s.id, p_days: 14 });
+    return { ...s, next_slots: ((slots ?? []) as { slot: string }[]).slice(0, 3).map((r) => r.slot) };
+  }));
+
   const system = buildSystemPrompt({
-    house, assistant, services: services ?? [], events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [],
+    house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [],
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 

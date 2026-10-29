@@ -35,3 +35,18 @@ test("prompt v2: fluxo, argumento da plataforma e híbrido", () => {
   assert.match(p, /Pagar pela plataforma é mais seguro/);
   assert.match(p, /presencial ou à distância \(o cliente escolhe ao contratar\)/);
 });
+
+test("agenda: serviço com agenda mostra próximos horários e não permite a assistente agendar", () => {
+  const p = buildSystemPrompt({ ...base, catalog: [], services: [
+    { title: "Búzios", kind: "buzios", delivery: "hibrido", price_cents: 20000, bookable: true, duration_min: 30, next_slots: ["2026-11-03T12:00:00Z"] },
+    { title: "Limpeza", kind: "limpeza", delivery: "transmissao", price_cents: 10000 },
+  ] });
+  assert.match(p, /Búzios.*COM AGENDA \(30 min.*próximos horários livres: 2026-11-03 09:00 \(Brasília\)/);
+  assert.doesNotMatch(p, /Limpeza.*COM AGENDA/);
+  assert.match(p, /Você nunca marca, agenda ou reserva horário por conta própria/);
+});
+
+test("fila de espera: ritual esgotado orienta a fila", () => {
+  const p = buildSystemPrompt({ ...base, catalog: [], events: [{ title: "Prosperidade", price_cents: 19900, mode: "presencial", starts_at: "2026-11-20T22:00:00Z", seats_left: 0 }] });
+  assert.match(p, /ESGOTADO \(o cliente pode entrar na fila de espera/);
+});

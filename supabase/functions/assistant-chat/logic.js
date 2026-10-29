@@ -225,7 +225,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push(`- Quando o assunto for delicado (luto, crise emocional, saúde, reclamação, pedido que você não pode resolver)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}, acolha com poucas frases gentis, sem dar conselhos nem diagnósticos, diga que a casa vai assumir a conversa e termine a mensagem com ${HANDOFF_MARK}. Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga que ela não está sozinha, indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
   lines.push("- Se a pessoa pedir para conhecer a casa ou perguntar o que a casa faz (sem falar de um serviço publicado): apresente em poucas frases o que a casa realiza, cite no máximo dois rituais ou serviços abertos agora (se houver) e pergunte se ela quer participar de algum deles ou busca algo específico.");
   lines.push("- Se a pessoa procurar algo que a casa realiza mas não está publicado (por exemplo jogo de búzios ou um trabalho para o amor): confirme que a casa realiza, pergunte em uma frase o que ela busca, explique que valores e horários são combinados com a casa e termine com " + HANDOFF_MARK + " para a casa assumir a conversa. Se o que ela pede não está na lista nem no texto da casa, diga que vai confirmar com a casa.");
-  lines.push("- A plataforma ainda não tem agenda: nunca diga que marcou, agendou ou reservou um horário. Quem combina data e horário é a casa. Você pode informar o horário de atendimento cadastrado.");
+  lines.push("- Você nunca marca, agenda ou reserva horário por conta própria. Serviços marcados \"com agenda\" são agendados pelo próprio cliente na página da casa (aba Serviços, botão \"Agendar horário\"), escolhendo um dos horários livres e pagando pela plataforma; você pode citar os próximos horários livres listados e explicar como agendar. Para os demais, quem combina data e horário é a casa. Você pode informar o horário de atendimento cadastrado.");
   lines.push("- Pagar pela plataforma é mais seguro: quando a pessoa for contratar ou pagar algo que está publicado na plataforma, explique em uma frase que o pagamento fica registrado e que, se ela cancelar antes de a casa iniciar o trabalho, o valor volta integralmente. Não repita isso em toda mensagem e não use isso para pressionar.");
   lines.push("- Quando um serviço for híbrido (presencial ou à distância), diga que a pessoa escolhe a modalidade ao contratar.");
   lines.push("- O sistema já cumprimenta e se apresenta na primeira mensagem da conversa. Nunca repita saudação (bom dia, boa tarde) nem se apresente de novo; vá direto ao que a pessoa perguntou.");
@@ -283,13 +283,16 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("SERVIÇOS DISPONÍVEIS:");
   if (services.length === 0) lines.push("(nenhum cadastrado)");
   for (const s of services.slice(0, 30)) {
-    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
+    const slots = Array.isArray(s.next_slots) ? s.next_slots.slice(0, 3).map(brtDateTime) : [];
+    const agenda = s.bookable ? ` — COM AGENDA (${Number(s.duration_min) || 30} min; o cliente agenda na página)${slots.length ? `; próximos horários livres: ${slots.join(", ")}` : "; sem horários livres no momento"}` : "";
+    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${agenda}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
   }
   lines.push("");
   lines.push("RITUAIS E EVENTOS ABERTOS:");
   if (events.length === 0) lines.push("(nenhum no momento)");
   for (const e of events.slice(0, 15)) {
-    const left = Number.isFinite(Number(e.seats_left)) ? ` — ${Math.max(0, Number(e.seats_left))} vagas restantes` : "";
+    const leftN = Number(e.seats_left);
+    const left = Number.isFinite(leftN) ? (leftN > 0 ? ` — ${leftN} vagas restantes` : " — ESGOTADO (o cliente pode entrar na fila de espera pelo botão do ritual e é avisado se abrir vaga)") : "";
     const asks = Array.isArray(e.intake_fields) && e.intake_fields.length ? ` — pede do participante: ${e.intake_fields.map((f) => oneLine(f.label, 40)).join(", ")}` : "";
     lines.push(`- ${oneLine(e.title, 100)} — ${formatCents(e.price_cents)} — ${ritualModeLabel(e.mode)} — ${brtDateTime(e.starts_at)}${left}${asks}${e.description ? ` — ${oneLine(e.description, 240)}` : ""}`);
   }

@@ -28,7 +28,7 @@ const ok = { kind: "buzios", customKind: "", title: "  Jogo de búzios ", descri
 test("formulário válido devolve o valor limpo para gravar", () => {
   const r = validateService(ok);
   assert.equal(r.ok, true);
-  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa", price_cents: 20000, delivery: "presencial", stages: 1 });
+  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa", price_cents: 20000, delivery: "presencial", stages: 1, bookable: false, duration_min: 30 });
 });
 
 test("tipo Outro exige nome livre; os demais descartam o nome livre", () => {
