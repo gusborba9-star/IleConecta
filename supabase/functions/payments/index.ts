@@ -127,34 +127,26 @@ async function refreshStatus(userId: string) {
         const upd = await stripe(`/v1/accounts/${row.stripe_account_id}`, { form: { capabilities: { pix_payments: { requested: true } } } });
         pix = upd?.capabilities?.pix_payments ?? "requested";
       }
-      await admin.from("stripe_events").insert({ id: `diag_pix_${Date.now()}`, type: "diag.pix_v1", account_id: row.stripe_account_id, payload: { pix } });
     } catch (e) {
       console.error("pix_request_failed", String(e));
       pix = "error";
-      await admin.from("stripe_events").insert({ id: `diag_pix_err_${Date.now()}`, type: "diag.pix_v1", account_id: row.stripe_account_id, payload: {}, error: String(e).slice(0, 500) });
     }
   }
   if (pix === "active") await ensurePixOn(row.stripe_account_id);
   return json({ registered: true, ...st, pix_status: pix });
 }
 
-/** Liga o Pix nas configurações de formas de pagamento da conta da casa (a mãe da plataforma não consegue ligar sozinha). */
+/** Liga o Pix nas configurações de formas de pagamento da conta da casa (a configuração da plataforma não consegue ligar para contas com painel Stripe). */
 async function ensurePixOn(account: string) {
   try {
     const list = await stripe("/v1/payment_method_configurations", { account });
-    const out: Obj[] = [];
     for (const c of (list.data ?? []) as Obj[]) {
       if (!c.active || c.pix?.display_preference?.preference === "on") continue;
-      try {
-        const upd = await stripe(`/v1/payment_method_configurations/${c.id}`, { form: { pix: { display_preference: { preference: "on" } } }, account });
-        out.push({ id: c.id, pix: upd.pix });
-      } catch (e) {
-        out.push({ id: c.id, error: String(e).slice(0, 300) });
-      }
+      await stripe(`/v1/payment_method_configurations/${c.id}`, { form: { pix: { display_preference: { preference: "on" } } }, account })
+        .catch((e) => console.error("pix_pmc_failed", c.id, String(e)));
     }
-    if (out.length) await admin.from("stripe_events").insert({ id: `diag_pmc_${Date.now()}`, type: "diag.pix_pmc", account_id: account, payload: { out } });
   } catch (e) {
-    await admin.from("stripe_events").insert({ id: `diag_pmc_e_${Date.now()}`, type: "diag.pix_pmc", account_id: account, payload: {}, error: String(e).slice(0, 300) });
+    console.error("pix_pmc_failed", String(e));
   }
 }
 
@@ -201,15 +193,6 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
   const params = buildCheckoutParams({ payment: pay, title, appUrl: APP_URL, clientEmail: email, expiresAt: sessionExpiry() });
   // As formas de pagamento vêm das configurações do painel (a API nova não aceita payment_method_types).
   const session = await stripe("/v1/checkout/sessions", { form: params, account: acc.stripe_account_id, idem: `cs_${pay.id}_${pay.provider_ref ?? "0"}` });
-  try {
-    const pm = await stripe("/v1/payment_method_configurations", { account: acc.stripe_account_id });
-    await admin.from("stripe_events").insert({
-      id: `diag_cs_${Date.now()}`, type: "diag.checkout_session", account_id: acc.stripe_account_id,
-      payload: { session: session.id, types: session.payment_method_types, cfg: session.payment_method_configuration_details ?? null, pmc: (pm.data ?? []).map((c: Obj) => ({ id: c.id, name: c.name, active: c.active, parent: c.parent, pix: c.pix, card: c.card?.display_preference })) },
-    });
-  } catch (e) {
-    await admin.from("stripe_events").insert({ id: `diag_cs_e_${Date.now()}`, type: "diag.checkout_session", account_id: acc.stripe_account_id, payload: { types: session.payment_method_types }, error: String(e).slice(0, 300) });
-  }
   const { error } = await admin.from("payments").update({ provider_ref: session.id, stripe_account_id: acc.stripe_account_id, payment_method: null }).eq("id", pay.id).eq("status", "pendente");
   if (error) return fail("Não foi possível abrir o pagamento.", 500);
   return json({ url: session.url });
