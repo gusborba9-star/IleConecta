@@ -5,6 +5,8 @@ import { Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp } from "lucide
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import ConsentBox from "@/components/legal/ConsentBox";
+import AssistantReportCard from "@/components/house/AssistantReportCard";
+import QuietHoursCard from "@/components/house/QuietHoursCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
 import type { HouseUser } from "@/types";
@@ -82,6 +84,9 @@ export default function HouseHome() {
           </button>
         ))}
       </section>
+
+      <AssistantReportCard />
+      <QuietHoursCard />
 
       <Card className="p-5">
         <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /><h2 className="font-display font-bold text-lg">Assistente virtual</h2></div>
