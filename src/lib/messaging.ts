@@ -89,11 +89,12 @@ export async function fetchMessages(conversationId: string): Promise<ChatMessage
   return (data ?? []).map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null }));
 }
 
-/** Mensagem direta (sem assistente). Devolve true se gravou. */
-export async function sendDirect(conversationId: string, senderId: string, text: string): Promise<boolean> {
-  if (!supabase) return false;
+/** Mensagem direta (sem assistente). "blocked" quando o destinatário bloqueou quem envia. */
+export async function sendDirect(conversationId: string, senderId: string, text: string): Promise<"ok" | "blocked" | "error"> {
+  if (!supabase) return "error";
   const { error } = await supabase.from("messages").insert({ conversation_id: conversationId, sender_id: senderId, text: text.slice(0, 2000), from_assistant: false });
-  return !error;
+  if (!error) return "ok";
+  return error.message?.includes("blocked") ? "blocked" : "error";
 }
 
 /** Avisa quando chegar mensagem nova (ou mudança de leitura/exclusão) em qualquer conversa minha. Devolve a função de cancelar. */

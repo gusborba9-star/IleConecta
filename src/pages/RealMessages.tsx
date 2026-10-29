@@ -30,6 +30,7 @@ export default function RealMessages() {
   const [selected, setSelected] = useState<string | null>(null);
   const [iBlocked, setIBlocked] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const refreshList = useCallback(async () => setConvos(await listConversations()), []);
 
@@ -112,6 +113,11 @@ export default function RealMessages() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [msgs.length]);
 
+  // No celular, ao abrir uma conversa o cabeçalho (com o menu ⋮) volta para a tela.
+  useEffect(() => {
+    if (otherId) rootRef.current?.scrollIntoView({ block: "start" });
+  }, [otherId, peer?.id]);
+
   const send = async () => {
     const msg = text.trim();
     if (!msg || !convId || !otherId || !me || busy) return;
@@ -129,9 +135,12 @@ export default function RealMessages() {
       if (!res.ok) setNotice(res.message ? `${res.message} A casa verá a sua mensagem quando voltar.` : null);
     }
     if (!delivered) {
-      const ok = await sendDirect(convId, me, msg);
-      if (!ok) {
-        toast.error("Não foi possível enviar esta mensagem.");
+      const res = await sendDirect(convId, me, msg);
+      if (res === "blocked") {
+        // Mensagem neutra: não revela quem bloqueou quem.
+        setNotice("Não é possível enviar mensagens nesta conversa.");
+      } else if (res === "error") {
+        toast.error("Não foi possível enviar esta mensagem. Tente novamente.");
         setText(msg);
       } else if (houseOffline && !notice) setNotice("A casa está offline e verá a sua mensagem quando voltar.");
     }
@@ -149,7 +158,8 @@ export default function RealMessages() {
   const offlineHouse = Boolean(peer?.isHouse && !peer.online);
 
   return (
-    <Card className="overflow-hidden h-[calc(100vh-6rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
+    <div ref={rootRef} className="scroll-mt-20">
+    <Card className="overflow-hidden h-[calc(100dvh-6rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
       <aside className={cn("border-r border-border overflow-y-auto", otherId && "hidden md:block")}>
         <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
           <h2 className="font-display font-bold text-lg">Mensagens</h2>
@@ -250,5 +260,6 @@ export default function RealMessages() {
         )}
       </section>
     </Card>
+    </div>
   );
 }
