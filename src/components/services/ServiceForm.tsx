@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
-import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
+import { BOOKABLE_KINDS, SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
 import type { Service } from "@/lib/services";
 import { fetchPaymentMaxCents } from "@/lib/paymentLimit";
 import { MAX_PAYMENT_CENTS, MAX_STAGES, stagePlan, stagesNeeded } from "@/lib/paymentsCore";
@@ -14,7 +14,7 @@ interface Props {
   onSubmit: (value: ServiceValue) => Promise<boolean>;
 }
 
-const EMPTY: ServiceFormInput = { kind: "", customKind: "", title: "", description: "", priceText: "", delivery: "", stages: 1 };
+const EMPTY: ServiceFormInput = { kind: "", customKind: "", title: "", description: "", priceText: "", delivery: "", stages: 1, bookable: false, durationMin: 30 };
 
 export default function ServiceForm({ open, onClose, initial, onSubmit }: Props) {
   const [form, setForm] = useState<ServiceFormInput>(EMPTY);
@@ -40,6 +40,8 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
             priceText: (initial.priceCents / 100).toFixed(2).replace(".", ","),
             delivery: initial.delivery,
             stages: initial.stages,
+            bookable: initial.bookable,
+            durationMin: initial.durationMin,
           }
         : EMPTY
     );
@@ -155,6 +157,27 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           </div>
           {errors.delivery && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.delivery}</p>}
         </fieldset>
+
+        {form.kind && BOOKABLE_KINDS.includes(form.kind) && (
+          <div className="rounded-xl border border-border p-3 space-y-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={Boolean(form.bookable)} onChange={(e) => set({ bookable: e.target.checked })} />
+              <span>
+                <span className="block font-semibold">Agendar horário pela plataforma</span>
+                <span className="block text-muted-foreground">O cliente escolhe um dia e horário livres da sua agenda e paga na hora. Você é avisado de cada agendamento.</span>
+              </span>
+            </label>
+            {form.bookable && (
+              <div>
+                <Label htmlFor="sv-dur">Duração de cada atendimento (minutos)</Label>
+                <Input id="sv-dur" type="number" min={10} max={240} step={5} className="w-28" value={form.durationMin ?? 30} onChange={(e) => set({ durationMin: e.target.value })} />
+                {errors.durationMin && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.durationMin}</p>}
+                <p className="text-xs text-muted-foreground mt-1">Cadastre seus dias e horários em “Agenda de atendimento”, nesta aba.</p>
+              </div>
+            )}
+            {errors.bookable && <p className="text-sm text-[hsl(var(--danger))]">{errors.bookable}</p>}
+          </div>
+        )}
 
         <p className="text-xs text-muted-foreground">O pagamento é combinado diretamente com o cliente. O pagamento pela plataforma (Pix) chega em breve.</p>
 
