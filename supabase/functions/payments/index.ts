@@ -83,15 +83,9 @@ async function onboard(userId: string, email: string | undefined) {
       metadata: { house_id: house.id, owner_id: userId },
       include: ["configuration.merchant", "identity", "requirements"],
     };
-    const withPix = { ...base, configuration: { merchant: { capabilities: { card_payments: { requested: true }, pix_payments: { requested: true } } } } };
+    // Pix não é capacidade da API v2: é pedido depois, pela API v1, em refreshStatus.
     const cardOnly = { ...base, configuration: { merchant: { capabilities: { card_payments: { requested: true } } } } };
-    let acct: Obj;
-    try {
-      acct = await stripe("/v2/core/accounts", { body: withPix, idem: `acct_${house.id}_pix` });
-    } catch (e) {
-      console.error("pix_capability_failed_retrying_card_only", String(e));
-      acct = await stripe("/v2/core/accounts", { body: cardOnly, idem: `acct_${house.id}_card` });
-    }
+    const acct = await stripe("/v2/core/accounts", { body: cardOnly, idem: `acct_${house.id}_card` });
     acctId = String(acct.id);
     const { error } = await admin.from("house_payment_accounts").upsert({
       house_id: house.id, owner_id: userId, provider: "stripe", stripe_account_id: acctId, status: "pendente", updated_at: new Date().toISOString(),
@@ -123,17 +117,21 @@ async function refreshStatus(userId: string) {
   await admin.from("house_payment_accounts").update({
     ...st, status: st.charges_enabled ? "ativa" : st.requirements_due ? "pendente" : "em_analise", updated_at: new Date().toISOString(),
   }).eq("house_id", house.id);
-  // Contas criadas antes do Pix (ou cujo pedido de Pix falhou) nunca pediram a capacidade: pede agora, sem travar o status.
-  let pix: string | null = acct?.configuration?.merchant?.capabilities?.pix_payments?.status ?? null;
-  if (pix === null && st.charges_enabled) {
+  // O Pix não existe como capacidade na API v2 desta versão: pela API v1 (mesma conta) ele é lido e pedido.
+  let pix: string | null = null;
+  if (st.charges_enabled) {
     try {
-      const upd = await stripe(`/v2/core/accounts/${row.stripe_account_id}`, {
-        body: { include: ["configuration.merchant"], configuration: { merchant: { capabilities: { pix_payments: { requested: true } } } } },
-      });
-      pix = upd?.configuration?.merchant?.capabilities?.pix_payments?.status ?? "requested";
+      const v1 = await stripe(`/v1/accounts/${row.stripe_account_id}`);
+      pix = v1?.capabilities?.pix_payments ?? null;
+      if (pix === null) {
+        const upd = await stripe(`/v1/accounts/${row.stripe_account_id}`, { form: { capabilities: { pix_payments: { requested: true } } } });
+        pix = upd?.capabilities?.pix_payments ?? "requested";
+      }
+      await admin.from("stripe_events").insert({ id: `diag_pix_${Date.now()}`, type: "diag.pix_v1", account_id: row.stripe_account_id, payload: { pix } });
     } catch (e) {
       console.error("pix_request_failed", String(e));
       pix = "error";
+      await admin.from("stripe_events").insert({ id: `diag_pix_err_${Date.now()}`, type: "diag.pix_v1", account_id: row.stripe_account_id, payload: {}, error: String(e).slice(0, 500) });
     }
   }
   return json({ registered: true, ...st, pix_status: pix });
