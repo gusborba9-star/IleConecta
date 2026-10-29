@@ -21,6 +21,7 @@ import {
   type ScopeKey,
 } from "@/lib/platformConfig";
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
+import HousePlansCard from "@/components/admin/HousePlansCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 
 const FEATURE_LABEL: Record<FeatureKey, string> = {
@@ -30,7 +31,7 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   payments: "Pagamentos pela plataforma (Stripe)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
-const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região" };
+const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento" };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -168,6 +169,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
       </Card>
+
+      <HousePlansCard />
 
       <PaymentLimitCard />
 
