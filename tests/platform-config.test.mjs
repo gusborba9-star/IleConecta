@@ -48,3 +48,11 @@ test("pagamentos: padrão DESLIGADO e 'beta' liga só para as casas escolhidas",
   assert.equal(isFeatureOn(cfg, "payments", "casa1"), true);
   assert.equal(isFeatureOn(cfg, "payments", "casa2"), false);
 });
+
+test("vídeo nos registros do ritual: desligado por padrão e liga por casa em beta", () => {
+  assert.equal(sanitizeConfig({}).features.ritual_video.state, "off");
+  assert.equal(isFeatureOn(sanitizeConfig({}), "ritual_video", "casa1"), false);
+  const cfg = sanitizeConfig({ features: { ritual_video: { state: "beta", beta_houses: ["casa1"] } } });
+  assert.equal(isFeatureOn(cfg, "ritual_video", "casa1"), true);
+  assert.equal(isFeatureOn(cfg, "ritual_video", "casa2"), false);
+});

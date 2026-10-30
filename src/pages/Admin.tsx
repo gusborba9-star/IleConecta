@@ -30,6 +30,7 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   boost: "Impulsionar",
   highlight: "Destaques nos feeds",
   payments: "Pagamentos pela plataforma (Stripe)",
+  ritual_video: "Vídeo de 30 s nos registros do ritual (só casas Premium)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
 const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento" };
