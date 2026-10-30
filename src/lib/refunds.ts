@@ -110,7 +110,7 @@ export async function fetchRefundContext(id: string): Promise<{ context: RefundC
   return error ? { context: null, error: error.message } : { context: data as RefundContext, error: null };
 }
 
-export interface CaseRecord { kind: "inicio" | "durante" | "fim"; caption: string | null; path: string; secret: boolean; at: string }
+export interface CaseRecord { kind: "inicio" | "durante" | "fim"; media?: "image" | "video"; caption: string | null; path: string; secret: boolean; at: string }
 
 /** Fotos que a casa publicou no ritual (só reservas de ritual; só pedidos em aberto; fica registrado). */
 export async function fetchCaseRecords(id: string): Promise<CaseRecord[]> {
