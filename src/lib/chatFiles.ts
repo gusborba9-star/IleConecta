@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
-const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" };
+const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf", "video/webm": "webm", "video/mp4": "mp4" };
 
 export interface PreparedFile { blob: Blob; type: string; name: string; size: number }
 export interface UploadedFile { path: string; type: string; name: string; size: number }
