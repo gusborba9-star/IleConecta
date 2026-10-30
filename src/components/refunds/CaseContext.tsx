@@ -1,19 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/base";
-import { fetchRefundContext, type RefundContext } from "@/lib/refunds";
+import { signedUrl } from "@/lib/chatFiles";
+import { fetchCaseRecords, fetchRefundContext, type CaseRecord, type RefundContext } from "@/lib/refunds";
 import { formatCents } from "@/lib/servicesCore";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+const KIND = { inicio: "Início", durante: "Durante", fim: "Fim" } as const;
+
+function CaseRecordPhoto({ rec }: { rec: CaseRecord }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void signedUrl("ritual-records", rec.path).then((u) => alive && setUrl(u));
+    return () => {
+      alive = false;
+    };
+  }, [rec.path]);
+  return (
+    <figure className="w-36">
+      {url ? <a href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={rec.caption ?? "Registro"} className="h-28 w-36 object-cover rounded-lg border border-border" /></a> : <div className="h-28 w-36 rounded-lg bg-muted animate-pulse" />}
+      <figcaption className="text-xs mt-1"><strong>{KIND[rec.kind]}</strong> · {fmt(rec.at)}{rec.secret ? " · reservado" : ""}{rec.caption ? <span className="block text-muted-foreground">{rec.caption}</span> : null}</figcaption>
+    </figure>
+  );
+}
 
 /** Fatos do caso para a administração decidir: linha do tempo, o que foi contratado e a conversa entre cliente e casa. */
 export default function CaseContext({ refundId }: { refundId: string }) {
   const [ctx, setCtx] = useState<RefundContext | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [records, setRecords] = useState<CaseRecord[]>([]);
 
   const open = async () => {
     setLoading(true);
     const res = await fetchRefundContext(refundId);
+    if (!res.error && res.context?.kind === "reserva") setRecords(await fetchCaseRecords(refundId));
     setLoading(false);
     if (res.error) setError(res.error);
     else setCtx(res.context);
@@ -24,7 +46,7 @@ export default function CaseContext({ refundId }: { refundId: string }) {
       <div className="mt-3">
         <Button size="sm" variant="outline" disabled={loading} onClick={() => void open()}>{loading ? "Abrindo…" : "Ver contexto do caso"}</Button>
         {error && <p className="text-sm text-[hsl(var(--danger))] mt-2">{error}</p>}
-        <p className="text-xs text-muted-foreground mt-1">Abrir o contexto mostra a conversa entre cliente e casa e fica registrado no seu nome.</p>
+        <p className="text-xs text-muted-foreground mt-1">Abrir o contexto mostra a conversa entre cliente e casa e as fotos do ritual, e fica registrado no seu nome.</p>
       </div>
     );
   }
@@ -63,6 +85,17 @@ export default function CaseContext({ refundId }: { refundId: string }) {
           <p className="text-muted-foreground">A casa ainda não respondeu. Se não houver resposta, considere dar um prazo curto antes de decidir.</p>
         )}
       </div>
+
+      {ctx.kind === "reserva" && (
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Registros do ritual publicados pela casa</div>
+          {records.length === 0 ? (
+            <p className="text-muted-foreground">A casa não publicou fotos deste ritual. Isso não prova que o ritual não aconteceu, mas também não há registro de que aconteceu.</p>
+          ) : (
+            <div className="flex flex-wrap gap-3">{records.map((r) => <CaseRecordPhoto key={r.path} rec={r} />)}</div>
+          )}
+        </div>
+      )}
 
       <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Conversa entre cliente e casa (desde a contratação)</div>
