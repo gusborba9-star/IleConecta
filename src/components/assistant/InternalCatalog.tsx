@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Input, Label, Textarea } from "@/components/base";
+import MoneyInput from "@/components/base/MoneyInput";
 import {
   CATALOG_MAX_ITEMS, addCatalogItem, centsToInput, deleteCatalogItem, fetchCatalog, parsePriceToCents, updateCatalogItem,
   type CatalogItem,
@@ -100,7 +101,7 @@ export default function InternalCatalog({ houseId }: { houseId: string }) {
             </div>
             <div>
               <Label htmlFor="cat-price">Valor (R$)</Label>
-              <Input id="cat-price" inputMode="decimal" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="277,00" />
+              <MoneyInput id="cat-price" value={draft.price} onValueChange={(v) => setDraft({ ...draft, price: v })} placeholder="277,00" />
             </div>
           </div>
           <div>
