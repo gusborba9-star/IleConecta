@@ -1,7 +1,7 @@
 // Regras puras da configuração da plataforma (sem rede), testáveis em Node.
 // O painel admin grava estes dados no banco; qualquer valor inválido volta ao padrão aqui.
 
-export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments"];
+export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
 export const PLAN_IDS = ["base", "intermediario", "maximo"];
 export const FEATURE_STATES = ["off", "beta", "on"];
@@ -13,6 +13,8 @@ export const DEFAULT_CONFIG = {
     highlight: { state: "on", beta_houses: [] },
     // Dinheiro só com ligação explícita: o padrão é DESLIGADO (igual a payments_enabled() no banco).
     payments: { state: "off", beta_houses: [] },
+    // Vídeo de 30 s nos registros do ritual: desligado até o plano Pro do banco (só casas Premium).
+    ritual_video: { state: "off", beta_houses: [] },
   },
   pricing: {
     plans: {
