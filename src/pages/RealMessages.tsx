@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Bot, Check, CheckCheck, Paperclip, Send } from "lucide-react";
+import { Bot, Check, CheckCheck, Paperclip, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
@@ -232,6 +232,12 @@ export default function RealMessages() {
                 const deleted = Boolean(m.deletedAt);
                 return (
                   <div key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
+                    <div className={cn("flex items-center gap-1 max-w-full", mine && "justify-end")}>
+                    {mine && !deleted && (
+                      <button type="button" aria-label="Apagar mensagem" className="p-1.5 rounded-full text-muted-foreground hover:bg-muted" onClick={() => setSelected(selected === m.id ? null : m.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <div
                       onClick={() => mine && !deleted && setSelected(selected === m.id ? null : m.id)}
                       className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md cursor-pointer" : "bg-card border border-border rounded-bl-md", deleted && "italic opacity-70")}
@@ -253,6 +259,7 @@ export default function RealMessages() {
                               : <Check className="h-3.5 w-3.5" aria-label="Enviada" />
                         )}
                       </div>
+                    </div>
                     </div>
                     {mine && selected === m.id && (
                       <div className="flex gap-3 mt-1 text-xs">
