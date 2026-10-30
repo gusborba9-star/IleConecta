@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { formatBRL, timeAgo } from "@/lib/utils";
 import { CalendarClock, HandHeart, Ticket } from "lucide-react";
 
 export default function Activity() {
+  const confirm = useConfirm();
   const { currentUser, purchases, rituals, getHouse } = useApp();
   const nav = useNavigate();
   const [orders, setOrders] = useState<(ServiceOrder & { houseName: string; houseOwnerId: string | null })[]>([]);
@@ -19,7 +21,7 @@ export default function Activity() {
   }, [uid]);
 
   const cancel = async (id: string) => {
-    if (!window.confirm("Cancelar o seu pedido? Se já foi pago, o valor é devolvido integralmente.")) return;
+    if (!(await confirm({ title: "Cancelar o seu pedido?", message: "Se já foi pago, o valor é devolvido integralmente.", confirmLabel: "Cancelar pedido", danger: true }))) return;
     setBusy(id);
     const error = await cancelOrder(id);
     setBusy(null);
