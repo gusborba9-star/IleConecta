@@ -1,3 +1,4 @@
+import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Textarea } from "@/components/base";
@@ -9,6 +10,8 @@ import { formatCents } from "@/lib/servicesCore";
 
 /** Fila de reembolsos: decidir pedidos e registrar o estorno depois que o dinheiro voltou ao cliente. */
 export default function AdminRefunds() {
+  const confirm = useConfirm();
+  const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const { isAdmin } = usePlatformConfig();
   const [rows, setRows] = useState<RefundRequest[] | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -81,7 +84,7 @@ export default function AdminRefunds() {
                 <Button
                   size="sm"
                   disabled={busy === r.id}
-                  onClick={() => { if (window.confirm("Devolver o valor integral ao cliente pelo Stripe? A devolução sai da conta da casa e não pode ser desfeita.")) void run(r.id, () => sendRefund(r.id), "Valor devolvido ao cliente."); }}
+                  onClick={() => ask({ title: "Devolver o valor ao cliente?", message: "A devolução é integral, sai da conta da casa pelo Stripe e não pode ser desfeita.", confirmLabel: "Devolver", danger: true }, () => run(r.id, () => sendRefund(r.id), "Valor devolvido ao cliente."))}
                 >
                   Devolver ao cliente
                 </Button>

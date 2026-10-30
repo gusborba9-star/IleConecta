@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Lock, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ function RecordPhoto({ rec, isOwn, onDelete }: { rec: EventRecord; isOwn: boolea
 
 /** Registros do ritual: a casa publica fotos (e vídeos, se liberado); participantes confirmados veem. */
 export default function RitualRecords({ eventId, isOwn, started, closedForNew }: Props) {
+  const confirm = useConfirm();
   const [items, setItems] = useState<EventRecord[] | null>(null);
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -124,7 +126,7 @@ export default function RitualRecords({ eventId, isOwn, started, closedForNew }:
   };
 
   const remove = async (rec: EventRecord) => {
-    if (!window.confirm("Apagar este registro para todos?")) return;
+    if (!(await confirm({ title: "Apagar este registro?", message: "Ele some para todos que têm acesso.", confirmLabel: "Apagar", danger: true }))) return;
     if (await deleteRecord(rec.id, rec.path)) {
       toast.success("Registro apagado.");
       await load();

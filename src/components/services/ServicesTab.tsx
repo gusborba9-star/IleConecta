@@ -1,3 +1,4 @@
+import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -28,6 +29,8 @@ interface Props {
 }
 
 export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
+  const confirm = useConfirm();
+  const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const nav = useNavigate();
   const [items, setItems] = useState<Service[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -112,7 +115,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
   };
 
   const remove = async (s: Service) => {
-    if (!window.confirm(`Excluir “${s.title}”? Essa ação não pode ser desfeita.`)) return;
+    if (!(await confirm({ title: `Excluir “${s.title}”?`, message: "Essa ação não pode ser desfeita.", confirmLabel: "Excluir", danger: true }))) return;
     if (await deleteService(s.id)) {
       toast.success("Serviço excluído.");
       await load();
@@ -146,9 +149,9 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {stageOpen(o) && <Button size="sm" variant="outline" onClick={() => void orderAct(() => remindNextStage(o.id), "O cliente foi lembrado da próxima etapa.")}>Lembrar próxima etapa</Button>}
-                  {o.status === "confirmado" && <Button size="sm" onClick={() => { if (window.confirm("Iniciar o trabalho agora? O cliente será avisado.")) void orderAct(() => startOrder(o.id), "Trabalho iniciado. O cliente foi avisado."); }}>Iniciar</Button>}
-                  {o.status === "em_andamento" && <Button size="sm" onClick={() => { if (window.confirm("Concluir o trabalho? O cliente será avisado.")) void orderAct(() => finishOrder(o.id), "Trabalho concluído. O cliente foi avisado."); }}>Concluir</Button>}
-                  {canCancelOrder(o.status) && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Cancelar este pedido? O cliente será avisado.")) void orderAct(() => cancelOrder(o.id), "Pedido cancelado."); }}>Cancelar</Button>}
+                  {o.status === "confirmado" && <Button size="sm" onClick={() => ask({ title: "Iniciar o trabalho agora?", message: "O cliente será avisado.", confirmLabel: "Iniciar" }, () => orderAct(() => startOrder(o.id), "Trabalho iniciado. O cliente foi avisado."))}>Iniciar</Button>}
+                  {o.status === "em_andamento" && <Button size="sm" onClick={() => ask({ title: "Concluir o trabalho?", message: "O cliente será avisado.", confirmLabel: "Concluir" }, () => orderAct(() => finishOrder(o.id), "Trabalho concluído. O cliente foi avisado."))}>Concluir</Button>}
+                  {canCancelOrder(o.status) && <Button size="sm" variant="ghost" onClick={() => ask({ title: "Cancelar este pedido?", message: "O cliente será avisado.", confirmLabel: "Cancelar pedido", danger: true }, () => orderAct(() => cancelOrder(o.id), "Pedido cancelado."))}>Cancelar</Button>}
                 </div>
               </div>
             ))}
@@ -180,7 +183,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                     {o.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ orderId: o.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
                     {stageOpen(o) && <Button size="sm" onClick={() => void payStage(o.id)}>Pagar próxima etapa</Button>}
                     {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
-                    {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("Retirar o relato?")) void orderAct(() => withdrawRefund(refund.id), "Pedido retirado."); }}>Retirar relato</Button>}
+                    {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => ask({ title: "Retirar o relato?", confirmLabel: "Retirar" }, () => orderAct(() => withdrawRefund(refund.id), "Pedido retirado."))}>Retirar relato</Button>}
                   </div>
                 </div>
               );
@@ -241,7 +244,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                     {onAskAssistant && <Button size="sm" variant="outline" onClick={onAskAssistant}>Perguntar à assistente</Button>}
                     {s.active && (s.delivery !== "presencial" || s.bookable) && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>{s.bookable ? "Agendar horário" : "Contratar"}</Button>}
                     {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
-                      <Button size="sm" variant="outline" onClick={() => { if (window.confirm("Cancelar o seu pedido?")) void orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."); }}>Cancelar pedido</Button>
+                      <Button size="sm" variant="outline" onClick={() => ask({ title: "Cancelar o seu pedido?", confirmLabel: "Cancelar pedido", danger: true }, () => orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."))}>Cancelar pedido</Button>
                     )}
                     <Button size="sm" variant="outline" onClick={() => nav(`/mensagens/${ownerId}`)}>{s.delivery === "presencial" ? "Conversar para agendar" : "Conversar com a casa"}</Button>
                   </>

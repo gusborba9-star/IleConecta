@@ -26,6 +26,7 @@ import PaymentReturn from "@/pages/PaymentReturn";
 import PaymentAccountReturn from "@/pages/PaymentAccountReturn";
 import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
+import { ConfirmProvider } from "@/components/base/Confirm";
 
 function Protected({ children }: { children: JSX.Element }) {
   const { currentUser, authReady } = useApp();
@@ -55,6 +56,7 @@ function Home() {
 
 export default function App() {
   return (
+    <ConfirmProvider>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -91,5 +93,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </ConfirmProvider>
   );
 }
