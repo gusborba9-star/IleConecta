@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { Flame } from "lucide-react";
@@ -12,10 +12,14 @@ export default function Login() {
   const [password, setPassword] = useState(isRemoteAuth ? "" : "123456");
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const location = useLocation();
+  const raw = (location.state as { from?: string } | null)?.from;
+  // Só volta para caminhos do próprio app.
+  const back = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
 
   useEffect(() => {
-    if (currentUser) nav("/", { replace: true });
-  }, [currentUser, nav]);
+    if (currentUser) nav(back, { replace: true });
+  }, [currentUser, nav, back]);
 
   if (currentUser || !authReady) return null;
 
@@ -27,7 +31,7 @@ export default function Login() {
       const result = await login(email, password);
       if (result.ok) {
         toast.success(`Axé${result.user ? `, ${result.user.name}` : ""}!`);
-        nav("/");
+        nav(back);
       } else {
         toast.error(result.error);
       }

@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy } from "lucide-react";
+import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Card } from "@/components/base";
 import { INFO_PAGES } from "@/content/institutional";
@@ -30,11 +30,13 @@ export default function SideNav() {
           {isHouse ? (
             <>
               <NavItem to={`/casa/${currentUser?.id}`} icon={User} label="Minha página" />
+              {isRemoteAuth && <NavItem to="/painel/membros" icon={Users} label="Membros" />}
               <NavItem to="/perfil" icon={Settings} label="Perfil e assistente" />
             </>
           ) : (
             <>
               <NavItem to="/atividade" icon={History} label="Minha atividade" />
+              {isRemoteAuth && <NavItem to="/mensalidades" icon={Wallet} label="Mensalidades" />}
               <NavItem to="/perfil" icon={User} label="Meu perfil" />
             </>
           )}
