@@ -24,6 +24,8 @@ import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
+import MoneyInput from "@/components/base/MoneyInput";
+import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
 
 const FEATURE_LABEL: Record<FeatureKey, string> = {
   assistant: "Assistente virtual",
@@ -75,10 +77,11 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
     } else toast.error("Não foi possível salvar.");
   };
 
-  const num = (v: string): number | null => {
-    if (v.trim() === "") return null;
-    const n = Number(v.replace(",", "."));
-    return Number.isFinite(n) && n >= 0 ? n : null;
+  // O campo guarda reais (número) e mostra "1.200,50"; vazio = sem preço.
+  const toText = (reais: number | null | undefined) => (reais == null ? "" : centsToMasked(Math.round(reais * 100)));
+  const num = (masked: string): number | null => {
+    const cents = maskedToCents(masked);
+    return cents === null ? null : cents / 100;
   };
 
   return (
@@ -210,8 +213,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
               <div key={id} className="space-y-1">
                 <Input aria-label={`Nome do plano ${id}`} value={draft.pricing.plans[id].name} maxLength={30}
                   onChange={(e) => setDraft({ ...draft, pricing: { ...draft.pricing, plans: { ...draft.pricing.plans, [id]: { ...draft.pricing.plans[id], name: e.target.value } } } })} />
-                <Input aria-label={`Mensalidade do plano ${id}`} inputMode="decimal" value={draft.pricing.plans[id].monthly ?? ""}
-                  onChange={(e) => setDraft({ ...draft, pricing: { ...draft.pricing, plans: { ...draft.pricing.plans, [id]: { ...draft.pricing.plans[id], monthly: num(e.target.value) } } } })} />
+                <MoneyInput aria-label={`Mensalidade do plano ${id}`} value={toText(draft.pricing.plans[id].monthly)}
+                  onValueChange={(v) => setDraft({ ...draft, pricing: { ...draft.pricing, plans: { ...draft.pricing.plans, [id]: { ...draft.pricing.plans[id], monthly: num(v) } } } })} />
               </div>
             ))}
           </div>
@@ -223,8 +226,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
               {SCOPE_KEYS.map((s) => (
                 <div key={s}>
                   <div className="text-xs text-muted-foreground mb-1">{SCOPE_LABEL[s].label}</div>
-                  <Input aria-label={`${key} ${s}`} inputMode="decimal" placeholder="sem preço" value={draft.pricing[key][s] ?? ""}
-                    onChange={(e) => setDraft({ ...draft, pricing: { ...draft.pricing, [key]: { ...draft.pricing[key], [s]: num(e.target.value) } } })} />
+                  <MoneyInput aria-label={`${key} ${s}`} placeholder="sem preço" value={toText(draft.pricing[key][s])}
+                    onValueChange={(v) => setDraft({ ...draft, pricing: { ...draft.pricing, [key]: { ...draft.pricing[key], [s]: num(v) } } })} />
                 </div>
               ))}
             </div>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button, Card, Input } from "@/components/base";
+import { Button, Card } from "@/components/base";
+import MoneyInput from "@/components/base/MoneyInput";
+import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
 import { fetchPaymentMaxCents } from "@/lib/paymentLimit";
 import { saveSetting } from "@/lib/platformConfig";
 import { MAX_STAGES } from "@/lib/paymentsCore";
@@ -14,16 +16,16 @@ export default function PaymentLimitCard() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    void fetchPaymentMaxCents().then((c) => setReais(String(c / 100)));
+    void fetchPaymentMaxCents().then((c) => setReais(centsToMasked(c)));
   }, []);
 
-  const value = Number(reais.replace(",", "."));
-  const valid = Number.isFinite(value) && value >= MIN_REAIS && value <= MAX_REAIS && Math.round(value * 100) === value * 100;
+  const cents = maskedToCents(reais);
+  const valid = cents !== null && cents >= MIN_REAIS * 100 && cents <= MAX_REAIS * 100;
 
   const save = async () => {
     if (!valid) return;
     setSaving(true);
-    const ok = await saveSetting("payment_limits", { max_cents: Math.round(value * 100) });
+    const ok = await saveSetting("payment_limits", { max_cents: cents });
     setSaving(false);
     if (ok) toast.success("Teto por pagamento salvo.");
     else toast.error("Não foi possível salvar.");
@@ -38,7 +40,7 @@ export default function PaymentLimitCard() {
       </p>
       <div className="flex items-center gap-2 max-w-xs">
         <span className="text-sm">R$</span>
-        <Input aria-label="Teto por pagamento em reais" inputMode="decimal" value={reais} onChange={(e) => setReais(e.target.value)} />
+        <MoneyInput aria-label="Teto por pagamento em reais" value={reais} onValueChange={setReais} />
       </div>
       {!valid && reais !== "" && (
         <p className="text-sm text-destructive">Informe um valor entre R$ {MIN_REAIS} e R$ {MAX_REAIS.toLocaleString("pt-BR")}.</p>
