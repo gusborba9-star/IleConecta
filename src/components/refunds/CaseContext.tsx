@@ -19,8 +19,8 @@ function CaseRecordPhoto({ rec }: { rec: CaseRecord }) {
   }, [rec.path]);
   return (
     <figure className="w-36">
-      {url ? <a href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={rec.caption ?? "Registro"} className="h-28 w-36 object-cover rounded-lg border border-border" /></a> : <div className="h-28 w-36 rounded-lg bg-muted animate-pulse" />}
-      <figcaption className="text-xs mt-1"><strong>{KIND[rec.kind]}</strong> · {fmt(rec.at)}{rec.secret ? " · reservado" : ""}{rec.caption ? <span className="block text-muted-foreground">{rec.caption}</span> : null}</figcaption>
+      {url && rec.media === "video" ? <video src={url} controls playsInline preload="metadata" className="h-28 w-36 rounded-lg border border-border bg-black object-contain" /> : url ? <a href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={rec.caption ?? "Registro"} className="h-28 w-36 object-cover rounded-lg border border-border" /></a> : <div className="h-28 w-36 rounded-lg bg-muted animate-pulse" />}
+      <figcaption className="text-xs mt-1"><strong>{KIND[rec.kind]}{rec.media === "video" ? " (vídeo)" : ""}</strong> · {fmt(rec.at)}{rec.secret ? " · reservado" : ""}{rec.caption ? <span className="block text-muted-foreground">{rec.caption}</span> : null}</figcaption>
     </figure>
   );
 }

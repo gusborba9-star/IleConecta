@@ -1,6 +1,6 @@
 -- Limpeza de arquivos vencidos (LGPD: não guardar além do necessário). É seguro repetir.
 -- Regras:
---  * Fotos dos registros do ritual: apagadas quando vencem (30 dias).
+--  * Fotos dos registros do ritual: apagadas quando vencem (30 dias; vídeos, 7 dias). Arquivos sem registro (órfãos) com mais de 1 dia também.
 --  * Anexos de mensagens apagadas para todos: apagados 30 dias depois (junto com o arquivo de texto).
 --  * Provas de denúncias: apagadas 90 dias depois de a denúncia ser resolvida.
 --  * Nada que esteja ligado a uma denúncia aberta, ou resolvida há menos de 90 dias, é apagado.
@@ -13,6 +13,12 @@ language sql stable security definer set search_path = public as $$
      from public.event_records er
     where er.expires_at < now()
     order by er.expires_at limit p_limit)
+  union all
+  (select 'ritual-records'::text, o.name, 'orphan'::text, null::uuid
+     from storage.objects o
+    where o.bucket_id = 'ritual-records' and o.created_at < now() - interval '1 day'
+      and not exists (select 1 from public.event_records er where er.path = o.name)
+    order by o.created_at limit p_limit)
   union all
   (select 'chat-files'::text, m.attachment_path, 'chat'::text, m.id
      from public.messages m
@@ -38,6 +44,8 @@ begin
   for i in select * from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) loop
     if i->>'kind' = 'record' then
       delete from public.event_records where id = (i->>'ref')::uuid;
+    elsif i->>'kind' = 'orphan' then
+      null; -- o arquivo já saiu do armazenamento; não há referência no banco
     elsif i->>'kind' = 'chat' then
       update public.messages set attachment_path = null, attachment_type = null, attachment_name = null, attachment_size = null
        where id = (i->>'ref')::uuid;
