@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bot, Check, CheckCheck, Paperclip, Send, Trash2 } from "lucide-react";
@@ -17,6 +18,7 @@ import { cn, timeAgo } from "@/lib/utils";
 
 /** Mensagens reais. Se a casa estiver offline, a assistente dela atende primeiro. */
 export default function RealMessages() {
+  const confirm = useConfirm();
   const { id: otherId } = useParams();
   const { currentUser } = useApp();
   const nav = useNavigate();
@@ -185,7 +187,7 @@ export default function RealMessages() {
   /** Lixeira: pergunta e apaga na hora (funciona igual para texto, foto e PDF). */
   const askDelete = (id: string) => {
     setSelected(null);
-    if (window.confirm("Apagar esta mensagem para todos?")) void removeMsg(id);
+    void confirm({ title: "Apagar esta mensagem?", message: "Ela some para todos na conversa.", confirmLabel: "Apagar", danger: true }).then((ok) => { if (ok) void removeMsg(id); });
   };
 
   const offlineHouse = Boolean(peer?.isHouse && !peer.online);

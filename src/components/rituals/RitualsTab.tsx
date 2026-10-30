@@ -1,3 +1,4 @@
+import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
 import RefundModal from "@/components/refunds/RefundModal";
 import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, withdrawRefund, type RefundRequest } from "@/lib/refunds";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +25,8 @@ interface Props {
 }
 
 export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
+  const confirm = useConfirm();
+  const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const { currentUser } = useApp();
   const nav = useNavigate();
   const [items, setItems] = useState<RealRitual[] | null>(null);
@@ -112,7 +115,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
 
   const cancelMine = async (r: RealRitual) => {
     const res = mine[r.id];
-    if (!res || !window.confirm("Cancelar a sua vaga?")) return;
+    if (!res || !(await confirm({ title: "Cancelar a sua vaga?", confirmLabel: "Cancelar vaga", danger: true }))) return;
     const error = await cancelSeat(res.id);
     if (error) toast.error(error);
     else {
@@ -130,7 +133,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
   };
 
   const withdrawMine = async (id: string) => {
-    if (!window.confirm("Retirar o pedido de reembolso?")) return;
+    if (!(await confirm({ title: "Retirar o pedido de reembolso?", confirmLabel: "Retirar" }))) return;
     const error = await withdrawRefund(id);
     if (error) toast.error(error);
     else {
@@ -183,15 +186,17 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
           onAttendees={() => setAttendeesOf(r)}
           onPublish={() => void act(() => setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
           onUnpublish={() => void act(() => setRitualStatus(r.id, "rascunho"), "Ritual voltou para rascunho.")}
-          onStart={() => {
-            if (window.confirm(`Iniciar o ritual agora? As reservas serão encerradas e os ${r.taken} participantes serão avisados.`))
-              void lifecycleAct(() => startRitual(r.id), (n) => `Ritual iniciado. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
-          }}
-          onFinish={() => {
-            if (window.confirm("Concluir o ritual? Os participantes serão avisados."))
-              void lifecycleAct(() => finishRitual(r.id), (n) => `Ritual concluído. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`);
-          }}
-          onCancelRitual={() => { if (window.confirm("Cancelar este ritual? Ele deixa de aparecer para os clientes.")) void act(() => setRitualStatus(r.id, "cancelado"), "Ritual cancelado."); }}
+          onStart={() =>
+            ask({ title: "Iniciar o ritual agora?", message: `As reservas serão encerradas e os ${r.taken} participantes serão avisados.`, confirmLabel: "Iniciar" }, () =>
+              lifecycleAct(() => startRitual(r.id), (n) => `Ritual iniciado. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`)
+            )
+          }
+          onFinish={() =>
+            ask({ title: "Concluir o ritual?", message: "Os participantes serão avisados.", confirmLabel: "Concluir" }, () =>
+              lifecycleAct(() => finishRitual(r.id), (n) => `Ritual concluído. ${n} ${n === 1 ? "participante avisado" : "participantes avisados"}.`)
+            )
+          }
+          onCancelRitual={() => ask({ title: "Cancelar este ritual?", message: "Ele deixa de aparecer para os clientes.", confirmLabel: "Cancelar ritual", danger: true }, () => act(() => setRitualStatus(r.id, "cancelado"), "Ritual cancelado."))}
         />
       ))}
 
