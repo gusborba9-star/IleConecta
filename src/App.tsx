@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/layout/AppShell";
 import Feed from "@/pages/Feed";
 import Login from "@/pages/Login";
@@ -15,6 +15,9 @@ import Highlights from "@/pages/Highlights";
 import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
+import HouseMembers from "@/pages/HouseMembers";
+import Mensalidades from "@/pages/Mensalidades";
+import MemberInvite from "@/pages/MemberInvite";
 import Info from "@/pages/Info";
 import AdminShell from "@/pages/AdminShell";
 import HouseHome from "@/pages/HouseHome";
@@ -25,6 +28,7 @@ import { useApp } from "@/contexts/AppContext";
 
 function Protected({ children }: { children: JSX.Element }) {
   const { currentUser, authReady } = useApp();
+  const location = useLocation();
   if (!authReady) {
     return (
       <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground" role="status">
@@ -32,7 +36,7 @@ function Protected({ children }: { children: JSX.Element }) {
       </div>
     );
   }
-  if (!currentUser) return <Navigate to="/login" replace />;
+  if (!currentUser) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return children;
 }
 
@@ -74,6 +78,9 @@ export default function App() {
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
+        <Route path="/painel/membros" element={<HouseMembers />} />
+        <Route path="/mensalidades" element={<Mensalidades />} />
+        <Route path="/convite/:token" element={<MemberInvite />} />
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />
         <Route path="/pagamento/conta" element={<PaymentAccountReturn />} />
         <Route path="/sobre/:slug" element={<Info />} />
