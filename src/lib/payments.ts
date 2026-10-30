@@ -18,13 +18,14 @@ async function call(body: Record<string, unknown>): Promise<Reply> {
   return (data ?? {}) as Reply;
 }
 
-export type CheckoutTarget = { reservationId: string } | { orderId: string } | { paymentId: string };
+export type CheckoutTarget = { reservationId: string } | { orderId: string } | { paymentId: string } | { memberDueId: string };
 
 /** Abre o pagamento (Pix ou cartão) na página segura do Stripe. Devolve o erro, ou null se já redirecionou. */
 export async function goToCheckout(target: CheckoutTarget): Promise<string | null> {
   const body: Record<string, unknown> = { action: "checkout" };
   if ("reservationId" in target) body.reservation_id = target.reservationId;
   else if ("orderId" in target) body.order_id = target.orderId;
+  else if ("memberDueId" in target) body.member_due_id = target.memberDueId;
   else body.payment_id = target.paymentId;
   const r = await call(body);
   if (r.error) return r.error;

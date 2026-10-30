@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, Button, Card, Modal } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import { goToCheckout } from "@/lib/payments";
 import { dayLabel, fetchMemberships, leaveHouse, monthLabel, type Membership } from "@/lib/members";
 import { formatBRL } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ export default function Mensalidades() {
   const { currentUser, isRemoteAuth } = useApp();
   const [list, setList] = useState<Membership[] | null>(null);
   const [leaving, setLeaving] = useState<Membership | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const reload = useCallback(async () => setList(await fetchMemberships()), []);
   useEffect(() => {
@@ -20,6 +22,16 @@ export default function Mensalidades() {
 
   if (!currentUser || !isRemoteAuth) return null;
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+
+  const pay = async (dueId: string) => {
+    setPaying(dueId);
+    const err = await goToCheckout({ memberDueId: dueId });
+    if (err) {
+      setPaying(null);
+      toast.error(err);
+      await reload();
+    }
+  };
 
   const leave = async () => {
     const m = leaving;
@@ -66,6 +78,9 @@ export default function Mensalidades() {
                     {d.status === "dispensada" && <Badge tone="muted">Dispensada</Badge>}
                     {late && <Badge tone="danger">Atrasada</Badge>}
                     {d.status === "aberta" && !late && <Badge tone="gold">Em aberto</Badge>}
+                    {d.status === "aberta" && m.canPayApp && (
+                      <Button size="sm" disabled={paying === d.id} onClick={() => void pay(d.id)}>{paying === d.id ? "Abrindo…" : "Pagar com Pix"}</Button>
+                    )}
                   </li>
                 );
               })}
@@ -75,7 +90,7 @@ export default function Mensalidades() {
           {m.dues.some((d) => d.status === "aberta") && (
             <p className="text-sm text-muted-foreground">
               {m.canPayApp
-                ? "O pagamento pelo Ilê Conecta (Pix) chega em breve. Por enquanto, combine o pagamento direto com a casa."
+                ? "Pagando pelo Ilê Conecta (Pix), o mês é baixado na hora e você guarda o histórico. Se preferir, pague direto com a casa: ela marca o mês como pago."
                 : "Combine o pagamento direto com a casa. Se pagar em mãos, a casa marca o mês como pago."}
             </p>
           )}
