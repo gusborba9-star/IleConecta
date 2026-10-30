@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
 import { FIELD_PRESETS, MAX_FIELDS, RITUAL_MODES, fromIsoToBrt, validateRitual, type RitualFormInput, type RitualValue } from "@/lib/ritualsCore";
+import MoneyInput from "@/components/base/MoneyInput";
+import { centsToMasked } from "@/lib/moneyMask";
 import type { RealRitual } from "@/lib/rituals";
 
 interface Props {
@@ -30,7 +32,7 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
     setForm({
       title: initial.title,
       description: initial.description ?? "",
-      priceText: (initial.priceCents / 100).toFixed(2).replace(".", ","),
+      priceText: centsToMasked(initial.priceCents),
       seatsText: String(initial.seatsTotal),
       mode: initial.mode,
       date: when.date,
@@ -77,7 +79,7 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="rt-price">Valor por vaga (R$)</Label>
-            <Input id="rt-price" inputMode="decimal" value={form.priceText} onChange={(e) => set({ priceText: e.target.value })} placeholder="199,00" />
+            <MoneyInput id="rt-price" value={form.priceText} onValueChange={(v) => set({ priceText: v })} placeholder="199,00" />
             {err("price")}
           </div>
           <div>

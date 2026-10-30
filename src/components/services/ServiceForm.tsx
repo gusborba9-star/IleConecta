@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
 import { BOOKABLE_KINDS, SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
+import MoneyInput from "@/components/base/MoneyInput";
+import { centsToMasked } from "@/lib/moneyMask";
 import type { Service } from "@/lib/services";
 import { fetchPaymentMaxCents } from "@/lib/paymentLimit";
 import { MAX_PAYMENT_CENTS, MAX_STAGES, stagePlan, stagesNeeded } from "@/lib/paymentsCore";
@@ -37,7 +39,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
             customKind: initial.customKind ?? "",
             title: initial.title,
             description: initial.description ?? "",
-            priceText: (initial.priceCents / 100).toFixed(2).replace(".", ","),
+            priceText: centsToMasked(initial.priceCents),
             delivery: initial.delivery,
             stages: initial.stages,
             bookable: initial.bookable,
@@ -111,7 +113,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
 
         <div>
           <Label htmlFor="sv-price">Valor (R$)</Label>
-          <Input id="sv-price" inputMode="decimal" value={form.priceText} onChange={(e) => set({ priceText: e.target.value })} placeholder="200,00" />
+          <MoneyInput id="sv-price" value={form.priceText} onValueChange={(v) => set({ priceText: v })} placeholder="200,00" />
           {errors.price && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.price}</p>}
         </div>
 
