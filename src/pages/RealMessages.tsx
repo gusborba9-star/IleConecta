@@ -182,6 +182,12 @@ export default function RealMessages() {
     await refreshRef.current();
   };
 
+  /** Lixeira: pergunta e apaga na hora (funciona igual para texto, foto e PDF). */
+  const askDelete = (id: string) => {
+    setSelected(null);
+    if (window.confirm("Apagar esta mensagem para todos?")) void removeMsg(id);
+  };
+
   const offlineHouse = Boolean(peer?.isHouse && !peer.online);
 
   return (
@@ -234,8 +240,8 @@ export default function RealMessages() {
                   <div key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
                     <div className={cn("flex items-center gap-1 max-w-full", mine && "justify-end")}>
                     {mine && !deleted && (
-                      <button type="button" aria-label="Apagar mensagem" className="p-1.5 rounded-full text-muted-foreground hover:bg-muted" onClick={() => setSelected(selected === m.id ? null : m.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button type="button" aria-label="Apagar mensagem" className="relative z-10 p-3 -m-1 rounded-full text-muted-foreground hover:bg-muted active:bg-muted touch-manipulation" onClick={(e) => { e.stopPropagation(); askDelete(m.id); }}>
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                     <div
