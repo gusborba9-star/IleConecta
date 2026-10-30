@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
@@ -7,6 +8,7 @@ import { addAdmin, fetchAdmins, removeAdmin, type AdminRow } from "@/lib/adminUs
 
 /** Quem pode administrar a plataforma. Mantenha pelo menos duas contas de confiança. */
 export default function AdminUsers() {
+  const confirm = useConfirm();
   const { currentUser } = useApp();
   const { isAdmin } = usePlatformConfig();
   const [rows, setRows] = useState<AdminRow[]>([]);
@@ -35,7 +37,7 @@ export default function AdminUsers() {
   };
 
   const remove = async (row: AdminRow) => {
-    if (!window.confirm(`Remover o acesso de ${row.email}?`)) return;
+    if (!(await confirm({ title: "Remover administrador?", message: `${row.email} perde o acesso ao painel administrativo.`, confirmLabel: "Remover", danger: true }))) return;
     setBusy(true);
     const r = await removeAdmin(row.user_id);
     setBusy(false);

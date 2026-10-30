@@ -1,10 +1,12 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, Settings, Crown, Star, History, LifeBuoy, ShieldCheck, Users, Wallet } from "lucide-react";
+import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import NotificationBell from "@/components/layout/NotificationBell";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { Avatar, Button } from "@/components/base";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import MoreSheet from "@/components/layout/MoreSheet";
+import { navGroups } from "@/components/layout/navConfig";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -14,6 +16,27 @@ export default function TopBar() {
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const box = useRef<HTMLDivElement>(null);
+  const closeMenu = useCallback(() => setMenu(false), []);
+
+  // Fecha ao tocar fora ou apertar Esc (o menu antigo só fechava com o mouse, o que não funciona no celular).
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (e: Event) => {
+      const t = e.target as Element | null;
+      if (box.current?.contains(t) || t?.closest("[data-menu-keep]")) return;
+      setMenu(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
 
   return (
     <header className="sticky top-0 z-40 glass border-b border-border">
@@ -61,15 +84,12 @@ export default function TopBar() {
               <Bell className="h-5 w-5" />
             </Button>
           )}
-          <div className="relative">
-            <button onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-muted transition">
+          <div className="relative" ref={box}>
+            <button aria-label="Menu da conta" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-muted transition">
               <Avatar src={currentUser?.avatar} name={currentUser?.name} size={34} ring={currentUser?.type === "commercial" ? "gold" : "none"} />
             </button>
             {menu && (
-              <div
-                onMouseLeave={() => setMenu(false)}
-                className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-2xl shadow-altar overflow-hidden animate-fade-in"
-              >
+              <div className="hidden lg:block absolute right-0 mt-2 w-64 bg-card border border-border rounded-2xl shadow-altar overflow-hidden animate-fade-in">
                 <div className="p-4 border-b border-border">
                   <div className="font-semibold">{currentUser?.name}</div>
                   <div className="text-xs text-muted-foreground">
@@ -78,26 +98,20 @@ export default function TopBar() {
                 </div>
                 <div className="py-2">
                   <MenuItem onClick={() => { setMenu(false); nav(currentUser?.type === "commercial" ? `/casa/${currentUser.id}` : "/perfil"); }} icon={User} label="Meu perfil" />
-                  {currentUser?.type === "commercial" ? (
-                    <>
-                      {isRemoteAuth && <MenuItem onClick={() => { setMenu(false); nav("/painel/membros"); }} icon={Users} label="Membros" />}
-                      <MenuItem onClick={() => { setMenu(false); nav("/perfil"); }} icon={Settings} label="Perfil e assistente" />
-                      <MenuItem onClick={() => { setMenu(false); nav("/planos"); }} icon={Crown} label="Planos e upgrade" />
-                      <MenuItem onClick={() => { setMenu(false); nav("/impulsionar"); }} icon={Sparkles} label="Impulsionar" />
-                      <MenuItem onClick={() => { setMenu(false); nav("/destaques"); }} icon={Star} label="Destaques nos feeds" />
-                    </>
-                  ) : (
-                    <>
-                      <MenuItem onClick={() => { setMenu(false); nav("/atividade"); }} icon={History} label="Minha atividade" />
-                      {isRemoteAuth && <MenuItem onClick={() => { setMenu(false); nav("/mensalidades"); }} icon={Wallet} label="Mensalidades" />}
-                    </>
-                  )}
                   {isAdmin && <MenuItem onClick={() => { setMenu(false); nav("/admin"); }} icon={ShieldCheck} label="Painel administrativo" />}
-                  <MenuItem onClick={() => { setMenu(false); nav("/suporte"); }} icon={LifeBuoy} label="Suporte e informações" />
+                  <MenuItem onClick={() => { setMenu(false); nav("/suporte"); }} icon={LifeBuoy} label="Suporte" />
                   <MenuItem onClick={() => { logout(); nav("/login"); }} icon={LogOut} label="Sair" tone="danger" />
                 </div>
               </div>
             )}
+            <MoreSheet
+              open={menu}
+              onClose={closeMenu}
+              onLogout={() => { setMenu(false); logout(); nav("/login"); }}
+              groups={navGroups({ isHouse: currentUser?.type === "commercial", isRemoteAuth, userId: currentUser?.id })}
+              isAdmin={isAdmin}
+              user={currentUser ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar, isHouse: currentUser.type === "commercial" } : null}
+            />
           </div>
         </div>
       </div>
