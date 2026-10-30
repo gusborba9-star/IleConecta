@@ -38,7 +38,7 @@ export async function prepareFile(file: File): Promise<Prepared> {
   }
 }
 
-export async function uploadFile(bucket: "chat-files" | "report-evidence", folder: string, f: PreparedFile): Promise<UploadedFile | null> {
+export async function uploadFile(bucket: "chat-files" | "report-evidence" | "ritual-records", folder: string, f: PreparedFile): Promise<UploadedFile | null> {
   if (!supabase) return null;
   const path = `${folder}/${crypto.randomUUID()}.${EXT[f.type] ?? "bin"}`;
   const { error } = await supabase.storage.from(bucket).upload(path, f.blob, { contentType: f.type, upsert: false });
