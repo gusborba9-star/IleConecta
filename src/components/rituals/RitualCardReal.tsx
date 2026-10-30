@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Users } from "lucide-react";
 import { Badge, Button, Card, Progress } from "@/components/base";
+import RitualRecords from "@/components/rituals/RitualRecords";
 import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
 import { grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
@@ -120,6 +121,9 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           </>
         )}
       </div>
+      {(isOwn || mine?.status === "confirmada") && r.startedAt !== null && (
+        <RitualRecords eventId={r.id} isOwn={isOwn} started closedForNew={false} />
+      )}
     </Card>
   );
 }
