@@ -110,6 +110,15 @@ export async function fetchRefundContext(id: string): Promise<{ context: RefundC
   return error ? { context: null, error: error.message } : { context: data as RefundContext, error: null };
 }
 
+export interface CaseRecord { kind: "inicio" | "durante" | "fim"; caption: string | null; path: string; secret: boolean; at: string }
+
+/** Fotos que a casa publicou no ritual (só reservas de ritual; só pedidos em aberto; fica registrado). */
+export async function fetchCaseRecords(id: string): Promise<CaseRecord[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("admin_refund_records", { p_id: id });
+  return error || !Array.isArray(data) ? [] : (data as CaseRecord[]);
+}
+
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc(fn, args);
