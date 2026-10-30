@@ -151,7 +151,13 @@ async function ensurePixOn(account: string) {
 }
 
 async function checkout(userId: string, email: string | undefined, input: Obj) {
-  let q = admin.from("payments").select("id, gross_cents, fee_cents, status, reservation_id, order_id, stripe_account_id, provider_ref, stage_no");
+  if (input.member_due_id) {
+    // Mensalidade de membro: o banco confere que é do próprio membro e que está aberta; repetir devolve o mesmo pagamento.
+    const { data: pid, error: perr } = await admin.rpc("member_due_payment", { p_due: input.member_due_id, p_user: userId });
+    if (perr) return fail(perr.message, 400);
+    input = { payment_id: pid };
+  }
+  let q = admin.from("payments").select("id, gross_cents, fee_cents, status, reservation_id, order_id, member_due_id, stripe_account_id, provider_ref, stage_no");
   if (input.payment_id) q = q.eq("id", input.payment_id);
   else if (input.reservation_id) q = q.eq("reservation_id", input.reservation_id).eq("status", "pendente");
   else if (input.order_id) q = q.eq("order_id", input.order_id).eq("status", "pendente").order("stage_no", { ascending: true });
@@ -174,6 +180,12 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
     clientId = o?.client_id ?? null;
     houseId = o?.house_id ?? null;
     title = pay.stage_no && pay.stage_no > 0 ? `${o?.title ?? "Serviço"} — etapa ${pay.stage_no}` : (o?.title ?? "Serviço");
+  } else if (pay.member_due_id) {
+    const { data: d } = await admin.from("member_dues").select("house_id, month, status, house_members(user_id, left_at), houses(name)").eq("id", pay.member_due_id).single();
+    if (!d || d.status !== "aberta" || (d.house_members as Obj | null)?.left_at) return fail("Esta mensalidade já está resolvida.");
+    clientId = (d.house_members as Obj | null)?.user_id ?? null;
+    houseId = d.house_id;
+    title = `Mensalidade ${String(d.month).slice(5, 7)}/${String(d.month).slice(0, 4)} — ${(d.houses as Obj | null)?.name ?? "Casa"}`;
   }
   if (clientId !== userId) return fail("Este pagamento não é seu.", 403);
   if (!houseId) return fail("Casa não encontrada.", 404);
@@ -200,7 +212,7 @@ async function checkout(userId: string, email: string | undefined, input: Obj) {
 
 // Confere no Stripe se o pagamento foi feito (rede de segurança caso o aviso automático atrase ou falhe).
 async function syncPayment(userId: string, paymentId: string) {
-  const { data: pay } = await admin.from("payments").select("id, status, provider_ref, stripe_account_id, reservation_id, order_id").eq("id", paymentId).maybeSingle();
+  const { data: pay } = await admin.from("payments").select("id, status, provider_ref, stripe_account_id, reservation_id, order_id, member_due_id").eq("id", paymentId).maybeSingle();
   if (!pay) return fail("Pagamento não encontrado.", 404);
   let clientId: string | null = null;
   if (pay.reservation_id) {
@@ -209,14 +221,21 @@ async function syncPayment(userId: string, paymentId: string) {
   } else if (pay.order_id) {
     const { data: o } = await admin.from("service_orders").select("client_id").eq("id", pay.order_id).maybeSingle();
     clientId = o?.client_id ?? null;
+  } else if (pay.member_due_id) {
+    const { data: d } = await admin.from("member_dues").select("house_members(user_id)").eq("id", pay.member_due_id).maybeSingle();
+    clientId = (d?.house_members as Obj | null)?.user_id ?? null;
   }
   if (clientId !== userId) return fail("Este pagamento não é seu.", 403);
   if (pay.status !== "pendente" || !pay.provider_ref || !pay.stripe_account_id) return json({ status: pay.status });
   const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
   if (session.payment_status === "paid") {
-    const { error } = await admin.rpc("confirm_payment", { p_provider_ref: pay.provider_ref });
+    const { data: res, error } = await admin.rpc("confirm_payment", { p_provider_ref: pay.provider_ref });
     if (error) return fail(error.message, 500);
     await recordFee(session, pay.stripe_account_id);
+    if (res === "reembolso_pendente" && pay.member_due_id) {
+      await refundMemberPayment(pay.id);
+      return json({ status: "reembolsado" });
+    }
     return json({ status: "confirmado" });
   }
   return json({ status: pay.status, stripe_status: session.payment_status });
@@ -308,6 +327,24 @@ async function sweep(req: Request) {
   return json({ refunded, failed });
 }
 
+/** Devolve ao pagador, pelo Stripe, um pedido de reembolso já aprovado, e fecha o pedido. Devolve a mensagem de erro, ou null. */
+async function executeRefund(rr: { id: string; payment_id: string }): Promise<string | null> {
+  const { data: pay } = await admin.from("payments").select("id, provider_ref, stripe_account_id, status").eq("id", rr.payment_id).single();
+  if (!pay?.provider_ref || !pay.stripe_account_id) return "Pagamento sem registro no Stripe.";
+  const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
+  if (!session.payment_intent) return "Pagamento ainda não foi concluído no Stripe.";
+  try {
+    await stripe("/v1/refunds", {
+      form: { payment_intent: session.payment_intent, refund_application_fee: true, metadata: { refund_request_id: rr.id } },
+      account: pay.stripe_account_id, idem: `refund_${rr.id}`,
+    });
+  } catch (e) {
+    return String((e as Error).message);
+  }
+  const { error } = await admin.rpc("complete_refund", { p_id: rr.id });
+  return error ? error.message : null;
+}
+
 async function refund(userId: string, refundId: string) {
   const { data: rr } = await admin.from("refund_requests").select("id, status, payment_id, client_id").eq("id", refundId).maybeSingle();
   if (!rr) return fail("Pedido de reembolso não encontrado.", 404);
@@ -315,21 +352,21 @@ async function refund(userId: string, refundId: string) {
   if (rr.client_id !== userId && !isAdm) return fail("Não autorizado.", 403);
   if (rr.status === "reembolsado") return json({ ok: true, already: true });
   if (rr.status !== "aprovado") return fail("Este reembolso ainda não foi aprovado.");
-  const { data: pay } = await admin.from("payments").select("id, provider_ref, stripe_account_id, status").eq("id", rr.payment_id).single();
-  if (!pay?.provider_ref || !pay.stripe_account_id) return fail("Pagamento sem registro no Stripe.");
-  const session = await stripe(`/v1/checkout/sessions/${pay.provider_ref}`, { account: pay.stripe_account_id });
-  if (!session.payment_intent) return fail("Pagamento ainda não foi concluído no Stripe.");
+  const err = await executeRefund(rr);
+  return err ? fail(err) : json({ ok: true });
+}
+
+/** Pix de mensalidade que chegou depois de a casa já ter marcado o mês: devolve o valor inteiro, sem passar pelo painel. */
+async function refundMemberPayment(paymentId: string) {
   try {
-    await stripe("/v1/refunds", {
-      form: { payment_intent: session.payment_intent, refund_application_fee: true, metadata: { refund_request_id: rr.id } },
-      account: pay.stripe_account_id, idem: `refund_${rr.id}`,
-    });
+    const { data: rr } = await admin.from("refund_requests").select("id, payment_id").eq("payment_id", paymentId).eq("status", "aprovado").maybeSingle();
+    if (rr) {
+      const err = await executeRefund(rr);
+      if (err) console.error("member_refund_failed", paymentId, err);
+    }
   } catch (e) {
-    return fail(String((e as Error).message));
+    console.error("member_refund_failed", paymentId, String(e)); // fica "aprovado" no painel do admin para reenviar
   }
-  const { error } = await admin.rpc("complete_refund", { p_id: rr.id });
-  if (error) return fail(error.message, 500);
-  return json({ ok: true });
 }
 
 // ---------- avisos do Stripe ----------
@@ -361,12 +398,13 @@ async function handleEvent(event: Obj) {
   const obj = event.data?.object ?? {};
   if (kind === "paid_candidate") {
     if (obj.payment_status !== "paid") return; // Pix ainda aguardando: vem outro aviso quando pagar
-    const { data: pay } = await admin.from("payments").select("id, stripe_account_id").eq("provider_ref", obj.id).maybeSingle();
+    const { data: pay } = await admin.from("payments").select("id, stripe_account_id, member_due_id").eq("provider_ref", obj.id).maybeSingle();
     if (!pay) return;
     if (event.account && pay.stripe_account_id && event.account !== pay.stripe_account_id) throw new Error("Conta divergente.");
-    const { error } = await admin.rpc("confirm_payment", { p_provider_ref: obj.id });
+    const { data: res, error } = await admin.rpc("confirm_payment", { p_provider_ref: obj.id });
     if (error) throw new Error(error.message);
     await recordFee(obj, pay.stripe_account_id ?? event.account);
+    if (res === "reembolso_pendente" && pay.member_due_id) await refundMemberPayment(pay.id);
   } else if (kind === "failed") {
     await admin.from("payments").update({ status: "falhou" }).eq("provider_ref", obj.id).eq("status", "pendente");
   } else if (kind === "refunded") {

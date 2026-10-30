@@ -19,6 +19,14 @@ test("checkout: cobrança direta com a comissão da plataforma", () => {
   assert.equal(p.customer_email, "a@b.c");
 });
 
+test("checkout: mensalidade de membro leva a comissão de 4% e volta para as mensalidades", () => {
+  const p = buildCheckoutParams({ payment: { id: "p9", gross_cents: 10000, fee_cents: 400, member_due_id: "d1" }, title: "Mensalidade 11/2026", appUrl: "https://x.app", expiresAt: 1 });
+  assert.equal(p.metadata.kind, "mensalidade");
+  assert.equal(p.payment_intent_data.application_fee_amount, 400);
+  assert.match(p.success_url, /pagamento\/retorno\?p=p9&s=ok&k=m$/);
+  assert.match(p.cancel_url, /&s=cancel&k=m$/);
+});
+
 test("checkout: recusa valor ou comissão fora do normal", () => {
   assert.throws(() => buildCheckoutParams({ payment: { id: "p", gross_cents: 50, fee_cents: 0 }, title: "x", appUrl: "u", expiresAt: 1 }));
   assert.throws(() => buildCheckoutParams({ payment: { id: "p", gross_cents: 1000, fee_cents: 2000 }, title: "x", appUrl: "u", expiresAt: 1 }));
