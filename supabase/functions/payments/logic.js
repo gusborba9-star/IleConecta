@@ -20,7 +20,8 @@ export function buildCheckoutParams({ payment, title, appUrl, clientEmail, expir
   const fee = Number(payment.fee_cents);
   if (!Number.isInteger(gross) || gross < 100) throw new Error("Valor inválido.");
   if (!Number.isInteger(fee) || fee < 0 || fee > gross) throw new Error("Comissão inválida.");
-  const meta = { payment_id: String(payment.id), kind: payment.reservation_id ? "ritual" : "servico" };
+  const meta = { payment_id: String(payment.id), kind: payment.reservation_id ? "ritual" : payment.member_due_id ? "mensalidade" : "servico" };
+  const back = payment.member_due_id ? "&k=m" : ""; // a tela de retorno leva à lista de mensalidades
   const params = {
     mode: "payment",
     locale: "pt-BR",
@@ -30,8 +31,8 @@ export function buildCheckoutParams({ payment, title, appUrl, clientEmail, expir
     metadata: meta,
     // O Pix só é oferecido se o código expirar antes da sessão (a sessão dura 31 min).
     payment_method_options: { pix: { expires_after_seconds: 1800 } },
-    success_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=ok`,
-    cancel_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=cancel`,
+    success_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=ok${back}`,
+    cancel_url: `${appUrl}/pagamento/retorno?p=${payment.id}&s=cancel${back}`,
     expires_at: expiresAt,
   };
   if (clientEmail) params.customer_email = clientEmail;
