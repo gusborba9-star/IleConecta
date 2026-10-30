@@ -4,6 +4,7 @@ import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { Flame } from "lucide-react";
 import { toast } from "sonner";
+import Footer from "@/components/layout/Footer";
 const hero = "https://images.unsplash.com/photo-1503756234508-e32369269deb?w=1600&h=1200&fit=crop";
 
 export default function Login() {
@@ -41,7 +42,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen flex flex-col">
+    <div className="flex-1 grid lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <img src={hero} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -100,6 +102,8 @@ export default function Login() {
           )}
         </Card>
       </div>
+    </div>
+    <Footer />
     </div>
   );
 }

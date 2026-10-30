@@ -6,6 +6,8 @@ import { FIELD_PRESETS, MAX_FIELDS, RITUAL_MODES, fromIsoToBrt, validateRitual, 
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked } from "@/lib/moneyMask";
 import type { RealRitual } from "@/lib/rituals";
+import { useApp } from "@/contexts/AppContext";
+import { paymentsEnabledFor } from "@/lib/consents";
 
 interface Props {
   open: boolean;
@@ -22,6 +24,16 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
   const [form, setForm] = useState<RitualFormInput>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [saving, setSaving] = useState(false);
+  const { currentUser } = useApp();
+  const [payOn, setPayOn] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    void paymentsEnabledFor(currentUser?.id).then((v) => alive && setPayOn(v));
+    return () => {
+      alive = false;
+    };
+  }, [open, currentUser?.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -147,7 +159,11 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
           </div>
         </fieldset>
 
-        <p className="text-xs text-muted-foreground">O pagamento pela plataforma (Pix) chega em breve. Por enquanto, a vaga é reservada sem cobrança e vocês combinam o pagamento diretamente.</p>
+        <p className="text-xs text-muted-foreground">
+          {payOn
+            ? "O participante paga a vaga pelo app (Pix ou cartão) e a reserva é confirmada na hora. A plataforma cobra 15% e o Stripe cobra a tarifa dele."
+            : "O pagamento pelo app ainda não está ativo para a sua casa. Por enquanto, a vaga é reservada sem cobrança e vocês combinam o pagamento diretamente."}
+        </p>
 
         <div className="flex flex-wrap justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
