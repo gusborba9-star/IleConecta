@@ -48,9 +48,9 @@ export default function TopBar() {
 
         <nav className="flex-1 flex justify-center items-center gap-1">
           <TopIcon to="/" icon={Home} label="Início" />
-          <TopIcon to="/descobrir" icon={Compass} label="Descobrir" />
+          <TopIcon to="/descobrir" icon={Compass} label="Casas" />
           <TopIcon to="/rituais" icon={Sparkles} label="Rituais" />
-          <TopIcon to="/mensagens" icon={MessageCircle} label="Chat" />
+          <TopIcon to="/mensagens" icon={MessageCircle} label="Mensagens" />
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">

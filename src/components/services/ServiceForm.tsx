@@ -6,6 +6,8 @@ import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked } from "@/lib/moneyMask";
 import type { Service } from "@/lib/services";
 import { fetchPaymentMaxCents } from "@/lib/paymentLimit";
+import { useApp } from "@/contexts/AppContext";
+import { paymentsEnabledFor } from "@/lib/consents";
 import { MAX_PAYMENT_CENTS, MAX_STAGES, stagePlan, stagesNeeded } from "@/lib/paymentsCore";
 
 interface Props {
@@ -23,10 +25,18 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [saving, setSaving] = useState(false);
   const [cap, setCap] = useState(MAX_PAYMENT_CENTS);
+  const { currentUser } = useApp();
+  const [payOn, setPayOn] = useState(false);
 
   useEffect(() => {
-    if (open) void fetchPaymentMaxCents().then(setCap);
-  }, [open]);
+    if (!open) return;
+    let alive = true;
+    void fetchPaymentMaxCents().then((v) => alive && setCap(v));
+    void paymentsEnabledFor(currentUser?.id).then((v) => alive && setPayOn(v));
+    return () => {
+      alive = false;
+    };
+  }, [open, currentUser?.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -181,7 +191,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground">O pagamento é combinado diretamente com o cliente. O pagamento pela plataforma (Pix) chega em breve.</p>
+        <p className="text-xs text-muted-foreground">{payOn ? "O cliente paga pelo app (Pix ou cartão) e você recebe direto na sua conta. A plataforma cobra 4% e o Stripe cobra a tarifa dele." : "O pagamento pelo app ainda não está ativo para a sua casa. Por enquanto, ele é combinado diretamente com o cliente."}</p>
 
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/layout/AppShell";
+import PublicLayout from "@/components/layout/PublicLayout";
 import Feed from "@/pages/Feed";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -57,6 +58,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/sobre/:slug" element={<Info />} />
+      </Route>
       <Route
         element={
           <Protected>
@@ -83,7 +87,6 @@ export default function App() {
         <Route path="/convite/:token" element={<MemberInvite />} />
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />
         <Route path="/pagamento/conta" element={<PaymentAccountReturn />} />
-        <Route path="/sobre/:slug" element={<Info />} />
         <Route path="/admin" element={<AdminShell />} />
       </Route>
       <Route path="*" element={<NotFound />} />

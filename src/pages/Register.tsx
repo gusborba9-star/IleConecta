@@ -4,6 +4,7 @@ import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { Flame, User, Store } from "lucide-react";
 import { toast } from "sonner";
+import Footer from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import type { AccountType } from "@/types";
 import type { LucideIcon } from "lucide-react";
@@ -58,7 +59,8 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-11 w-11 rounded-2xl bg-primary text-primary-foreground grid place-items-center">
@@ -123,6 +125,8 @@ export default function Register() {
           </div>
         </form>
       </Card>
+    </div>
+    <Footer />
     </div>
   );
 }

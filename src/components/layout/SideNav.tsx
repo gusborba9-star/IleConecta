@@ -2,7 +2,6 @@ import { Link, NavLink } from "react-router-dom";
 import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Card } from "@/components/base";
-import { INFO_PAGES } from "@/content/institutional";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -25,7 +24,7 @@ export default function SideNav() {
           <NavItem to="/" icon={Home} label="Início" />
           {isHouse && isRemoteAuth && <NavItem to="/comunidade" icon={Newspaper} label="Comunidade" />}
           <NavItem to="/descobrir" icon={Compass} label="Casas" />
-          <NavItem to="/rituais" icon={Sparkles} label="Rituais & Trabalhos" />
+          <NavItem to="/rituais" icon={Sparkles} label="Rituais" />
           <NavItem to="/mensagens" icon={MessageCircle} label="Mensagens" />
           {isHouse ? (
             <>
@@ -57,15 +56,6 @@ export default function SideNav() {
       <Card className="p-3">
         <nav className="flex flex-col gap-0.5">
           <NavItem to="/suporte" icon={LifeBuoy} label="Suporte" />
-          {INFO_PAGES.map((p) => (
-            <NavLink
-              key={p.slug}
-              to={`/sobre/${p.slug}`}
-              className={({ isActive }) => cn("px-3 py-1.5 rounded-lg text-xs transition", isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground")}
-            >
-              {p.title}
-            </NavLink>
-          ))}
         </nav>
       </Card>
     </div>
