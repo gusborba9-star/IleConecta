@@ -43,3 +43,16 @@ test("mapa do site lista a página inicial e cada casa", async () => {
     assert.ok(!res.body.includes("BAD"));
   });
 });
+
+import { makeQr, qrSvg } from "../src/lib/qr.js";
+
+test("QR code: tamanho por versão, marcas de posição e recusa de texto longo", () => {
+  const m = makeQr("https://ile-conecta.vercel.app/c/gezebel-f84752");
+  assert.equal(m.length, 33); // versão 4
+  const finder = (x, y) => [0, 1, 2, 3, 4, 5, 6].every((i) => m[y][x + i] && m[y + 6][x + i] && m[y + i][x] && m[y + i][x + 6]) && !m[y + 1][x + 1] && m[y + 3][x + 3];
+  assert.ok(finder(0, 0) && finder(m.length - 7, 0) && finder(0, m.length - 7));
+  assert.deepEqual(makeQr("abc"), makeQr("abc")); // determinístico
+  assert.equal(makeQr("z".repeat(170)).length, 53); // versão 9 (vários blocos)
+  assert.throws(() => makeQr("z".repeat(300)));
+  assert.match(qrSvg("abc"), /^<svg [^>]*viewBox="0 0 29 29"/);
+});

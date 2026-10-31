@@ -9,6 +9,7 @@ import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
+import ShareHouseCard from "@/components/house/ShareHouseCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
@@ -104,6 +105,7 @@ export default function HouseHome() {
         ))}
       </section>
 
+      <ShareHouseCard />
       <ReferralCard />
       <AssistantReportCard />
       <QuietHoursCard />
