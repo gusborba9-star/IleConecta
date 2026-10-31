@@ -98,10 +98,11 @@ export default function PublicHousePage() {
           )}
           {house.tags.length > 0 && <div className="flex gap-1.5 mt-3 flex-wrap">{house.tags.map((t) => <Badge key={t} tone="muted">{t}</Badge>)}</div>}
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link to="/login" state={{ from: `/casa/${house.ownerId}` }}><Button>Entrar para conversar com a casa</Button></Link>
-            <Link to="/register"><Button variant="outline">Criar minha conta</Button></Link>
+            <Link to="/login" state={{ from: `/casa/${house.ownerId}` }}><Button>Falar com a casa</Button></Link>
+            <Link to="/register"><Button variant="outline">Cadastrar conta</Button></Link>
             <Button variant="ghost" onClick={() => void share()}><Share2 className="h-4 w-4" /> Compartilhar</Button>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">Para conversar com a casa, entre na sua conta ou cadastre-se (é grátis).</p>
         </div>
       </Card>
 
