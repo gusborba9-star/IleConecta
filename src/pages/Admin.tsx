@@ -23,6 +23,7 @@ import {
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
+import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -34,9 +35,10 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   payments: "Pagamentos pela plataforma (Stripe)",
   ritual_video: "Vídeo de 30 s nos registros do ritual (só casas Premium)",
   referral: "Indique e ganhe entre casas (prêmio em dias de destaque)",
+  reviews: "Avaliações de quem comprou (estrelas, resposta da casa)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
-const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe" };
+const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações" };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -149,7 +151,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
                   value={f.state}
                   onChange={(e) => setDraft({ ...draft, features: { ...draft.features, [k]: { ...f, state: e.target.value as FeatureState } } })}
                 >
-                  {FEATURE_STATES.filter((s) => k !== "referral" || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
+                  {FEATURE_STATES.filter((s) => (k !== "referral" && k !== "reviews") || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
                 </select>
               </div>
               {f.state === "beta" && (
@@ -196,6 +198,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </Card>
 
       <HousePlansCard />
+
+      <ReportedReviewsCard />
 
       <ChatReportsCard />
 
