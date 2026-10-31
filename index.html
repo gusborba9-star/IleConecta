@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#c94b1f" />
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem("ile:tema");
+          var dark = p === "escuro" || (p !== "claro" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) {
+            document.documentElement.classList.add("dark");
+            document.documentElement.style.colorScheme = "dark";
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", "#1b1411");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ilê Conecta — Rede das Casas de Religião Afro</title>
