@@ -41,6 +41,9 @@ export const SUGGESTIONS = [
 export const suggestionsFor = (tradition, taken = [], limit = 6) =>
   SUGGESTIONS.filter((s) => s.traditions.includes(tradition) && !taken.includes(s.title)).slice(0, limit);
 
+/** "Datas tradicionais": lista única, sem separar por tradição. A casa confere e ajusta; nenhuma casa fica de fora. */
+export const traditionalDates = (taken = [], limit = 8) => SUGGESTIONS.filter((s) => !taken.includes(s.title)).slice(0, limit);
+
 const pad = (n) => String(n).padStart(2, "0");
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 

@@ -10,6 +10,7 @@ export function kindDefaultVisibility(id: string): Visibility;
 export declare const MONTHS: string[];
 export declare const TRADITIONS: string[];
 export declare const SUGGESTIONS: CalendarSuggestion[];
+export function traditionalDates(taken?: string[], limit?: number): CalendarSuggestion[];
 export function suggestionsFor(tradition: string, taken?: string[], limit?: number): CalendarSuggestion[];
 export function parseDate(text: string): { y: number; m: number; d: number } | null;
 export function nextOccurrence(item: { date: string; yearly: boolean }, today: string): string | null;
