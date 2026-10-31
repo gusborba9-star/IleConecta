@@ -20,6 +20,7 @@ import HouseMembers from "@/pages/HouseMembers";
 import Mensalidades from "@/pages/Mensalidades";
 import MemberInvite from "@/pages/MemberInvite";
 import Info from "@/pages/Info";
+import PublicHousePage from "@/pages/PublicHouse";
 import AdminShell from "@/pages/AdminShell";
 import HouseHome from "@/pages/HouseHome";
 import PaymentReturn from "@/pages/PaymentReturn";
@@ -62,6 +63,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route element={<PublicLayout />}>
         <Route path="/sobre/:slug" element={<Info />} />
+        <Route path="/c/:slug" element={<PublicHousePage />} />
       </Route>
       <Route
         element={
