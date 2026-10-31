@@ -105,3 +105,27 @@ test("prévia: cada linha segue o interruptor correspondente", () => {
   const rows = previewRows(it, "2026-11-30");
   assert.deepEqual(rows.map((r) => [r.key, r.on]), [["vis_public", false], ["vis_followers", false], ["vis_house", true], ["vis_assistant", false]]);
 });
+
+import { formatTime } from "../src/lib/calendarCore.js";
+
+test("horário: 21:00 vira 21h e 20:30 vira 20h30", () => {
+  assert.equal(formatTime("21:00"), "21h");
+  assert.equal(formatTime("20:30"), "20h30");
+  assert.equal(formatTime("09:05:00"), "9h05");
+  assert.equal(formatTime(""), "");
+  assert.equal(formatTime(null), "");
+  assert.equal(formatTime("24:00"), "");
+});
+
+test("prévia mostra o horário quando existe", () => {
+  const it = { title: "Gira de Quimbanda", date: "2026-11-15", time: "21:00", yearly: false, note: "Roupa preta." };
+  assert.equal(whenText(it, "2026-10-31"), "15 de novembro de 2026, às 21h · em 15 dias");
+  assert.equal(assistantExample(it, "2026-10-31"), "Gira de Quimbanda será em 15 de novembro de 2026, às 21h (em 15 dias). Roupa preta.");
+  assert.equal(whenText({ ...it, time: "" }, "2026-10-31"), "15 de novembro de 2026 · em 15 dias");
+});
+
+test("tipos na tela: Cerimônia, Encontro, Festividade e Outra, com exemplos", () => {
+  assert.deepEqual(KINDS.map((k) => k.label), ["Cerimônia", "Encontro", "Festividade", "Outra"]);
+  assert.match(KINDS[0].hint, /gira/);
+  assert.match(KINDS[1].hint, /obrigação/);
+});

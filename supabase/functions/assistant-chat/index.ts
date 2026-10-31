@@ -13,6 +13,7 @@ import {
   finalizeReply,
   featureEnabled,
   monthStartISO,
+  normalizeAgenda,
   planLimits,
   toChatMessages,
   windowStartISO,
@@ -134,6 +135,17 @@ Deno.serve(async (req) => {
       .eq("house_id", house.id).eq("active", true).order("created_at", { ascending: true }).limit(30),
   ]);
 
+  // Agenda da casa: só as datas que a casa liberou para a assistente, e só com o calendário ligado no painel admin.
+  // Qualquer falha aqui (ex.: migração ainda não aplicada) apenas deixa a agenda de fora; o atendimento segue normal.
+  let agenda: string[] | null = null;
+  if ((featRow?.value as { calendar?: { state?: string } } | null)?.calendar?.state === "on") {
+    const { data: agendaRows, error: agendaErr } = await admin.from("house_calendar_items")
+      .select("title, kind, tradition, on_date, on_time, yearly, note, vis_assistant")
+      .eq("house_id", house.id).eq("vis_assistant", true).limit(80);
+    if (agendaErr) console.error("agenda indisponível:", agendaErr.message);
+    else agenda = normalizeAgenda(agendaRows ?? []);
+  }
+
   // Vagas restantes vêm do banco (nunca da IA).
   const eventsWithSeats = await Promise.all((events ?? []).map(async (e) => {
     const { data: taken } = await admin.rpc("event_taken", { p_event: e.id });
@@ -148,7 +160,7 @@ Deno.serve(async (req) => {
   }));
 
   const system = buildSystemPrompt({
-    house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [],
+    house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 

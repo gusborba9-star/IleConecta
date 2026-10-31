@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
-import { previewRows } from "@/lib/calendarPreview";
+import { previewRows, whenText } from "@/lib/calendarPreview";
 import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { deleteCalendarItem, saveCalendarItem, type CalendarDraft, type CalendarItem } from "@/lib/calendar";
 import {
-  KINDS, SUGGESTIONS, VISIBILITY, daysUntil, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, traditionalDates, todayLocal, upcoming, whenLabel,
+  KINDS, SUGGESTIONS, VISIBILITY, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, traditionalDates, todayLocal, upcoming,
   type CalendarKind,
 } from "@/lib/calendarCore";
 
-const emptyDraft = (): CalendarDraft => ({ title: "", tradition: "", kind: "celebracao", date: "", yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
+const emptyDraft = (): CalendarDraft => ({ title: "", tradition: "", kind: "gira", date: "", time: "", yearly: true, note: "", ...kindDefaultVisibility("gira") });
 
 /** Calendário da casa. A casa cadastra, edita e decide, data a data, quem vê: público, seguidores, a própria casa e a assistente. */
 export default function CalendarTab({ items, isOwn, onChanged }: { items: CalendarItem[]; isOwn: boolean; onChanged: () => void }) {
@@ -30,7 +30,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
     const mm = String(s.month).padStart(2, "0");
     const dd = String(s.day).padStart(2, "0");
     const next = nextOccurrence({ date: `2000-${mm}-${dd}`, yearly: true }, today) ?? `${today.slice(0, 4)}-${mm}-${dd}`;
-    setDraft({ title: s.title, tradition: "", kind: "celebracao", date: next, yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
+    setDraft({ title: s.title, tradition: "", kind: "celebracao", date: next, time: "", yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -63,7 +63,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           {isOwn
-            ? "Giras, obrigações e festividades da sua casa, com você no comando de quem vê cada uma."
+            ? "Centralize em um só lugar as cerimônias, encontros, festividades e tudo o que marca a vida da sua casa. Você controla, data a data, quem vê: o público, os seguidores ou só os membros da casa. E a Assistente Virtual atende quem procura a sua casa com tudo o que você registrar na agenda (dia, horário e orientações), a qualquer hora."
             : "Datas que a casa divulga."}
         </p>
       </Card>
@@ -73,18 +73,22 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="cal-title">Nome da data</Label>
-              <Input id="cal-title" maxLength={80} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="ex.: Festa de Xangô, obrigação anual da casa…" />
+              <Input id="cal-title" maxLength={80} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="ex.: Gira de Quimbanda, Festa de Xangô, reunião de estudo…" />
             </div>
             <div>
               <Label htmlFor="cal-kind">Tipo</Label>
               <select id="cal-kind" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.kind}
                 onChange={(e) => { const kind = e.target.value as CalendarKind; setDraft({ ...draft, kind, ...(draft.id ? {} : kindDefaultVisibility(kind)) }); }}>
-                {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
+                {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}{k.hint ? ` (${k.hint})` : ""}</option>)}
               </select>
             </div>
             <div>
               <Label htmlFor="cal-date">Data</Label>
               <Input id="cal-date" type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+            </div>
+            <div>
+              <Label htmlFor="cal-time">Horário (opcional)</Label>
+              <Input id="cal-time" type="time" value={draft.time} onChange={(e) => setDraft({ ...draft, time: e.target.value })} />
             </div>
             <div>
               <Label htmlFor="cal-trad">Tradição ou linha da casa (opcional)</Label>
@@ -96,7 +100,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
             </label>
             <div className="sm:col-span-2">
               <Label htmlFor="cal-note">Observação (opcional)</Label>
-              <Textarea id="cal-note" rows={2} maxLength={300} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Horário, roupa branca, o que levar…" />
+              <Textarea id="cal-note" rows={2} maxLength={300} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Orientações: roupa, o que levar, como chegar…" />
             </div>
           </div>
           <fieldset className="space-y-2">
@@ -152,19 +156,16 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
       )}
 
       {list.length === 0 ? (
-        <Card className="p-6 text-sm text-muted-foreground">{isOwn ? "Sua agenda está vazia. Marque a primeira gira ou festividade." : "A casa ainda não divulgou datas."}</Card>
+        <Card className="p-6 text-sm text-muted-foreground">{isOwn ? "Sua agenda está vazia. Marque a primeira cerimônia, encontro ou festividade." : "A casa ainda não divulgou datas."}</Card>
       ) : (
         <div className="space-y-2">
           {list.map((i) => {
-            const days = i.next ? daysUntil(i.next, today) : null;
             return (
               <Card key={i.id} className={`p-4 ${i.next ? "" : "opacity-60"}`}>
                 <div className="flex flex-wrap items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold break-words">{i.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {i.next ? `${formatDay(i.next, !i.yearly)}${days !== null && days <= 60 ? ` · ${whenLabel(days)}` : ""}` : `${formatDay(i.date, true)} (já passou)`}
-                    </div>
+                    <div className="text-sm text-muted-foreground">{whenText(i, today)}</div>
                     {i.note && <p className="text-sm mt-1">{i.note}</p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
@@ -176,7 +177,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
                 </div>
                 {isOwn && (
                   <div className="mt-2 flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => { setDraft({ id: i.id, title: i.title, tradition: i.tradition ?? "", kind: i.kind, date: i.date, yearly: i.yearly, note: i.note ?? "", vis_public: i.vis_public, vis_followers: i.vis_followers, vis_house: i.vis_house, vis_assistant: i.vis_assistant }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Pencil className="h-4 w-4" /> Editar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setDraft({ id: i.id, title: i.title, tradition: i.tradition ?? "", kind: i.kind, date: i.date, time: i.time ?? "", yearly: i.yearly, note: i.note ?? "", vis_public: i.vis_public, vis_followers: i.vis_followers, vis_house: i.vis_house, vis_assistant: i.vis_assistant }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Pencil className="h-4 w-4" /> Editar</Button>
                     <Button size="sm" variant="ghost" onClick={() => void remove(i)}><Trash2 className="h-4 w-4" /> Remover</Button>
                   </div>
                 )}

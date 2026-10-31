@@ -8,6 +8,7 @@ Como o Ilê Conecta fala com as casas e com os clientes. Vale para toda tela, e-
 3. **A ação principal sempre à vista.** O texto serve à ação, não o contrário.
 4. **Acolher sem fingir tradição.** O app atende várias tradições: o tom é caloroso e respeitoso, sem tomar o vocabulário de uma só.
 5. **O que é automático diz que é automático.** A Assistente é "a Assistente da sua casa", e o cliente sabe que é virtual.
+6. **Escrever o que a pessoa passa a fazer e o que ela ganha, nunca o que a ferramenta "pode" fazer.** Verbo de ação, resultado concreto, e só prometer o que o sistema cumpre.
 
 ## Vocabulário
 | Use | Evite como texto fixo |
