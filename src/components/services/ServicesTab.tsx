@@ -27,8 +27,8 @@ interface Props {
   startNew?: boolean;
   /** Quando a casa tem assistente, leva o cliente até ela. */
   onAskAssistant?: () => void;
-  /** Com as avaliações ligadas: leva o cliente à aba de avaliações da casa. */
-  onReview?: () => void;
+  /** Com as avaliações ligadas: leva o cliente à avaliação daquele pedido. */
+  onReview?: (orderId: string) => void;
 }
 
 export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, onReview }: Props) {
@@ -188,7 +188,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
                   <div className="flex flex-wrap gap-2">
                     {o.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ orderId: o.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
                     {stageOpen(o) && <Button size="sm" onClick={() => void payStage(o.id)}>Pagar próxima etapa</Button>}
-                    {onReview && o.status === "concluido" && reviewable.has(o.id) && <Button size="sm" onClick={onReview}>Avaliar</Button>}
+                    {onReview && o.status === "concluido" && reviewable.has(o.id) && <Button size="sm" onClick={() => onReview(o.id)}>Avaliar</Button>}
                     {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
                     {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => ask({ title: "Retirar o relato?", confirmLabel: "Retirar" }, () => orderAct(() => withdrawRefund(refund.id), "Pedido retirado."))}>Retirar relato</Button>}
                   </div>

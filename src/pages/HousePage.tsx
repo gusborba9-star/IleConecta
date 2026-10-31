@@ -34,6 +34,7 @@ export default function HousePage() {
   const [following, setFollowingState] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [followDelta, setFollowDelta] = useState(0);
+  const [reviewRef, setReviewRef] = useState<string | null>(null);
   const realHouse = isRemoteAuth && isRemoteId(id ?? "");
   useEffect(() => {
     setFollowingState(false);
@@ -152,7 +153,7 @@ export default function HousePage() {
                 key={t}
                 role="tab"
                 aria-selected={tab === t}
-                onClick={() => setTab(t)}
+                onClick={() => { if (t !== "avaliacoes") setReviewRef(null); setTab(t); }}
                 className={cn(
                   "px-4 py-3 text-sm font-semibold transition -mb-px shrink-0",
                   tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
@@ -178,8 +179,8 @@ export default function HousePage() {
         {tab === "rituais" && !hasServices && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
-        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} onReview={hasReviews && !isOwn && currentUser?.type === "personal" ? () => { setTab("avaliacoes"); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined} />}
-        {tab === "avaliacoes" && hasReviews && <ReviewsTab ownerId={house.id} isOwn={isOwn} canReview={currentUser?.type === "personal"} />}
+        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} onReview={hasReviews && !isOwn && currentUser?.type === "personal" ? (orderId) => { setReviewRef(orderId); setTab("avaliacoes"); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined} />}
+        {tab === "avaliacoes" && hasReviews && <ReviewsTab ownerId={house.id} isOwn={isOwn} canReview={currentUser?.type === "personal"} onlyRef={reviewRef} onShowAll={() => setReviewRef(null)} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
           <Card className="p-6 space-y-4">
