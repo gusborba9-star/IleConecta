@@ -178,7 +178,7 @@ export default function HousePage() {
         {tab === "rituais" && !hasServices && houseRituals.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
-        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} />}
+        {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} onReview={hasReviews && !isOwn && currentUser?.type === "personal" ? () => { setTab("avaliacoes"); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined} />}
         {tab === "avaliacoes" && hasReviews && <ReviewsTab ownerId={house.id} isOwn={isOwn} canReview={currentUser?.type === "personal"} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (

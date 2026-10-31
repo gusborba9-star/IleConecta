@@ -16,6 +16,7 @@ import {
 } from "@/lib/serviceOrders";
 import { useApp } from "@/contexts/AppContext";
 import { goToCheckout } from "@/lib/payments";
+import { fetchReviewable } from "@/lib/reviews";
 import { stagePlan } from "@/lib/paymentsCore";
 import { deliveryLabel, formatCents, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
 
@@ -26,9 +27,11 @@ interface Props {
   startNew?: boolean;
   /** Quando a casa tem assistente, leva o cliente até ela. */
   onAskAssistant?: () => void;
+  /** Com as avaliações ligadas: leva o cliente à aba de avaliações da casa. */
+  onReview?: () => void;
 }
 
-export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
+export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, onReview }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const nav = useNavigate();
@@ -41,6 +44,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
   const [paid, setPaid] = useState<Set<string>>(new Set());
   const [stageDone, setStageDone] = useState<Map<string, number>>(new Map());
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
+  const [reviewable, setReviewable] = useState<Set<string>>(new Set());
+  const wantsReview = Boolean(onReview);
   const { currentUser } = useApp();
 
   const load = useCallback(async () => {
@@ -51,8 +56,9 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
     if (!isOwn && currentUser?.id) {
       setPaid(await fetchMyPaidSources());
       setRefunds(await fetchMyRefunds(currentUser.id));
+      if (wantsReview) setReviewable(new Set((await fetchReviewable()).filter((r) => r.kind === "servico").map((r) => r.ref)));
     }
-  }, [ownerId, isOwn, currentUser?.id]);
+  }, [ownerId, isOwn, currentUser?.id, wantsReview]);
   const loadRef = useRef(load);
   loadRef.current = load;
   useEffect(() => {
@@ -182,6 +188,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant }
                   <div className="flex flex-wrap gap-2">
                     {o.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ orderId: o.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
                     {stageOpen(o) && <Button size="sm" onClick={() => void payStage(o.id)}>Pagar próxima etapa</Button>}
+                    {onReview && o.status === "concluido" && reviewable.has(o.id) && <Button size="sm" onClick={onReview}>Avaliar</Button>}
                     {canAsk && <Button size="sm" variant="outline" onClick={() => setRefunding({ kind: "pedido", id: o.id, title: o.title })}>Relatar problema com a entrega</Button>}
                     {refund?.status === "pendente" && <Button size="sm" variant="ghost" onClick={() => ask({ title: "Retirar o relato?", confirmLabel: "Retirar" }, () => orderAct(() => withdrawRefund(refund.id), "Pedido retirado."))}>Retirar relato</Button>}
                   </div>
