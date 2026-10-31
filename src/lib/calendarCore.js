@@ -12,7 +12,7 @@ export const KINDS = [
 export const kindLabel = (id) => KINDS.find((k) => k.id === id)?.label ?? "Outra";
 export const kindDefaultPublic = (id) => KINDS.find((k) => k.id === id)?.defaultPublic ?? false;
 
-/** Tradções com sugestões. Cada casa observa datas diferentes: o catálogo é só um ponto de partida e sempre editável. */
+/** Tradições com sugestões. Cada casa observa datas diferentes: o catálogo é só um ponto de partida e sempre editável. */
 export const TRADITIONS = ["Umbanda", "Candomblé", "Quimbanda"];
 
 /**
