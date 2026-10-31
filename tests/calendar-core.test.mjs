@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { isFeatureOn, sanitizeConfig } from "../src/lib/platformConfigCore.js";
-import { KINDS, kindDefaultPublic, SUGGESTIONS, daysUntil, formatDay, nextOccurrence, parseDate, suggestionsFor, upcoming, whenLabel, todayLocal } from "../src/lib/calendarCore.js";
+import { KINDS, VISIBILITY, kindDefaultVisibility, SUGGESTIONS, daysUntil, formatDay, nextOccurrence, parseDate, suggestionsFor, upcoming, whenLabel, todayLocal } from "../src/lib/calendarCore.js";
 
 test("datas inválidas são recusadas", () => {
   assert.equal(parseDate("2026-02-30"), null);
@@ -64,11 +64,16 @@ test("sugestões já cadastradas não se repetem e respeitam o limite", () => {
   assert.equal(suggestionsFor("Umbanda", [], 2).length, 2);
 });
 
-test("tipos: obrigação nasce interna, celebração e gira nascem públicas", () => {
+test("tipos: obrigação nasce só interna; celebração e gira nascem abertas; a casa pode mudar tudo", () => {
   assert.equal(KINDS.length, 4);
-  assert.equal(kindDefaultPublic("obrigacao"), false);
-  assert.equal(kindDefaultPublic("celebracao"), true);
-  assert.equal(kindDefaultPublic("gira"), true);
+  assert.equal(VISIBILITY.length, 4);
+  assert.deepEqual(kindDefaultVisibility("obrigacao"), { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false });
+  assert.equal(kindDefaultVisibility("celebracao").vis_public, true);
+  assert.equal(kindDefaultVisibility("gira").vis_assistant, true);
+  assert.equal(kindDefaultVisibility("desconhecido").vis_public, false);
+  const v = kindDefaultVisibility("gira");
+  v.vis_public = false; // copia: não altera o padrão
+  assert.equal(kindDefaultVisibility("gira").vis_public, true);
 });
 
 test("calendário religioso: desligado por padrão e só liga com 'Ligado para todos'", () => {

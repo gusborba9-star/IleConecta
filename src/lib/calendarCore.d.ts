@@ -1,12 +1,15 @@
 export interface CalendarSuggestion { key: string; title: string; month: number; day: number; traditions: string[] }
 export interface CalendarDated { title: string; date: string; yearly: boolean }
 export type CalendarKind = "celebracao" | "obrigacao" | "gira" | "outro";
-export declare const KINDS: { id: CalendarKind; label: string; defaultPublic: boolean }[];
+export type VisKey = "vis_public" | "vis_followers" | "vis_house" | "vis_assistant";
+export type Visibility = Record<VisKey, boolean>;
+export const VISIBILITY: { key: VisKey; label: string; hint: string }[];
+export const KINDS: { id: CalendarKind; label: string; vis: Visibility }[];
 export function kindLabel(id: string): string;
-export function kindDefaultPublic(id: string): boolean;
-export declare const MONTHS: string[];
-export declare const TRADITIONS: string[];
-export declare const SUGGESTIONS: CalendarSuggestion[];
+export function kindDefaultVisibility(id: string): Visibility;
+export const MONTHS: string[];
+export const TRADITIONS: string[];
+export const SUGGESTIONS: CalendarSuggestion[];
 export function suggestionsFor(tradition: string, taken?: string[], limit?: number): CalendarSuggestion[];
 export function parseDate(text: string): { y: number; m: number; d: number } | null;
 export function nextOccurrence(item: { date: string; yearly: boolean }, today: string): string | null;

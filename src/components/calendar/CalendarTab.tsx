@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { deleteCalendarItem, saveCalendarItem, type CalendarDraft, type CalendarItem } from "@/lib/calendar";
 import {
-  KINDS, SUGGESTIONS, TRADITIONS, daysUntil, formatDay, kindDefaultPublic, kindLabel, nextOccurrence, suggestionsFor, todayLocal, upcoming, whenLabel,
+  KINDS, SUGGESTIONS, TRADITIONS, VISIBILITY, daysUntil, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, suggestionsFor, todayLocal, upcoming, whenLabel,
   type CalendarKind,
 } from "@/lib/calendarCore";
 
-const emptyDraft = (): CalendarDraft => ({ title: "", tradition: "", kind: "celebracao", date: "", yearly: true, note: "", public: true });
+const emptyDraft = (): CalendarDraft => ({ title: "", tradition: "", kind: "celebracao", date: "", yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
 
-/** Calendário da casa. A casa cadastra, edita e decide, data a data, se fica só interna ou pública. Quem visita vê só as públicas. */
+/** Calendário da casa. A casa cadastra, edita e decide, data a data, quem vê: público, seguidores, a própria casa e a assistente. */
 export default function CalendarTab({ items, isOwn, onChanged }: { items: CalendarItem[]; isOwn: boolean; onChanged: () => void }) {
   const confirm = useConfirm();
   const [draft, setDraft] = useState<CalendarDraft | null>(null);
@@ -30,7 +30,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
     const mm = String(s.month).padStart(2, "0");
     const dd = String(s.day).padStart(2, "0");
     const next = nextOccurrence({ date: `2000-${mm}-${dd}`, yearly: true }, today) ?? `${today.slice(0, 4)}-${mm}-${dd}`;
-    setDraft({ title: s.title, tradition: trad, kind: "celebracao", date: next, yearly: true, note: "", public: true });
+    setDraft({ title: s.title, tradition: trad, kind: "celebracao", date: next, yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -63,8 +63,8 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           {isOwn
-            ? "Cada casa observa as suas datas. Cadastre celebrações, obrigações e giras e escolha, uma a uma, se ficam só para a casa ou aparecem para o público."
-            : "Celebrações e giras que a casa divulga."}
+            ? "Cada casa observa as suas datas. Cadastre celebrações, obrigações e giras e escolha, uma a uma, quem vê: público, seguidores, a casa e a assistente."
+            : "Datas que a casa divulga."}
         </p>
       </Card>
 
@@ -78,7 +78,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
             <div>
               <Label htmlFor="cal-kind">Tipo</Label>
               <select id="cal-kind" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={draft.kind}
-                onChange={(e) => { const kind = e.target.value as CalendarKind; setDraft({ ...draft, kind, public: draft.id ? draft.public : kindDefaultPublic(kind) }); }}>
+                onChange={(e) => { const kind = e.target.value as CalendarKind; setDraft({ ...draft, kind, ...(draft.id ? {} : kindDefaultVisibility(kind)) }); }}>
                 {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
               </select>
             </div>
@@ -100,16 +100,14 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
               <Textarea id="cal-note" rows={2} maxLength={300} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Horário, roupa branca, o que levar…" />
             </div>
           </div>
-          <fieldset className="space-y-1">
+          <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Quem vê esta data</legend>
-            <label className="flex items-start gap-2 text-sm">
-              <input type="radio" className="mt-1" name="cal-vis" checked={!draft.public} onChange={() => setDraft({ ...draft, public: false })} />
-              <span><strong>Só a casa</strong> <span className="text-muted-foreground">· fica no calendário interno, ninguém mais vê.</span></span>
-            </label>
-            <label className="flex items-start gap-2 text-sm">
-              <input type="radio" className="mt-1" name="cal-vis" checked={draft.public} onChange={() => setDraft({ ...draft, public: true })} />
-              <span><strong>Pública</strong> <span className="text-muted-foreground">· aparece na página da casa para todos e continua no seu calendário.</span></span>
-            </label>
+            {VISIBILITY.map((v) => (
+              <label key={v.key} className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-1" checked={draft[v.key]} onChange={(e) => setDraft({ ...draft, [v.key]: e.target.checked })} />
+                <span><strong>{v.label}</strong> <span className="text-muted-foreground">· {v.hint}</span></span>
+              </label>
+            ))}
           </fieldset>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={busy} onClick={() => void save()}>{busy ? "Salvando…" : draft.id ? "Salvar alterações" : "Adicionar ao calendário"}</Button>
@@ -168,14 +166,13 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
                   <div className="flex flex-wrap items-center gap-1">
                     <Badge tone="muted">{kindLabel(i.kind)}</Badge>
                     {i.tradition && <Badge tone="muted">{i.tradition}</Badge>}
-                    {isOwn && (i.public
-                      ? <Badge tone="primary"><Eye className="h-3 w-3 mr-1 inline" />Pública</Badge>
-                      : <Badge tone="muted"><EyeOff className="h-3 w-3 mr-1 inline" />Só a casa</Badge>)}
+                    {isOwn && VISIBILITY.filter((v) => i[v.key]).map((v) => <Badge key={v.key} tone={v.key === "vis_house" ? "muted" : "primary"}>{v.label}</Badge>)}
+                    {isOwn && VISIBILITY.every((v) => !i[v.key]) && <Badge tone="muted">Oculta</Badge>}
                   </div>
                 </div>
                 {isOwn && (
                   <div className="mt-2 flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => { setDraft({ id: i.id, title: i.title, tradition: i.tradition ?? "", kind: i.kind, date: i.date, yearly: i.yearly, note: i.note ?? "", public: i.public }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Pencil className="h-4 w-4" /> Editar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setDraft({ id: i.id, title: i.title, tradition: i.tradition ?? "", kind: i.kind, date: i.date, yearly: i.yearly, note: i.note ?? "", vis_public: i.vis_public, vis_followers: i.vis_followers, vis_house: i.vis_house, vis_assistant: i.vis_assistant }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Pencil className="h-4 w-4" /> Editar</Button>
                     <Button size="sm" variant="ghost" onClick={() => void remove(i)}><Trash2 className="h-4 w-4" /> Remover</Button>
                   </div>
                 )}
