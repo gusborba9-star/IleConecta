@@ -17,7 +17,6 @@ export function LogoMark({ size = 36, ring = false, className }: { size?: number
           {[-45, 45, 135, 225].map((a) => (
             <g key={a} transform={`translate(256 256) rotate(${a})`}>
               <path d={`M0 0C${158 * 0.22} ${-w} ${158 * 0.72} ${-w * 0.85} 158 0C${158 * 0.72} ${w * 0.85} ${158 * 0.22} ${w} 0 0Z`} />
-              <path d="M0 0H135.9" strokeWidth={sw * 0.5} />
             </g>
           ))}
         </g>
