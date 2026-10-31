@@ -6,12 +6,15 @@ import { Avatar, Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchPublicHouse, publicHouseUrl, type PublicHouse } from "@/lib/publicHouse";
 import { formatCents } from "@/lib/servicesCore";
+import { fetchHouseCalendar, type CalendarItem } from "@/lib/calendar";
+import { daysUntil, formatDay, kindLabel, todayLocal, upcoming, whenLabel } from "@/lib/calendarCore";
 
 /** Página aberta a qualquer pessoa (sem login): é o que o link e o QR code da casa mostram. */
 export default function PublicHousePage() {
   const { slug = "" } = useParams();
   const { currentUser } = useApp();
   const [house, setHouse] = useState<PublicHouse | null | undefined>(undefined);
+  const [dates, setDates] = useState<CalendarItem[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -21,6 +24,16 @@ export default function PublicHousePage() {
       alive = false;
     };
   }, [slug]);
+
+  // Datas públicas (só aparecem se o calendário estiver ligado e a casa tiver marcado como públicas).
+  useEffect(() => {
+    if (!house) return;
+    let alive = true;
+    void fetchHouseCalendar(house.ownerId).then((c) => alive && setDates(c.items));
+    return () => {
+      alive = false;
+    };
+  }, [house]);
 
   useEffect(() => {
     if (!house) return;
@@ -91,6 +104,31 @@ export default function PublicHousePage() {
           </div>
         </div>
       </Card>
+
+      {(() => {
+        const today = todayLocal();
+        const next = upcoming(dates, today).filter((d) => d.next).slice(0, 5);
+        if (next.length === 0) return null;
+        return (
+          <Card className="p-5">
+            <h2 className="font-display font-bold text-lg mb-3">Próximas datas da casa</h2>
+            <ul className="divide-y divide-border">
+              {next.map((d) => {
+                const days = d.next ? daysUntil(d.next, today) : null;
+                return (
+                  <li key={d.id} className="py-3 flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-[200px] flex-1">
+                      <div className="font-semibold">{d.title} <Badge tone="muted" className="ml-1">{kindLabel(d.kind)}</Badge></div>
+                      {d.note && <p className="text-sm text-muted-foreground mt-1">{d.note}</p>}
+                    </div>
+                    <div className="text-sm text-muted-foreground">{formatDay(d.next ?? d.date, !d.yearly)}{days !== null && days <= 60 ? ` · ${whenLabel(days)}` : ""}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        );
+      })()}
 
       {house.services.length > 0 && (
         <Card className="p-5">
