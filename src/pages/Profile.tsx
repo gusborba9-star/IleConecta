@@ -7,6 +7,7 @@ import { useState } from "react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import AssistantSettings from "@/components/assistant/AssistantSettings";
 import ThemeSwitch from "@/components/profile/ThemeSwitch";
+import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 
 export default function Profile() {
   const { currentUser, purchases, rituals, getHouse, posts } = useApp();
@@ -50,6 +51,7 @@ export default function Profile() {
       <EditProfileModal open={editing} onClose={() => setEditing(false)} />
       <AssistantSettings />
       <ThemeSwitch />
+      <DiscreetModeCard />
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">

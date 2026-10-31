@@ -7,6 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import ConsentBox from "@/components/legal/ConsentBox";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
+import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
@@ -104,6 +105,7 @@ export default function HouseHome() {
 
       <AssistantReportCard />
       <QuietHoursCard />
+      <DiscreetModeCard />
     </div>
   );
 }

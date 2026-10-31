@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   const sent = req.headers.get("x-push-secret") ?? "";
   if (!cfg?.webhook_secret || !cfg?.vapid_private || sent !== cfg.webhook_secret) return json(401, { error: "nao_autorizado" });
 
-  let body: { user_id?: string; text?: string; href?: string | null };
+  let body: { user_id?: string; text?: string; href?: string | null; discreet?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -29,7 +29,8 @@ Deno.serve(async (req) => {
 
   webpush.setVapidDetails("https://ile-conecta.vercel.app", VAPID_PUBLIC, cfg.vapid_private);
   const payload = JSON.stringify({
-    title: "Ilê Conecta",
+    // Modo discreto: nada que revele o app ou o assunto na tela do celular.
+    title: body.discreet === true ? "Nova notificação" : "Ilê Conecta",
     body: body.text.slice(0, 200),
     url: typeof body.href === "string" && body.href.startsWith("/") ? body.href : "/",
   });
