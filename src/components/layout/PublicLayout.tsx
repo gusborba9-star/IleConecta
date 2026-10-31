@@ -1,5 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
-import { Flame } from "lucide-react";
+import { LogoMark } from "@/components/brand/Logo";
 import { useApp } from "@/contexts/AppContext";
 import Footer from "./Footer";
 
@@ -11,7 +11,7 @@ export default function PublicLayout() {
       <header className="border-b border-border bg-card/80">
         <div className="mx-auto max-w-3xl px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-lg">
-            <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center"><Flame className="h-4 w-4" /></span>
+            <LogoMark size={32} />
             Ilê Conecta
           </Link>
           <Link to={currentUser ? "/" : "/login"} className="text-sm font-semibold text-primary hover:underline">
