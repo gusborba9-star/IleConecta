@@ -69,3 +69,10 @@ export async function fetchPublicHouse(slug: string): Promise<PublicHouse | null
     services,
   };
 }
+
+/** Endereço (slug) da própria casa, para montar o link e o QR code de divulgação. */
+export async function fetchMyHouseSlug(ownerId: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.from("houses").select("slug").eq("owner_id", ownerId).maybeSingle();
+  return data?.slug ? String(data.slug) : null;
+}
