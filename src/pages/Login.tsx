@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { LogoMark } from "@/components/brand/Logo";
+import { GoldMark, LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
-const hero = "https://images.unsplash.com/photo-1503756234508-e32369269deb?w=1600&h=1200&fit=crop";
 
 export default function Login() {
   const { login, currentUser, isRemoteAuth, authReady } = useApp();
@@ -44,9 +43,11 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col">
     <div className="flex-1 grid lg:grid-cols-2">
-      <div className="relative hidden lg:block">
-        <img src={hero} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      <div className="relative hidden lg:block overflow-hidden">
+        <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 20% 10%, #1B6A50 0%, #0E3B2C 48%, #07231A 100%)" }} />
+        <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+        <GoldMark size={620} className="absolute -right-32 -top-24 opacity-[0.14] pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-10 text-white">
           <div className="max-w-md space-y-3">
             <div className="text-xs tracking-[0.3em] uppercase text-gold">Ilê Conecta</div>

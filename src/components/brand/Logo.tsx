@@ -48,6 +48,11 @@ function BareMark({ size = 36, ring = false, gold = false, className }: { size?:
   );
 }
 
+/** Marca dourada solta, para fundos escuros (ex.: painel da tela de entrada). */
+export function GoldMark({ size = 36, className }: { size?: number; className?: string }) {
+  return <BareMark size={size} gold className={className} />;
+}
+
 /** Marca dentro de um círculo esmeralda com a folha dourada (igual ao ícone do app). Use `bare` para a marca solta. */
 export function LogoMark({ size = 36, ring = false, bare = false, className }: { size?: number; ring?: boolean; bare?: boolean; className?: string }) {
   if (bare || ring) return <BareMark size={size} ring={ring} className={className} />;
