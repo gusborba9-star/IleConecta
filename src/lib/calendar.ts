@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import type { CalendarKind } from "@/lib/calendarCore";
+import type { CalendarKind, Visibility } from "@/lib/calendarCore";
 
 export type { CalendarKind };
 
-export interface CalendarItem {
+export interface CalendarItem extends Visibility {
   id: string;
   title: string;
   tradition: string | null;
@@ -11,13 +11,12 @@ export interface CalendarItem {
   date: string;
   yearly: boolean;
   note: string | null;
-  public: boolean;
 }
 export interface HouseCalendar {
   enabled: boolean;
   items: CalendarItem[];
 }
-export interface CalendarDraft {
+export interface CalendarDraft extends Visibility {
   id?: string;
   title: string;
   tradition: string;
@@ -25,10 +24,9 @@ export interface CalendarDraft {
   date: string;
   yearly: boolean;
   note: string;
-  public: boolean;
 }
 
-/** A casa vê tudo; os demais (mesmo sem login) só o que ela marcou como público. Desligado → enabled=false. */
+/** A casa vê tudo, com os quatro interruptores. Visitantes recebem só o que a casa liberou (público; seguidores, se seguem). Desligado → enabled=false. */
 export async function fetchHouseCalendar(ownerId: string): Promise<HouseCalendar> {
   if (!supabase) return { enabled: false, items: [] };
   const { data, error } = await supabase.rpc("house_calendar", { p_owner: ownerId });
@@ -44,7 +42,10 @@ export async function fetchHouseCalendar(ownerId: string): Promise<HouseCalendar
       date: String(r.date).slice(0, 10),
       yearly: r.yearly !== false,
       note: r.note ? String(r.note) : null,
-      public: r.public !== false,
+      vis_public: r.vis_public === true,
+      vis_followers: r.vis_followers === true,
+      vis_house: r.vis_house !== false,
+      vis_assistant: r.vis_assistant === true,
     })),
   };
 }
@@ -53,7 +54,8 @@ export async function fetchHouseCalendar(ownerId: string): Promise<HouseCalendar
 export async function saveCalendarItem(d: CalendarDraft): Promise<string | null> {
   if (!supabase) return "Sem conexão com o servidor.";
   const { error } = await supabase.rpc("save_calendar_item", {
-    p_id: d.id ?? null, p_title: d.title, p_tradition: d.tradition, p_kind: d.kind, p_date: d.date, p_yearly: d.yearly, p_note: d.note, p_public: d.public,
+    p_id: d.id ?? null, p_title: d.title, p_tradition: d.tradition, p_kind: d.kind, p_date: d.date, p_yearly: d.yearly, p_note: d.note,
+    p_vis_public: d.vis_public, p_vis_followers: d.vis_followers, p_vis_house: d.vis_house, p_vis_assistant: d.vis_assistant,
   });
   return error ? error.message : null;
 }

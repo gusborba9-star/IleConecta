@@ -2,15 +2,23 @@
 
 export const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
-/** Tipos de data. Obrigações costumam ser internas; celebrações e giras costumam ser abertas ao público. */
+/** Os quatro interruptores de visibilidade de cada data. A casa decide tudo, data a data. */
+export const VISIBILITY = [
+  { key: "vis_public", label: "Público (rede)", hint: "aparece na página pública da casa, para todos" },
+  { key: "vis_followers", label: "Seguidores", hint: "quem segue a casa vê" },
+  { key: "vis_house", label: "Casa", hint: "fica no calendário interno da casa" },
+  { key: "vis_assistant", label: "Assistente", hint: "a assistente pode responder sobre esta data" },
+];
+
+/** Tipos de data, com a sugestão inicial dos interruptores (a casa sempre pode mudar). Obrigações nascem só internas. */
 export const KINDS = [
-  { id: "celebracao", label: "Celebração", defaultPublic: true },
-  { id: "obrigacao", label: "Obrigação", defaultPublic: false },
-  { id: "gira", label: "Gira / toque", defaultPublic: true },
-  { id: "outro", label: "Outra", defaultPublic: false },
+  { id: "celebracao", label: "Celebração", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
+  { id: "obrigacao", label: "Obrigação", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
+  { id: "gira", label: "Gira / toque", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
+  { id: "outro", label: "Outra", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
 ];
 export const kindLabel = (id) => KINDS.find((k) => k.id === id)?.label ?? "Outra";
-export const kindDefaultPublic = (id) => KINDS.find((k) => k.id === id)?.defaultPublic ?? false;
+export const kindDefaultVisibility = (id) => ({ ...(KINDS.find((k) => k.id === id)?.vis ?? KINDS[3].vis) });
 
 /** Tradições com sugestões. Cada casa observa datas diferentes: o catálogo é só um ponto de partida e sempre editável. */
 export const TRADITIONS = ["Umbanda", "Candomblé", "Quimbanda"];
