@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
@@ -15,11 +15,13 @@ import ServicesTab from "@/components/services/ServicesTab";
 import RitualsTab from "@/components/rituals/RitualsTab";
 import HouseRefundCases from "@/components/refunds/HouseRefundCases";
 import ReviewsTab from "@/components/reviews/ReviewsTab";
+import CalendarTab from "@/components/calendar/CalendarTab";
+import { fetchHouseCalendar, type CalendarItem } from "@/lib/calendar";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 
-type Tab = "feed" | "servicos" | "rituais" | "avaliacoes" | "assistente" | "sobre";
-const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", avaliacoes: "Avaliações", assistente: "Assistente", sobre: "Sobre" };
+type Tab = "feed" | "servicos" | "rituais" | "calendario" | "avaliacoes" | "assistente" | "sobre";
+const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", calendario: "Calendário", avaliacoes: "Avaliações", assistente: "Assistente", sobre: "Sobre" };
 
 export default function HousePage() {
   const { id } = useParams();
@@ -29,13 +31,22 @@ export default function HousePage() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const startTab = params.get("aba");
-  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : startTab === "avaliacoes" ? "avaliacoes" : "feed");
+  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : startTab === "avaliacoes" ? "avaliacoes" : startTab === "calendario" ? "calendario" : "feed");
   const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
   const [following, setFollowingState] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [followDelta, setFollowDelta] = useState(0);
   const [reviewRef, setReviewRef] = useState<string | null>(null);
   const realHouse = isRemoteAuth && isRemoteId(id ?? "");
+  const [calendar, setCalendar] = useState<CalendarItem[]>([]);
+  const calendarOn = realHouse && isFeatureOn(config, "calendar", id ?? "");
+  const loadCalendar = useCallback(() => {
+    if (!calendarOn || !id) return setCalendar([]);
+    void fetchHouseCalendar(id).then((c) => setCalendar(c.enabled ? c.items : []));
+  }, [calendarOn, id]);
+  useEffect(() => {
+    loadCalendar();
+  }, [loadCalendar]);
   useEffect(() => {
     setFollowingState(false);
     setFollowDelta(0);
@@ -73,7 +84,7 @@ export default function HousePage() {
   const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn && isFeatureOn(config, "assistant", house.id);
   const hasServices = isRemoteAuth && isRemoteId(house.id);
   const hasReviews = hasServices && isFeatureOn(config, "reviews", house.id);
-  const tabs: Tab[] = ["feed", ...(hasServices ? (["servicos"] as Tab[]) : []), "rituais", ...(hasReviews ? (["avaliacoes"] as Tab[]) : []), ...(hasAssistant ? (["assistente"] as Tab[]) : []), "sobre"];
+  const tabs: Tab[] = ["feed", ...(hasServices ? (["servicos"] as Tab[]) : []), "rituais", ...(calendarOn && (isOwn || calendar.length > 0) ? (["calendario"] as Tab[]) : []), ...(hasReviews ? (["avaliacoes"] as Tab[]) : []), ...(hasAssistant ? (["assistente"] as Tab[]) : []), "sobre"];
   const activeBoost = isPromotionActive(house.boost?.expiresAt) ? house.boost : undefined;
 
   return (
@@ -180,6 +191,7 @@ export default function HousePage() {
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
         {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} onReview={hasReviews && !isOwn && currentUser?.type === "personal" ? (orderId) => { setReviewRef(orderId); setTab("avaliacoes"); window.scrollTo({ top: 0, behavior: "smooth" }); } : undefined} />}
+        {tab === "calendario" && calendarOn && <CalendarTab items={calendar} isOwn={isOwn} onChanged={loadCalendar} />}
         {tab === "avaliacoes" && hasReviews && <ReviewsTab ownerId={house.id} isOwn={isOwn} canReview={currentUser?.type === "personal"} onlyRef={reviewRef} onShowAll={() => setReviewRef(null)} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
