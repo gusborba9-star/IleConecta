@@ -1,7 +1,7 @@
 // Regras puras da configuração da plataforma (sem rede), testáveis em Node.
 // O painel admin grava estes dados no banco; qualquer valor inválido volta ao padrão aqui.
 
-export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video"];
+export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
 export const PLAN_IDS = ["base", "intermediario", "maximo"];
 export const FEATURE_STATES = ["off", "beta", "on"];
@@ -15,7 +15,11 @@ export const DEFAULT_CONFIG = {
     payments: { state: "off", beta_houses: [] },
     // Vídeo de 30 s nos registros do ritual: desligado até o plano Pro do banco (só casas Premium).
     ritual_video: { state: "off", beta_houses: [] },
+    // "Indique e ganhe" entre casas: construído, mas desligado até o admin ativar ("beta" não vale aqui: só liga ou desliga).
+    referral: { state: "off", beta_houses: [] },
   },
+  // Prêmio da indicação: dias de destaque para quem indicou, para a casa indicada (0 = nenhum) e limite por mês.
+  referral: { reward_days: 7, referred_days: 0, monthly_cap: 3 },
   pricing: {
     plans: {
       base: { name: "Essencial", monthly: 89.9 },
@@ -77,7 +81,15 @@ export function sanitizeConfig(raw) {
     }
   }
 
-  return { features, pricing: { plans, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes };
+  const rf = isRecord(r.referral) ? r.referral : {};
+  const whole = (v, min, max, fallback) => (typeof v === "number" && Number.isInteger(v) && v >= min && v <= max ? v : fallback);
+  const referral = {
+    reward_days: whole(rf.reward_days, 1, 90, d.referral.reward_days),
+    referred_days: whole(rf.referred_days, 0, 90, d.referral.referred_days),
+    monthly_cap: whole(rf.monthly_cap, 1, 100, d.referral.monthly_cap),
+  };
+
+  return { features, pricing: { plans, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral };
 }
 
 /** Recurso ligado? "beta" liga só para as casas listadas (ids dos donos). */

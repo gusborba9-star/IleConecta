@@ -1,4 +1,4 @@
-export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video";
+export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral";
 export type ScopeKey = "cidade" | "estado" | "pais" | "exterior";
 export type PlanId = "base" | "intermediario" | "maximo";
 export type FeatureState = "off" | "beta" | "on";
@@ -16,6 +16,7 @@ export interface PlatformConfig {
     highlight_per_day: Record<ScopeKey, Money>;
   };
   scopes: { boost: Record<ScopeKey, boolean>; highlight: Record<ScopeKey, boolean> };
+  referral: { reward_days: number; referred_days: number; monthly_cap: number };
 }
 
 export declare const FEATURE_KEYS: FeatureKey[];
