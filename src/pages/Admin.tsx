@@ -36,6 +36,7 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   ritual_video: "Vídeo de 30 s nos registros do ritual (só casas Premium)",
   referral: "Indique e ganhe entre casas (prêmio em dias de destaque)",
   reviews: "Avaliações de quem comprou (estrelas, resposta da casa)",
+  calendar: "Calendário religioso da casa (celebrações e obrigações)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
 const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações" };
@@ -151,7 +152,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
                   value={f.state}
                   onChange={(e) => setDraft({ ...draft, features: { ...draft.features, [k]: { ...f, state: e.target.value as FeatureState } } })}
                 >
-                  {FEATURE_STATES.filter((s) => (k !== "referral" && k !== "reviews") || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
+                  {FEATURE_STATES.filter((s) => (k !== "referral" && k !== "reviews" && k !== "calendar") || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
                 </select>
               </div>
               {k === "referral" && (

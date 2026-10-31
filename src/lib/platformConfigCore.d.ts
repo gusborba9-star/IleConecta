@@ -1,4 +1,4 @@
-export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews";
+export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews" | "calendar";
 export type ScopeKey = "cidade" | "estado" | "pais" | "exterior";
 export type PlanId = "base" | "intermediario" | "maximo";
 export type FeatureState = "off" | "beta" | "on";
