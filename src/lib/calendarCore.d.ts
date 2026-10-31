@@ -1,12 +1,12 @@
 export interface CalendarSuggestion { key: string; title: string; month: number; day: number; traditions: string[] }
 export interface CalendarDated { title: string; date: string; yearly: boolean }
 export type CalendarKind = "celebracao" | "obrigacao" | "gira" | "outro";
-export const KINDS: { id: CalendarKind; label: string; defaultPublic: boolean }[];
+export declare const KINDS: { id: CalendarKind; label: string; defaultPublic: boolean }[];
 export function kindLabel(id: string): string;
 export function kindDefaultPublic(id: string): boolean;
-export const MONTHS: string[];
-export const TRADITIONS: string[];
-export const SUGGESTIONS: CalendarSuggestion[];
+export declare const MONTHS: string[];
+export declare const TRADITIONS: string[];
+export declare const SUGGESTIONS: CalendarSuggestion[];
 export function suggestionsFor(tradition: string, taken?: string[], limit?: number): CalendarSuggestion[];
 export function parseDate(text: string): { y: number; m: number; d: number } | null;
 export function nextOccurrence(item: { date: string; yearly: boolean }, today: string): string | null;
