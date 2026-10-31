@@ -2,6 +2,7 @@ import { useApp } from "@/contexts/AppContext";
 import StoryRail from "@/components/feed/StoryRail";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
+import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -26,6 +27,7 @@ export default function Feed() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
+      <PendingReviewsCard />
       <div>
         <div className="flex items-end justify-between mb-2">
           <h2 className="font-display font-bold text-xl">Momentos das casas</h2>

@@ -67,3 +67,10 @@ test("indique e ganhe: desligado por padrão e prêmio sempre dentro dos limites
   const bad = sanitizeConfig({ referral: { reward_days: 0, referred_days: 999, monthly_cap: "x" } });
   assert.deepEqual(bad.referral, { reward_days: 7, referred_days: 0, monthly_cap: 3 });
 });
+
+test("avaliações: desligadas por padrão e só ligam com 'ligado'", () => {
+  const d = sanitizeConfig({});
+  assert.equal(d.features.reviews.state, "off");
+  assert.equal(isFeatureOn(d, "reviews", "casa1"), false);
+  assert.equal(isFeatureOn(sanitizeConfig({ features: { reviews: { state: "on" } } }), "reviews", "casa1"), true);
+});

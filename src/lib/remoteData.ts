@@ -1,6 +1,7 @@
 import type { HouseUser, PersonalUser, Post, User } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { fetchFollowSummary } from "@/lib/follows";
+import { fetchReviewSummary } from "@/lib/reviews";
 
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=1600&h=600&fit=crop";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -33,7 +34,7 @@ function toHouse(row: Row): HouseUser {
     country: countryName(p.country),
     category: row.category || "Casa Espiritual",
     tags: Array.isArray(row.tags) ? row.tags : [],
-    // Avaliações reais ainda não existem: 0 esconde esse número na tela. Seguidores entram em fetchRemoteHouses.
+    // Nota e seguidores entram em fetchRemoteHouses; 0 esconde o número na tela.
     rating: 0,
     followers: 0,
     verified: Boolean(row.verified),
@@ -53,8 +54,8 @@ export async function fetchRemoteHouses(): Promise<HouseUser[]> {
     console.error("Ilê Conecta: não foi possível carregar as casas.", error?.message);
     return [];
   }
-  const { counts } = await fetchFollowSummary();
-  return (data as Row[]).map((r) => ({ ...toHouse(r), followers: counts[String(r.owner_id)] ?? 0 }));
+  const [{ counts }, ratings] = await Promise.all([fetchFollowSummary(), fetchReviewSummary()]);
+  return (data as Row[]).map((r) => ({ ...toHouse(r), followers: counts[String(r.owner_id)] ?? 0, rating: ratings[String(r.owner_id)]?.avg ?? 0 }));
 }
 
 export interface RemoteFeed {
