@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { isFeatureOn, sanitizeConfig } from "../src/lib/platformConfigCore.js";
-import { KINDS, VISIBILITY, kindDefaultVisibility, SUGGESTIONS, daysUntil, formatDay, nextOccurrence, parseDate, suggestionsFor, upcoming, whenLabel, todayLocal } from "../src/lib/calendarCore.js";
+import { KINDS, VISIBILITY, kindDefaultVisibility, SUGGESTIONS, daysUntil, formatDay, nextOccurrence, parseDate, suggestionsFor, traditionalDates, upcoming, whenLabel, todayLocal } from "../src/lib/calendarCore.js";
 
 test("datas inválidas são recusadas", () => {
   assert.equal(parseDate("2026-02-30"), null);
@@ -50,6 +50,13 @@ test("sugestões: Quimbanda não tem; todas as datas são válidas", () => {
   assert.equal(suggestionsFor("Quimbanda").length, 0);
   assert.ok(suggestionsFor("Umbanda").length > 0 && suggestionsFor("Candomblé").length > 0);
   for (const s of SUGGESTIONS) assert.ok(parseDate(`2024-${String(s.month).padStart(2, "0")}-${String(s.day).padStart(2, "0")}`), s.key);
+});
+
+test("datas tradicionais: lista única, sem repetir as já cadastradas", () => {
+  const all = traditionalDates();
+  assert.equal(all.length, SUGGESTIONS.length);
+  assert.ok(!traditionalDates([all[0].title]).some((x) => x.title === all[0].title));
+  assert.equal(traditionalDates([], 3).length, 3);
 });
 
 test("hoje local sai no formato AAAA-MM-DD", () => {

@@ -5,7 +5,7 @@ import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { deleteCalendarItem, saveCalendarItem, type CalendarDraft, type CalendarItem } from "@/lib/calendar";
 import {
-  KINDS, SUGGESTIONS, TRADITIONS, VISIBILITY, daysUntil, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, suggestionsFor, todayLocal, upcoming, whenLabel,
+  KINDS, SUGGESTIONS, VISIBILITY, daysUntil, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, traditionalDates, todayLocal, upcoming, whenLabel,
   type CalendarKind,
 } from "@/lib/calendarCore";
 
@@ -16,13 +16,12 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
   const confirm = useConfirm();
   const [draft, setDraft] = useState<CalendarDraft | null>(null);
   const [busy, setBusy] = useState(false);
-  const [trad, setTrad] = useState<string>(TRADITIONS[0]);
   const today = useMemo(() => todayLocal(), []);
 
 
   const list = upcoming(items, today);
   const taken = items.map((i) => i.title);
-  const suggestions = isOwn ? suggestionsFor(trad, taken) : [];
+  const suggestions = isOwn ? traditionalDates(taken) : [];
 
   const startFromSuggestion = (id: string) => {
     const s = SUGGESTIONS.find((x) => x.key === id);
@@ -30,7 +29,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
     const mm = String(s.month).padStart(2, "0");
     const dd = String(s.day).padStart(2, "0");
     const next = nextOccurrence({ date: `2000-${mm}-${dd}`, yearly: true }, today) ?? `${today.slice(0, 4)}-${mm}-${dd}`;
-    setDraft({ title: s.title, tradition: trad, kind: "celebracao", date: next, yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
+    setDraft({ title: s.title, tradition: "", kind: "celebracao", date: next, yearly: true, note: "", ...kindDefaultVisibility("celebracao") });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -87,9 +86,8 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
               <Input id="cal-date" type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
             </div>
             <div>
-              <Label htmlFor="cal-trad">Tradição (opcional)</Label>
-              <Input id="cal-trad" list="cal-trads" maxLength={40} value={draft.tradition} onChange={(e) => setDraft({ ...draft, tradition: e.target.value })} placeholder="ex.: Umbanda" />
-              <datalist id="cal-trads">{TRADITIONS.map((t) => <option key={t} value={t} />)}</datalist>
+              <Label htmlFor="cal-trad">Tradição ou linha da casa (opcional)</Label>
+              <Input id="cal-trad" maxLength={40} value={draft.tradition} onChange={(e) => setDraft({ ...draft, tradition: e.target.value })} placeholder="como a sua casa se identifica" />
             </div>
             <label className="flex items-center gap-2 text-sm self-end pb-2">
               <input type="checkbox" checked={draft.yearly} onChange={(e) => setDraft({ ...draft, yearly: e.target.checked })} />
@@ -119,20 +117,12 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
       {isOwn && (
         <Card className="p-5 space-y-3">
           <div>
-            <h3 className="font-semibold">Sugestões para a sua tradição</h3>
-            <p className="text-xs text-muted-foreground">As datas variam de casa para casa e de região para região. Toque para adicionar, confira e ajuste antes de salvar.</p>
-          </div>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Tradição">
-            {TRADITIONS.map((t) => (
-              <button key={t} type="button" aria-pressed={trad === t} onClick={() => setTrad(t)}
-                className={`rounded-full border px-3 py-1 text-sm ${trad === t ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>{t}</button>
-            ))}
+            <h3 className="font-semibold">Datas tradicionais</h3>
+            <p className="text-xs text-muted-foreground">Datas celebradas em muitas casas. Cada casa e cada região observa as suas: toque para adicionar, confira e ajuste antes de salvar. Para outras datas, use "Nova data".</p>
           </div>
           {suggestions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              {suggestionsFor(trad, [], 1).length === 0
-                ? `Não há datas em comum a todas as casas de ${trad}. Cadastre as da sua casa em "Nova data".`
-                : "Você já adicionou todas as sugestões desta tradição."}
+              Você já adicionou todas as datas tradicionais. Cadastre as demais em "Nova data".
             </p>
           ) : (
             <ul className="space-y-1">
