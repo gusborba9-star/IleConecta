@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
+import { forgetReferral, lookupReferral, rememberReferral } from "@/lib/referral";
 import { useApp } from "@/contexts/AppContext";
-import { User, Store } from "lucide-react";
+import { Gift, User, Store } from "lucide-react";
 import { LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
@@ -17,7 +18,19 @@ export default function Register() {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
   const nav = useNavigate();
-  const [type, setType] = useState<AccountType>("personal");
+  const [search] = useSearchParams();
+  const [type, setType] = useState<AccountType>(search.get("tipo") === "casa" ? "commercial" : "personal");
+  // Convite de outra casa: o código vem no link (?ref=) e só conta para contas de casa.
+  const [refCode] = useState(() => (isRemoteAuth ? rememberReferral(search.get("ref")) : ""));
+  const [inviter, setInviter] = useState<string | null>(null);
+  useEffect(() => {
+    if (!refCode) return;
+    let alive = true;
+    void lookupReferral(refCode).then((n) => alive && setInviter(n));
+    return () => {
+      alive = false;
+    };
+  }, [refCode]);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -39,8 +52,9 @@ export default function Register() {
     setLoading(true);
     try {
       if (isRemoteAuth) savePendingConsent(email, type === "commercial" ? "termos_casa" : "termos_cliente");
-      const result = await register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type });
+      const result = await register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type, referralCode: type === "commercial" && inviter ? refCode : undefined });
       if (!result.ok) return toast.error(result.error);
+      if (type === "commercial") forgetReferral();
       if (result.needsEmailConfirmation) return setPendingEmail(email);
       toast.success(isRemoteAuth ? "Conta criada. Axé!" : "Conta de demonstração criada neste navegador.");
       nav("/");
@@ -78,6 +92,11 @@ export default function Register() {
           </div>
         </div>
 
+        {inviter && type === "commercial" && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-gold/50 bg-gold/10 p-3 text-sm">
+            <Gift className="h-4 w-4 text-gold shrink-0" /> Você foi convidado(a) pela casa <strong>{inviter}</strong>.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <TypeCard
             active={type === "personal"}
