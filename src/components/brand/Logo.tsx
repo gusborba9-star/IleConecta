@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /** Marca do Ilê Conecta: quatro folhas em cruz ligadas por uma rede, com um nó no centro.
  *  Esmeralda no tema claro e dourada no escuro (troca sozinha com o tema). */
-export function LogoMark({ size = 36, ring = false, className }: { size?: number; ring?: boolean; className?: string }) {
+function BareMark({ size = 36, ring = false, gold = false, className }: { size?: number; ring?: boolean; gold?: boolean; className?: string }) {
   const gid = useId().replace(/:/g, "");
   const sw = ring ? 11 : 14;
   const tips = [-45, 45, 135, 225].map((a) => [256 + 158 * Math.cos((a * Math.PI) / 180), 256 + 158 * Math.sin((a * Math.PI) / 180)]);
@@ -26,21 +26,38 @@ export function LogoMark({ size = 36, ring = false, className }: { size?: number
     </>
   );
   const viewBox = ring ? "0 0 512 512" : "70 70 372 372";
+  const goldSvg = (cls: string) => (
+    <svg width={size} height={size} viewBox={viewBox} role="img" aria-label="Ilê Conecta" className={cls}>
+      <defs>
+        <linearGradient id={`g${gid}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#F4DC92" />
+          <stop offset="1" stopColor="#C99A2E" />
+        </linearGradient>
+      </defs>
+      {drawing(`url(#g${gid})`, "#FFF3C4")}
+    </svg>
+  );
+  if (gold) return goldSvg(cn("shrink-0", className));
   return (
     <>
       <svg width={size} height={size} viewBox={viewBox} role="img" aria-label="Ilê Conecta" className={cn("dark:hidden shrink-0", className)}>
         {drawing("#0E3B2C", "#C99A2E")}
       </svg>
-      <svg width={size} height={size} viewBox={viewBox} role="img" aria-label="Ilê Conecta" className={cn("hidden dark:block shrink-0", className)}>
-        <defs>
-          <linearGradient id={`g${gid}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#F4DC92" />
-            <stop offset="1" stopColor="#C99A2E" />
-          </linearGradient>
-        </defs>
-        {drawing(`url(#g${gid})`, "#FFF3C4")}
-      </svg>
+      {goldSvg(cn("hidden dark:block shrink-0", className))}
     </>
+  );
+}
+
+/** Marca dentro de um círculo esmeralda com a folha dourada (igual ao ícone do app). Use `bare` para a marca solta. */
+export function LogoMark({ size = 36, ring = false, bare = false, className }: { size?: number; ring?: boolean; bare?: boolean; className?: string }) {
+  if (bare || ring) return <BareMark size={size} ring={ring} className={className} />;
+  return (
+    <span
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full ring-1 ring-[#C99A2E]/45 shadow-card", className)}
+      style={{ width: size, height: size, background: "linear-gradient(135deg,#14543F,#0A2E22)" }}
+    >
+      <BareMark size={Math.round(size * 0.64)} gold />
+    </span>
   );
 }
 
