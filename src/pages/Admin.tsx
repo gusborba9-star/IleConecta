@@ -143,17 +143,37 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
           const f = draft.features[k];
           return (
             <div key={k} className="border border-border rounded-xl p-3 space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="font-semibold flex-1">{FEATURE_LABEL[k]}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span className="font-semibold flex-1 min-w-0">{FEATURE_LABEL[k]}</span>
                 <select
                   aria-label={`Estado de ${FEATURE_LABEL[k]}`}
-                  className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full sm:w-auto rounded-xl border border-input bg-background px-3 text-sm"
                   value={f.state}
                   onChange={(e) => setDraft({ ...draft, features: { ...draft.features, [k]: { ...f, state: e.target.value as FeatureState } } })}
                 >
                   {FEATURE_STATES.filter((s) => (k !== "referral" && k !== "reviews") || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
                 </select>
               </div>
+              {k === "referral" && (
+                <div className="rounded-xl bg-muted/40 p-3 space-y-3">
+                <h3 className="font-semibold">Prêmio do Indique e ganhe</h3>
+                <p className="text-sm text-muted-foreground">Quando uma casa convidada cria a conta e entra pela primeira vez, a casa que indicou ganha dias de destaque na lista de casas. Só funciona com esta funcionalidade em "Ligado para todos".</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {([
+                    ["reward_days", "Dias de destaque para quem indica", 1],
+                    ["referred_days", "Dias de destaque para a casa convidada (0 = nenhum)", 0],
+                    ["monthly_cap", "Máximo de prêmios por casa, por mês", 1],
+                  ] as const).map(([key, label, min]) => (
+                    <div key={key}>
+                      <Label htmlFor={`ref-${key}`}>{label}</Label>
+                      <Input id={`ref-${key}`} type="number" min={min} max={key === "monthly_cap" ? 100 : 90} value={draft.referral[key]}
+                        onChange={(e) => setDraft({ ...draft, referral: { ...draft.referral, [key]: Math.trunc(Number(e.target.value)) || 0 } })} />
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={() => save("referral")} disabled={saving !== null}>{saving === "referral" ? "Salvando…" : "Salvar Indique e ganhe"}</Button>
+              </div>
+              )}
               {f.state === "beta" && (
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {houses.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma casa cadastrada.</span>}
@@ -176,25 +196,6 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
           );
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
-      </Card>
-
-      <Card className="p-5 space-y-3">
-        <h2 className="font-display font-bold text-lg">Indique e ganhe</h2>
-        <p className="text-sm text-muted-foreground">Quando uma casa convidada cria a conta e entra pela primeira vez, a casa que indicou ganha dias de destaque na lista de casas. Só funciona com a funcionalidade acima em "Ligado para todos".</p>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {([
-            ["reward_days", "Dias de destaque para quem indica", 1],
-            ["referred_days", "Dias de destaque para a casa convidada (0 = nenhum)", 0],
-            ["monthly_cap", "Máximo de prêmios por casa, por mês", 1],
-          ] as const).map(([key, label, min]) => (
-            <div key={key}>
-              <Label htmlFor={`ref-${key}`}>{label}</Label>
-              <Input id={`ref-${key}`} type="number" min={min} max={key === "monthly_cap" ? 100 : 90} value={draft.referral[key]}
-                onChange={(e) => setDraft({ ...draft, referral: { ...draft.referral, [key]: Math.trunc(Number(e.target.value)) || 0 } })} />
-            </div>
-          ))}
-        </div>
-        <Button onClick={() => save("referral")} disabled={saving !== null}>{saving === "referral" ? "Salvando…" : "Salvar Indique e ganhe"}</Button>
       </Card>
 
       <HousePlansCard />
