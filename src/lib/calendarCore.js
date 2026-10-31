@@ -10,15 +10,28 @@ export const VISIBILITY = [
   { key: "vis_assistant", label: "Assistente", hint: "a assistente pode responder sobre esta data" },
 ];
 
-/** Tipos de data, com a sugestão inicial dos interruptores (a casa sempre pode mudar). Obrigações nascem só internas. */
+/**
+ * Tipos de data. Os ids ficam como estão no banco; o nome na tela lembra o que cada casa costuma marcar em cada um.
+ * A sugestão inicial dos interruptores muda por tipo (a casa sempre pode mudar): encontros e obrigações nascem só na casa.
+ */
 export const KINDS = [
-  { id: "celebracao", label: "Celebração", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
-  { id: "obrigacao", label: "Obrigação", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
-  { id: "gira", label: "Gira / toque", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
-  { id: "outro", label: "Outra", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
+  { id: "gira", label: "Cerimônia", hint: "gira, homenagem, ritual, entre outras", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
+  { id: "obrigacao", label: "Encontro", hint: "obrigação, reunião, estudo, entre outros", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
+  { id: "celebracao", label: "Festividade", hint: "dia tradicional, festa, entre outras", vis: { vis_public: true, vis_followers: true, vis_house: true, vis_assistant: true } },
+  { id: "outro", label: "Outra", hint: "", vis: { vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false } },
 ];
 export const kindLabel = (id) => KINDS.find((k) => k.id === id)?.label ?? "Outra";
 export const kindDefaultVisibility = (id) => ({ ...(KINDS.find((k) => k.id === id)?.vis ?? KINDS[3].vis) });
+
+/** "21:00" → "21h"; "20:30" → "20h30". Vazio ou inválido → "". */
+export function formatTime(text) {
+  const m = /^(\d{2}):(\d{2})/.exec(String(text ?? ""));
+  if (!m) return "";
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return "";
+  return min === 0 ? `${h}h` : `${h}h${m[2]}`;
+}
 
 /** Tradições com sugestões. Cada casa observa datas diferentes: o catálogo é só um ponto de partida e sempre editável. */
 export const TRADITIONS = ["Umbanda", "Candomblé", "Quimbanda"];

@@ -9,6 +9,7 @@ export interface CalendarItem extends Visibility {
   tradition: string | null;
   kind: CalendarKind;
   date: string;
+  time: string | null;
   yearly: boolean;
   note: string | null;
 }
@@ -22,6 +23,7 @@ export interface CalendarDraft extends Visibility {
   tradition: string;
   kind: CalendarKind;
   date: string;
+  time: string;
   yearly: boolean;
   note: string;
 }
@@ -40,6 +42,7 @@ export async function fetchHouseCalendar(ownerId: string): Promise<HouseCalendar
       tradition: r.tradition ? String(r.tradition) : null,
       kind: (["celebracao", "obrigacao", "gira"].includes(String(r.kind)) ? r.kind : "outro") as CalendarKind,
       date: String(r.date).slice(0, 10),
+      time: r.time ? String(r.time).slice(0, 5) : null,
       yearly: r.yearly !== false,
       note: r.note ? String(r.note) : null,
       vis_public: r.vis_public === true,
@@ -55,7 +58,7 @@ export async function saveCalendarItem(d: CalendarDraft): Promise<string | null>
   if (!supabase) return "Sem conexão com o servidor.";
   const { error } = await supabase.rpc("save_calendar_item", {
     p_id: d.id ?? null, p_title: d.title, p_tradition: d.tradition, p_kind: d.kind, p_date: d.date, p_yearly: d.yearly, p_note: d.note,
-    p_vis_public: d.vis_public, p_vis_followers: d.vis_followers, p_vis_house: d.vis_house, p_vis_assistant: d.vis_assistant,
+    p_vis_public: d.vis_public, p_vis_followers: d.vis_followers, p_vis_house: d.vis_house, p_vis_assistant: d.vis_assistant, p_time: d.time || null,
   });
   return error ? error.message : null;
 }

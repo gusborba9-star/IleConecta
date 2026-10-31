@@ -1,11 +1,12 @@
-import { daysUntil, formatDay, nextOccurrence, whenLabel } from "./calendarCore.js";
+import { daysUntil, formatDay, formatTime, nextOccurrence, whenLabel } from "./calendarCore.js";
 
 /** Como a data aparece, em texto, para quem a vê: "8 de dezembro · em 38 dias". */
 export function whenText(item, today) {
   const next = nextOccurrence(item, today);
   if (!next) return `${formatDay(item.date, true)} (já passou)`;
   const days = daysUntil(next, today);
-  return `${formatDay(next, !item.yearly)}${days !== null && days <= 60 ? ` · ${whenLabel(days)}` : ""}`;
+  const at = formatTime(item.time);
+  return `${formatDay(next, !item.yearly)}${at ? `, às ${at}` : ""}${days !== null && days <= 60 ? ` · ${whenLabel(days)}` : ""}`;
 }
 
 /** Exemplo da resposta da Assistente para um cliente que pergunta pela data. */
@@ -15,7 +16,8 @@ export function assistantExample(item, today) {
   const next = nextOccurrence(item, today);
   if (!next) return `${title} já aconteceu este ano. A casa ainda não marcou a próxima.`;
   const days = daysUntil(next, today);
-  const when = `${formatDay(next, !item.yearly)}${days !== null && days <= 60 ? ` (${whenLabel(days)})` : ""}`;
+  const at = formatTime(item.time);
+  const when = `${formatDay(next, !item.yearly)}${at ? `, às ${at}` : ""}${days !== null && days <= 60 ? ` (${whenLabel(days)})` : ""}`;
   return `${title} será em ${when}.${note ? ` ${note}` : ""}`;
 }
 
