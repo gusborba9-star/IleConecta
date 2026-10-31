@@ -1,3 +1,4 @@
+import PasswordInput from "@/components/base/PasswordInput";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
@@ -125,7 +126,7 @@ export default function Register() {
           </div>
           <div>
             <Label htmlFor="register-password">Senha</Label>
-            <Input id="register-password" type="password" minLength={isRemoteAuth ? 8 : undefined} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <PasswordInput id="register-password" minLength={isRemoteAuth ? 8 : undefined} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
           <div>
             <Label htmlFor="register-city">Cidade</Label>
