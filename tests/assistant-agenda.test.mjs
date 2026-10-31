@@ -34,7 +34,7 @@ test("data passada sem repetição e data além do horizonte ficam de fora; anua
   assert.equal(normalizeAgenda([{ ...base, on_date: "2027-06-01" }], NOW).length, 0);
   const [yearly] = normalizeAgenda([{ ...base, on_date: "2020-12-08", yearly: true }], NOW);
   assert.match(yearly, /8 de dezembro de 2026/);
-  const [over] = normalizeAgenda([{ ...base, on_date: "2020-01-05", yearly: true }], new Date("2026-12-20T15:00:00Z")); // próxima: 5/1/2027
+  const [over] = normalizeAgenda([{ ...base, on_date: "2020-01-05", yearly: true }], new Date("2026-12-20T15:00:00Z")); // 16 dias... próxima: 5/1/2027
   assert.match(over, /5 de janeiro de 2027/);
 });
 
