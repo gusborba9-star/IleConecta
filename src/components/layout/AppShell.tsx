@@ -5,6 +5,8 @@ import SideNav from "./SideNav";
 import RightRail from "./RightRail";
 import { useApp } from "@/contexts/AppContext";
 import { touchPresence } from "@/lib/messaging";
+import { recordConsents } from "@/lib/consents";
+import { takePendingConsent } from "@/lib/pendingConsent";
 import InstallPrompt from "./InstallPrompt";
 import Footer from "./Footer";
 
@@ -12,14 +14,25 @@ export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
   const userId = currentUser?.id;
 
+  // Aceite dado no cadastro: grava na primeira entrada (o aceite vale uma vez, não é pedido de novo no primeiro pagamento).
+  const email = currentUser?.email;
+  useEffect(() => {
+    if (!isRemoteAuth || !userId) return;
+    const doc = takePendingConsent(email);
+    if (doc) void recordConsents([doc]);
+  }, [isRemoteAuth, userId, email]);
+
   // Presença: avisa que a pessoa está online (a assistente da casa só atende quando a casa está offline).
   useEffect(() => {
     if (!isRemoteAuth || !userId) return;
+    // A casa só conta como online por 35 s depois do último aviso (ver migração 0047), por isso o aviso sai a cada 15 s.
+    // "Entregue" (✓✓) é marcado a cada 4º aviso, para não dobrar as chamadas.
+    let n = 0;
     const beat = () => {
-      if (document.visibilityState === "visible") void touchPresence();
+      if (document.visibilityState === "visible") void touchPresence(n++ % 4 === 0);
     };
     beat();
-    const timer = window.setInterval(beat, 60000);
+    const timer = window.setInterval(beat, 15000);
     document.addEventListener("visibilitychange", beat);
     return () => {
       window.clearInterval(timer);

@@ -34,10 +34,10 @@ export interface ChatMessage {
   attachmentSize: number | null;
 }
 
-export async function touchPresence(): Promise<void> {
+export async function touchPresence(withDelivered = true): Promise<void> {
   if (!supabase) return;
   await supabase.rpc("touch_presence");
-  await supabase.rpc("mark_delivered"); // ✓✓: o app está aberto, então o que chegou foi entregue
+  if (withDelivered) await supabase.rpc("mark_delivered"); // ✓✓: o app está aberto, então o que chegou foi entregue
 }
 
 /** Marca como lidas as mensagens do outro nesta conversa (✓✓ colorido para ele). */
