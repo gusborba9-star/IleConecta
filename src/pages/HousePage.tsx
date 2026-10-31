@@ -14,11 +14,12 @@ import AssistantChat from "@/components/assistant/AssistantChat";
 import ServicesTab from "@/components/services/ServicesTab";
 import RitualsTab from "@/components/rituals/RitualsTab";
 import HouseRefundCases from "@/components/refunds/HouseRefundCases";
+import ReviewsTab from "@/components/reviews/ReviewsTab";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 
-type Tab = "feed" | "servicos" | "rituais" | "assistente" | "sobre";
-const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", assistente: "Assistente", sobre: "Sobre" };
+type Tab = "feed" | "servicos" | "rituais" | "avaliacoes" | "assistente" | "sobre";
+const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", avaliacoes: "Avaliações", assistente: "Assistente", sobre: "Sobre" };
 
 export default function HousePage() {
   const { id } = useParams();
@@ -28,7 +29,7 @@ export default function HousePage() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const startTab = params.get("aba");
-  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : "feed");
+  const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : startTab === "avaliacoes" ? "avaliacoes" : "feed");
   const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
   const [following, setFollowingState] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
@@ -70,7 +71,8 @@ export default function HousePage() {
   const isOwn = currentUser?.id === house.id;
   const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn && isFeatureOn(config, "assistant", house.id);
   const hasServices = isRemoteAuth && isRemoteId(house.id);
-  const tabs: Tab[] = ["feed", ...(hasServices ? (["servicos"] as Tab[]) : []), "rituais", ...(hasAssistant ? (["assistente"] as Tab[]) : []), "sobre"];
+  const hasReviews = hasServices && isFeatureOn(config, "reviews", house.id);
+  const tabs: Tab[] = ["feed", ...(hasServices ? (["servicos"] as Tab[]) : []), "rituais", ...(hasReviews ? (["avaliacoes"] as Tab[]) : []), ...(hasAssistant ? (["assistente"] as Tab[]) : []), "sobre"];
   const activeBoost = isPromotionActive(house.boost?.expiresAt) ? house.boost : undefined;
 
   return (
@@ -177,6 +179,7 @@ export default function HousePage() {
           <Card className="p-8 text-center text-muted-foreground">Esta casa ainda não publicou rituais.</Card>
         )}
         {tab === "servicos" && hasServices && <ServicesTab ownerId={house.id} isOwn={isOwn} startNew={params.get("novo") === "1"} onAskAssistant={hasAssistant ? () => setTab("assistente") : undefined} />}
+        {tab === "avaliacoes" && hasReviews && <ReviewsTab ownerId={house.id} isOwn={isOwn} canReview={currentUser?.type === "personal"} />}
         {tab === "assistente" && hasAssistant && <AssistantChat houseId={house.id} houseName={house.name} />}
         {tab === "sobre" && (
           <Card className="p-6 space-y-4">
