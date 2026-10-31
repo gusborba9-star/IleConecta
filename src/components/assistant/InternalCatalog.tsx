@@ -109,9 +109,10 @@ export default function InternalCatalog({ houseId }: { houseId: string }) {
             <Textarea id="cat-desc" rows={2} maxLength={300} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Como funciona, o que o cliente precisa saber…" />
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" disabled={!draft.price.trim()} checked={draft.showPrice} onChange={(e) => setDraft({ ...draft, showPrice: e.target.checked })} />
+            <input type="checkbox" checked={draft.showPrice} onChange={(e) => setDraft({ ...draft, showPrice: e.target.checked })} />
             A assistente pode informar este valor ao cliente
           </label>
+          {draft.showPrice && !draft.price.trim() && <p className="text-xs text-muted-foreground">Preencha o valor acima para a assistente poder informá-lo.</p>}
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void add()}>{busy ? "Adicionando…" : "Adicionar ao catálogo"}</Button>
         </div>
       )}
