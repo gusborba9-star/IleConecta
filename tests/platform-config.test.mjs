@@ -56,3 +56,14 @@ test("vídeo nos registros do ritual: desligado por padrão e liga por casa em b
   assert.equal(isFeatureOn(cfg, "ritual_video", "casa1"), true);
   assert.equal(isFeatureOn(cfg, "ritual_video", "casa2"), false);
 });
+
+test("indique e ganhe: desligado por padrão e prêmio sempre dentro dos limites", () => {
+  const d = sanitizeConfig({});
+  assert.equal(d.features.referral.state, "off");
+  assert.equal(isFeatureOn(d, "referral", "casa1"), false);
+  assert.deepEqual(d.referral, { reward_days: 7, referred_days: 0, monthly_cap: 3 });
+  const ok = sanitizeConfig({ referral: { reward_days: 14, referred_days: 3, monthly_cap: 5 } });
+  assert.deepEqual(ok.referral, { reward_days: 14, referred_days: 3, monthly_cap: 5 });
+  const bad = sanitizeConfig({ referral: { reward_days: 0, referred_days: 999, monthly_cap: "x" } });
+  assert.deepEqual(bad.referral, { reward_days: 7, referred_days: 0, monthly_cap: 3 });
+});

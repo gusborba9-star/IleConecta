@@ -7,9 +7,20 @@ import { cn, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
 import RitualCard from "@/components/feed/RitualCard";
 import { matchesDemoSearch } from "@/lib/demoState";
+import { fetchFeatured } from "@/lib/referral";
 
 export default function Discover() {
-  const { users, rituals } = useApp();
+  const { users, rituals, isRemoteAuth } = useApp();
+  // Destaque ganho no Indique e ganhe (id da casa -> fim do prêmio).
+  const [featured, setFeatured] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!isRemoteAuth) return;
+    let alive = true;
+    void fetchFeatured().then((f) => alive && setFeatured(f));
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth]);
   const [searchParams] = useSearchParams();
   const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
@@ -35,8 +46,9 @@ export default function Discover() {
       })
     : [];
 
-  const promoted = filtered.filter((h) => isPromotionActive(h.boost?.expiresAt));
-  const rest = filtered.filter((h) => !isPromotionActive(h.boost?.expiresAt));
+  const isUp = (h: HouseUser) => isPromotionActive(h.boost?.expiresAt) || Boolean(featured[h.id]);
+  const promoted = filtered.filter(isUp);
+  const rest = filtered.filter((h) => !isUp(h));
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
@@ -73,11 +85,11 @@ export default function Discover() {
         <section>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <h2 className="font-display font-bold text-lg">Impulsionadas</h2>
+            <h2 className="font-display font-bold text-lg">Impulsionadas e em destaque</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {promoted.map((h) => (
-              <HouseTile key={h.id} h={h} />
+              <HouseTile key={h.id} h={h} featured={Boolean(featured[h.id])} />
             ))}
           </div>
         </section>
@@ -96,7 +108,7 @@ export default function Discover() {
         <h2 className="font-display font-bold text-lg mb-2">Casas da comunidade</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rest.map((h) => (
-            <HouseTile key={h.id} h={h} />
+            <HouseTile key={h.id} h={h} featured={Boolean(featured[h.id])} />
           ))}
           {filtered.length === 0 && !q.trim() && <Card className="p-8 text-center text-muted-foreground md:col-span-2">Nenhuma casa encontrada.</Card>}
         </div>
@@ -109,7 +121,7 @@ export default function Discover() {
   );
 }
 
-function HouseTile({ h }: { h: HouseUser }) {
+function HouseTile({ h, featured = false }: { h: HouseUser; featured?: boolean }) {
   const activeBoost = isPromotionActive(h.boost?.expiresAt) ? h.boost : undefined;
   const place = [h.city, h.state].filter(Boolean).join(", ");
 
@@ -119,9 +131,13 @@ function HouseTile({ h }: { h: HouseUser }) {
         <div className="relative h-28 sm:h-32">
           <img src={h.cover} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
-          {activeBoost && (
+          {activeBoost ? (
             <Badge tone="gold" className="absolute top-2 right-2 backdrop-blur">
               <TrendingUp className="h-3 w-3" /> {activeBoost.level}
+            </Badge>
+          ) : featured && (
+            <Badge tone="gold" className="absolute top-2 right-2 backdrop-blur">
+              <Star className="h-3 w-3" /> Em destaque
             </Badge>
           )}
         </div>

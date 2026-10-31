@@ -18,6 +18,8 @@ export interface RegisterInput {
   state: string;
   country: string;
   category?: string;
+  /** Código de quem indicou (só vale para casas e só com o programa ligado no admin). */
+  referralCode?: string;
 }
 
 export const MIN_PASSWORD_LENGTH = 8;
@@ -119,6 +121,7 @@ export async function remoteRegister(input: RegisterInput): Promise<AuthResult> 
         city: input.city.trim(),
         state: input.state.trim(),
         category: input.category?.trim() ?? "",
+        ...(input.type === "commercial" && input.referralCode ? { referral_code: input.referralCode.trim().toUpperCase().slice(0, 12) } : {}),
       },
     },
   });

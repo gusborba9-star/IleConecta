@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
-import { Badge, Button, Card, Input } from "@/components/base";
+import { Badge, Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import {
@@ -33,9 +33,10 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   highlight: "Destaques nos feeds",
   payments: "Pagamentos pela plataforma (Stripe)",
   ritual_video: "Vídeo de 30 s nos registros do ritual (só casas Premium)",
+  referral: "Indique e ganhe entre casas (prêmio em dias de destaque)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
-const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento" };
+const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe" };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -66,7 +67,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
   if (!isRemoteAuth) return <Card className="p-8 text-center text-muted-foreground">O painel funciona só com conta real.</Card>;
   if (!isAdmin) return <Card className="p-8 text-center text-muted-foreground">Área restrita à administração.</Card>;
 
-  const save = async (key: "features" | "pricing" | "scopes") => {
+  const save = async (key: "features" | "pricing" | "scopes" | "referral") => {
     setSaving(key);
     const ok = await saveSetting(key, draft[key]);
     setSaving(null);
@@ -148,7 +149,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
                   value={f.state}
                   onChange={(e) => setDraft({ ...draft, features: { ...draft.features, [k]: { ...f, state: e.target.value as FeatureState } } })}
                 >
-                  {FEATURE_STATES.map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
+                  {FEATURE_STATES.filter((s) => k !== "referral" || s !== "beta").map((s) => <option key={s} value={s}>{STATE_LABEL[s]}</option>)}
                 </select>
               </div>
               {f.state === "beta" && (
@@ -173,6 +174,25 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
           );
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
+      </Card>
+
+      <Card className="p-5 space-y-3">
+        <h2 className="font-display font-bold text-lg">Indique e ganhe</h2>
+        <p className="text-sm text-muted-foreground">Quando uma casa convidada cria a conta e entra pela primeira vez, a casa que indicou ganha dias de destaque na lista de casas. Só funciona com a funcionalidade acima em "Ligado para todos".</p>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {([
+            ["reward_days", "Dias de destaque para quem indica", 1],
+            ["referred_days", "Dias de destaque para a casa convidada (0 = nenhum)", 0],
+            ["monthly_cap", "Máximo de prêmios por casa, por mês", 1],
+          ] as const).map(([key, label, min]) => (
+            <div key={key}>
+              <Label htmlFor={`ref-${key}`}>{label}</Label>
+              <Input id={`ref-${key}`} type="number" min={min} max={key === "monthly_cap" ? 100 : 90} value={draft.referral[key]}
+                onChange={(e) => setDraft({ ...draft, referral: { ...draft.referral, [key]: Math.trunc(Number(e.target.value)) || 0 } })} />
+            </div>
+          ))}
+        </div>
+        <Button onClick={() => save("referral")} disabled={saving !== null}>{saving === "referral" ? "Salvando…" : "Salvar Indique e ganhe"}</Button>
       </Card>
 
       <HousePlansCard />
