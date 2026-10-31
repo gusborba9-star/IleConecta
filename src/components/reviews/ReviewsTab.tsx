@@ -17,7 +17,7 @@ import {
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
 
 /** Avaliações de quem comprou da casa. Só a pessoa que concluiu uma compra pode avaliar; a casa pode responder e contestar. */
-export default function ReviewsTab({ ownerId, isOwn, canReview }: { ownerId: string; isOwn: boolean; canReview: boolean }) {
+export default function ReviewsTab({ ownerId, isOwn, canReview, onlyRef, onShowAll }: { ownerId: string; isOwn: boolean; canReview: boolean; onlyRef?: string | null; onShowAll?: () => void }) {
   const [data, setData] = useState<HouseReviews | null>(null);
   const [pending, setPending] = useState<Reviewable[]>([]);
 
@@ -61,7 +61,10 @@ export default function ReviewsTab({ ownerId, isOwn, canReview }: { ownerId: str
         )}
       </Card>
 
-      {pending.map((p) => <ReviewForm key={`${p.kind}-${p.ref}`} item={p} onDone={() => void load()} />)}
+      {(onlyRef ? pending.filter((p) => p.ref === onlyRef) : pending).map((p) => <ReviewForm key={`${p.kind}-${p.ref}`} item={p} onDone={() => void load()} />)}
+      {onlyRef && pending.some((p) => p.ref !== onlyRef) && onShowAll && (
+        <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={onShowAll}>Avaliar outras compras ({pending.filter((p) => p.ref !== onlyRef).length})</button>
+      )}
 
       {data.items.map((r) => <ReviewCard key={r.id} r={r} isOwn={isOwn} onChanged={() => void load()} />)}
     </div>
