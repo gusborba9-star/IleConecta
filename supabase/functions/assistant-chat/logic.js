@@ -208,7 +208,70 @@ export function normalizeCatalog(items) {
     });
 }
 
-export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], now = new Date() }) {
+const AGENDA_KIND = { gira: "Cerimônia", obrigacao: "Encontro", celebracao: "Festividade", outro: "Outra" };
+const AGENDA_MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const AGENDA_WEEKDAYS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+export const AGENDA_HORIZON_DAYS = 120;
+const AGENDA_MAX = 20;
+
+const dayNumber = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / 86400000);
+const validYmd = (y, m, d) => {
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+};
+
+/** "21:00" → "21h"; "20:30" → "20h30". */
+export function agendaTime(text) {
+  const m = /^(\d{2}):(\d{2})/.exec(String(text ?? ""));
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return "";
+  return Number(m[2]) === 0 ? `${Number(m[1])}h` : `${Number(m[1])}h${m[2]}`;
+}
+
+/**
+ * Datas que a casa liberou para a assistente (vis_assistant), já prontas para o prompt: só as próximas
+ * `horizon` dias, no horário de Brasília, da mais próxima para a mais distante. Datas anuais usam a próxima ocorrência.
+ */
+export function normalizeAgenda(items, now = new Date(), horizon = AGENDA_HORIZON_DAYS) {
+  const br = new Date(now.getTime() - 3 * 3600 * 1000);
+  const todayN = dayNumber(br.getUTCFullYear(), br.getUTCMonth() + 1, br.getUTCDate());
+  const out = [];
+  for (const it of Array.isArray(items) ? items : []) {
+    if (!it || it.vis_assistant !== true) continue;
+    const title = oneLine(it.title, 80);
+    const base = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(it.on_date ?? ""));
+    if (title.length < 2 || !base) continue;
+    const by = Number(base[1]);
+    const bm = Number(base[2]);
+    const bd = Number(base[3]);
+    if (!validYmd(by, bm, bd)) continue;
+    let y = by;
+    let m = bm;
+    let d = bd;
+    if (it.yearly !== false) {
+      y = br.getUTCFullYear();
+      if (bm === 2 && bd === 29 && !validYmd(y, 2, 29)) d = 28;
+      if (dayNumber(y, m, d) < todayN) {
+        y += 1;
+        d = bd;
+        if (bm === 2 && bd === 29 && !validYmd(y, 2, 29)) d = 28;
+      }
+    }
+    const n = dayNumber(y, m, d);
+    const days = n - todayN;
+    if (days < 0 || days > horizon) continue;
+    const weekday = AGENDA_WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    const at = agendaTime(it.on_time);
+    const when = days === 0 ? "hoje" : days === 1 ? "amanhã" : `em ${days} dias`;
+    out.push({
+      n,
+      time: String(it.on_time ?? ""),
+      text: `${title} [${AGENDA_KIND[it.kind] ?? "Outra"}] — ${d} de ${AGENDA_MONTHS[m - 1]} de ${y} (${weekday}), ${at ? `às ${at}` : "horário não informado"} — ${when}${it.tradition ? ` — linha: ${oneLine(it.tradition, 40)}` : ""}${it.note ? ` — orientações da casa: ${oneLine(it.note, 300)}` : ""}`,
+    });
+  }
+  return out.sort((a, b) => a.n - b.n || a.time.localeCompare(b.time)).slice(0, AGENDA_MAX).map((x) => x.text);
+}
+
+export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], agenda = null, now = new Date() }) {
   const discount = allowedDiscountPercent(plan, assistant);
   const selling = canSell(plan, assistant);
   const lines = [];
@@ -220,6 +283,9 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("- Use SOMENTE os serviços, rituais, preços e horários listados abaixo. Nunca invente nem arredonde valores, vagas ou datas. Se algo não está na lista, diga que vai confirmar com a casa. Os trabalhos descritos em \"TRABALHOS QUE A CASA REALIZA\" existem, mas não têm preço nem horário cadastrados: nunca informe valor deles. Os itens do \"CATÁLOGO INTERNO DA CASA\" só podem ter o valor informado quando o item diz \"valor que você pode informar\"; nos demais, nunca cite números.");
   lines.push("- Não prometa resultado espiritual, cura, ganho financeiro ou qualquer garantia. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
   lines.push("- Para reservar vaga em um ritual, o cliente usa o botão \"Reservar vaga\" na aba Rituais da página da casa; para serviços, combine pelo chat com a casa. Explique isso quando perguntarem como contratar.");
+  if (agenda !== null) {
+    lines.push("- A \"AGENDA DA CASA\" lista as datas que a casa liberou para você informar. Informe data, horário e orientações exatamente como estão escritos. Nunca invente horário, local, roupa, valor ou vaga que não estejam na agenda; se faltar algo, diga que vai confirmar com a casa. A agenda não reserva vaga nem confirma presença.");
+  }
   lines.push("- Respeite todas as tradições. Não critique outras religiões.");
   lines.push("- Nunca peça nem aceite senha, dados de cartão ou documentos pelo chat.");
   lines.push(`- Quando o assunto for delicado (luto, crise emocional, saúde, reclamação, pedido que você não pode resolver)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}, acolha com poucas frases gentis, sem dar conselhos nem diagnósticos, diga que a casa vai assumir a conversa e termine a mensagem com ${HANDOFF_MARK}. Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga que ela não está sozinha, indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
@@ -279,13 +345,19 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
       lines.push(`- ${i.name} — ${i.priceText ? `valor que você pode informar: ${i.priceText}` : "valor: não informe; diga que a casa combina o valor"}${i.description ? ` — ${i.description}` : ""}`);
     }
   }
+  if (agenda !== null) {
+    lines.push("");
+    lines.push(`AGENDA DA CASA (datas liberadas pela casa para você informar; próximos ${AGENDA_HORIZON_DAYS} dias):`);
+    if (agenda.length === 0) lines.push("(nenhuma data liberada no momento; se perguntarem por datas, diga que vai confirmar com a casa)");
+    for (const a of agenda) lines.push(`- ${a}`);
+  }
   lines.push("");
   lines.push("SERVIÇOS DISPONÍVEIS:");
   if (services.length === 0) lines.push("(nenhum cadastrado)");
   for (const s of services.slice(0, 30)) {
     const slots = Array.isArray(s.next_slots) ? s.next_slots.slice(0, 3).map(brtDateTime) : [];
-    const agenda = s.bookable ? ` — COM AGENDA (${Number(s.duration_min) || 30} min; o cliente agenda na página)${slots.length ? `; próximos horários livres: ${slots.join(", ")}` : "; sem horários livres no momento"}` : "";
-    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${agenda}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
+    const bookingNote = s.bookable ? ` — COM AGENDA (${Number(s.duration_min) || 30} min; o cliente agenda na página)${slots.length ? `; próximos horários livres: ${slots.join(", ")}` : "; sem horários livres no momento"}` : "";
+    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${bookingNote}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
   }
   lines.push("");
   lines.push("RITUAIS E EVENTOS ABERTOS:");
