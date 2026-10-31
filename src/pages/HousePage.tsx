@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserCheck, UserPlus, Users } from "lucide-react";
+import { toast } from "sonner";
+import { fetchFollowSummary, setFollowing } from "@/lib/follows";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import PostCard from "@/components/feed/PostCard";
 import RitualCard from "@/components/feed/RitualCard";
@@ -28,6 +30,31 @@ export default function HousePage() {
   const startTab = params.get("aba");
   const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : "feed");
   const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
+  const [following, setFollowingState] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followDelta, setFollowDelta] = useState(0);
+  const realHouse = isRemoteAuth && isRemoteId(id ?? "");
+  useEffect(() => {
+    setFollowingState(false);
+    setFollowDelta(0);
+    if (!realHouse || !id) return;
+    let alive = true;
+    void fetchFollowSummary().then((s) => alive && setFollowingState(s.mine.includes(id)));
+    return () => {
+      alive = false;
+    };
+  }, [id, realHouse]);
+  const toggleFollow = async () => {
+    if (!id || followBusy) return;
+    setFollowBusy(true);
+    const next = !following;
+    const error = await setFollowing(id, next);
+    setFollowBusy(false);
+    if (error) return void toast.error(error);
+    setFollowingState(next);
+    setFollowDelta((d) => d + (next ? 1 : -1));
+    toast.success(next ? "Você agora segue esta casa." : "Você deixou de seguir esta casa.");
+  };
   const housePosts = house ? posts.filter((p) => p.houseId === house.id) : [];
   const houseRituals = house ? rituals.filter((r) => r.houseId === house.id) : [];
 
@@ -39,6 +66,7 @@ export default function HousePage() {
       </div>
     );
 
+  const followers = Math.max(0, house.followers + followDelta);
   const isOwn = currentUser?.id === house.id;
   const hasAssistant = isRemoteAuth && isRemoteId(house.id) && !isOwn && isFeatureOn(config, "assistant", house.id);
   const hasServices = isRemoteAuth && isRemoteId(house.id);
@@ -72,7 +100,13 @@ export default function HousePage() {
             {house.rating > 0 && (
               <>
                 <span aria-hidden>·</span>
-                <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-gold fill-gold" /> {house.rating.toFixed(1)} · {house.followers.toLocaleString("pt-BR")} seguidores</span>
+                <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-gold fill-gold" /> {house.rating.toFixed(1)}</span>
+              </>
+            )}
+            {followers > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{followers.toLocaleString("pt-BR")} {followers === 1 ? "seguidor" : "seguidores"}</span>
               </>
             )}
           </div>
@@ -86,7 +120,13 @@ export default function HousePage() {
             ) : (
               <>
                 <Button onClick={() => nav(`/mensagens/${house.id}`)}><MessageCircle className="h-4 w-4" /> Chat</Button>
-                <Button variant="outline" disabled title="A função de seguir ainda não está disponível no protótipo"><UserPlus className="h-4 w-4" /> Seguir indisponível</Button>
+                {realHouse ? (
+                  <Button variant={following ? "secondary" : "outline"} disabled={followBusy} aria-pressed={following} onClick={() => void toggleFollow()}>
+                    {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />} {following ? "Seguindo" : "Seguir"}
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled title="Seguir só funciona com conta real"><UserPlus className="h-4 w-4" /> Seguir</Button>
+                )}
               </>
             )}
           </div>
@@ -147,7 +187,7 @@ export default function HousePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat label="Categoria" value={house.category} />
               <Stat label="Localização" value={`${house.city} · ${house.state}`} />
-              {house.rating > 0 && <Stat label="Seguidores" value={house.followers.toLocaleString("pt-BR")} />}
+              {followers > 0 && <Stat label="Seguidores" value={followers.toLocaleString("pt-BR")} />}
               {house.rating > 0 && <Stat label="Avaliação" value={`${house.rating.toFixed(1)} ★`} />}
             </div>
           </Card>
