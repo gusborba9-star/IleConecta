@@ -19,7 +19,7 @@ export async function fetchIsAdmin(): Promise<boolean> {
   return !error && data === true;
 }
 
-export async function saveSetting(key: "features" | "pricing" | "scopes" | "payment_limits", value: object): Promise<boolean> {
+export async function saveSetting(key: "features" | "pricing" | "scopes" | "payment_limits" | "referral", value: object): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.rpc("admin_set_setting", { p_key: key, p_value: value });
   return !error;
