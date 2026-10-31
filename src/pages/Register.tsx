@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { Flame, User, Store } from "lucide-react";
+import { User, Store } from "lucide-react";
+import { LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
 import { savePendingConsent } from "@/lib/pendingConsent";
@@ -67,9 +68,7 @@ export default function Register() {
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-11 w-11 rounded-2xl bg-primary text-primary-foreground grid place-items-center">
-            <Flame className="h-6 w-6" />
-          </div>
+          <LogoMark size={48} />
           <div>
             <div className="font-display font-bold text-xl">Criar conta</div>
             <div className="text-xs text-muted-foreground">Escolha o tipo de conta</div>

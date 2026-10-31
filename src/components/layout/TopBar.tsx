@@ -1,5 +1,6 @@
+import { Brand } from "@/components/brand/Logo";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, Flame, LifeBuoy, ShieldCheck } from "lucide-react";
+import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import NotificationBell from "@/components/layout/NotificationBell";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -42,13 +43,7 @@ export default function TopBar() {
     <header className="sticky top-0 z-40 glass border-b border-border">
       <div className="mx-auto max-w-[1440px] px-3 md:px-6 h-16 flex items-center gap-3">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground grid place-items-center font-display text-lg shadow-card">
-            <Flame className="h-5 w-5" />
-          </div>
-          <div className="hidden sm:block leading-tight">
-            <div className="font-display font-bold text-lg">Ilê Conecta</div>
-            <div className="text-[10px] tracking-widest text-muted-foreground uppercase">rede das casas</div>
-          </div>
+          <Brand size={38} compact />
         </Link>
 
         <div className="flex-1 max-w-md ml-2 hidden md:block">

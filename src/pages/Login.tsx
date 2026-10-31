@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { Flame } from "lucide-react";
+import { LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
 const hero = "https://images.unsplash.com/photo-1503756234508-e32369269deb?w=1600&h=1200&fit=crop";
@@ -60,9 +60,7 @@ export default function Login() {
       <div className="flex items-center justify-center p-6 lg:p-12 bg-background">
         <Card className="w-full max-w-md p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-11 w-11 rounded-2xl bg-primary text-primary-foreground grid place-items-center">
-              <Flame className="h-6 w-6" />
-            </div>
+            <LogoMark size={48} />
             <div>
               <div className="font-display font-bold text-xl">Ilê Conecta</div>
               <div className="text-xs text-muted-foreground">Entre com sua conta</div>
