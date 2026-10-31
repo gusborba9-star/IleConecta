@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import PasswordInput from "@/components/base/PasswordInput";
 import { GoldMark, LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
@@ -75,7 +76,7 @@ export default function Login() {
             </div>
             <div>
               <Label htmlFor="login-password">Senha</Label>
-              <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <PasswordInput id="login-password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <Button className="w-full" size="lg" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</Button>
           </form>
