@@ -5,6 +5,7 @@ import { useApp } from "@/contexts/AppContext";
 import { GoldMark, LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
+import { dayPeriodGreeting, welcomeName } from "@/lib/greeting";
 
 export default function Login() {
   const { login, currentUser, isRemoteAuth, authReady } = useApp();
@@ -30,7 +31,7 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.ok) {
-        toast.success(`Axé${result.user ? `, ${result.user.name}` : ""}!`);
+        toast.success(result.user ? `Boas-vindas, ${welcomeName(result.user.name, result.user.type !== "personal")}!` : "Boas-vindas!", { description: `${dayPeriodGreeting()}. Axé!` });
         nav(back);
       } else {
         toast.error(result.error);

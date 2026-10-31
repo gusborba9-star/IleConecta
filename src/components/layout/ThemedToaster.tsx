@@ -10,5 +10,5 @@ export default function ThemedToaster() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => obs.disconnect();
   }, []);
-  return <Toaster theme={theme} position="top-right" richColors closeButton />;
+  return <Toaster theme={theme} position="top-right" richColors closeButton style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }} />;
 }
