@@ -113,10 +113,10 @@ function HouseTile({ h }: { h: HouseUser }) {
   const activeBoost = isPromotionActive(h.boost?.expiresAt) ? h.boost : undefined;
 
   return (
-    <Link to={`/casa/${h.id}`} className="block">
-      <Card className="overflow-hidden hover:shadow-altar transition">
+    <Link to={`/casa/${h.id}`} className="group block">
+      <Card className="overflow-hidden transition hover:shadow-altar hover:-translate-y-0.5">
         <div className="relative h-28">
-          <img src={h.cover} className="absolute inset-0 h-full w-full object-cover" />
+          <img src={h.cover} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           {activeBoost && (
             <Badge tone="gold" className="absolute top-2 right-2">
@@ -124,25 +124,28 @@ function HouseTile({ h }: { h: HouseUser }) {
             </Badge>
           )}
         </div>
-        <div className="p-4 flex items-start gap-3 -mt-6">
-          <Avatar src={h.avatar} name={h.name} size={56} ring="gold" />
-          <div className="flex-1 min-w-0 pt-6">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="font-display font-bold truncate">{h.name}</div>
-              {h.verified && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+        {/* A foto de perfil sobe sobre a capa: precisa de z-index, senão a capa a cobre. */}
+        <div className="relative px-4 pb-4">
+          <div className="flex items-end justify-between -mt-9">
+            <div className="relative z-10 rounded-full p-1 bg-card shadow-card">
+              <Avatar src={h.avatar} name={h.name} size={68} className="ring-2 ring-gold" />
             </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {h.city}, {h.state}</span>
-              <span>·</span>
-              <span>{h.category}</span>
-              {h.rating > 0 && (
-                <>
-                  <span>·</span>
-                  <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {h.rating.toFixed(1)}</span>
-                </>
-              )}
-            </div>
+            {h.rating > 0 && (
+              <span className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                <Star className="h-3.5 w-3.5 text-gold fill-gold" /> {h.rating.toFixed(1)}
+              </span>
+            )}
           </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <div className="font-display font-bold text-lg leading-tight truncate">{h.name}</div>
+            {h.verified && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" aria-label="Casa verificada" />}
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{h.city}{h.state ? `, ${h.state}` : ""}</span>
+          </div>
+          {h.category && <Badge tone="gold" className="mt-2">{h.category}</Badge>}
+          {h.bio && <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{h.bio}</p>}
         </div>
       </Card>
     </Link>
