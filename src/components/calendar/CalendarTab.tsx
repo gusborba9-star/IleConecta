@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { previewRows } from "@/lib/calendarPreview";
 import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
@@ -47,7 +48,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
   };
 
   const remove = async (item: CalendarItem) => {
-    if (!(await confirm({ title: "Remover esta data?", message: item.title, confirmLabel: "Remover" }))) return;
+    if (!(await confirm({ title: "Tirar da agenda?", message: item.title, confirmLabel: "Remover" }))) return;
     if (!(await deleteCalendarItem(item.id))) return void toast.error("Não foi possível remover.");
     onChanged();
   };
@@ -57,12 +58,12 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
       <Card className="p-5">
         <div className="flex flex-wrap items-center gap-2">
           <CalendarDays className="h-4 w-4 text-primary" />
-          <h2 className="font-display font-bold text-lg flex-1">{isOwn ? "Calendário da casa" : "Datas da casa"}</h2>
-          {isOwn && !draft && <Button size="sm" onClick={() => setDraft(emptyDraft())}><Plus className="h-4 w-4" /> Nova data</Button>}
+          <h2 className="font-display font-bold text-lg flex-1">{isOwn ? "Agenda da Casa" : "Datas da casa"}</h2>
+          {isOwn && !draft && <Button size="sm" onClick={() => setDraft(emptyDraft())}><Plus className="h-4 w-4" /> Marcar na agenda</Button>}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           {isOwn
-            ? "Cada casa observa as suas datas. Cadastre celebrações, obrigações e giras e escolha, uma a uma, quem vê: público, seguidores, a casa e a assistente."
+            ? "Giras, obrigações e festividades da sua casa, com você no comando de quem vê cada uma."
             : "Datas que a casa divulga."}
         </p>
       </Card>
@@ -99,7 +100,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
             </div>
           </div>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">Quem vê esta data</legend>
+            <legend className="text-sm font-semibold">Quem fica sabendo</legend>
             {VISIBILITY.map((v) => (
               <label key={v.key} className="flex items-start gap-2 text-sm">
                 <input type="checkbox" className="mt-1" checked={draft[v.key]} onChange={(e) => setDraft({ ...draft, [v.key]: e.target.checked })} />
@@ -107,8 +108,21 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
               </label>
             ))}
           </fieldset>
+          {draft.title.trim().length >= 2 && draft.date && (
+            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2" aria-live="polite">
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">Assim aparece</div>
+              {previewRows(draft, today).map((r) => (
+                <div key={r.key} className={`flex gap-3 text-sm ${r.on ? "" : "opacity-50"}`}>
+                  <div className="w-28 shrink-0 text-xs font-semibold text-muted-foreground pt-0.5">{r.label}</div>
+                  {r.key === "vis_assistant" && r.on
+                    ? <div className="rounded-2xl rounded-tl-sm bg-primary/10 px-3 py-1.5 break-words">{r.text}</div>
+                    : <div className="break-words">{r.on ? r.text : r.off}</div>}
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" disabled={busy} onClick={() => void save()}>{busy ? "Salvando…" : draft.id ? "Salvar alterações" : "Adicionar ao calendário"}</Button>
+            <Button size="sm" disabled={busy} onClick={() => void save()}>{busy ? "Salvando…" : draft.id ? "Salvar alterações" : "Marcar na agenda"}</Button>
             <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>Cancelar</Button>
           </div>
         </Card>
@@ -117,12 +131,12 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
       {isOwn && (
         <Card className="p-5 space-y-3">
           <div>
-            <h3 className="font-semibold">Datas tradicionais</h3>
-            <p className="text-xs text-muted-foreground">Datas celebradas em muitas casas. Cada casa e cada região observa as suas: toque para adicionar, confira e ajuste antes de salvar. Para outras datas, use "Nova data".</p>
+            <h3 className="font-semibold">Datas que muitas casas celebram</h3>
+            <p className="text-xs text-muted-foreground">Confira a data na sua casa antes de salvar. Para outras, use "Marcar na agenda".</p>
           </div>
           {suggestions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Você já adicionou todas as datas tradicionais. Cadastre as demais em "Nova data".
+              Você já marcou todas. Para outras datas, use "Marcar na agenda".
             </p>
           ) : (
             <ul className="space-y-1">
@@ -138,7 +152,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
       )}
 
       {list.length === 0 ? (
-        <Card className="p-6 text-sm text-muted-foreground">{isOwn ? "Nenhuma data cadastrada ainda." : "A casa ainda não divulgou datas."}</Card>
+        <Card className="p-6 text-sm text-muted-foreground">{isOwn ? "Sua agenda está vazia. Marque a primeira gira ou festividade." : "A casa ainda não divulgou datas."}</Card>
       ) : (
         <div className="space-y-2">
           {list.map((i) => {
