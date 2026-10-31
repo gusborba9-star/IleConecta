@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserPlus } from "lucide-react";
+import { CheckCircle2, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserPlus, Users } from "lucide-react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import PostCard from "@/components/feed/PostCard";
 import RitualCard from "@/components/feed/RitualCard";
@@ -48,7 +48,7 @@ export default function HousePage() {
   return (
     <div className="pb-16 lg:pb-4">
       <Card className="overflow-hidden">
-        <div className="relative h-56 md:h-72 bg-muted">
+        <div className="relative h-40 sm:h-52 md:h-64 bg-muted">
           <img src={house.cover} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           {activeBoost && (
@@ -57,41 +57,38 @@ export default function HousePage() {
             </Badge>
           )}
         </div>
-        <div className="px-6 pb-6">
-          <div className="flex flex-wrap items-end gap-4 -mt-12">
-            <div className="relative z-10">
-              <Avatar src={house.avatar} name={house.name} size={112} ring="gold" />
-            </div>
-            <div className="flex-1 min-w-0 pt-14">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-display font-bold text-2xl md:text-3xl">{house.name}</h1>
-                {house.verified && <Badge tone="primary"><CheckCircle2 className="h-3 w-3" /> Verificada</Badge>}
-              </div>
-              <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap mt-1">
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {house.city}, {house.state}</span>
-                <span>·</span>
-                <span>{house.category}</span>
-                {house.rating > 0 && (
-                  <>
-                    <span>·</span>
-                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold fill-gold" /> {house.rating.toFixed(1)} · {house.followers.toLocaleString("pt-BR")} seguidores</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto pt-1 sm:pt-14">
-              {isOwn ? (
-                <>
-                  <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" /> Editar página</Button>
-                  <Button onClick={() => nav("/impulsionar")}><TrendingUp className="h-4 w-4" /> Impulsionar</Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" disabled title="A função de seguir ainda não está disponível no protótipo"><UserPlus className="h-4 w-4" /> Seguir indisponível</Button>
-                  <Button onClick={() => nav(`/mensagens/${house.id}`)}><MessageCircle className="h-4 w-4" /> Chat</Button>
-                </>
-              )}
-            </div>
+        <div className="px-4 sm:px-6 pb-5">
+          {/* Foto redonda sobre a capa, nome logo abaixo e os botões em uma linha própria. */}
+          <div className="relative z-10 -mt-14 sm:-mt-16 w-fit rounded-full p-1.5 bg-card shadow-card">
+            <Avatar src={house.avatar} name={house.name} size={112} className="ring-2 ring-gold" />
+          </div>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <h1 className="font-display font-bold text-2xl md:text-3xl leading-tight">{house.name}</h1>
+            {house.verified && <Badge tone="primary"><CheckCircle2 className="h-3 w-3" /> Verificada</Badge>}
+          </div>
+          <div className="text-sm text-muted-foreground flex items-center gap-x-3 gap-y-1 flex-wrap mt-1">
+            <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {[house.city, house.state].filter(Boolean).join(", ")}</span>
+            {house.category && (<><span aria-hidden>·</span><span>{house.category}</span></>)}
+            {house.rating > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-gold fill-gold" /> {house.rating.toFixed(1)} · {house.followers.toLocaleString("pt-BR")} seguidores</span>
+              </>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {isOwn ? (
+              <>
+                <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" /> Editar página</Button>
+                <Button onClick={() => nav("/impulsionar")}><TrendingUp className="h-4 w-4" /> Divulgar</Button>
+                {isRemoteAuth && <Button variant="outline" onClick={() => nav("/painel/membros")}><Users className="h-4 w-4" /> Membros</Button>}
+              </>
+            ) : (
+              <>
+                <Button onClick={() => nav(`/mensagens/${house.id}`)}><MessageCircle className="h-4 w-4" /> Chat</Button>
+                <Button variant="outline" disabled title="A função de seguir ainda não está disponível no protótipo"><UserPlus className="h-4 w-4" /> Seguir indisponível</Button>
+              </>
+            )}
           </div>
           <p className="mt-4 text-sm text-muted-foreground max-w-3xl">{house.bio}</p>
           {house.offerings && (
@@ -107,7 +104,7 @@ export default function HousePage() {
             ))}
           </div>
 
-          <div className="mt-6 flex gap-1 border-b border-border overflow-x-auto whitespace-nowrap" role="tablist">
+          <div className="mt-5 flex gap-1 border-b border-border overflow-x-auto whitespace-nowrap" role="tablist">
             {tabs.map((t) => (
               <button
                 key={t}
