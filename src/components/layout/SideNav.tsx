@@ -44,7 +44,7 @@ function NavItem({ to, icon: Icon, label, tone }: NavEntry) {
         cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition",
           isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground/80",
-          tone === "gold" ? "text-[hsl(30,60%,25%)]" : ""
+          tone === "gold" ? "text-gold-ink" : ""
         )
       }
     >

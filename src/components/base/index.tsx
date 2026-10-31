@@ -105,7 +105,7 @@ export const Badge: React.FC<
   React.HTMLAttributes<HTMLSpanElement> & { tone?: "gold" | "primary" | "muted" | "forest" | "danger" }
 > = ({ className, tone = "muted", ...props }) => {
   const tones: Record<string, string> = {
-    gold: "bg-gold/20 text-[hsl(30,60%,25%)] border border-gold/30",
+    gold: "bg-gold/20 text-gold-ink border border-gold/30",
     primary: "bg-primary/12 text-primary border border-primary/30",
     forest: "bg-forest/12 text-forest border border-forest/30",
     muted: "bg-muted text-muted-foreground border border-border",

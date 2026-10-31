@@ -35,6 +35,51 @@
 
     --danger: 0 72% 45%;
     --success: 145 55% 35%;
+
+    /* Texto sobre fundo dourado claro (selos e itens "crescer"). */
+    --gold-ink: 30 60% 25%;
+    --glass: 30 40% 99%;
+    --glow-1: 42 88% 60%;
+    --glow-2: 12 72% 55%;
+  }
+
+  /* Modo escuro: fundo marrom-café, mesmas cores de destaque (terracota e dourado) um pouco mais claras. */
+  .dark {
+    --background: 22 28% 8%;
+    --foreground: 36 30% 92%;
+
+    --card: 22 24% 11%;
+    --card-foreground: 36 30% 92%;
+
+    --muted: 22 16% 16%;
+    --muted-foreground: 30 12% 66%;
+
+    --primary: 12 72% 52%;
+    --primary-foreground: 40 40% 98%;
+
+    --secondary: 22 14% 18%;
+    --secondary-foreground: 36 30% 90%;
+
+    --accent: 158 30% 20%;
+    --accent-foreground: 36 30% 92%;
+
+    --gold: 42 88% 56%;
+    --gold-foreground: 22 40% 12%;
+
+    --forest: 158 38% 52%;
+    --forest-foreground: 22 40% 8%;
+
+    --border: 22 14% 22%;
+    --input: 22 14% 20%;
+    --ring: 12 72% 55%;
+
+    --danger: 0 72% 58%;
+    --success: 145 50% 50%;
+
+    --gold-ink: 42 80% 72%;
+    --glass: 22 24% 11%;
+    --glow-1: 42 88% 50%;
+    --glow-2: 12 72% 45%;
   }
 
   * {
@@ -46,8 +91,8 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-image:
-      radial-gradient(1200px 600px at 100% -10%, hsla(42,88%,60%,0.08), transparent 60%),
-      radial-gradient(900px 500px at -10% 20%, hsla(12,72%,55%,0.08), transparent 60%);
+      radial-gradient(1200px 600px at 100% -10%, hsl(var(--glow-1) / 0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, hsl(var(--glow-2) / 0.08), transparent 60%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4 {
@@ -65,7 +110,7 @@
     height: 2px;
   }
   .glass {
-    background: hsla(30, 40%, 99%, 0.75);
+    background: hsl(var(--glass) / 0.75);
     backdrop-filter: blur(12px);
   }
   .scroll-x {

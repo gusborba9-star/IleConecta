@@ -54,7 +54,7 @@ export default function MoreSheet({ open, onClose, onLogout, groups, isAdmin, us
                   to={it.to}
                   end={it.to === "/"}
                   onClick={onClose}
-                  className={({ isActive }) => cn("flex items-center gap-3 px-4 min-h-12 text-sm font-medium", isActive ? "bg-primary/10 text-primary" : "hover:bg-muted", it.tone === "gold" ? "text-[hsl(30,60%,25%)]" : "")}
+                  className={({ isActive }) => cn("flex items-center gap-3 px-4 min-h-12 text-sm font-medium", isActive ? "bg-primary/10 text-primary" : "hover:bg-muted", it.tone === "gold" ? "text-gold-ink" : "")}
                 >
                   <it.icon className={cn("h-5 w-5", it.tone === "gold" ? "text-gold" : "")} />
                   {it.label}

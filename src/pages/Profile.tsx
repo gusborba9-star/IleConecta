@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import AssistantSettings from "@/components/assistant/AssistantSettings";
+import ThemeSwitch from "@/components/profile/ThemeSwitch";
 
 export default function Profile() {
   const { currentUser, purchases, rituals, getHouse, posts } = useApp();
@@ -36,6 +37,7 @@ export default function Profile() {
       </Card>
       <EditProfileModal open={editing} onClose={() => setEditing(false)} />
       <AssistantSettings />
+      <ThemeSwitch />
 
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">

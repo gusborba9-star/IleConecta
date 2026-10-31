@@ -16,7 +16,7 @@ import { formatBRL } from "@/lib/utils";
 
 const SITUATION: Record<MemberSituation, { label: string; tone: "danger" | "gold" | "forest" | "muted"; name: string }> = {
   vencida: { label: "Em atraso", tone: "danger", name: "text-[hsl(var(--danger))]" },
-  perto: { label: "Vence em breve", tone: "gold", name: "text-[hsl(30,60%,30%)]" },
+  perto: { label: "Vence em breve", tone: "gold", name: "text-gold-ink" },
   em_dia: { label: "Em dia", tone: "forest", name: "" },
   sem_mensalidade: { label: "Sem mensalidade", tone: "muted", name: "" },
 };
@@ -184,7 +184,7 @@ export default function HouseMembers() {
 }
 
 function Counter({ label, value, tone, active, onClick }: { label: string; value: number; tone?: "danger" | "gold" | "forest"; active: boolean; onClick: () => void }) {
-  const color = tone === "danger" ? "text-[hsl(var(--danger))]" : tone === "gold" ? "text-[hsl(30,60%,30%)]" : tone === "forest" ? "text-forest" : "";
+  const color = tone === "danger" ? "text-[hsl(var(--danger))]" : tone === "gold" ? "text-gold-ink" : tone === "forest" ? "text-forest" : "";
   return (
     <button type="button" onClick={onClick} aria-pressed={active} className={`rounded-xl border p-3 text-left transition ${active ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
       <div className={`text-2xl font-display font-bold ${color}`}>{value}</div>
