@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { isFeatureOn, sanitizeConfig } from "../src/lib/platformConfigCore.js";
 import { KINDS, VISIBILITY, kindDefaultVisibility, SUGGESTIONS, daysUntil, formatDay, nextOccurrence, parseDate, suggestionsFor, traditionalDates, upcoming, whenLabel, todayLocal } from "../src/lib/calendarCore.js";
+import { assistantExample, previewRows, whenText } from "../src/lib/calendarPreview.js";
 
 test("datas inválidas são recusadas", () => {
   assert.equal(parseDate("2026-02-30"), null);
@@ -88,4 +89,19 @@ test("calendário religioso: desligado por padrão e só liga com 'Ligado para t
   assert.equal(d.features.calendar.state, "off");
   assert.equal(isFeatureOn(d, "calendar", "casa1"), false);
   assert.equal(isFeatureOn(sanitizeConfig({ features: { calendar: { state: "on" } } }), "calendar"), true);
+});
+
+test("prévia: texto da data e resposta de exemplo da Assistente", () => {
+  const it = { title: "Festa de Oxum", date: "2020-12-08", yearly: true, note: "Roupa branca." };
+  assert.equal(whenText(it, "2026-11-30"), "8 de dezembro · em 8 dias");
+  assert.equal(assistantExample(it, "2026-11-30"), "Festa de Oxum será em 8 de dezembro (em 8 dias). Roupa branca.");
+  assert.equal(whenText(it, "2026-01-01"), "8 de dezembro");
+  const once = { title: "Gira", date: "2026-01-10", yearly: false };
+  assert.match(assistantExample(once, "2026-11-30"), /já aconteceu/);
+});
+
+test("prévia: cada linha segue o interruptor correspondente", () => {
+  const it = { title: "Obrigação", date: "2020-12-08", yearly: true, vis_public: false, vis_followers: false, vis_house: true, vis_assistant: false };
+  const rows = previewRows(it, "2026-11-30");
+  assert.deepEqual(rows.map((r) => [r.key, r.on]), [["vis_public", false], ["vis_followers", false], ["vis_house", true], ["vis_assistant", false]]);
 });
