@@ -3,7 +3,8 @@
 
 export const PLAN_LIMITS = {
   base: { monthlyReplies: 0, canSell: false, canDiscount: false },
-  intermediario: { monthlyReplies: 300, canSell: false, canDiscount: false },
+  // Profissional e Premium vendem pela plataforma (a casa pode desligar); desconto só no Premium.
+  intermediario: { monthlyReplies: 300, canSell: true, canDiscount: false },
   maximo: { monthlyReplies: 3000, canSell: true, canDiscount: true },
 };
 
@@ -355,7 +356,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   }
   lines.push(`- Serviços publicados: apresente nome, valor e modalidade e diga como contratar exatamente como está em "como contratar". Quando um serviço for híbrido (presencial ou à distância), diga que a pessoa escolhe a modalidade ao contratar. ${selling
     ? "Você pode ajudar o cliente a escolher e fechar a contratação: mostre em uma frase o que o serviço oferece (pela descrição) e leve até o botão de contratar; o pagamento acontece nesse botão, gerado pelo sistema, nunca por você."
-    : "Nos serviços, você apenas informa e orienta: indique o botão do serviço ou, quando não houver botão, passe para a casa; não envie pagamento."}`);
+    : "A casa preferiu fechar os serviços pessoalmente: informe nome, valor e modalidade, mas não conduza a contratação nem indique botão; quando a pessoa quiser contratar, passe para a casa."}`);
   if (payments) {
     lines.push("- Pagar pela plataforma é mais seguro: quando a pessoa for contratar ou pagar algo que tem botão na plataforma, explique em uma frase que o pagamento fica registrado e que, se ela cancelar antes de a casa iniciar o trabalho, o valor volta integralmente. Não repita isso em toda mensagem, não use isso para pressionar e não fale mal de outra forma de pagamento que a casa use.");
   }
@@ -367,11 +368,11 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("");
   lines.push(`PASSAR PARA A CASA (marcador ${HANDOFF_MARK}): o marcador avisa a casa, que passa a responder esta conversa. Use-o SOMENTE quando:`);
   lines.push("a) a pessoa disse que quer participar de uma data da agenda;");
-  lines.push("b) a pessoa quer contratar, ou saber o valor de, algo que só a casa combina (serviço sem botão, trabalho não publicado, item do catálogo);");
+  lines.push(`b) a pessoa quer contratar, ou saber o valor de, algo que só a casa combina (${selling ? "serviço sem botão" : "qualquer serviço"}, trabalho não publicado, item do catálogo);`);
   lines.push("c) você disse que vai confirmar algo com a casa;");
   lines.push("d) assunto delicado, reclamação ou pedido que você não pode resolver;");
   lines.push("e) a pessoa pede para falar com alguém da casa.");
-  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar nem se a pessoa quer que você passe), que a casa responde por aqui assim que puder e que a pessoa fique de olho nas notificações do app (nunca prometa prazo), e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira de Quimbanda, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo, de desconto ou de serviço com botão.`);
+  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar nem se a pessoa quer que você passe), que a casa responde por aqui assim que puder e que a pessoa fique de olho nas notificações do app (nunca prometa prazo), e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira de Quimbanda, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo${selling ? ", de desconto ou de serviço com botão" : " ou de desconto"}.`);
 
   lines.push("");
   lines.push(`Data e hora atuais (UTC): ${now.toISOString()}`);
@@ -418,7 +419,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   for (const s of services.slice(0, 30)) {
     const slots = Array.isArray(s.next_slots) ? s.next_slots.slice(0, 3).map(brtDateTime) : [];
     const bookingNote = s.bookable ? ` — COM AGENDA (${Number(s.duration_min) || 30} min; o cliente agenda na página)${slots.length ? `; próximos horários livres: ${slots.join(", ")}` : "; sem horários livres no momento"}` : "";
-    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${bookingNote} — como contratar: ${serviceHowTo(s, payments)}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
+    lines.push(`- ${oneLine(s.title, 100)} [${serviceKindLabel(s.kind, s.custom_kind)}${s.delivery ? `, ${deliveryLabel(s.delivery)}` : ""}] — ${formatCents(s.price_cents)}${bookingNote} — como contratar: ${selling ? serviceHowTo(s, payments) : "a casa combina direto com a pessoa por esta conversa (passe para a casa)"}${s.description ? ` — ${oneLine(s.description, 240)}` : ""}`);
   }
   lines.push("");
   lines.push("RITUAIS E EVENTOS ABERTOS (rituais coletivos; reserva pelo botão \"Reservar vaga\"):");
