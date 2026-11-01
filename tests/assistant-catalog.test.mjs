@@ -30,10 +30,38 @@ test("catálogo: sem itens não cria a seção; inativos e inválidos saem", () 
 });
 
 test("prompt v2: fluxo, argumento da plataforma e híbrido", () => {
-  const p = buildSystemPrompt({ ...base, catalog: [], services: [{ title: "Búzios", kind: "buzios", delivery: "hibrido", price_cents: 20000 }] });
+  const svc = [{ title: "Búzios", kind: "buzios", delivery: "hibrido", price_cents: 20000 }];
+  const p = buildSystemPrompt({ ...base, catalog: [], services: svc, payments: true });
   assert.match(p, /COMO ATENDER/);
+  assert.match(p, /PRIORIDADES/);
   assert.match(p, /Pagar pela plataforma é mais seguro/);
   assert.match(p, /presencial ou à distância \(o cliente escolhe ao contratar\)/);
+  // Sem pagamento ligado para a casa, a assistente não fala de pagamento pela plataforma.
+  const off = buildSystemPrompt({ ...base, catalog: [], services: svc });
+  assert.doesNotMatch(off, /Pagar pela plataforma é mais seguro/);
+  assert.match(off, /o pagamento é combinado com a casa/);
+});
+
+test("cada serviço diz como contratar, igual ao botão da página", () => {
+  const svc = [
+    { title: "Consulta", kind: "consulta", delivery: "presencial", price_cents: 15000, bookable: false },
+    { title: "Cartas", kind: "cartas", delivery: "transmissao", price_cents: 9000, bookable: false },
+    { title: "Búzios", kind: "buzios", delivery: "presencial", price_cents: 20000, bookable: true, duration_min: 30 },
+  ];
+  const p = buildSystemPrompt({ ...base, catalog: [], services: svc, payments: true });
+  assert.match(p, /Consulta .*como contratar: combinado direto com a casa por esta conversa/);
+  assert.match(p, /Cartas .*como contratar: botão "Contratar" na aba Serviços da página da casa \(paga pela plataforma\)/);
+  assert.match(p, /Búzios .*como contratar: botão "Agendar horário"/);
+  assert.match(p, /nunca cite um botão que não esteja escrito ali/);
+});
+
+test("repasse para a casa: só nos casos listados, nunca em ritual coletivo", () => {
+  const p = buildSystemPrompt({ ...base, catalog: [] });
+  assert.match(p, /PASSAR PARA A CASA/);
+  assert.match(p, /Em qualquer outro caso NÃO use o marcador/);
+  assert.match(p, /Ritual coletivo é com você: não passe a conversa para a casa/);
+  assert.match(p, /vende do começo ao fim/);
+  assert.match(p, /nunca envia nem promete enviar cobrança/);
 });
 
 test("agenda: serviço com agenda mostra próximos horários e não permite a assistente agendar", () => {

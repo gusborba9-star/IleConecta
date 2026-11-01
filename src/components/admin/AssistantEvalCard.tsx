@@ -22,7 +22,7 @@ export default function AssistantEvalCard() {
     <Card className="p-5 space-y-3">
       <div>
         <h3 className="font-semibold">Testar a Assistente</h3>
-        <p className="text-xs text-muted-foreground">Roda {report?.total ?? 10} conversas de exemplo com a IA de verdade (giras, ritual, preço, desconto, pagamento, crise, saúde) e confere as regras. Não grava nada e não gasta a cota de nenhuma casa.</p>
+        <p className="text-xs text-muted-foreground">Roda conversas de exemplo com a IA de verdade (giras, rituais, serviços, preço, desconto, pagamento, crise, saúde) e confere as regras. Não grava nada e não gasta a cota de nenhuma casa.</p>
       </div>
       <Button size="sm" onClick={() => void run()} disabled={busy}>{busy ? "Testando… (até 1 minuto)" : report ? "Testar de novo" : "Rodar teste"}</Button>
       {error && <p className="text-sm text-destructive">{error}</p>}

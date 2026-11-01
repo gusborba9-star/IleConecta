@@ -186,8 +186,12 @@ Deno.serve(async (req) => {
     return { ...s, next_slots: ((slots ?? []) as { slot: string }[]).slice(0, 3).map((r) => r.slot) };
   }));
 
+  // Pagamento pela plataforma ligado para esta casa? (a assistente só fala dele quando é verdade)
+  const { data: payOn } = await admin.rpc("payments_enabled", { p_owner: house.owner_id });
+
   const system = buildSystemPrompt({
     house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
+    payments: payOn === true,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 
