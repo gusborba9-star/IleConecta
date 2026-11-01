@@ -83,3 +83,27 @@ test("prompt: agenda vazia manda confirmar com a casa", () => {
   const p = prompt([]);
   assert.match(p, /nenhuma data liberada no momento/);
 });
+
+test("prompt: reserva só para rituais; agenda conduz o interesse e quem decide é a casa", () => {
+  const p = prompt(normalizeAgenda([base], NOW));
+  assert.match(p, /Nunca mande reservar vaga para uma data da agenda/);
+  assert.match(p, /pergunte, uma única vez, se a pessoa quer participar/);
+  assert.match(p, /palavras da casa/);
+  assert.match(p, /\[\[CASA: nome da data e dia\]\]/);
+  assert.match(p, /Quem decide é sempre a casa/);
+  assert.match(p, /nunca prometa prazo/);
+  assert.ok(!prompt(null).includes("pergunte, uma única vez"));
+});
+
+test("repasse com assunto: o marcador some do texto e o assunto vai só para o aviso", async () => {
+  const { extractHandoff, finalizeReply, HANDOFF_NOTE } = await import("../supabase/functions/assistant-chat/logic.js");
+  const r = extractHandoff("Vou passar seu interesse. [[CASA: Gira de Quimbanda, 2/11]]");
+  assert.deepEqual(r, { handoff: true, text: "Vou passar seu interesse.", reason: "Gira de Quimbanda, 2/11" });
+  assert.deepEqual(extractHandoff("Ok [[CASA]]"), { handoff: true, text: "Ok" });
+  assert.equal(extractHandoff("Ok [[CASA: aberto").handoff, false);
+  const f = finalizeReply("A casa responde por aqui assim que puder. [[CASA: Gira, 2/11]]", "quero ir");
+  assert.equal(f.handoff, true);
+  assert.equal(f.reason, "Gira, 2/11");
+  assert.ok(!f.text.includes("[["));
+  assert.equal(finalizeReply("[[CASA: x]]", "oi").text, HANDOFF_NOTE);
+});
