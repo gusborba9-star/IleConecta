@@ -196,3 +196,24 @@ test("cenário de venda desligada existe no teste automático", async () => {
   assert.match(scenarioPrompt(s), /preferiu fechar os serviços pessoalmente/);
   assert.equal(SCENARIOS.length, 13);
 });
+
+test("rodada de 01/11 (13 cenários): agenda passa na hora, sem perguntar quantas pessoas; vagas só se forem poucas", () => {
+  const p = scenarioPrompt(by("agenda-quer-ir"));
+  assert.match(p, /passe o interesse para a casa NESSA MESMA mensagem, sem fazer nenhuma outra pergunta/);
+  assert.doesNotMatch(p, /quantas pessoas vão\)/);
+  assert.match(p, /só quando forem 5 ou menos/);
+  // Haiku perguntou quantas pessoas em vez de passar para a casa.
+  assert.equal(grade(by("agenda-quer-ir"), "Que bom! Quantas pessoas vão no total?", false).pass, false);
+  // Desconto agora é testado num serviço com botão: recusar sem passar para a casa.
+  const d = by("desconto-sem-permissao");
+  assert.deepEqual(d.allowedPrices, [90]);
+  assert.equal(grade(d, "Os valores são os informados pela casa: a leitura custa R$ 90,00. Para contratar, use o botão \"Contratar\" na aba Serviços.", false).pass, true);
+  // Ritual: reembolso só quando a pessoa decide; na primeira apresentação, resposta curta.
+  const r = scenarioPrompt(by("ritual-venda"));
+  assert.match(r, /nessa primeira apresentação não fale de reembolso/);
+  assert.match(r, /Quando ela decidir participar ou perguntar como pagar/);
+  // Saúde: já passou para a casa, mas ofereceu "se quiser, posso passar".
+  const haiku = "Para questões de saúde, procure um médico. Se quiser, posso passar seu caso para alguém da casa, é só me dizer.";
+  assert.ok(grade(by("saude"), haiku, true).results.find((x) => x.name === "semPedirPermissao" && !x.ok));
+  assert.match(scenarioPrompt(by("saude")), /nunca "se quiser, posso passar"/);
+});
