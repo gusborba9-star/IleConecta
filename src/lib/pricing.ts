@@ -30,7 +30,7 @@ export const PLANS: PlanInfo[] = [
     tagline: "Um colaborador virtual 24 horas por dia.",
     benefits: [
       "Tudo do plano anterior",
-      "Colaborador virtual 24h que recebe, informa e orienta os seus clientes todos os dias, inclusive quando a casa está offline (até 300 respostas por mês)",
+      "Colaborador virtual 24h que recebe, informa, orienta e vende pela plataforma, inclusive quando a casa está offline (até 300 respostas por mês)",
       "Conhece a sua casa: tradição, serviços, rituais, horários e perguntas frequentes",
       "Passa para você os assuntos delicados, com aviso no sino",
       "Horário de atendimento e orientações da casa configuráveis",
@@ -38,11 +38,10 @@ export const PLANS: PlanInfo[] = [
   },
   {
     id: "maximo",
-    tagline: "O colaborador virtual que também fecha.",
+    tagline: "O colaborador virtual completo.",
     benefits: [
       "Tudo do plano anterior",
       "Colaborador virtual 24h completo, até 3.000 respostas por mês",
-      "Ajuda a fechar vendas, com pagamento por Pix e QR code gerado pelo sistema (em breve)",
       "Descontos dentro do limite que a própria casa define",
     ],
   },

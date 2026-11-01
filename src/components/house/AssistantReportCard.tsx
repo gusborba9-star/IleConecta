@@ -45,7 +45,7 @@ export default function AssistantReportCard() {
   } else if (r.plan === "base" && r.contacts24h > 0) {
     upsell = `Nas últimas 24 horas ${r.contacts24h} ${r.contacts24h === 1 ? "cliente falou" : "clientes falaram"} com a casa. Com o plano ${upgradeName}, a assistente responde por você quando estiver offline.`;
   } else if (r.plan === "intermediario" && r.nightContacts > 0 && r.ordersAfterChat + r.seatsAfterChat > 0) {
-    upsell = `Nos últimos ${r.days} dias, ${r.ordersAfterChat + r.seatsAfterChat} pedidos ou vagas vieram de clientes que conversaram com a assistente. No plano ${upgradeName} ela também ajuda a fechar vendas pelo chat.`;
+    upsell = `Nos últimos ${r.days} dias, ${r.ordersAfterChat + r.seatsAfterChat} pedidos ou vagas vieram de clientes que conversaram com a assistente. No plano ${upgradeName} ela atende até 3.000 respostas por mês e pode oferecer descontos dentro do limite que você definir.`;
   }
 
   return (
