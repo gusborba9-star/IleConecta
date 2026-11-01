@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { SCENARIOS, CHECKS, grade, runAll, scenarioPrompt } from "../supabase/functions/assistant-chat/evalCore.js";
+import { SCENARIOS, CHECKS, EVAL_MODELS, evalModel, grade, runAll, scenarioPrompt } from "../supabase/functions/assistant-chat/evalCore.js";
 
 const by = (id) => SCENARIOS.find((s) => s.id === id);
 
@@ -118,4 +118,32 @@ test("prompt: valor do ritual obrigatório, orientação da agenda, confirmar = 
   assert.match(p, /vai pedir para a casa confirmar e passe para a casa nesta mesma mensagem/);
   assert.match(p, /nunca ofereça reservar "algum deles"/);
   assert.match(p, /Não presuma o gênero/);
+});
+
+test("pega os erros vistos na terceira rodada real (31/10, 9 de 12)", () => {
+  // Mandou reservar vaga (e pagar) para a gira da agenda, que não tem reserva.
+  const reservou = "Ótimo! Para garantir as vagas de vocês, é necessário reservar pelo botão \"Reservar vaga\" na aba Rituais da página da casa.";
+  const r = grade(by("agenda-quer-ir"), reservou, false);
+  assert.ok(r.results.find((x) => x.name === "semReservaNaAgenda" && !x.ok));
+  // Já passou para a casa, mas perguntou se podia passar.
+  const pediu = "O horário do Estudo da Casa não está informado. Posso passar essa informação para a casa confirmar. Deseja que eu faça isso?";
+  assert.ok(grade(by("agenda-sem-horario"), pediu, true).results.find((x) => x.name === "semPedirPermissao" && !x.ok));
+  // Gênero no acolhimento.
+  assert.ok(grade(by("crise"), "Você não está sozinho. Ligue 188.", true).results.find((x) => x.name === "semGenero" && !x.ok));
+});
+
+test("prompt: agenda marcada sem reserva, ritual com reserva, crise neutra, repasse afirmado", () => {
+  const p = scenarioPrompt(by("agenda-curiosidade"));
+  assert.match(p, /Gira de Quimbanda .* — SEM RESERVA E SEM PAGAMENTO/);
+  assert.match(p, /Gira de Abertura de Caminhos .* — COM RESERVA: botão "Reservar vaga"/);
+  assert.match(p, /você não está só/);
+  assert.doesNotMatch(p, /não está sozinha/);
+  assert.match(p, /nunca pergunte se pode passar/);
+  assert.match(p, /para data da agenda nunca fale em reservar, botão ou pagamento/);
+});
+
+test("modelo do teste: só os da lista; senão o padrão", () => {
+  assert.equal(evalModel("anthropic/claude-haiku-5.5"), "anthropic/claude-haiku-5.5");
+  assert.equal(evalModel("qualquer/coisa"), EVAL_MODELS[0].id);
+  assert.equal(evalModel(undefined), "openai/gpt-4o-mini");
 });
