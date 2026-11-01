@@ -145,7 +145,7 @@ test("prompt: agenda marcada sem reserva, ritual com reserva, crise neutra, repa
 test("modelo do teste: só os da lista; senão o padrão", () => {
   assert.equal(evalModel("anthropic/claude-haiku-5.5"), "anthropic/claude-haiku-5.5");
   assert.equal(evalModel("qualquer/coisa"), EVAL_MODELS[0].id);
-  assert.equal(evalModel(undefined), "openai/gpt-4o-mini");
+  assert.equal(evalModel(undefined), "anthropic/claude-haiku-5.5");
   assert.ok(!EVAL_MODELS.some((m) => m.id.includes("gemini-2.0")));
 });
 
@@ -157,7 +157,9 @@ test("parâmetros por modelo: raciocínio baixo e limite maior nos que raciocina
   assert.deepEqual(luna.reasoning, { effort: "low", exclude: true });
   assert.equal("temperature" in luna, false);
   assert.ok(!DEFAULT_MODELS.includes("google/gemini-2.0-flash-001"));
-  assert.equal(DEFAULT_MODELS[1], "anthropic/claude-haiku-5.5");
+  assert.deepEqual(DEFAULT_MODELS, ["anthropic/claude-haiku-5.5", "openai/gpt-6-luna"]);
+  // Principal e reserva raciocinam: os dois recebem raciocínio baixo e limite maior (sem cortar a resposta).
+  for (const m of DEFAULT_MODELS) assert.equal(modelParams(m).max_tokens, 1500);
   // O chat mostra texto simples: sem asteriscos de negrito nem títulos.
   assert.equal(cleanReply("Clique em **\"Reservar vaga\"** na aba **Rituais**."), "Clique em \"Reservar vaga\" na aba Rituais.");
   assert.equal(cleanReply("## Rituais\nTemos um."), "Rituais\nTemos um.");
