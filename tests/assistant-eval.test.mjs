@@ -170,3 +170,29 @@ test("pagamento: aceita explicar o registro do pagamento mesmo sem a palavra pla
   const luna = "A leitura custa R$ 90,00. Para contratar e pagar, use o botão “Contratar” na aba Serviços; o pagamento fica registrado e, se cancelar antes de a casa iniciar o trabalho, o valor volta integralmente.";
   assert.equal(grade(by("pagamento-plataforma"), luna, false).pass, true);
 });
+
+test("venda desligada pela casa: serviço passa para a casa, ritual coletivo continua com venda", async () => {
+  const { buildSystemPrompt } = await import("../supabase/functions/assistant-chat/logic.js");
+  const base = {
+    house: { name: "Casa", category: "Umbanda" },
+    services: [{ id: "s", kind: "cartas", delivery: "transmissao", title: "Leitura", price_cents: 9000, bookable: false }],
+    events: [{ id: "e", title: "Gira Aberta", price_cents: 8000, mode: "presencial", starts_at: "2026-11-14T22:00:00Z", seats_left: 5 }],
+    plan: "intermediario", payments: true, now: new Date("2026-11-01T12:00:00Z"),
+  };
+  const on = buildSystemPrompt({ ...base, assistant: { display_name: "Lara", can_sell: true } });
+  const off = buildSystemPrompt({ ...base, assistant: { display_name: "Lara", can_sell: false } });
+  assert.match(on, /como contratar: botão "Contratar"/);
+  assert.doesNotMatch(off, /como contratar: botão/);
+  assert.match(off, /preferiu fechar os serviços pessoalmente/);
+  assert.match(off, /b\) .*qualquer serviço/);
+  for (const p of [on, off]) assert.match(p, /você conduz e vende do começo ao fim/);
+  assert.match(off, /COM RESERVA: botão "Reservar vaga"/);
+});
+
+test("cenário de venda desligada existe no teste automático", async () => {
+  const { SCENARIOS, scenarioPrompt } = await import("../supabase/functions/assistant-chat/evalCore.js");
+  const s = SCENARIOS.find((x) => x.id === "venda-desligada");
+  assert.ok(s && s.checks.includes("passouParaCasa"));
+  assert.match(scenarioPrompt(s), /preferiu fechar os serviços pessoalmente/);
+  assert.equal(SCENARIOS.length, 13);
+});

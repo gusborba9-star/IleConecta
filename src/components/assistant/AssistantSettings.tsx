@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
 import { Bot } from "lucide-react";
 import { toast } from "sonner";
-import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
+import { Badge, Button, Card, Input, Label, Modal, Textarea } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 import type { HouseUser, User } from "@/types";
 import InternalCatalog from "@/components/assistant/InternalCatalog";
 import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
+
+/** O que a casa perde ao desligar a venda pela assistente (só o que a plataforma faz de verdade). */
+const STOP_SELLING_LOSSES = [
+  "Vendas a qualquer hora: a assistente fecha o pedido mesmo quando a casa está offline, sem você precisar responder.",
+  "Pagamento registrado na plataforma, com o pedido e o andamento do trabalho no histórico da casa e do cliente.",
+  "Avaliações na sua página: só compras feitas pela plataforma podem ser avaliadas pelos clientes.",
+  "Reembolso automático se o cliente cancelar antes de a casa começar, o que deixa quem compra mais seguro para fechar.",
+  "Menos conversa para combinar valor e forma de pagamento, um a um.",
+];
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
 export default function AssistantSettings() {
@@ -19,6 +28,7 @@ export default function AssistantSettings() {
   const [cfg, setCfg] = useState<AssistantConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [askStopSelling, setAskStopSelling] = useState(false);
 
   const show = isRemoteAuth && currentUser?.type === "commercial";
   const userId = currentUser?.id;
@@ -75,7 +85,7 @@ export default function AssistantSettings() {
       )}
       {cfg.plan === "intermediario" && (
         <p className="text-sm text-muted-foreground">
-          No plano {config.pricing.plans.intermediario.name} a assistente informa e orienta (até 300 respostas por mês). Venda pelo chat e descontos são do plano {config.pricing.plans.maximo.name}.
+          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até 300 respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
         </p>
       )}
 
@@ -184,9 +194,20 @@ export default function AssistantSettings() {
       </div>
 
       <div className="space-y-2">
-        <label className={`flex items-center gap-2 text-sm ${fullPlan ? "" : "opacity-50"}`}>
-          <input type="checkbox" disabled={!fullPlan} checked={cfg.canSell} onChange={(e) => patch({ canSell: e.target.checked })} />
-          Pode ajudar a fechar vendas (pagamento é gerado pelo sistema)
+        <label className={`flex items-start gap-2 text-sm ${available ? "" : "opacity-50"}`}>
+          <input
+            type="checkbox"
+            className="mt-1"
+            disabled={!available}
+            checked={cfg.canSell}
+            onChange={(e) => (e.target.checked ? patch({ canSell: true }) : setAskStopSelling(true))}
+          />
+          <span>
+            Vender serviços e trabalhos pela plataforma
+            <span className="block text-xs text-muted-foreground">
+              A assistente leva o cliente até o pagamento, gerado pelo sistema. Rituais coletivos ela sempre vende, mesmo com esta opção desligada.
+            </span>
+          </span>
         </label>
         <label className={`flex items-center gap-2 text-sm ${fullPlan ? "" : "opacity-50"}`}>
           <input type="checkbox" disabled={!fullPlan} checked={cfg.canDiscount} onChange={(e) => patch({ canDiscount: e.target.checked })} />
@@ -206,6 +227,20 @@ export default function AssistantSettings() {
       </div>
 
       <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : "Salvar assistente"}</Button>
+
+      <Modal open={askStopSelling} onClose={() => setAskStopSelling(false)} title="Desligar a venda pela assistente?">
+        <div className="space-y-3 text-sm">
+          <p>Sem a venda pela assistente, ela só informa e passa o cliente para você combinar. A casa deixa de ter:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {STOP_SELLING_LOSSES.map((t) => <li key={t}>{t}</li>)}
+          </ul>
+          <p className="text-muted-foreground">Rituais coletivos continuam sendo vendidos pela assistente. Você pode religar quando quiser.</p>
+          <div className="flex flex-wrap justify-end gap-2 pt-1">
+            <Button variant="outline" onClick={() => { patch({ canSell: false }); setAskStopSelling(false); }}>Desligar mesmo assim</Button>
+            <Button onClick={() => setAskStopSelling(false)}>Manter a venda ligada</Button>
+          </div>
+        </div>
+      </Modal>
     </Card>
   );
 }
