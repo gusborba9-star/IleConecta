@@ -56,7 +56,7 @@ test("cada serviço diz como contratar, igual ao botão da página", () => {
 });
 
 test("repasse para a casa: só nos casos listados, nunca em ritual coletivo", () => {
-  const p = buildSystemPrompt({ ...base, catalog: [] });
+  const p = buildSystemPrompt({ ...base, catalog: [], events: [{ id: "e", title: "Gira Aberta", price_cents: 8000, mode: "presencial", starts_at: "2026-11-14T22:00:00Z", seats_left: 9 }] });
   assert.match(p, /PASSAR PARA A CASA/);
   assert.match(p, /Em qualquer outro caso NÃO use o marcador/);
   assert.match(p, /Ritual coletivo é com você: não passe a conversa para a casa/);

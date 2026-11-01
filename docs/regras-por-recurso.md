@@ -54,7 +54,7 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 
 - **Presencial:** bloqueia a agenda da casa.
 - **Online / remoto:** confirmação entre casa e cliente.
-- **Não presencial:** a casa sempre precisa executar o comando de **iniciar** e o de **terminar**; o cliente é notificado nos dois.
+- **Não presencial:** a casa sempre precisa executar o comando de **iniciar** e o de **terminar** (obrigatório); o cliente é notificado nos dois.
 
 ## Atrasos, cancelamento e reembolso
 
@@ -64,8 +64,10 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 
 ## Prova do trabalho (serviço remoto)
 
-- A casa pode validar o trabalho com o cliente remoto por fotos e vídeos de no máximo 30 segundos, pelo chat.
+- **Opcional.** É uma ferramenta que a casa pode usar, nunca uma obrigação. Muitas tradições são sigilosas e não expõem o trabalho, e os clientes sabem disso.
+- Quando a casa quiser, pode validar o trabalho com o cliente remoto por fotos e vídeos de no máximo 30 segundos, pelo chat.
 - O sistema entrega a mídia somente a clientes conectados e vinculados àquele serviço.
+- O que é obrigatório é a casa clicar em **iniciar** e **terminar**.
 
 ## Ritual coletivo
 
