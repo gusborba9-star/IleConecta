@@ -48,7 +48,8 @@ test("desconto e venda só no plano máximo e dentro do limite da casa", () => {
   assert.equal(allowedDiscountPercent("maximo", { ...assistantOn, max_discount_percent: -5 }), 0);
   assert.equal(allowedDiscountPercent("maximo", { ...assistantOn, max_discount_percent: "abc" }), 0);
   assert.equal(canSell("maximo", assistantOn), true);
-  assert.equal(canSell("intermediario", assistantOn), false);
+  assert.equal(canSell("intermediario", assistantOn), true);
+  assert.equal(canSell("base", assistantOn), false);
   assert.equal(canSell("maximo", { ...assistantOn, can_sell: false }), false);
 });
 
@@ -80,10 +81,12 @@ test("prompt traz serviços reais com preço exato e as regras de segurança", (
   assert.match(p, /nunca por você/);
 });
 
-test("sem permissão, o prompt proíbe desconto e venda", () => {
+test("Profissional vende sem desconto; casa que desligou a venda só informa e passa para a casa", () => {
   const p = buildSystemPrompt({ ...base, plan: "intermediario" });
   assert.match(p, /NÃO pode oferecer nem negociar desconto/);
-  assert.match(p, /não envie pagamento/);
+  assert.match(p, /fechar a contratação/);
+  const off = buildSystemPrompt({ ...base, assistant: { ...assistantOn, can_sell: false }, plan: "intermediario" });
+  assert.match(off, /não conduza a contratação/);
   assert.doesNotMatch(p, /desconto de até/);
   assert.match(p, /\(nenhum cadastrado\)/);
 });

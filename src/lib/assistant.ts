@@ -73,11 +73,12 @@ export async function fetchMyAssistant(ownerId: string): Promise<AssistantConfig
   return {
     houseId: house.id as string,
     plan: (house.plan as Plan) ?? "base",
-    enabled: a?.enabled ?? false,
+    enabled: a?.enabled ?? true,
     displayName: a?.display_name ?? "Assistente",
     instructions: a?.instructions ?? "",
     businessHours: (a?.business_hours as Record<string, string>) ?? {},
-    canSell: a?.can_sell ?? false,
+    // Regra da plataforma: a assistente vende por padrão; a casa pode desligar.
+    canSell: a?.can_sell ?? true,
     canDiscount: a?.can_discount ?? false,
     maxDiscountPercent: a?.max_discount_percent ?? 0,
     profile: cleanProfile(a?.profile),

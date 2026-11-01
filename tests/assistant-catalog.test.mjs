@@ -4,7 +4,7 @@ import { buildSystemPrompt, normalizeCatalog } from "../supabase/functions/assis
 
 const base = {
   house: { name: "Casa Teste", category: "Umbanda" },
-  assistant: { display_name: "Lara", enabled: true, business_hours: {} },
+  assistant: { display_name: "Lara", enabled: true, can_sell: true, business_hours: {} },
   services: [], events: [], plan: "maximo",
   now: new Date("2026-10-31T12:00:00Z"),
 };
