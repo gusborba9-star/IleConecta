@@ -17,7 +17,7 @@ test("prompt traz o texto 'o que a casa faz', mesmo sem serviços nem rituais pu
 test("regras: apresentar a casa, passar para a casa trabalho não publicado, nunca dizer que agendou nem dar preço", () => {
   const prompt = buildSystemPrompt({ house: { name: "Casa Luz", offerings: "Búzios" }, plan: "intermediario", services: [], events: [], assistant });
   assert.match(prompt, /conhecer a casa ou perguntar o que a casa faz/);
-  assert.match(prompt, /não está publicado.*termine com \[\[CASA\]\]/s);
+  assert.match(prompt, /não estão publicados.*passe para a casa/s);
   assert.match(prompt, /nunca marca, agenda ou reserva horário/);
   assert.match(prompt, /nunca informe valor deles/);
   assert.ok(prompt.includes(HANDOFF_MARK));
