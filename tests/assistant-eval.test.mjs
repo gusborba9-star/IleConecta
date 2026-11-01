@@ -22,7 +22,7 @@ test("pega a resposta ruim real da Lara (mandou reservar vaga e escreveu regra p
   const ruim = "Na casa, realizamos a Gira de Quimbanda, que é uma cerimônia especial. A próxima ocorrerá no dia 2 de novembro de 2026, às 21h. Todos devem vestir roupas escuras ou vermelhas. Se você quiser participar, pode reservar sua vaga na aba Rituais da página da casa.";
   const r = grade(by("agenda-curiosidade"), ruim, false);
   assert.equal(r.pass, false);
-  assert.ok(r.results.find((x) => x.name === "semReservaNaAgenda" && !x.ok));
+  assert.ok(r.results.find((x) => x.name === "reservaSoDoRitual" && !x.ok));
 });
 
 test("aprova a resposta esperada para a pergunta aberta", () => {
@@ -92,4 +92,30 @@ test("finalizeReply não repete o aviso quando a resposta já disse que a casa v
   assert.equal(r.handoff, true);
   assert.ok(!r.text.includes(HANDOFF_NOTE));
   assert.ok(finalizeReply("Certo. [[CASA]]", "oi").text.includes(HANDOFF_NOTE));
+});
+
+test("pega os erros vistos na segunda rodada real (31/10, 9 de 12)", () => {
+  // Misturou a gira da agenda com o ritual, ofereceu reservar "algum deles" e esqueceu a orientação.
+  const misturou = "Na nossa casa, temos a Gira de Quimbanda, no dia 2 de novembro de 2026, às 21h. Também temos a Gira de Abertura de Caminhos, no dia 14 de novembro, às 19h. Você gostaria de reservar uma vaga em algum deles?";
+  const r1 = grade(by("agenda-curiosidade"), misturou, false);
+  assert.ok(r1.results.find((r) => r.name === "semReservaMisturada" && !r.ok));
+  assert.ok(r1.results.find((r) => r.name === "citaOrientacao" && !r.ok));
+  // Gênero presumido.
+  assert.ok(grade(by("desconto-sem-permissao"), "Se você estiver interessada, posso ajudar.", false).results.find((r) => r.name === "semGenero" && !r.ok));
+  assert.equal(grade(by("desconto-sem-permissao"), "Se tiver interesse, posso ajudar.", false).pass, true);
+});
+
+test("o servidor reconhece mais formas de 'a casa vai responder' e não repete o aviso", async () => {
+  const { finalizeReply, HANDOFF_NOTE } = await import("../supabase/functions/assistant-chat/logic.js");
+  const t = "Os valores são combinados com a casa. Vou passar sua pergunta para eles, e assim que puderem, responderão por aqui. [[CASA: valor do jogo de búzios]]";
+  assert.ok(!finalizeReply(t, "quanto custa?").text.includes(HANDOFF_NOTE));
+});
+
+test("prompt: valor do ritual obrigatório, orientação da agenda, confirmar = passar, gênero neutro", () => {
+  const p = scenarioPrompt(by("agenda-curiosidade"));
+  assert.match(p, /nunca omita o valor/);
+  assert.match(p, /sempre que a data tiver orientação, cite-a/);
+  assert.match(p, /vai pedir para a casa confirmar e passe para a casa nesta mesma mensagem/);
+  assert.match(p, /nunca ofereça reservar "algum deles"/);
+  assert.match(p, /Não presuma o gênero/);
 });
