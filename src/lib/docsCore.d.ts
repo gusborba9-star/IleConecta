@@ -1,5 +1,5 @@
-export const DOC_TITLE_MAX: number;
-export const DOC_BODY_MAX: number;
+export declare const DOC_TITLE_MAX: number;
+export declare const DOC_BODY_MAX: number;
 export function slugify(title: string): string;
 export function validateDoc(input: { title?: string; body?: string }): { ok: true; title: string; body: string } | { ok: false; error: string };
 export type InlinePart = { t: "text" | "b" | "code"; v: string };
