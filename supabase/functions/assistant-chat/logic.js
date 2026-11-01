@@ -62,8 +62,12 @@ export function normalizeProfile(raw) {
 /** A assistente sinaliza com [[CASA]] que a casa deve assumir; o marcador nunca chega ao cliente. */
 export function extractHandoff(raw) {
   const text = typeof raw === "string" ? raw : "";
-  const handoff = text.includes(HANDOFF_MARK);
-  return { handoff, text: text.split(HANDOFF_MARK).join("").trim() };
+  // Aceita [[CASA]] e [[CASA: assunto]] (o assunto vai só no aviso à casa, nunca ao cliente).
+  const mark = /\[\[CASA(?:\s*:\s*([^\]]*))?\]\]/g;
+  const handoff = /\[\[CASA(?:\s*:[^\]]*)?\]\]/.test(text);
+  const reason = oneLine((mark.exec(text) ?? [])[1], 80);
+  const clean = text.replace(mark, "").replace(/[ \t]+\n/g, "\n").trim();
+  return reason ? { handoff, text: clean, reason } : { handoff, text: clean };
 }
 
 export const HANDOFF_NOTE = "Avisei a casa: ela vai assumir esta conversa e te responder assim que puder.";
@@ -85,7 +89,7 @@ export function finalizeReply(rawReply, userText) {
   let text = ex.text;
   if (crisis && !text.includes("188")) text = `${text}${text ? "\n\n" : ""}${CRISIS_NOTE}`;
   if (handoff && !/assum/i.test(text)) text = `${text}${text ? "\n\n" : ""}${HANDOFF_NOTE}`;
-  return { handoff, text };
+  return ex.reason && handoff ? { handoff, text, reason: ex.reason } : { handoff, text };
 }
 
 /** Primeiro nome do cliente para a saudação; vazio se não der para usar com segurança (e-mail, números, símbolos). */
@@ -282,9 +286,10 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("REGRAS INEGOCIÁVEIS:");
   lines.push("- Use SOMENTE os serviços, rituais, preços e horários listados abaixo. Nunca invente nem arredonde valores, vagas ou datas. Se algo não está na lista, diga que vai confirmar com a casa. Os trabalhos descritos em \"TRABALHOS QUE A CASA REALIZA\" existem, mas não têm preço nem horário cadastrados: nunca informe valor deles. Os itens do \"CATÁLOGO INTERNO DA CASA\" só podem ter o valor informado quando o item diz \"valor que você pode informar\"; nos demais, nunca cite números.");
   lines.push("- Não prometa resultado espiritual, cura, ganho financeiro ou qualquer garantia. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
-  lines.push("- Para reservar vaga em um ritual, o cliente usa o botão \"Reservar vaga\" na aba Rituais da página da casa; para serviços, combine pelo chat com a casa. Explique isso quando perguntarem como contratar.");
+  lines.push("- Só os itens de \"RITUAIS E EVENTOS ABERTOS\" têm reserva: para eles, o cliente usa o botão \"Reservar vaga\" na aba Rituais da página da casa. Para serviços, combine pelo chat com a casa. Explique isso quando perguntarem como contratar.");
   if (agenda !== null) {
-    lines.push("- A \"AGENDA DA CASA\" lista as datas que a casa liberou para você informar. Informe data, horário e orientações exatamente como estão escritos. Nunca invente horário, local, roupa, valor ou vaga que não estejam na agenda; se faltar algo, diga que vai confirmar com a casa. A agenda não reserva vaga nem confirma presença.");
+    lines.push("- A \"AGENDA DA CASA\" lista as datas que a casa liberou para você informar. Informe data, horário e orientações exatamente como estão escritos. Nunca invente horário, local, roupa, valor ou vaga que não estejam na agenda; se faltar algo, diga que vai confirmar com a casa. A agenda não reserva vaga nem confirma presença. Nunca mande reservar vaga para uma data da agenda que não esteja em \"RITUAIS E EVENTOS ABERTOS\".");
+    lines.push("- Ao falar de uma data da agenda: (1) responda o que foi perguntado com data, horário e a orientação da casa, citando a orientação com as palavras da casa, sem acrescentar adjetivos ou regras; (2) em seguida pergunte, uma única vez, se a pessoa quer participar (se ela já disse que quer, não pergunte); (3) se quiser, pergunte no máximo uma coisa que falte (por exemplo, quantas pessoas vão) e não repita perguntas; (4) feche passando o interesse para a casa: diga que vai passar o interesse dela, que a casa responde por aqui assim que puder e que ela fique de olho nas notificações do app, e termine com [[CASA: nome da data e dia]] (ex.: [[CASA: Gira de Quimbanda, 2/11]]). Quem decide é sempre a casa: nunca diga que a pessoa está confirmada, convidada ou com vaga garantida, e nunca prometa prazo de resposta.");
   }
   lines.push("- Respeite todas as tradições. Não critique outras religiões.");
   lines.push("- Nunca peça nem aceite senha, dados de cartão ou documentos pelo chat.");

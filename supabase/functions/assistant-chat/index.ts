@@ -235,7 +235,9 @@ Deno.serve(async (req) => {
     const name = (who?.display_name as string | undefined)?.trim() || "Um cliente";
     await admin.from("notifications").insert({
       user_id: house.owner_id,
-      text: `${name} precisa de você: a assistente passou a conversa para a casa.`,
+      text: handoff.reason
+        ? `${name} precisa de você: ${handoff.reason}. A assistente passou a conversa para a casa.`
+        : `${name} precisa de você: a assistente passou a conversa para a casa.`,
       href: handoffHref,
     });
   }
