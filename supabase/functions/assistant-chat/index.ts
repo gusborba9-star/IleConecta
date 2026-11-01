@@ -12,6 +12,7 @@ import {
   cleanUserText,
   finalizeReply,
   featureEnabled,
+  modelParams,
   monthStartISO,
   normalizeAgenda,
   planLimits,
@@ -75,11 +76,15 @@ Deno.serve(async (req) => {
           method: "POST",
           signal: ctrl.signal,
           headers: { Authorization: `Bearer ${openrouterKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://ile-conecta.vercel.app", "X-Title": "Ile Conecta (teste)" },
-          body: JSON.stringify({ model, messages: [{ role: "system", content: system }, ...messages], max_tokens: 400, temperature: 0.5 }),
+          body: JSON.stringify({ model, messages: [{ role: "system", content: system }, ...messages], ...modelParams(model) }),
         });
         if (!res.ok) throw new Error(`openrouter_${res.status}`);
         const out = await res.json();
-        return String(out?.choices?.[0]?.message?.content ?? "");
+        const choice = out?.choices?.[0];
+        const content = String(choice?.message?.content ?? "");
+        // Mostra no teste quando o modelo estoura o limite de tamanho, em vez de avaliar um texto cortado.
+        if (choice?.finish_reason === "length") throw new Error(content.trim() ? "resposta cortada pelo limite de tamanho" : "resposta vazia: o limite de tamanho acabou no raciocínio");
+        return content;
       } finally {
         clearTimeout(t);
       }
@@ -218,8 +223,7 @@ Deno.serve(async (req) => {
         model: models[0],
         models,
         messages: [{ role: "system", content: system }, ...chat],
-        max_tokens: 400,
-        temperature: 0.5,
+        ...modelParams(models[0]),
         user: user.id,
       }),
     });
