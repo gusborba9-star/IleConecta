@@ -11,7 +11,20 @@ export const USER_RATE = { windowMinutes: 10, maxReplies: 20 };
 export const MAX_USER_CHARS = 1000;
 export const HISTORY_LIMIT = 12;
 export const MAX_REPLY_CHARS = 1500;
-export const DEFAULT_MODELS = ["openai/gpt-4o-mini", "google/gemini-2.0-flash-001"];
+// Principal e reserva (de outro fornecedor, para não cair junto). O Gemini 2.0 Flash saiu do OpenRouter (404).
+export const DEFAULT_MODELS = ["openai/gpt-4o-mini", "anthropic/claude-haiku-5.5"];
+/** Modelos que raciocinam antes de responder: o raciocínio gasta o mesmo limite de tamanho da resposta. */
+export const REASONING_MODELS = ["anthropic/claude-haiku-5.5", "openai/gpt-6-luna"];
+
+/**
+ * Parâmetros de geração por modelo. Nos que raciocinam: raciocínio baixo (rápido e barato), limite maior para
+ * sobrar espaço para o texto, e sem temperature (alguns fornecedores não aceitam com raciocínio ligado).
+ */
+export function modelParams(model) {
+  return REASONING_MODELS.includes(model)
+    ? { max_tokens: 1500, reasoning: { effort: "low", exclude: true } }
+    : { max_tokens: 600, temperature: 0.5 };
+}
 
 export function planLimits(plan) {
   return PLAN_LIMITS[plan] ?? PLAN_LIMITS.base;
@@ -125,9 +138,15 @@ export function buildGreeting({ clientName, assistantName, houseName, now = new 
   return `${greetingWord(now)}${who ? `, ${who}` : ""}! ${intro} Estou aqui para ajudar no que for preciso.`;
 }
 
+/** Texto final da IA: o chat mostra texto simples, então tira marcação de markdown (negrito, títulos). */
 export function cleanReply(raw) {
   if (typeof raw !== "string") return "";
-  return raw.trim().slice(0, MAX_REPLY_CHARS);
+  return raw
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/__([^_\n]+)__/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .trim()
+    .slice(0, MAX_REPLY_CHARS);
 }
 
 /** Retorna null se pode responder, ou o código do bloqueio. */
@@ -294,7 +313,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   const profile = normalizeProfile(assistant.profile);
   const lines = [];
   lines.push(`Você é ${oneLine(assistant.display_name || "a assistente", 40)}, atendente virtual da casa espiritual "${oneLine(house.name, 100)}"${house.category ? ` (${oneLine(house.category, 80)})` : ""}.`);
-  lines.push(`Fale sempre em português do Brasil, com tom ${TONES[profile.tone]}, respeito e clareza. Mensagens curtas (até 4 frases), sem exagero de emojis. Não presuma o gênero de quem escreve: use formas neutras (por exemplo "se tiver interesse", "você não está só").`);
+  lines.push(`Fale sempre em português do Brasil, com tom ${TONES[profile.tone]}, respeito e clareza. Mensagens curtas (até 4 frases), em texto simples (sem markdown, sem asteriscos), sem exagero de emojis. Não presuma o gênero de quem escreve: use formas neutras (por exemplo "se tiver interesse", "você não está só").`);
 
   lines.push("");
   lines.push("PRIORIDADES (se entrarem em conflito, siga esta ordem):");
