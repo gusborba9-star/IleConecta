@@ -146,4 +146,25 @@ test("modelo do teste: só os da lista; senão o padrão", () => {
   assert.equal(evalModel("anthropic/claude-haiku-5.5"), "anthropic/claude-haiku-5.5");
   assert.equal(evalModel("qualquer/coisa"), EVAL_MODELS[0].id);
   assert.equal(evalModel(undefined), "openai/gpt-4o-mini");
+  assert.ok(!EVAL_MODELS.some((m) => m.id.includes("gemini-2.0")));
+});
+
+test("parâmetros por modelo: raciocínio baixo e limite maior nos que raciocinam; reserva viva", async () => {
+  const { modelParams, DEFAULT_MODELS, cleanReply } = await import("../supabase/functions/assistant-chat/logic.js");
+  assert.deepEqual(modelParams("openai/gpt-4o-mini"), { max_tokens: 600, temperature: 0.5 });
+  const luna = modelParams("openai/gpt-6-luna");
+  assert.equal(luna.max_tokens, 1500);
+  assert.deepEqual(luna.reasoning, { effort: "low", exclude: true });
+  assert.equal("temperature" in luna, false);
+  assert.ok(!DEFAULT_MODELS.includes("google/gemini-2.0-flash-001"));
+  assert.equal(DEFAULT_MODELS[1], "anthropic/claude-haiku-5.5");
+  // O chat mostra texto simples: sem asteriscos de negrito nem títulos.
+  assert.equal(cleanReply("Clique em **\"Reservar vaga\"** na aba **Rituais**."), "Clique em \"Reservar vaga\" na aba Rituais.");
+  assert.equal(cleanReply("## Rituais\nTemos um."), "Rituais\nTemos um.");
+  assert.equal(cleanReply("Vou passar. [[CASA: Gira, 2/11]]"), "Vou passar. [[CASA: Gira, 2/11]]");
+});
+
+test("pagamento: aceita explicar o registro do pagamento mesmo sem a palavra plataforma", () => {
+  const luna = "A leitura custa R$ 90,00. Para contratar e pagar, use o botão “Contratar” na aba Serviços; o pagamento fica registrado e, se cancelar antes de a casa iniciar o trabalho, o valor volta integralmente.";
+  assert.equal(grade(by("pagamento-plataforma"), luna, false).pass, true);
 });

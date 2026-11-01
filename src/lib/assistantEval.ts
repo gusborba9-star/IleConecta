@@ -7,9 +7,8 @@ export type EvalReport = { total: number; passed: number; results: EvalResult[];
 /** Modelos que dá para comparar no teste (mesma lista da função). */
 export const EVAL_MODEL_OPTIONS = [
   { id: "openai/gpt-4o-mini", label: "GPT-4o mini (atual)" },
-  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5" },
+  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5 (reserva)" },
   { id: "openai/gpt-6-luna", label: "GPT-6 Luna" },
-  { id: "google/gemini-2.0-flash-001", label: "Gemini 2.0 Flash (reserva atual)" },
 ] as const;
 
 /** Roda o teste automático de conversas da Assistente com o modelo de verdade (só administração). */
