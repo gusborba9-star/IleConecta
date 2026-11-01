@@ -84,8 +84,8 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
           {err("title")}
         </div>
         <div>
-          <Label htmlFor="rt-desc">Descrição (opcional)</Label>
-          <Textarea id="rt-desc" maxLength={1500} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Como será, o que o participante precisa ter em mãos…" />
+          <Label htmlFor="rt-desc">Descrição (mín. 20 letras)</Label>
+          <Textarea id="rt-desc" maxLength={1500} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Como será, o que o participante vive e o que precisa ter em mãos. A assistente usa este texto para apresentar o ritual antes do pagamento." />
           {err("description")}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -23,7 +23,7 @@ test("agrupa horários por dia", () => {
 });
 
 test("serviço com agenda só para búzios, cartas e consulta", () => {
-  const base = { title: "Búzios", priceText: "200,00", delivery: "presencial", description: "" };
+  const base = { title: "Búzios", priceText: "200,00", delivery: "presencial", description: "Jogo completo com orientação." };
   const ok = validateService({ ...base, kind: "buzios", bookable: true, durationMin: 45 });
   assert.equal(ok.ok, true);
   assert.equal(ok.value.bookable, true);

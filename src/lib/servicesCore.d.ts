@@ -33,6 +33,9 @@ export declare const SERVICE_KINDS: { id: ServiceKind; label: string }[];
 export declare const SERVICE_DELIVERIES: { id: ServiceDelivery; label: string; hint: string }[];
 export declare const BOOKABLE_KINDS: string[];
 export declare const MAX_PRICE_CENTS: number;
+/** Descrição mínima (letras) de serviços e rituais. */
+export declare const MIN_DESCRIPTION: number;
+export declare function descriptionTooShort(length: number): string;
 export declare function parsePriceToCents(text: string): number | null;
 export declare function formatCents(cents: number): string;
 export declare function kindLabel(kind: string, customKind?: string | null): string;

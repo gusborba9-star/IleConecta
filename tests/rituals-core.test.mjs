@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { fromIsoToBrt, grossCents, normalizeFields, seatsLeft, seatsState, toStartsAtIso, validateAnswers, validateRitual } from "../src/lib/ritualsCore.js";
 
 const now = new Date("2026-10-26T12:00:00Z");
-const ok = { title: " Ritual de Axé ", description: "", priceText: "199,00", seatsText: "300", mode: "distancia", date: "2026-11-14", time: "19:30", streamUrl: "", fields: [{ label: "Nome completo", required: true }, { label: "Intenção" }] };
+const ok = { title: " Ritual de Axé ", description: "Ritual coletivo de limpeza e proteção da casa.", priceText: "199,00", seatsText: "300", mode: "distancia", date: "2026-11-14", time: "19:30", streamUrl: "", fields: [{ label: "Nome completo", required: true }, { label: "Intenção" }] };
 
 test("vagas: restante, estado e receita bruta", () => {
   assert.equal(seatsLeft(300, 287), 13);

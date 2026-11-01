@@ -23,12 +23,12 @@ test("formata em reais sem erro de ponto flutuante", () => {
   assert.equal(formatCents(19990).replace(/\s/g, " "), "R$ 199,90");
 });
 
-const ok = { kind: "buzios", customKind: "", title: "  Jogo de búzios ", description: " Consulta completa ", priceText: "200,00", delivery: "presencial" };
+const ok = { kind: "buzios", customKind: "", title: "  Jogo de búzios ", description: " Consulta completa com orientação ", priceText: "200,00", delivery: "presencial" };
 
 test("formulário válido devolve o valor limpo para gravar", () => {
   const r = validateService(ok);
   assert.equal(r.ok, true);
-  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa", price_cents: 20000, delivery: "presencial", stages: 1, bookable: false, duration_min: 30 });
+  assert.deepEqual(r.value, { kind: "buzios", custom_kind: null, title: "Jogo de búzios", description: "Consulta completa com orientação", price_cents: 20000, delivery: "presencial", stages: 1, bookable: false, duration_min: 30 });
 });
 
 test("tipo Outro exige nome livre; os demais descartam o nome livre", () => {
@@ -52,4 +52,20 @@ test("etapas do serviço: padrão 1, aceita de 1 a 4, recusa o resto", () => {
   assert.equal(validateService({ ...ok, stages: 2 }).value.stages, 2);
   assert.equal(validateService({ ...ok, stages: "4" }).value.stages, 4);
   for (const bad of [0, 5, 1.5, "x"]) assert.equal(validateService({ ...ok, stages: bad }).errors.stages !== undefined, true);
+});
+
+test("descrição obrigatória com no mínimo 20 letras, em serviço e em ritual", async () => {
+  const { MIN_DESCRIPTION } = await import("../src/lib/servicesCore.js");
+  const { validateRitual } = await import("../src/lib/ritualsCore.js");
+  assert.equal(MIN_DESCRIPTION, 20);
+  const vazio = validateService({ ...ok, description: "" });
+  assert.equal(vazio.ok, false);
+  assert.match(vazio.errors.description, /Escreva uma descrição/);
+  const curta = validateService({ ...ok, description: "Consulta rápida" });
+  assert.match(curta.errors.description, /faltam 5/);
+  assert.equal(validateService({ ...ok, description: "x".repeat(20) }).ok, true);
+  assert.equal(validateService({ ...ok, description: "x".repeat(19) }).ok, false);
+  const rit = { title: "Ritual", description: "", priceText: "100,00", seatsText: "10", mode: "distancia", date: "2099-01-01", time: "19:00", streamUrl: "", fields: [] };
+  assert.match(validateRitual(rit).errors.description, /Escreva uma descrição/);
+  assert.equal(validateRitual({ ...rit, description: "Ritual coletivo de proteção." }).ok, true);
 });
