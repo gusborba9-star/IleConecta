@@ -11,8 +11,9 @@ import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type 
 
 /** O que a casa perde ao desligar a venda pela assistente (só o que a plataforma faz de verdade). */
 const STOP_SELLING_LOSSES = [
-  "Vendas a qualquer hora: a assistente fecha o pedido mesmo quando a casa está offline, sem você precisar responder.",
-  "Pagamento registrado na plataforma, com o pedido e o andamento do trabalho no histórico da casa e do cliente.",
+  "Vendas 24 horas por dia, 7 dias por semana, inclusive com a casa offline: a assistente fecha o pedido sem você precisar responder.",
+  "Fechamento em tempo real: o cliente não fica esperando um retorno e não desiste no meio da conversa.",
+  "Registro e comprovante de cada venda na plataforma, com o pedido e o andamento do trabalho no histórico da casa e do cliente.",
   "Avaliações na sua página: só compras feitas pela plataforma podem ser avaliadas pelos clientes.",
   "Reembolso automático se o cliente cancelar antes de a casa começar, o que deixa quem compra mais seguro para fechar.",
   "Menos conversa para combinar valor e forma de pagamento, um a um.",
