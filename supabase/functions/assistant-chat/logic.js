@@ -440,7 +440,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     const leftN = Number(e.seats_left);
     const left = Number.isFinite(leftN) ? (leftN > 0 ? ` — ${leftN} vagas restantes` : " — ESGOTADO (o cliente pode entrar na fila de espera pelo botão do ritual e é avisado se abrir vaga)") : "";
     const asks = Array.isArray(e.intake_fields) && e.intake_fields.length ? ` — pede do participante: ${e.intake_fields.map((f) => oneLine(f.label, 40)).join(", ")}` : "";
-    lines.push(`- ${oneLine(e.title, 100)} — ${formatCents(e.price_cents)} — ${ritualModeLabel(e.mode)} — ${brtDateTime(e.starts_at)}${left}${asks}${e.description ? ` — ${oneLine(e.description, 240)}` : ""} — COM RESERVA: botão \"Reservar vaga\"`);
+    lines.push(`- ${oneLine(e.title, 100)} — ${formatCents(e.price_cents)} — ${ritualModeLabel(e.mode)} — ${brtDateTime(e.starts_at)}${left}${asks}${e.description ? ` — ${oneLine(e.description, 240)}` : ""} — COM RESERVA: botão "Reservar vaga"`);
   }
   return lines.join("\n");
 }
