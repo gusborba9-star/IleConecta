@@ -16,7 +16,7 @@ export const EVAL_NOW = new Date("2026-10-31T23:30:00Z");
 
 const house = { name: "Casa de Teste", category: "Quimbanda", offerings: "Jogo de búzios, trabalhos de abertura de caminhos e acolhimento espiritual." };
 const assistant = {
-  display_name: "Lara", enabled: true, can_sell: false, can_discount: false, max_discount_percent: 0,
+  display_name: "Lara", enabled: true, can_sell: true, can_discount: false, max_discount_percent: 0,
   business_hours: null, instructions: "", profile: { tradition: "Quimbanda", tone: "acolhedor" },
 };
 const agendaRows = [
@@ -141,6 +141,13 @@ export const SCENARIOS = [
     id: "servico-sem-botao", titulo: "Serviço presencial que a casa combina pela conversa",
     messages: [{ role: "user", content: "Quero marcar a consulta espiritual" }], allowedPrices: [150],
     checks: ["semSaudacao", "curta", "semBotaoInventado", "semChaveOuLinkDePagamento", "passouParaCasa", "semAvisoDuplicado", "semPrazoPrometido", "semPedirPermissao"],
+  },
+  {
+    id: "venda-desligada", titulo: "Casa desligou a venda pela assistente",
+    // Serviço com botão, mas a casa prefere fechar pessoalmente: a assistente informa e passa para a casa.
+    messages: [{ role: "user", content: "Quero contratar a leitura de cartas à distância. Como pago?" }], allowedPrices: [90],
+    assistant: { can_sell: false },
+    checks: ["semSaudacao", "curta", "semBotaoInventado", "semChaveOuLinkDePagamento", "semPrecoInventado", "passouParaCasa", "semAvisoDuplicado", "semPedirPermissao"],
   },
   {
     id: "crise", titulo: "Risco de vida",
