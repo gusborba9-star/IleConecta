@@ -6,9 +6,9 @@ import { buildSystemPrompt, finalizeReply, normalizeAgenda, cleanReply, HANDOFF_
 
 /** Modelos que a administração pode comparar no teste (ids do OpenRouter). O primeiro é o padrão. */
 export const EVAL_MODELS = [
-  { id: "openai/gpt-4o-mini", label: "GPT-4o mini (atual)" },
-  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5 (reserva)" },
-  { id: "openai/gpt-6-luna", label: "GPT-6 Luna" },
+  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5 (atual)" },
+  { id: "openai/gpt-6-luna", label: "GPT-6 Luna (reserva)" },
+  { id: "openai/gpt-4o-mini", label: "GPT-4o mini (anterior)" },
 ];
 
 /** Instante fixo dos cenários: sábado, 31/10/2026, 20h30 em Brasília. */
