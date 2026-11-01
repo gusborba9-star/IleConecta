@@ -24,6 +24,7 @@ import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
+import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -206,6 +207,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       <ChatReportsCard />
 
       <PaymentLimitCard />
+
+      <AssistantEvalCard />
 
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Alcance por região</h2>

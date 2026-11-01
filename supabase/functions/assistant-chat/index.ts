@@ -18,6 +18,7 @@ import {
   toChatMessages,
   windowStartISO,
 } from "./logic.js";
+import { runAll } from "./evalCore.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,32 @@ Deno.serve(async (req) => {
   } catch {
     return json(400, { error: "json_invalido" });
   }
+  // Modo teste (só administração): roda os cenários do teste automático com o modelo, sem gravar nada nem gastar cota.
+  if ((body as { eval?: boolean }).eval === true) {
+    const { data: isAdm } = await createClient(url, service, { auth: { persistSession: false } })
+      .from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
+    if (!isAdm) return json(403, { error: "somente_administracao" });
+    const only = Array.isArray((body as { only?: unknown }).only) ? ((body as { only: unknown[] }).only).filter((x) => typeof x === "string") as string[] : null;
+    const result = await runAll(async (system, messages) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 25_000);
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          signal: ctrl.signal,
+          headers: { Authorization: `Bearer ${openrouterKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://ile-conecta.vercel.app", "X-Title": "Ile Conecta (teste)" },
+          body: JSON.stringify({ model: DEFAULT_MODELS[0], models: DEFAULT_MODELS, messages: [{ role: "system", content: system }, ...messages], max_tokens: 400, temperature: 0.5 }),
+        });
+        if (!res.ok) throw new Error(`openrouter_${res.status}`);
+        const out = await res.json();
+        return String(out?.choices?.[0]?.message?.content ?? "");
+      } finally {
+        clearTimeout(t);
+      }
+    }, only);
+    return json(200, result as unknown as Record<string, unknown>);
+  }
+
   const text = cleanUserText(body.message);
   if (!text) return json(400, { error: "mensagem_vazia" });
   if (typeof body.house_id !== "string") return json(400, { error: "casa_obrigatoria" });
