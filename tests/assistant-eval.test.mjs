@@ -184,7 +184,7 @@ test("venda desligada pela casa: serviço passa para a casa, ritual coletivo con
   assert.match(on, /como contratar: botão "Contratar"/);
   assert.doesNotMatch(off, /como contratar: botão/);
   assert.match(off, /preferiu fechar os serviços pessoalmente/);
-  assert.match(off, /b\) .*qualquer serviço/);
+  assert.match(off, /\) a pessoa quer contratar.*qualquer serviço/);
   for (const p of [on, off]) assert.match(p, /você conduz e vende do começo ao fim/);
   assert.match(off, /COM RESERVA: botão "Reservar vaga"/);
 });
@@ -216,4 +216,31 @@ test("rodada de 01/11 (13 cenários): agenda passa na hora, sem perguntar quanta
   const haiku = "Para questões de saúde, procure um médico. Se quiser, posso passar seu caso para alguém da casa, é só me dizer.";
   assert.ok(grade(by("saude"), haiku, true).results.find((x) => x.name === "semPedirPermissao" && !x.ok));
   assert.match(scenarioPrompt(by("saude")), /nunca "se quiser, posso passar"/);
+});
+
+test("o teste mede o tempo de cada resposta, o tamanho do prompt e resume média e mais lenta", async () => {
+  const { runAll, SCENARIOS } = await import("../supabase/functions/assistant-chat/evalCore.js");
+  const delays = [30, 10, 20];
+  let i = 0;
+  const complete = async () => {
+    const d = delays[i++ % delays.length];
+    await new Promise((r) => setTimeout(r, d));
+    return "Posso ajudar.";
+  };
+  const rep = await runAll(complete, SCENARIOS.slice(0, 3).map((s) => s.id));
+  assert.equal(rep.total, 3);
+  for (const r of rep.results) {
+    assert.ok(Number.isFinite(r.ms) && r.ms >= 5, `ms ${r.ms}`);
+    assert.ok(r.promptChars > 3000, `prompt ${r.promptChars}`);
+  }
+  assert.ok(rep.maxMs >= rep.avgMs && rep.avgMs > 0);
+  assert.ok(rep.avgPromptChars > 3000);
+});
+
+test("cenário que falha na execução não quebra o resumo de tempo", async () => {
+  const { runAll, SCENARIOS } = await import("../supabase/functions/assistant-chat/evalCore.js");
+  const rep = await runAll(async () => { throw new Error("openrouter_500"); }, [SCENARIOS[0].id]);
+  assert.equal(rep.passed, 0);
+  assert.equal(rep.avgMs, 0);
+  assert.equal(rep.results[0].pass, false);
 });
