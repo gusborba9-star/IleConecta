@@ -18,7 +18,7 @@ import {
   toChatMessages,
   windowStartISO,
 } from "./logic.js";
-import { runAll } from "./evalCore.js";
+import { evalModel, runAll } from "./evalCore.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     const { data: isAdm } = await createClient(url, service, { auth: { persistSession: false } })
       .from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
     if (!isAdm) return json(403, { error: "somente_administracao" });
+    const model = evalModel((body as { model?: unknown }).model);
     const only = Array.isArray((body as { only?: unknown }).only) ? ((body as { only: unknown[] }).only).filter((x) => typeof x === "string") as string[] : null;
     const result = await runAll(async (system, messages) => {
       const ctrl = new AbortController();
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
           method: "POST",
           signal: ctrl.signal,
           headers: { Authorization: `Bearer ${openrouterKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://ile-conecta.vercel.app", "X-Title": "Ile Conecta (teste)" },
-          body: JSON.stringify({ model: DEFAULT_MODELS[0], models: DEFAULT_MODELS, messages: [{ role: "system", content: system }, ...messages], max_tokens: 400, temperature: 0.5 }),
+          body: JSON.stringify({ model, messages: [{ role: "system", content: system }, ...messages], max_tokens: 400, temperature: 0.5 }),
         });
         if (!res.ok) throw new Error(`openrouter_${res.status}`);
         const out = await res.json();
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
         clearTimeout(t);
       }
     }, only);
-    return json(200, result as unknown as Record<string, unknown>);
+    return json(200, { ...result, model } as unknown as Record<string, unknown>);
   }
 
   const text = cleanUserText(body.message);
