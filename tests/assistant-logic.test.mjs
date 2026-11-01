@@ -84,8 +84,10 @@ test("prompt traz serviços reais com preço exato e as regras de segurança", (
 test("Profissional vende sem desconto; casa que desligou a venda só informa e passa para a casa", () => {
   const p = buildSystemPrompt({ ...base, plan: "intermediario" });
   assert.match(p, /NÃO pode oferecer nem negociar desconto/);
-  assert.match(p, /fechar a contratação/);
-  const off = buildSystemPrompt({ ...base, assistant: { ...assistantOn, can_sell: false }, plan: "intermediario" });
+  const svc = [{ title: "Leitura", kind: "cartas", delivery: "transmissao", price_cents: 9000 }];
+  const withSvc = buildSystemPrompt({ ...base, services: svc, plan: "intermediario" });
+  assert.match(withSvc, /fechar a contratação/);
+  const off = buildSystemPrompt({ ...base, services: svc, assistant: { ...assistantOn, can_sell: false }, plan: "intermediario" });
   assert.match(off, /não conduza a contratação/);
   assert.doesNotMatch(p, /desconto de até/);
   assert.match(p, /\(nenhum cadastrado\)/);
@@ -123,4 +125,57 @@ test("interruptor do painel: sem configuração liga; desligado bloqueia; beta s
   assert.equal(featureEnabled({ assistant: { state: "beta", beta_houses: ["a"] } }, "assistant", "a"), true);
   assert.equal(featureEnabled({ assistant: { state: "beta", beta_houses: ["a"] } }, "assistant", "b"), false);
   assert.equal(featureEnabled({ assistant: { state: "beta" } }, "assistant", "a"), false);
+});
+
+// --- Guias curtos por recurso: o prompt só carrega o que a casa realmente tem ---
+const ritual = { id: "e", title: "Ritual de prosperidade", price_cents: 29900, mode: "distancia", starts_at: "2026-11-15T23:00:00-03:00", seats_left: 12 };
+const servico = { title: "Leitura de cartas", kind: "cartas", delivery: "transmissao", price_cents: 9000 };
+
+test("guias: casa sem nada cadastrado não carrega os guias de serviço, agenda, catálogo e trabalhos", () => {
+  const p = buildSystemPrompt({ ...base, plan: "intermediario" });
+  assert.doesNotMatch(p, /Serviços publicados/);
+  assert.doesNotMatch(p, /Datas da "AGENDA DA CASA"/);
+  assert.doesNotMatch(p, /CATÁLOGO INTERNO/);
+  assert.doesNotMatch(p, /TRABALHOS QUE A CASA REALIZA/);
+  assert.doesNotMatch(p, /Pagar pela plataforma é mais seguro/);
+  assert.doesNotMatch(p, /a\) a pessoa disse que quer participar de uma data da agenda/);
+  assert.match(p, /não há nenhum aberto agora/);
+});
+
+test("guias: o prompt de uma casa vazia é bem menor que o de uma casa completa", () => {
+  const vazia = buildSystemPrompt({ ...base, plan: "intermediario" });
+  const completa = buildSystemPrompt({
+    ...base, plan: "maximo", payments: true, services: [servico], events: [ritual],
+    agenda: ["Gira — sábado, 7/11, 20h"], catalog: [{ name: "Búzios", priceText: "R$ 200", description: "Presencial" }],
+    house: { ...house, offerings: "Jogo de búzios." },
+  });
+  assert.ok(vazia.length < 5300, `prompt vazio com ${vazia.length} caracteres`);
+  assert.ok(completa.length < 11000, `prompt completo com ${completa.length} caracteres`);
+  assert.ok(vazia.length < completa.length * 0.6);
+});
+
+test("guias: com agenda, o marcador lista o caso da data e o ritual não puxa a agenda sem ser perguntada", () => {
+  const p = buildSystemPrompt({ ...base, events: [ritual], agenda: ["Gira — sábado, 7/11, 20h"] });
+  assert.match(p, /a\) a pessoa disse que quer participar de uma data da agenda;/);
+  assert.match(p, /b\) a pessoa quer contratar/);
+  assert.match(p, /Se a pergunta for só sobre ritual, fale só dos rituais e não acrescente datas da agenda/);
+  assert.match(p, /Se a pergunta for só sobre uma data da agenda, não traga ritual/);
+  const sem = buildSystemPrompt({ ...base, events: [ritual] });
+  assert.doesNotMatch(sem, /não acrescente datas da agenda/);
+});
+
+test("guias: só diz que a pessoa escolhe a modalidade quando o serviço é híbrido; nunca 'sozinha ou sozinho'", () => {
+  const p = buildSystemPrompt({ ...base, services: [servico] });
+  assert.match(p, /Só diga que a pessoa escolhe a modalidade quando o serviço estiver listado como/);
+  assert.match(p, /nos demais cite apenas a modalidade listada/);
+  assert.match(p, /nunca escreva pares como "sozinha ou sozinho"/);
+  assert.doesNotMatch(p, /Quando um serviço for híbrido \(presencial ou à distância\), diga que a pessoa escolhe/);
+});
+
+test("guias: itens do catálogo e dos trabalhos só aparecem nas regras quando existem", () => {
+  const sem = buildSystemPrompt({ ...base, services: [servico] });
+  assert.doesNotMatch(sem, /valor que você pode informar/);
+  const com = buildSystemPrompt({ ...base, services: [servico], catalog: [{ name: "Búzios", priceText: "R$ 200", description: "" }], house: { ...house, offerings: "Jogo de búzios." } });
+  assert.match(com, /Os itens do "CATÁLOGO INTERNO DA CASA" só podem ter o valor informado/);
+  assert.match(com, /Os trabalhos descritos em "TRABALHOS QUE A CASA REALIZA" existem/);
 });

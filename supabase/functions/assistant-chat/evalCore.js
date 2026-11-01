@@ -171,9 +171,12 @@ export const SCENARIOS = [
 export async function runScenario(s, complete) {
   const system = scenarioPrompt(s);
   const userText = [...s.messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  // Velocidade é regra de projeto: mede o tempo do modelo e o tamanho do prompt de cada conversa.
+  const t0 = Date.now();
   const raw = await complete(system, s.messages);
+  const ms = Date.now() - t0;
   const fin = finalizeReply(cleanReply(raw), userText);
-  return grade(s, fin.text, fin.handoff, raw);
+  return { ...grade(s, fin.text, fin.handoff, raw), ms, promptChars: system.length };
 }
 
 /** Confere as verificações de um cenário sobre uma resposta já pronta. */
@@ -196,7 +199,16 @@ export async function runAll(complete, only = null, scenarios = SCENARIOS) {
       return { id: s.id, titulo: s.titulo, reply: "", handoff: false, results: [{ name: "execução", ok: false, why: String(e?.message ?? e) }], pass: false };
     }
   }));
-  return { total: out.length, passed: out.filter((r) => r.pass).length, results: out };
+  const timed = out.filter((r) => Number.isFinite(r.ms));
+  const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
+  return {
+    total: out.length,
+    passed: out.filter((r) => r.pass).length,
+    avgMs: avg(timed.map((r) => r.ms)),
+    maxMs: timed.length ? Math.max(...timed.map((r) => r.ms)) : 0,
+    avgPromptChars: avg(timed.map((r) => r.promptChars)),
+    results: out,
+  };
 }
 
 /** Modelo pedido pela administração, se for um dos permitidos; senão o padrão. */
