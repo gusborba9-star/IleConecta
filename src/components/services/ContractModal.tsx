@@ -11,6 +11,7 @@ import type { Service } from "@/lib/services";
 import { createBooking, createOrder, setOrderModality } from "@/lib/serviceOrders";
 import { goToCheckout } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
+import PlatformBenefits from "@/components/PlatformBenefits";
 import { stagePlan } from "@/lib/paymentsCore";
 import { fetchSlots } from "@/lib/agenda";
 import { formatSlot, groupSlots } from "@/lib/agendaCore";
@@ -152,6 +153,7 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
             Você paga a 1ª etapa agora; as seguintes são combinadas com a casa e você as paga pelo seu pedido.
           </p>
         )}
+        {payOn && <PlatformBenefits />}
         {payOn && !termsDone && <ConsentBox doc="termos_cliente" checked={okCheckout} onChange={setOkCheckout} />}
         {payOn && termsDone && (
           <p className="text-xs text-muted-foreground">

@@ -1,6 +1,11 @@
 // Regras puras do catálogo de serviços da casa (sem rede), testáveis em Node.
 import { MAX_STAGES } from "./paymentsCore.js";
 
+/** Descrição mínima de serviços e rituais (decisão de 01/11/2026): é com ela que a assistente apresenta antes do pagamento. */
+export const MIN_DESCRIPTION = 20;
+export const descriptionTooShort = (n) =>
+  n === 0 ? `Escreva uma descrição (mín. ${MIN_DESCRIPTION} letras): é com ela que a assistente apresenta antes do pagamento.` : `Descrição curta: use ao menos ${MIN_DESCRIPTION} letras (faltam ${MIN_DESCRIPTION - n}).`;
+
 export const SERVICE_KINDS = [
   { id: "trabalho", label: "Trabalho" },
   { id: "buzios", label: "Jogo de búzios" },
@@ -73,7 +78,9 @@ export function validateService(input) {
   if (title.length < 2) errors.title = "Informe o nome do serviço.";
   if (title.length > 100) errors.title = "Use até 100 letras.";
 
+  // A assistente usa a descrição para apresentar o serviço antes do pagamento: ela é obrigatória.
   const description = String(input?.description ?? "").trim();
+  if (description.length < MIN_DESCRIPTION) errors.description = descriptionTooShort(description.length);
   if (description.length > 600) errors.description = "Use até 600 letras.";
 
   const priceCents = parsePriceToCents(String(input?.priceText ?? ""));
@@ -98,7 +105,7 @@ export function validateService(input) {
       kind,
       custom_kind: kind === "outro" ? customKind : null,
       title,
-      description: description || null,
+      description,
       price_cents: priceCents,
       delivery,
       stages: stagesRaw,

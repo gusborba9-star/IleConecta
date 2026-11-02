@@ -79,7 +79,16 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 ## Trabalhos, serviços, rituais não coletivos e jogos
 
 - Vendidos pela assistente por padrão.
-- A casa pode desligar a venda pela plataforma. Ao tentar, recebe um aviso do que perde: registro e comprovante de cada venda; fechamento em tempo real, sem o cliente esperar retorno; vendas com a casa offline; vendas 24 horas por dia, 7 dias por semana; avaliações de compras feitas pela plataforma; reembolso automático antes de a casa começar.
+- A casa pode desligar a venda pela plataforma. Ao tentar, recebe um aviso do que perde:
+  - vendas ativas 24 horas por dia, 7 dias por semana;
+  - risco de perder a venda por estar offline;
+  - fechamento em tempo real, sem o cliente esperar retorno;
+  - comprovante e registro de cada venda;
+  - histórico financeiro e histórico de atendimentos na plataforma;
+  - processo de reembolso feito pela plataforma (automático antes de a casa começar);
+  - avaliações: só compras pela plataforma podem ser avaliadas;
+  - menos conversa para combinar valor e pagamento.
+- O cliente vê as vantagens de pagar pela plataforma antes de reservar ou contratar: pagamento registrado com comprovante; reembolso integral se cancelar antes de a casa começar; aviso quando a casa iniciar e terminar; histórico do pedido; só quem comprou pela plataforma avalia a casa.
 - Com a venda desligada, a assistente informa nome, valor e modalidade, não indica botão e passa para a casa quando a pessoa quer contratar.
 
 ## Agenda
@@ -107,7 +116,7 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 
 ## Decisões registradas
 
-- Descrição mínima de rituais e serviços: **20 caracteres**.
+- Descrição mínima de rituais e serviços: **20 caracteres**, obrigatória no formulário e no banco (registros antigos curtos continuam até a casa editar o texto).
 - Comissão de **4%** em toda transação pela plataforma, qualquer forma de pagamento; **15%** só no ritual coletivo.
 - Retenção de vaga/horário antes do pagamento: **15 minutos**.
 - Modo "casa aprova antes de cobrar": **não entra**.

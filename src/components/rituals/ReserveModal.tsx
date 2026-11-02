@@ -11,6 +11,7 @@ import { reserveSeat, type RealRitual } from "@/lib/rituals";
 import { goToCheckout } from "@/lib/payments";
 import { validateAnswers } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
+import PlatformBenefits from "@/components/PlatformBenefits";
 
 interface Props {
   ritual: RealRitual | null;
@@ -97,6 +98,7 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
           Valor da vaga: {formatCents(ritual.priceCents)}.{" "}
           {payOn ? "O pagamento é feito pela plataforma, logo após a reserva. Você cancela com reembolso integral até o início do ritual." : "Por enquanto a reserva não gera cobrança; o pagamento é combinado direto com a casa."}
         </p>
+        {payOn && <PlatformBenefits />}
         {payOn && !termsDone && <ConsentBox doc="termos_cliente" checked={okCheckout} onChange={setOkCheckout} />}
         {payOn && termsDone && (
           <p className="text-xs text-muted-foreground">

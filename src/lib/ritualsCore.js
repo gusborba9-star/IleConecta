@@ -1,5 +1,5 @@
 // Regras puras dos rituais (eventos coletivos), sem rede, testáveis em Node.
-import { parsePriceToCents } from "./servicesCore.js";
+import { MIN_DESCRIPTION, descriptionTooShort, parsePriceToCents } from "./servicesCore.js";
 
 export const RITUAL_MODES = [
   { id: "presencial", label: "Presencial", hint: "Os participantes vão até a casa." },
@@ -82,7 +82,9 @@ export function validateRitual(input, now = new Date()) {
   if (title.length < 2) errors.title = "Informe o nome do ritual.";
   if (title.length > 100) errors.title = "Use até 100 letras.";
 
+  // A assistente usa a descrição para apresentar o ritual antes do pagamento: ela é obrigatória.
   const description = String(input?.description ?? "").trim();
+  if (description.length < MIN_DESCRIPTION) errors.description = descriptionTooShort(description.length);
   if (description.length > 1500) errors.description = "Use até 1.500 letras.";
 
   const priceCents = parsePriceToCents(String(input?.priceText ?? ""));
@@ -110,7 +112,7 @@ export function validateRitual(input, now = new Date()) {
     errors,
     value: {
       title,
-      description: description || null,
+      description,
       price_cents: priceCents,
       seats_total: seats,
       mode,
