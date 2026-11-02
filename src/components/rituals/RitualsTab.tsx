@@ -11,6 +11,8 @@ import RitualCardReal from "@/components/rituals/RitualCardReal";
 import Attendees from "@/components/rituals/Attendees";
 import ReserveModal from "@/components/rituals/ReserveModal";
 import { useApp } from "@/contexts/AppContext";
+import { useChatStatus } from "@/hooks/useChatStatus";
+import { paymentsEnabledFor } from "@/lib/consents";
 import {
   cancelSeat, createRitual, fetchHouseRituals, fetchMyReservations, fetchMyWaitlist, fetchStreamUrl, fetchWaitlistCounts, joinWaitlist, leaveWaitlist, finishRitual, setRitualStatus, startRitual, subscribeReservations, updateRitual,
   type LifecycleResult, type MyReservation, type RealRitual,
@@ -24,7 +26,7 @@ interface Props {
   onAskAssistant?: () => void;
 }
 
-export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }: Props) {
+export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const { currentUser } = useApp();
@@ -42,6 +44,15 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
   const [waiting, setWaiting] = useState<Set<string>>(new Set());
   const [waitCounts, setWaitCounts] = useState<Record<string, number>>({});
   const userId = currentUser?.id;
+  const chatStatus = useChatStatus(ownerId, !isOwn);
+  const [payOn, setPayOn] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
+    return () => {
+      alive = false;
+    };
+  }, [ownerId]);
 
   const load = useCallback(async () => {
     setItems(await fetchHouseRituals(ownerId));
@@ -181,7 +192,8 @@ export default function RitualsTab({ ownerId, isOwn, startNew, onAskAssistant }:
           onRefund={() => setRefunding({ kind: "reserva", id: mine[r.id].id, title: r.title })}
           onWithdrawRefund={(id) => void withdrawMine(id)}
           onChat={() => nav(`/mensagens/${ownerId}`)}
-          onAsk={onAskAssistant}
+          payOn={payOn}
+          chatStatus={chatStatus}
           onEdit={() => void openEdit(r)}
           onAttendees={() => setAttendeesOf(r)}
           onPublish={() => void act(() => setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
