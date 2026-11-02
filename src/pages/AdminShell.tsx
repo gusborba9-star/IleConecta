@@ -30,7 +30,7 @@ export default function AdminShell() {
   return (
     <div className="admin-theme rounded-3xl p-3 sm:p-4 shadow-altar ring-1 ring-[hsl(160_16%_20%)] lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-4 mb-16 lg:mb-4">
       <div className="lg:col-span-2 mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-primary"><span className="h-2 w-2 rounded-full bg-primary animate-pulse-slow" />Central de comando · Ilê Conecta</div>
-      <nav aria-label="Seções do painel" className="mb-4 lg:mb-0 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-20 lg:self-start rounded-2xl border border-border bg-card p-2">
+      <nav aria-label="Seções do painel" className="mb-4 lg:mb-0 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-20 lg:self-start rounded-2xl border border-border bg-card p-2 pillow">
         {SECTIONS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

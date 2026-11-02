@@ -54,7 +54,7 @@ export default function MemberInvite() {
             ) : (
               <>
                 {preview.memberName && <p className="text-sm">A casa já cadastrou você como <strong>{preview.memberName}</strong>.</p>}
-                <div className="rounded-xl bg-muted/60 p-4 text-sm space-y-2">
+                <div className="rounded-xl bg-muted/60 p-4 text-sm space-y-2 pillow">
                   <p className="font-semibold">Ao aceitar, você concorda que:</p>
                   <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                     <li>a casa verá o seu nome, o seu vínculo, o valor e o dia da mensalidade e se está em dia;</li>

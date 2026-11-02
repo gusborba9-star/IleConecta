@@ -31,7 +31,7 @@ export default function ReportedReviewsCard() {
       ) : (
         <ul className="space-y-3">
           {items.map((r) => (
-            <li key={r.id} className="rounded-xl border border-border p-3 space-y-1 text-sm">
+            <li key={r.id} className="rounded-xl border border-border p-3 space-y-1 text-sm pillow">
               <div className="flex flex-wrap items-center gap-2"><Stars value={r.rating} size={14} /><span className="font-semibold">{r.house}</span><span className="text-xs text-muted-foreground">{r.hidden ? "· escondida" : "· visível"}</span></div>
               {r.comment && <p className="whitespace-pre-line">“{r.comment}”</p>}
               <p className="text-xs text-muted-foreground">Motivo da casa: {r.reason}</p>

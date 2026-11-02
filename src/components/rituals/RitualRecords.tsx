@@ -143,7 +143,7 @@ export default function RitualRecords({ eventId, isOwn, started, closedForNew }:
       </div>
 
       {isOwn && adding && (
-        <div className="mt-3 rounded-xl border border-border p-3 space-y-3 bg-muted/30">
+        <div className="mt-3 rounded-xl border border-border p-3 space-y-3 bg-muted/30 pillow">
           <div className="flex gap-2" role="radiogroup" aria-label="Momento do registro">
             {(Object.keys(RECORD_KIND_LABEL) as RecordKind[]).map((k) => (
               <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}

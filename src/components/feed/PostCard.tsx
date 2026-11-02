@@ -85,7 +85,7 @@ export default function PostCard({ post }: { post: Post }) {
             return (
               <div key={c.id} className="flex gap-2">
                 <Avatar src={u?.avatar} name={u?.name} size={32} />
-                <div className="bg-card rounded-2xl px-3 py-2 border border-border">
+                <div className="bg-card rounded-2xl px-3 py-2 border border-border pillow">
                   <div className="text-xs font-semibold">{u?.name}</div>
                   <div className="text-sm">{c.text}</div>
                 </div>

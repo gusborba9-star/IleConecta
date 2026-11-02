@@ -130,7 +130,7 @@ export default function InstallPrompt() {
 
 function Banner({ icon, text, action, onAction, onClose }: { icon: React.ReactNode; text: string; action?: string; onAction?: () => void | Promise<void>; onClose: () => void }) {
   return (
-    <div role="region" aria-label="Convite" className="rounded-2xl border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3 text-sm shadow-sm">
+    <div role="region" aria-label="Convite" className="rounded-2xl border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3 text-sm shadow-sm pillow">
       <span className="text-primary">{icon}</span>
       <span className="flex-1 min-w-[200px]">{text}</span>
       {action && onAction && <Button size="sm" onClick={() => void onAction()}>{action}</Button>}

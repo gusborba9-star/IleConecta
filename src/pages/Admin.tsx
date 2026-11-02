@@ -158,7 +158,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         {FEATURE_KEYS.map((k) => {
           const f = draft.features[k];
           return (
-            <div key={k} className="border border-border rounded-xl p-3 space-y-2">
+            <div key={k} className="border border-border rounded-xl p-3 space-y-2 pillow">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="font-semibold flex-1 min-w-0">{FEATURE_LABEL[k]}</span>
                 <select
@@ -171,7 +171,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
                 </select>
               </div>
               {k === "referral" && (
-                <div className="rounded-xl bg-muted/40 p-3 space-y-3">
+                <div className="rounded-xl bg-muted/40 p-3 space-y-3 pillow">
                 <h3 className="font-semibold">Prêmio do Indique e ganhe</h3>
                 <p className="text-sm text-muted-foreground">Quando uma casa convidada cria a conta e entra pela primeira vez, a casa que indicou ganha dias de destaque na lista de casas. Só funciona com esta funcionalidade em "Ligado para todos".</p>
                 <div className="grid sm:grid-cols-3 gap-3">
@@ -228,7 +228,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         <h2 className="font-display font-bold text-lg">Alcance por região</h2>
         <p className="text-sm text-muted-foreground">Uma região só aparece para as casas se estiver ligada aqui e tiver preço definido.</p>
         {(["boost", "highlight"] as const).map((kind) => (
-          <div key={kind} className="border border-border rounded-xl p-3">
+          <div key={kind} className="border border-border rounded-xl p-3 pillow">
             <div className="font-semibold mb-2">{kind === "boost" ? "Impulsionar" : "Destaques"}</div>
             <div className="flex flex-wrap gap-x-5 gap-y-1">
               {SCOPE_KEYS.map((s: ScopeKey) => (

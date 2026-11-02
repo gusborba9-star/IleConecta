@@ -64,7 +64,7 @@ export default function HousePlansCard() {
         if (!e) return null;
         const changed = e.plan !== r.plan || e.trial;
         return (
-          <div key={r.house_id} className="border border-border rounded-xl p-3 space-y-2">
+          <div key={r.house_id} className="border border-border rounded-xl p-3 space-y-2 pillow">
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-semibold flex-1 min-w-[8rem]">{r.name}</span>
               <select

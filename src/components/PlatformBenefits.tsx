@@ -9,7 +9,7 @@ const PLATFORM_BENEFITS = [
 
 export default function PlatformBenefits() {
   return (
-    <div className="rounded-xl border border-border p-3 text-sm">
+    <div className="rounded-xl border border-border p-3 text-sm pillow">
       <p className="font-medium">Vantagens de pagar pela plataforma</p>
       <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
         {PLATFORM_BENEFITS.map((b) => <li key={b}>{b}</li>)}

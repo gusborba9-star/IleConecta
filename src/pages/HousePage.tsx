@@ -216,7 +216,7 @@ export default function HousePage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="p-4 rounded-xl bg-muted/50 border border-border">
+    <div className="p-4 rounded-xl bg-muted/50 border border-border pillow">
       <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="font-display font-bold text-lg mt-1">{value}</div>
     </div>

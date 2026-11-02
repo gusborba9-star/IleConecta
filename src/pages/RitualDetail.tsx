@@ -126,7 +126,7 @@ export default function RitualDetail() {
 
 function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div className="p-3 rounded-xl bg-muted/60 border border-border">
+    <div className="p-3 rounded-xl bg-muted/60 border border-border pillow">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-3 w-3" /> {label}
       </div>

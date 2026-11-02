@@ -61,7 +61,7 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, onBlockedC
         <MoreVertical className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-xl border border-border bg-card shadow-lg py-1 text-sm">
+        <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-xl border border-border bg-card shadow-lg py-1 text-sm pillow">
           <button className="w-full text-left px-4 py-2 hover:bg-muted" onClick={() => void toggleBlock()}>{blocked ? "Desbloquear" : "Bloquear"}</button>
           <button className="w-full text-left px-4 py-2 hover:bg-muted text-destructive" onClick={() => { setOpen(false); setReporting(true); }}>Denunciar</button>
         </div>

@@ -92,7 +92,7 @@ export default function PublicHousePage() {
           </div>
           {house.bio && <p className="mt-4 text-sm text-muted-foreground whitespace-pre-line">{house.bio}</p>}
           {house.offerings && (
-            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
+            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 pillow">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Trabalhos que a casa realiza</div>
               <p className="mt-1 text-sm whitespace-pre-line">{house.offerings}</p>
             </div>

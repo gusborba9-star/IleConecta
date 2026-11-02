@@ -44,6 +44,7 @@
     --glass: 36 40% 99%;
     --glow-1: 42 70% 57%;
     --glow-2: 10 75% 50%;
+    --pillow-hi: 0 0% 100% / 0.9;
   }
 
   /* Modo escuro: fundo marrom-café, mesmas cores de destaque (terracota e dourado) um pouco mais claras. */
@@ -84,6 +85,7 @@
     --glow-1: 42 88% 50%;
     --glow-2: 12 72% 45%;
     --plum: 270 40% 68%;
+    --pillow-hi: 0 0% 100% / 0.06;
   }
 
   /* Painel admin: central de comando escura, verde-floresta com acentos menta. */
@@ -113,6 +115,7 @@
     --glass: 160 24% 10%;
     --glow-1: 150 55% 45%;
     --glow-2: 42 70% 50%;
+    --pillow-hi: 0 0% 100% / 0.05;
     color-scheme: dark;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -148,6 +151,15 @@
   .glass {
     background: hsl(var(--glass) / 0.75);
     backdrop-filter: blur(12px);
+  }
+  /* Efeito almofada: contorno dourado fino, brilho no topo e sombra suave por dentro e por fora. */
+  .pillow {
+    border-color: hsl(var(--gold) / 0.35);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--pillow-hi)),
+      inset 0 -16px 24px -18px hsl(var(--gold) / 0.38),
+      0 0 0 1px hsl(var(--gold) / 0.12),
+      0 16px 28px -20px hsl(22 40% 15% / 0.4);
   }
   /* Cabeçalho de página: marfim com um brilho dourado e fio de ouro na base. */
   .page-hero {
