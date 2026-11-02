@@ -5,6 +5,7 @@ import { Button } from "@/components/base";
 import { fetchNotifications, markAllRead, subscribeNotifications, type AppNotification } from "@/lib/notifications";
 import { cn, timeAgo } from "@/lib/utils";
 import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
+import { chimeEnabled, playChime, setChimeEnabled, unlockChimeOnFirstTouch } from "@/lib/chime";
 import { toast } from "sonner";
 
 /** Sino de notificações reais: aviso de início e fim de rituais, em tempo real. */
@@ -14,14 +15,21 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [push, setPush] = useState<PushState>("off");
   const [pushBusy, setPushBusy] = useState(false);
+  const [chime, setChime] = useState(chimeEnabled);
   const openRef = useRef(open);
   openRef.current = open;
 
   const load = useCallback(async () => setItems(await fetchNotifications()), []);
 
+  useEffect(() => unlockChimeOnFirstTouch(), []);
+
   useEffect(() => {
     void load();
-    const stop = subscribeNotifications(userId, () => void load());
+    // Aviso novo em tempo real: atualiza o sino e, se a pessoa ativou, toca o som.
+    const stop = subscribeNotifications(userId, () => {
+      void load();
+      if (chimeEnabled()) void playChime();
+    });
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 60000);
@@ -47,6 +55,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
     setPush(await getPushState());
     setPushBusy(false);
+  };
+
+  const toggleChime = () => {
+    const next = !chime;
+    setChimeEnabled(next);
+    setChime(next);
+    if (next) void playChime();
   };
 
   const unread = items.filter((n) => !n.read).length;
@@ -90,11 +105,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
                 </button>
               ))}
             </div>
-            <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
+            <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground space-y-2">
+              <button onClick={toggleChime} aria-pressed={chime} className="block font-semibold text-primary hover:underline">
+                {chime ? "Som de aviso ativado · desativar" : "Ativar som de aviso neste aparelho"}
+              </button>
               {push === "unsupported" && "Para receber avisos no iPhone, adicione o Ilê Conecta à tela de início."}
               {push === "denied" && "Os avisos estão bloqueados neste aparelho. Libere nas configurações do site."}
               {(push === "off" || push === "on") && (
-                <button onClick={() => void togglePush()} disabled={pushBusy} className="font-semibold text-primary hover:underline disabled:opacity-60">
+                <button onClick={() => void togglePush()} disabled={pushBusy} className="block font-semibold text-primary hover:underline disabled:opacity-60">
                   {push === "on" ? "Avisos no celular ativados · desativar" : "Ativar avisos neste aparelho"}
                 </button>
               )}
