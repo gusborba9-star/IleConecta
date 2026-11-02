@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Bot, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Bot, Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import ConsentBox from "@/components/legal/ConsentBox";
@@ -70,7 +70,8 @@ export default function HouseHome() {
     { icon: Plus, title: "Novo serviço", text: "Jogos, consultas, trabalhos e atendimentos", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
     { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
     { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
-    { icon: TrendingUp, title: "Divulgar a casa", text: "Impulsionar ou destacar", onClick: () => nav("/impulsionar") },
+    { icon: TrendingUp, title: "Destacar e impulsionar", text: "Mais alcance para a casa e os rituais", onClick: () => nav("/impulsionar") },
+    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", onClick: () => nav("/divulgacao") }] : []),
     { icon: Pencil, title: "Editar perfil", text: "Foto, capa e apresentação da casa", onClick: () => nav(`/casa/${house.id}?editar=1`) },
     { icon: Bot, title: "Assistente virtual", text: "Como ela atende seus clientes", onClick: () => nav("/perfil") },
   ];

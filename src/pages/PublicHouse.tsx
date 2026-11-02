@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { CheckCircle2, MapPin, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
+import { trackCampaign } from "@/lib/campaigns";
 import { fetchPublicHouse, publicHouseUrl, type PublicHouse } from "@/lib/publicHouse";
 import { formatCents } from "@/lib/servicesCore";
 import { fetchHouseCalendar, type CalendarItem } from "@/lib/calendar";
@@ -16,6 +17,12 @@ export default function PublicHousePage() {
   const { currentUser } = useApp();
   const [house, setHouse] = useState<PublicHouse | null | undefined>(undefined);
   const [dates, setDates] = useState<CalendarItem[]>([]);
+  const origin = useSearchParams()[0].get("o") ?? "";
+
+  // Link de divulgação (?o=código): conta a visita sem identificar ninguém.
+  useEffect(() => {
+    if (house && origin) trackCampaign(house.slug, origin, "visit");
+  }, [house, origin]);
 
   useEffect(() => {
     let alive = true;
@@ -99,7 +106,7 @@ export default function PublicHousePage() {
           )}
           {house.tags.length > 0 && <div className="flex gap-1.5 mt-3 flex-wrap">{house.tags.map((t) => <Badge key={t} tone="muted">{t}</Badge>)}</div>}
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link to="/login" state={{ from: `/casa/${house.ownerId}` }}><Button>Falar com a casa</Button></Link>
+            <Link to="/login" state={{ from: `/casa/${house.ownerId}` }} onClick={() => origin && trackCampaign(house.slug, origin, "contact")}><Button>Falar com a casa</Button></Link>
             <Link to="/register"><Button variant="outline">Cadastrar conta</Button></Link>
             <Button variant="ghost" onClick={() => void share()}><Share2 className="h-4 w-4" /> Compartilhar</Button>
           </div>

@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, Camera, Check, Users } from "lucide-react";
+import { CalendarDays, Camera, Check, Megaphone, TrendingUp, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type ShowcaseKind = "members" | "calendar" | "chat";
+export type ShowcaseKind = "members" | "calendar" | "chat" | "outreach" | "growth";
 
-const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: string[]; icon: typeof Users }> = {
+const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: string[]; icon: typeof Users; badge?: string; cta?: string }> = {
   members: {
     eyebrow: "Área de membros",
     title: "Saiba quem está em dia, sem planilha",
@@ -24,6 +24,28 @@ const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: strin
       "Sugestões de datas para começar em minutos",
     ],
     icon: CalendarDays,
+  },
+  outreach: {
+    eyebrow: "Divulgação da casa",
+    title: "Saiba de onde vêm as pessoas da sua casa",
+    badge: "Profissional",
+    cta: "Conhecer o Profissional",
+    points: [
+      "Um link para cada rede social, com a contagem de quem chegou",
+      "Cartão com QR code pronto para postar",
+      "Respostas rápidas para as perguntas de sempre no chat",
+    ],
+    icon: Megaphone,
+  },
+  growth: {
+    eyebrow: "Divulgação completa",
+    title: "Veja o que cada divulgação trouxe, dia a dia",
+    points: [
+      "Até 30 links, com visitas e pedidos de conversa por dia",
+      "Três estilos de cartão para combinar com a sua casa",
+      "Até 50 respostas rápidas para atender mais depressa",
+    ],
+    icon: TrendingUp,
   },
   chat: {
     eyebrow: "Fotos e vídeos no chat",
@@ -46,6 +68,14 @@ function Sample({ kind }: { kind: ShowcaseKind }): ReactNode {
             <span className="font-semibold">{n}</span>
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${c}`}>{s}</span>
           </div>
+        ))}
+      </div>
+    );
+  if (kind === "outreach" || kind === "growth")
+    return (
+      <div className="space-y-2">
+        {[["Instagram da casa", "128 visitas", "bg-[#FBF2DE]"], ["WhatsApp", "46 visitas", "bg-[#E8F1EA]"], ["Cartão na porta", "19 visitas", "bg-[#EEE9F5]"]].map(([n, v, bg]) => (
+          <div key={n} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-[#2B1A10] ${bg}`}><span className="font-semibold">{n}</span><span className="text-xs font-bold">{v}</span></div>
         ))}
       </div>
     );
@@ -76,11 +106,11 @@ export default function PremiumShowcase({ kind, compact = false }: { kind: Showc
   const c = COPY[kind];
   const Icon = c.icon;
   return (
-    <section aria-label={`${c.eyebrow}: disponível no plano Premium`} className="relative overflow-hidden rounded-[24px] text-white shadow-altar ring-1 ring-[#E3BF5A]/50" style={{ background: "linear-gradient(135deg,#14543F 0%,#0F3B2D 100%)" }}>
+    <section aria-label={`${c.eyebrow}: disponível no plano ${c.badge ?? "Premium"}`} className="relative overflow-hidden rounded-[24px] text-white shadow-altar ring-1 ring-[#E3BF5A]/50" style={{ background: "linear-gradient(135deg,#14543F 0%,#0F3B2D 100%)" }}>
       <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "24px 24px" }} />
       <div className={`relative grid gap-5 p-5 sm:p-6 ${compact ? "" : "md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:items-center"}`}>
         <div>
-          <span className="sheen inline-flex items-center gap-1.5 rounded-full bg-[#E3BF5A] px-3 py-1 text-xs font-bold text-[#2B1A10]"><Icon className="h-3.5 w-3.5" /> Premium</span>
+          <span className="sheen inline-flex items-center gap-1.5 rounded-full bg-[#E3BF5A] px-3 py-1 text-xs font-bold text-[#2B1A10]"><Icon className="h-3.5 w-3.5" /> {c.badge ?? "Premium"}</span>
           <div className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#E3BF5A]">{c.eyebrow}</div>
           <h2 className="mt-1 font-display text-2xl font-bold leading-tight">{c.title}</h2>
           <ul className="mt-4 space-y-2 text-sm text-white/85">
@@ -88,7 +118,7 @@ export default function PremiumShowcase({ kind, compact = false }: { kind: Showc
               <li key={p} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#E3BF5A]" />{p}</li>
             ))}
           </ul>
-          <Link to="/planos" className="mt-5 inline-flex h-11 items-center rounded-[14px] bg-gradient-to-b from-[#EDC96F] to-[#E3BF5A] px-5 text-sm font-semibold text-[#2B1A10] shadow-btn transition hover:brightness-105">Conhecer o Premium</Link>
+          <Link to="/planos" className="mt-5 inline-flex h-11 items-center rounded-[14px] bg-gradient-to-b from-[#EDC96F] to-[#E3BF5A] px-5 text-sm font-semibold text-[#2B1A10] shadow-btn transition hover:brightness-105">{c.cta ?? "Conhecer o Premium"}</Link>
         </div>
         {!compact && (
           <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/15" aria-hidden>

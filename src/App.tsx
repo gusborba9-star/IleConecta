@@ -17,6 +17,7 @@ import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
 import HouseMembers from "@/pages/HouseMembers";
+import Divulgacao from "@/pages/Divulgacao";
 import Mensalidades from "@/pages/Mensalidades";
 import MemberInvite from "@/pages/MemberInvite";
 import Info from "@/pages/Info";
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
+        <Route path="/divulgacao" element={<Divulgacao />} />
         <Route path="/mensalidades" element={<Mensalidades />} />
         <Route path="/convite/:token" element={<MemberInvite />} />
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />
