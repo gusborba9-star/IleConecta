@@ -19,11 +19,13 @@ import { formatSlot, groupSlots } from "@/lib/agendaCore";
 interface Props {
   service: Service | null;
   houseName?: string;
+  /** Horário já escolhido no card (ISO); abre a tela com ele marcado. */
+  initialSlot?: string;
   onClose: () => void;
   onDone: () => void;
 }
 
-export default function ContractModal({ service, onClose, onDone }: Props) {
+export default function ContractModal({ service, initialSlot, onClose, onDone }: Props) {
   const [note, setNote] = useState("");
   const [modality, setModality] = useState<"presencial" | "distancia" | "">("");
   const [saving, setSaving] = useState(false);
@@ -48,13 +50,23 @@ export default function ContractModal({ service, onClose, onDone }: Props) {
     setDayPick("");
     if (!service) return;
     let alive = true;
-    if (service.bookable) void fetchSlots(service.id).then((r) => alive && setSlots(r));
+    if (service.bookable) {
+      void fetchSlots(service.id).then((r) => {
+        if (!alive) return;
+        setSlots(r);
+        // Horário escolhido no card: só vale se ainda estiver livre.
+        if (initialSlot && r.includes(initialSlot)) {
+          setSlot(initialSlot);
+          setDayPick(groupSlots(r).find((d) => d.slots.some((x) => x.iso === initialSlot))?.day ?? "");
+        }
+      });
+    }
     void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
     if (currentUser?.id) void fetchAcceptedDocs(currentUser.id).then((d) => alive && setTermsDone(d.has("termos_cliente")));
     return () => {
       alive = false;
     };
-  }, [service, ownerId, currentUser?.id]);
+  }, [service, initialSlot, ownerId, currentUser?.id]);
 
   if (!service) return null;
 
