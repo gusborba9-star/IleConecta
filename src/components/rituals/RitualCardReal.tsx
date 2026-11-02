@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { CalendarClock, Users } from "lucide-react";
+import { CalendarClock, Clock, MapPin, Sparkles, Users, Video } from "lucide-react";
 import { Badge, Button, Card, Progress } from "@/components/base";
+import OfferCard from "@/components/OfferCard";
+import { cardHint, dateTile } from "@/lib/cardsCore";
 import RitualRecords from "@/components/rituals/RitualRecords";
 import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
@@ -21,7 +23,10 @@ interface Props {
   onRefund?: () => void;
   onWithdrawRefund?: (id: string) => void;
   onChat: () => void;
-  onAsk?: () => void;
+  /** Pagamento pela plataforma ligado para a casa (decide o texto do card). */
+  payOn?: boolean;
+  /** Quem atende no "Conversar" agora (casa online, assistente ou casa ao voltar). */
+  chatStatus?: string;
   onEdit: () => void;
   onAttendees: () => void;
   onPublish: () => void;
@@ -36,7 +41,7 @@ const when = (iso: string) =>
 
 const STATUS_LABEL = { rascunho: "Rascunho", publicado: "Publicado", encerrado: "Encerrado", cancelado: "Cancelado" } as const;
 
-export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, waiting, waitCount, onToggleWait, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, onAsk, onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
+export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, waiting, waitCount, onToggleWait, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, payOn = false, chatStatus = "", onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
   const left = seatsLeft(r.seatsTotal, r.taken);
   const state = seatsState(r.seatsTotal, r.taken);
   const pct = r.seatsTotal ? Math.round((r.taken / r.seatsTotal) * 100) : 0;
@@ -54,6 +59,33 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
   }, [r.id, canSeeStream]);
 
   const open = r.status === "publicado" && !live && new Date(r.startsAt) > new Date();
+
+  // Cliente sem vaga: card premium com descrição, informações, botão Participar e Conversar.
+  if (!isOwn && !mine) {
+    const tile = dateTile(r.startsAt);
+    const full = state === "esgotado";
+    return (
+      <OfferCard
+        segment="ritual"
+        typeLabel="Ritual coletivo"
+        typeIcon={Sparkles}
+        chip={full ? { text: "Esgotado" } : live ? { text: "Em andamento" } : state === "ultimas" ? { text: "Últimas vagas" } : undefined}
+        title={r.title}
+        description={r.description}
+        dateTile={{ month: tile.month, day: tile.day }}
+        info={[
+          { icon: Clock, text: tile.when },
+          { icon: r.mode === "distancia" ? Video : MapPin, text: modeLabel(r.mode) },
+          { icon: Users, text: full ? "Vagas esgotadas" : `Restam ${left} ${left === 1 ? "vaga" : "vagas"}` },
+        ]}
+        price={formatCents(r.priceCents)}
+        priceNote="por pessoa"
+        primary={open && !full ? { label: "Participar", onClick: onReserve } : open && full && onToggleWait ? { label: waiting ? "Sair da fila de espera" : "Entrar na fila de espera", onClick: onToggleWait } : undefined}
+        hint={open ? (full ? "Entre na fila de espera e avisamos se abrir uma vaga." : cardHint("ritual", payOn)) : undefined}
+        chat={{ onClick: onChat, status: chatStatus }}
+      />
+    );
+  }
 
   return (
     <Card className="p-5">
@@ -116,7 +148,6 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
             {open && state === "esgotado" && onToggleWait && (
               <Button size="sm" variant={waiting ? "outline" : "default"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
             )}
-            {onAsk && <Button size="sm" variant="outline" onClick={onAsk}>Perguntar à assistente</Button>}
             <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
           </>
         )}
