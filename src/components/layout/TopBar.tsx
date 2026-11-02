@@ -8,11 +8,13 @@ import { Avatar, Button } from "@/components/base";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MoreSheet from "@/components/layout/MoreSheet";
 import { navGroups } from "@/components/layout/navConfig";
+import { useStaffLink } from "@/lib/staff";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
   const { currentUser, logout, isRemoteAuth } = useApp();
+  const staff = useStaffLink(isRemoteAuth && currentUser?.type !== "commercial" ? currentUser?.id : undefined);
   const { isAdmin } = usePlatformConfig();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
@@ -103,7 +105,7 @@ export default function TopBar() {
               open={menu}
               onClose={closeMenu}
               onLogout={() => { setMenu(false); logout(); nav("/login"); }}
-              groups={navGroups({ isHouse: currentUser?.type === "commercial", isRemoteAuth, userId: currentUser?.id })}
+              groups={navGroups({ isHouse: currentUser?.type === "commercial", isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff) })}
               isAdmin={isAdmin}
               user={currentUser ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar, isHouse: currentUser.type === "commercial" } : null}
             />

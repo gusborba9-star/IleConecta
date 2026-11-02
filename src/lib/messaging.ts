@@ -34,6 +34,8 @@ export interface ChatMessage {
   attachmentSize: number | null;
   /** Botão de pagamento que a assistente colocou no chat (ritual ou serviço da casa). */
   action: { target: "ritual" | "service"; id: string } | null;
+  /** Nome de quem da equipe respondeu pela casa. */
+  staffName: string | null;
 }
 
 export async function touchPresence(withDelivered = true): Promise<void> {
@@ -95,10 +97,11 @@ export async function fetchMessages(conversationId: string): Promise<ChatMessage
   if (!supabase) return [];
   const query = (cols: string) => supabase!.from("messages").select(cols).eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200);
   // Se a coluna "action" ainda não existe no banco, cai para a leitura sem ela.
-  let res = await query(`${MSG_COLS}, action`);
+  let res = await query(`${MSG_COLS}, action, staff_name`);
+  if (res.error) res = await query(`${MSG_COLS}, action`);
   if (res.error) res = await query(MSG_COLS);
   const rows = (res.data ?? []) as unknown as Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return rows.map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null, attachmentPath: m.attachment_path ?? null, attachmentType: m.attachment_type ?? null, attachmentName: m.attachment_name ?? null, attachmentSize: m.attachment_size ?? null, action: toAction(m.action) }));
+  return rows.map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null, attachmentPath: m.attachment_path ?? null, attachmentType: m.attachment_type ?? null, attachmentName: m.attachment_name ?? null, attachmentSize: m.attachment_size ?? null, action: toAction(m.action), staffName: m.staff_name ?? null }));
 }
 
 /** Mensagem direta (sem assistente). "blocked" quando o destinatário bloqueou quem envia. */

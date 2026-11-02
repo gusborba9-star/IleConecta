@@ -2,12 +2,14 @@ import { Link, NavLink } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Card } from "@/components/base";
 import { cn } from "@/lib/utils";
+import { useStaffLink } from "@/lib/staff";
 import { navGroups, type NavEntry } from "./navConfig";
 
 export default function SideNav() {
   const { currentUser, isRemoteAuth } = useApp();
   const isHouse = currentUser?.type === "commercial";
-  const groups = navGroups({ isHouse, isRemoteAuth, userId: currentUser?.id });
+  const staff = useStaffLink(isRemoteAuth && !isHouse ? currentUser?.id : undefined);
+  const groups = navGroups({ isHouse, isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff) });
 
   return (
     <div className="space-y-4">

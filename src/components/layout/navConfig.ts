@@ -1,10 +1,10 @@
-import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, type LucideIcon } from "lucide-react";
 
 export interface NavEntry { to: string; icon: LucideIcon; label: string; tone?: "gold" }
 export interface NavGroup { title?: string; items: NavEntry[] }
 
 /** Menu único: a lateral do computador e o menu "Mais" do celular mostram exatamente os mesmos grupos. */
-export function navGroups({ isHouse, isRemoteAuth, userId }: { isHouse: boolean; isRemoteAuth: boolean; userId?: string }): NavGroup[] {
+export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse: boolean; isRemoteAuth: boolean; userId?: string; isStaff?: boolean }): NavGroup[] {
   if (isHouse) {
     return [
       { items: [
@@ -20,6 +20,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId }: { isHouse: boolean;
       { title: "Minha casa", items: [
         { to: `/casa/${userId ?? ""}`, icon: User, label: "Minha página" },
         { to: "/perfil", icon: Settings, label: "Perfil e assistente" },
+        ...(isRemoteAuth ? [{ to: "/divulgacao", icon: Megaphone, label: "Divulgação" }, { to: "/equipe", icon: UsersRound, label: "Equipe da casa" }] : []),
       ] },
       { title: "Crescer", items: [
         { to: "/planos", icon: Crown, label: "Planos e upgrade", tone: "gold" },
@@ -39,6 +40,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId }: { isHouse: boolean;
     { title: "Minha conta", items: [
       { to: "/atividade", icon: History, label: "Minha atividade" },
       ...(isRemoteAuth ? [{ to: "/mensalidades", icon: Wallet, label: "Mensalidades" }] : []),
+      ...(isStaff ? [{ to: "/atendimento", icon: Headset, label: "Atendimento da casa", tone: "gold" as const }] : []),
       { to: "/perfil", icon: User, label: "Meu perfil" },
     ] },
     { items: [{ to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },

@@ -264,6 +264,7 @@ export default function RealMessages() {
                       onClick={() => mine && !deleted && setSelected(selected === m.id ? null : m.id)}
                       className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-forest text-forest-foreground rounded-br-md cursor-pointer shadow-card" : "bg-card border border-border rounded-bl-md shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]", deleted && "italic opacity-70")}
                     >
+                      {m.staffName && !m.fromAssistant && <div className="text-[10px] font-semibold text-gold-ink mb-0.5">Atendido por {m.staffName}</div>}
                       {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
                       {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : (
                         <>
