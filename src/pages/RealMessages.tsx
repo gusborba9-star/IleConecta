@@ -10,6 +10,8 @@ import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
 import { fetchAssistantName } from "@/lib/catalog";
+import PremiumShowcase from "@/components/premium/PremiumShowcase";
+import { useOwnerPlan } from "@/lib/housePlan";
 import { isPlaceholderText, prepareFile, sendAttachment, uploadFile } from "@/lib/chatFiles";
 import {
   deleteMessage, fetchIBlocked, fetchMessages, fetchPeer, markConversationRead, listConversations, openConversation, sendDirect, subscribeMessages,
@@ -154,11 +156,14 @@ export default function RealMessages() {
     setBusy(false);
   };
 
+  const houseOwnerId = peer?.isHouse ? otherId : me;
+  const { premium: mediaOk } = useOwnerPlan(houseOwnerId);
+
   const attach = async (file: File | undefined) => {
     if (!file || !convId || !me || busy) return;
     setBusy(true);
     setNotice(null);
-    const prep = await prepareFile(file);
+    const prep = await prepareFile(file, mediaOk);
     if (!prep.ok) {
       toast.error(prep.message);
       setBusy(false);
@@ -285,14 +290,17 @@ export default function RealMessages() {
               {notice && <div role="alert" className="text-sm text-center text-muted-foreground">{notice}</div>}
             </div>
 
+            {!iBlocked && !mediaOk && currentUser?.type === "commercial" && (
+              <div className="px-3 pt-2 border-t border-border bg-card"><PremiumShowcase kind="chat" compact /></div>
+            )}
             {iBlocked ? (
               <div className="p-3 border-t border-border bg-card text-sm text-center text-muted-foreground">
                 Você bloqueou este contato. Use o menu (⋮) para desbloquear.
               </div>
             ) : (
               <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
-                <input ref={fileRef} type="file" hidden accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void attach(f); }} />
-                <Button size="icon" variant="ghost" aria-label="Anexar foto ou PDF" disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
+                <input ref={fileRef} type="file" hidden accept={mediaOk ? "image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf" : "application/pdf"} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void attach(f); }} />
+                <Button size="icon" variant="ghost" aria-label={mediaOk ? "Anexar foto, vídeo ou PDF" : "Anexar PDF"} disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
                 <input
                   aria-label="Mensagem"
                   value={text}

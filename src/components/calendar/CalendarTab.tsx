@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { previewRows, whenText } from "@/lib/calendarPreview";
 import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useApp } from "@/contexts/AppContext";
+import { useOwnerPlan } from "@/lib/housePlan";
+import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { deleteCalendarItem, saveCalendarItem, type CalendarDraft, type CalendarItem } from "@/lib/calendar";
@@ -18,11 +21,14 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
   const [draft, setDraft] = useState<CalendarDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const today = useMemo(() => todayLocal(), []);
+  const { currentUser } = useApp();
+  const { premium, loading: planLoading } = useOwnerPlan(isOwn ? currentUser?.id : null);
+  const locked = isOwn && !planLoading && !premium;
 
 
   const list = upcoming(items, today);
   const taken = items.map((i) => i.title);
-  const suggestions = isOwn ? traditionalDates(taken) : [];
+  const suggestions = isOwn && !locked ? traditionalDates(taken) : [];
 
   const startFromSuggestion = (id: string) => {
     const s = SUGGESTIONS.find((x) => x.key === id);
@@ -39,7 +45,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
     if (draft.title.trim().length < 2) return void toast.error("Dê um nome à data.");
     if (!draft.date) return void toast.error("Escolha a data.");
     setBusy(true);
-    const error = await saveCalendarItem({ ...draft, title: draft.title.trim(), note: draft.note.trim() });
+    const error = await saveCalendarItem({ ...draft, title: draft.title.trim(), note: draft.note.trim(), ...(locked ? { yearly: false, vis_followers: false } : {}) });
     setBusy(false);
     if (error) return void toast.error(error);
     toast.success(draft.id ? "Data atualizada." : "Data adicionada.");
@@ -95,8 +101,8 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
               <Input id="cal-trad" maxLength={40} value={draft.tradition} onChange={(e) => setDraft({ ...draft, tradition: e.target.value })} placeholder="como a sua casa se identifica" />
             </div>
             <label className="flex items-center gap-2 text-sm self-end pb-2">
-              <input type="checkbox" checked={draft.yearly} onChange={(e) => setDraft({ ...draft, yearly: e.target.checked })} />
-              Repete todo ano nesta data
+              <input type="checkbox" disabled={locked} checked={locked ? false : draft.yearly} onChange={(e) => setDraft({ ...draft, yearly: e.target.checked })} />
+              Repete todo ano nesta data{locked && <span className="ml-1 text-xs text-gold-ink">· Premium</span>}
             </label>
             <div className="sm:col-span-2">
               <Label htmlFor="cal-note">Observação (opcional)</Label>
@@ -106,9 +112,9 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
           <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Quem fica sabendo</legend>
             {VISIBILITY.map((v) => (
-              <label key={v.key} className="flex items-start gap-2 text-sm">
-                <input type="checkbox" className="mt-1" checked={draft[v.key]} onChange={(e) => setDraft({ ...draft, [v.key]: e.target.checked })} />
-                <span><strong>{v.label}</strong> <span className="text-muted-foreground">· {v.hint}</span></span>
+              <label key={v.key} className={`flex items-start gap-2 text-sm ${locked && v.key === "vis_followers" ? "opacity-60" : ""}`}>
+                <input type="checkbox" className="mt-1" disabled={locked && v.key === "vis_followers"} checked={locked && v.key === "vis_followers" ? false : draft[v.key]} onChange={(e) => setDraft({ ...draft, [v.key]: e.target.checked })} />
+                <span><strong>{v.label}</strong> <span className="text-muted-foreground">· {v.hint}</span>{locked && v.key === "vis_followers" && <span className="ml-1 text-xs text-gold-ink">· Premium</span>}</span>
               </label>
             ))}
           </fieldset>
@@ -132,7 +138,9 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
         </Card>
       )}
 
-      {isOwn && (
+      {locked && <PremiumShowcase kind="calendar" />}
+
+      {isOwn && !locked && (
         <Card className="p-5 space-y-3">
           <div>
             <h3 className="font-semibold">Datas que muitas casas celebram</h3>
