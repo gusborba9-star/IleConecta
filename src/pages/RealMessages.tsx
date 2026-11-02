@@ -1,7 +1,7 @@
 import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Bot, Check, CheckCheck, Paperclip, Send, Trash2 } from "lucide-react";
+import { Bot, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
@@ -10,6 +10,7 @@ import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
 import { fetchAssistantName } from "@/lib/catalog";
+import { fetchQuickReplies, type QuickReply } from "@/lib/campaigns";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { isPlaceholderText, prepareFile, sendAttachment, uploadFile } from "@/lib/chatFiles";
@@ -156,6 +157,13 @@ export default function RealMessages() {
     setBusy(false);
   };
 
+  const [quick, setQuick] = useState<QuickReply[]>([]);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const iAmHouse = currentUser?.type === "commercial";
+  useEffect(() => {
+    if (iAmHouse) void fetchQuickReplies().then(setQuick);
+  }, [iAmHouse]);
+
   const houseOwnerId = peer?.isHouse ? otherId : me;
   const { premium: mediaOk } = useOwnerPlan(houseOwnerId);
 
@@ -300,6 +308,20 @@ export default function RealMessages() {
             ) : (
               <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
                 <input ref={fileRef} type="file" hidden accept={mediaOk ? "image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf" : "application/pdf"} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void attach(f); }} />
+                {iAmHouse && quick.length > 0 && (
+                  <div className="relative">
+                    <Button size="icon" variant="ghost" aria-label="Respostas rápidas" aria-expanded={quickOpen} onClick={() => setQuickOpen((v) => !v)}><Zap className="h-4 w-4" /></Button>
+                    {quickOpen && (
+                      <ul className="pillow absolute bottom-12 left-0 z-20 w-72 max-h-64 overflow-y-auto rounded-2xl bg-card p-1.5 shadow-lift">
+                        {quick.map((q) => (
+                          <li key={q.id}><button type="button" className="w-full rounded-xl px-3 py-2 text-left hover:bg-muted" onClick={() => { setText(q.body.slice(0, 1000)); setQuickOpen(false); }}>
+                            <span className="block text-sm font-semibold">{q.title}</span><span className="block text-xs text-muted-foreground line-clamp-2">{q.body}</span>
+                          </button></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
                 <Button size="icon" variant="ghost" aria-label={mediaOk ? "Anexar foto, vídeo ou PDF" : "Anexar PDF"} disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
                 <input
                   aria-label="Mensagem"
