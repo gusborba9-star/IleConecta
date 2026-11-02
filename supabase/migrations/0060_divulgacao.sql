@@ -43,13 +43,14 @@ create policy "respostas rápidas: a casa gerencia" on public.house_quick_replie
 
 create or replace function public.campaign_plan_limit()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare p public.house_plan; n int;
+declare p public.house_plan; n int; lim int;
 begin
   select plan into p from public.houses where id = new.house_id;
   if p = 'base' then raise exception 'Os links de divulgação fazem parte do plano Profissional.'; end if;
   select count(*) into n from public.house_campaigns where house_id = new.house_id;
-  if n >= case when p = 'maximo' then 30 else 2 end then
-    raise exception 'Seu plano permite até % links de divulgação.', case when p = 'maximo' then 30 else 2 end;
+  lim := case when p = 'maximo' then 30 else 2 end;
+  if n >= lim then
+    raise exception 'Seu plano permite até % links de divulgação.', lim;
   end if;
   return new;
 end $$;
@@ -59,13 +60,14 @@ create trigger trg_campaign_limit before insert on public.house_campaigns
 
 create or replace function public.quick_reply_plan_limit()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare p public.house_plan; n int;
+declare p public.house_plan; n int; lim int;
 begin
   select plan into p from public.houses where id = new.house_id;
   if p = 'base' then raise exception 'As respostas rápidas fazem parte do plano Profissional.'; end if;
   select count(*) into n from public.house_quick_replies where house_id = new.house_id;
-  if n >= case when p = 'maximo' then 50 else 3 end then
-    raise exception 'Seu plano permite até % respostas rápidas.', case when p = 'maximo' then 50 else 3 end;
+  lim := case when p = 'maximo' then 50 else 3 end;
+  if n >= lim then
+    raise exception 'Seu plano permite até % respostas rápidas.', lim;
   end if;
   return new;
 end $$;
