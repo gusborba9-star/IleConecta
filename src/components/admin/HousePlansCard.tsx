@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 type PlanId = (typeof PLAN_IDS)[number];
 interface Row { house_id: string; name: string; plan: PlanId; revert_to: PlanId | null; revert_at: string | null }
 interface Edit { plan: PlanId; trial: boolean; days: string; back: PlanId }
+interface Seat { house_id: string; seats: number; in_use: number }
 
 /** O administrador define o plano de cada casa, com degustação opcional (volta sozinha ao plano de antes). */
 export default function HousePlansCard() {
@@ -15,6 +16,8 @@ export default function HousePlansCard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Edit>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [seats, setSeats] = useState<Record<string, string>>({});
+  const [seatNow, setSeatNow] = useState<Record<string, Seat>>({});
   const planName = (id: PlanId) => config.pricing.plans[id]?.name ?? id;
 
   const load = useCallback(async () => {
@@ -23,7 +26,24 @@ export default function HousePlansCard() {
     const list = ((data as Row[] | null) ?? []).map((r) => ({ ...r }));
     setRows(list);
     setEdits(Object.fromEntries(list.map((r) => [r.house_id, { plan: r.plan, trial: false, days: "7", back: r.plan }])));
+    const { data: sd } = await supabase.rpc("admin_houses_seats");
+    const sl = ((sd as Seat[] | null) ?? []).map((x) => ({ ...x, in_use: Number(x.in_use) }));
+    setSeatNow(Object.fromEntries(sl.map((x) => [x.house_id, x])));
+    setSeats(Object.fromEntries(sl.map((x) => [x.house_id, String(x.seats)])));
   }, []);
+
+  const saveSeats = async (r: Row) => {
+    const n = Number(seats[r.house_id]);
+    if (!supabase || !Number.isInteger(n) || n < 0 || n > 20) return void toast.error("Informe de 0 a 20 acessos extras.");
+    setSaving(`s-${r.house_id}`);
+    const { error } = await supabase.rpc("admin_set_house_seats", { p_house: r.house_id, p_seats: n });
+    setSaving(null);
+    if (error) toast.error("Não foi possível alterar os acessos extras.");
+    else {
+      toast.success(`Acessos extras de ${r.name} atualizados.`);
+      await load();
+    }
+  };
 
   useEffect(() => {
     void load();
@@ -102,6 +122,13 @@ export default function HousePlansCard() {
               </div>
             )}
             <Button onClick={() => void save(r)} disabled={saving !== null || !changed}>{saving === r.house_id ? "Salvando…" : "Salvar plano"}</Button>
+            <div className="flex flex-wrap items-center gap-2 text-sm border-t border-border pt-2">
+              <span>Acessos extras da equipe</span>
+              <Input aria-label={`Acessos extras de ${r.name}`} className="w-20" inputMode="numeric" value={seats[r.house_id] ?? "0"}
+                onChange={(ev) => setSeats({ ...seats, [r.house_id]: ev.target.value })} />
+              <span className="text-xs text-muted-foreground">{seatNow[r.house_id] ? `${seatNow[r.house_id].in_use} em uso. ` : ""}O Premium já inclui 1.</span>
+              <Button variant="outline" onClick={() => void saveSeats(r)} disabled={saving !== null || String(seatNow[r.house_id]?.seats ?? 0) === (seats[r.house_id] ?? "0")}>{saving === `s-${r.house_id}` ? "Salvando…" : "Salvar acessos"}</Button>
+            </div>
           </div>
         );
       })}

@@ -12,6 +12,7 @@ export interface PlatformConfig {
   features: Record<FeatureKey, FeatureFlag>;
   pricing: {
     plans: Record<PlanId, { name: string; monthly: Money }>;
+    extra_seat: Record<PlanId, Money>;
     boost_per_day: Record<ScopeKey, Money>;
     highlight_per_day: Record<ScopeKey, Money>;
   };
