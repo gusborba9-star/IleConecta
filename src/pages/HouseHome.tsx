@@ -9,6 +9,7 @@ import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
+import HouseKpis from "@/components/house/HouseKpis";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
@@ -89,6 +90,8 @@ export default function HouseHome() {
         </div>
         </div>
       </Card>
+
+      {isRemoteAuth && <HouseKpis ownerId={house.id} />}
 
       {!termsOk && (
         <Card className="p-5 border-gold/50">

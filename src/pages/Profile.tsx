@@ -24,7 +24,7 @@ export default function Profile() {
         <div className="relative h-24 sm:h-28 overflow-hidden bg-gradient-to-br from-[#14543F] to-[#0A2E22] border-b-2 border-gold/60" aria-hidden><div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "24px 24px" }} /></div>
         <div className="px-5 sm:px-6 pb-6">
           <div className="-mt-12 flex items-end justify-between gap-3">
-            <div className="rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60">
+            <div className="relative z-10 rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60">
               <Avatar src={currentUser.avatar} name={currentUser.name} size={88} />
             </div>
             <Button variant="outline" size="sm" className="mb-1 shrink-0" onClick={() => setEditing(true)}>

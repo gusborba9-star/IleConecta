@@ -53,7 +53,7 @@ export default function Login() {
         <div className="absolute inset-x-0 bottom-0 p-10 text-white">
           <div className="max-w-md space-y-3">
             <div className="text-xs tracking-[0.3em] uppercase text-gold">Ilê Conecta</div>
-            <h1 className="font-display font-bold text-4xl leading-tight">Casas espirituais e pessoas, conectadas com respeito.</h1>
+            <h1 className="font-display font-bold text-4xl leading-tight">Aproximando caminhos, respeitando tradições.</h1>
             <p className="text-white/80">
               Descubra casas, participe de rituais e encontros, converse pelo chat e conecte-se em um só lugar, com sigilo e segurança.
             </p>
@@ -66,7 +66,7 @@ export default function Login() {
           <div className="relative flex flex-col items-center gap-2">
             <LogoMark size={64} />
             <div className="font-display font-bold text-3xl">Ilê Conecta</div>
-            <p className="text-sm text-white/80 max-w-xs">Casas espirituais e pessoas, conectadas com respeito.</p>
+            <p className="text-sm text-white/85 max-w-xs">Aproximando caminhos, respeitando tradições.</p>
           </div>
           <div className="absolute inset-x-0 bottom-0 h-7 rounded-t-[28px] bg-background" />
         </div>

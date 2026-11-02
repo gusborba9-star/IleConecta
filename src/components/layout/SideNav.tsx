@@ -12,22 +12,22 @@ export default function SideNav() {
   return (
     <div className="space-y-4">
       {groups.map((g, i) => (
-        <Card key={i} className="p-3">
+        <Card key={i} className={cn("p-3", isHouse && "!bg-[#0F3B2D] !border-white/10 !text-[#EAF1EC] shadow-altar")}>
           {i === 0 && (
             <>
-              <Link to={isHouse ? `/casa/${currentUser?.id}` : "/perfil"} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition">
+              <Link to={isHouse ? `/casa/${currentUser?.id}` : "/perfil"} className={cn("flex items-center gap-3 p-2 rounded-xl transition", isHouse ? "hover:bg-white/10" : "hover:bg-muted")}>
                 <Avatar src={currentUser?.avatar} name={currentUser?.name} size={44} ring={isHouse ? "gold" : "none"} />
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{currentUser?.name}</div>
-                  <div className="text-xs text-muted-foreground">{isHouse ? "Minha casa" : "Cliente"}</div>
+                  <div className={cn("text-xs", isHouse ? "text-[#9FC2B2]" : "text-muted-foreground")}>{isHouse ? "Painel da casa" : "Cliente"}</div>
                 </div>
               </Link>
               <div className="altar-divider my-3 rounded" />
             </>
           )}
-          {g.title && <div className="px-3 pb-1 text-xs uppercase tracking-widest text-muted-foreground">{g.title}</div>}
+          {g.title && <div className={cn("px-3 pb-1 text-xs uppercase tracking-widest", isHouse ? "text-[#E3BF5A]" : "text-muted-foreground")}>{g.title}</div>}
           <nav className="flex flex-col gap-1">
-            {g.items.map((it) => <NavItem key={it.to + it.label} {...it} />)}
+            {g.items.map((it) => <NavItem key={it.to + it.label} {...it} dark={isHouse} />)}
           </nav>
         </Card>
       ))}
@@ -35,7 +35,7 @@ export default function SideNav() {
   );
 }
 
-function NavItem({ to, icon: Icon, label, tone }: NavEntry) {
+function NavItem({ to, icon: Icon, label, tone, dark }: NavEntry & { dark?: boolean }) {
   return (
     <NavLink
       to={to}
@@ -43,8 +43,10 @@ function NavItem({ to, icon: Icon, label, tone }: NavEntry) {
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition",
-          isActive ? "bg-forest/10 text-forest font-semibold shadow-[inset_3px_0_0_hsl(var(--gold))]" : "hover:bg-muted text-foreground/80",
-          tone === "gold" ? "text-gold-ink" : ""
+          dark
+            ? isActive ? "bg-[#1B5A45] text-white font-semibold shadow-[inset_3px_0_0_#E3BF5A]" : "text-[#D5E4DB] hover:bg-white/10"
+            : isActive ? "bg-forest/10 text-forest font-semibold shadow-[inset_3px_0_0_hsl(var(--gold))]" : "hover:bg-muted text-foreground/80",
+          tone === "gold" ? (dark ? "text-[#F2DC95]" : "text-gold-ink") : ""
         )
       }
     >
