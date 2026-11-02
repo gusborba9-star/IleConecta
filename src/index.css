@@ -4,43 +4,46 @@
 
 @layer base {
   :root {
-    --build-id: 2026-10-26b;
-    --background: 30 25% 97%;
-    --foreground: 22 40% 12%;
+    --build-id: 2026-11-01a;
+    /* Terra & Folha: marfim, tinta, terracota, esmeralda, ouro e ameixa. */
+    --background: 36 38% 95%;
+    --foreground: 22 45% 12%;
 
-    --card: 30 40% 99%;
-    --card-foreground: 22 40% 12%;
+    --card: 36 40% 99%;
+    --card-foreground: 22 45% 12%;
 
-    --muted: 30 15% 92%;
-    --muted-foreground: 22 15% 40%;
+    --muted: 33 22% 91%;
+    --muted-foreground: 24 17% 36%;
 
-    --primary: 12 72% 45%;
+    --primary: 10 75% 43%;
     --primary-foreground: 40 40% 98%;
 
-    --secondary: 30 20% 90%;
-    --secondary-foreground: 22 40% 15%;
+    --secondary: 33 24% 89%;
+    --secondary-foreground: 22 45% 15%;
 
-    --accent: 158 40% 25%;
+    --accent: 160 62% 20%;
     --accent-foreground: 40 40% 98%;
 
-    --gold: 42 88% 52%;
-    --gold-foreground: 22 40% 12%;
+    --gold: 42 70% 57%;
+    --gold-foreground: 22 45% 12%;
 
-    --forest: 158 40% 25%;
+    --forest: 160 62% 20%;
     --forest-foreground: 40 40% 98%;
 
-    --border: 30 20% 85%;
-    --input: 30 20% 88%;
-    --ring: 12 72% 45%;
+    --plum: 270 33% 36%;
+
+    --border: 30 22% 84%;
+    --input: 30 22% 86%;
+    --ring: 10 75% 43%;
 
     --danger: 0 72% 45%;
-    --success: 145 55% 35%;
+    --success: 150 55% 30%;
 
     /* Texto sobre fundo dourado claro (selos e itens "crescer"). */
-    --gold-ink: 30 60% 25%;
-    --glass: 30 40% 99%;
-    --glow-1: 42 88% 60%;
-    --glow-2: 12 72% 55%;
+    --gold-ink: 30 70% 24%;
+    --glass: 36 40% 99%;
+    --glow-1: 42 70% 57%;
+    --glow-2: 10 75% 50%;
   }
 
   /* Modo escuro: fundo marrom-café, mesmas cores de destaque (terracota e dourado) um pouco mais claras. */
@@ -80,6 +83,39 @@
     --glass: 22 24% 11%;
     --glow-1: 42 88% 50%;
     --glow-2: 12 72% 45%;
+    --plum: 270 40% 68%;
+  }
+
+  /* Painel admin: central de comando escura, verde-floresta com acentos menta. */
+  .admin-theme {
+    --background: 160 28% 7%;
+    --foreground: 150 25% 92%;
+    --card: 160 24% 10%;
+    --card-foreground: 150 25% 92%;
+    --muted: 160 18% 14%;
+    --muted-foreground: 150 12% 65%;
+    --primary: 150 55% 62%;
+    --primary-foreground: 160 40% 7%;
+    --secondary: 160 16% 16%;
+    --secondary-foreground: 150 25% 90%;
+    --accent: 160 40% 22%;
+    --accent-foreground: 150 25% 92%;
+    --gold: 42 70% 60%;
+    --gold-foreground: 22 45% 10%;
+    --forest: 150 55% 62%;
+    --forest-foreground: 160 40% 7%;
+    --border: 160 16% 20%;
+    --input: 160 16% 18%;
+    --ring: 150 55% 62%;
+    --danger: 8 70% 62%;
+    --success: 150 55% 55%;
+    --gold-ink: 42 75% 72%;
+    --glass: 160 24% 10%;
+    --glow-1: 150 55% 45%;
+    --glow-2: 42 70% 50%;
+    color-scheme: dark;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 
   * {
@@ -112,6 +148,36 @@
   .glass {
     background: hsl(var(--glass) / 0.75);
     backdrop-filter: blur(12px);
+  }
+  /* Cartão que sobe de leve ao passar o mouse (listas de ofertas, planos). */
+  .lift {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.6) inset, 0 22px 36px -22px hsl(22 45% 12% / 0.45);
+  }
+  /* Brilho dourado que passa uma vez sobre selos em destaque. */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, hsl(0 0% 100% / 0.55) 50%, transparent 70%);
+    transform: translateX(-120%);
+    animation: sheen 3.6s ease-in-out 1s infinite;
+    pointer-events: none;
+  }
+  @keyframes sheen {
+    0%, 55% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sheen::after { animation: none; }
+    .lift { transition: none; }
   }
   .scroll-x {
     overflow-x: auto;

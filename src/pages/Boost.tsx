@@ -34,7 +34,7 @@ export default function Boost() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
-      <Card className="p-6 bg-gradient-to-br from-primary/10 via-gold/10 to-forest/10 border-gold/40">
+      <Card className="p-6 bg-gradient-to-br from-[#EEE9F5] via-transparent to-gold/10 dark:from-plum/15 border-plum/30 shadow-card">
         <div className="flex items-center gap-2 mb-2">
           <TrendingUp className="h-5 w-5 text-primary" />
           <h1 className="font-display font-bold text-2xl">Impulsionar</h1>

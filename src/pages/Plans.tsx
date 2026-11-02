@@ -55,8 +55,9 @@ export default function Plans() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
-      <Card className="p-6">
-        <h1 className="font-display font-bold text-2xl">Planos</h1>
+      <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>
+        <h1 className="font-display font-bold text-3xl mt-1">Cresça no seu ritmo</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
           Escolha o plano da sua casa. Quando o pagamento pela plataforma estiver disponível: rituais com vagas têm taxa de 15% e serviços contratados pela plataforma têm 4%. Atendimentos combinados direto com a casa não têm taxa da plataforma.
         </p>
@@ -66,23 +67,24 @@ export default function Plans() {
         {PLANS.map((p) => {
           const info = config.pricing.plans[p.id];
           return (
-          <Card key={p.id} className={`p-5 flex flex-col ${mine === p.id ? "border-primary" : ""}`}>
+          <Card key={p.id} className={`lift p-5 flex flex-col ${mine === p.id ? "border-primary" : ""} ${p.id === "maximo" ? "!border-gold !bg-gradient-to-br from-[#14543F] to-[#0F3B2D] !text-white shadow-altar ring-1 ring-gold/60" : p.id === "intermediario" ? "!bg-[#E8F1EA] dark:!bg-forest/10" : ""}`}>
+            {p.id === "maximo" && <span className="sheen -mt-1 mb-2 w-fit rounded-full bg-gold px-3 py-1 text-xs font-bold text-gold-foreground">Mais completo</span>}
             <div className="flex items-center gap-2">
               <h2 className="font-display font-bold text-xl flex-1">{info.name}</h2>
               {mine === p.id && <Badge tone="primary">Seu plano</Badge>}
             </div>
-            <p className="text-sm text-muted-foreground">{p.tagline}</p>
+            <p className={`text-sm ${p.id === "maximo" ? "text-white/75" : "text-muted-foreground"}`}>{p.tagline}</p>
             <div className="mt-3">
-              <span className="font-display font-bold text-2xl text-primary">{formatMoney(info.monthly)}</span>
-              {info.monthly !== null && <span className="text-sm text-muted-foreground"> / mês</span>}
+              <span className={`font-display font-bold text-3xl ${p.id === "maximo" ? "text-white" : "text-primary"}`}>{formatMoney(info.monthly)}</span>
+              {info.monthly !== null && <span className={`text-sm ${p.id === "maximo" ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
             </div>
             <ul className="mt-4 space-y-2 text-sm flex-1">
               {p.benefits.map((b) => (
-                <li key={b} className="flex gap-2"><Check className="h-4 w-4 text-forest shrink-0 mt-0.5" />{b}</li>
+                <li key={b} className="flex gap-2"><Check className={`h-4 w-4 shrink-0 mt-0.5 ${p.id === "maximo" ? "text-gold" : "text-forest"}`} />{b}</li>
               ))}
             </ul>
             {isHouse ? (
-              <Button className="w-full mt-5" variant="outline" disabled={mine === p.id} onClick={() => nav("/suporte")}>
+              <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={mine === p.id} onClick={() => nav("/suporte")}>
                 {mine === p.id ? "Plano atual" : "Fazer upgrade pelo suporte"}
               </Button>
             ) : null}

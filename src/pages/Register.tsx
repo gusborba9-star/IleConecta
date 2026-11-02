@@ -57,7 +57,7 @@ export default function Register() {
       if (!result.ok) return toast.error(result.error);
       if (type === "commercial") forgetReferral();
       if (result.needsEmailConfirmation) return setPendingEmail(email);
-      toast.success(isRemoteAuth ? "Conta criada. Axé!" : "Conta de demonstração criada neste navegador.");
+      toast.success(isRemoteAuth ? "Conta criada. Boas-vindas!" : "Conta de demonstração criada neste navegador.");
       nav("/");
     } finally {
       setLoading(false);

@@ -43,7 +43,7 @@ function NavItem({ to, icon: Icon, label, tone }: NavEntry) {
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition",
-          isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground/80",
+          isActive ? "bg-forest/10 text-forest font-semibold shadow-[inset_3px_0_0_hsl(var(--gold))]" : "hover:bg-muted text-foreground/80",
           tone === "gold" ? "text-gold-ink" : ""
         )
       }

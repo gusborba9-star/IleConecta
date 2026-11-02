@@ -40,7 +40,7 @@ export default function TopBar() {
   }, [menu]);
 
   return (
-    <header className="sticky top-0 z-40 glass border-b border-border">
+    <header className="sticky top-0 z-40 glass border-b border-border shadow-[0_1px_0_hsl(var(--gold)/0.35)]">
       <div className="mx-auto max-w-[1440px] px-3 md:px-6 h-16 flex items-center gap-3">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <Brand size={38} compact />
@@ -51,7 +51,7 @@ export default function TopBar() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               aria-label="Buscar casas e rituais"
-              placeholder="Buscar casas, rituais, orixás..."
+              placeholder="Buscar casas e rituais..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -122,7 +122,7 @@ function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
       className={({ isActive }) =>
         cn(
           "px-3 md:px-6 h-11 rounded-full flex items-center gap-2 text-sm font-semibold transition",
-          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          isActive ? "bg-forest/10 text-forest shadow-[inset_0_-2px_0_hsl(var(--gold))]" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )
       }
       aria-label={label}

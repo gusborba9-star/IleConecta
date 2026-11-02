@@ -34,7 +34,7 @@ export default function Highlights() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
-      <Card className="p-6 bg-gradient-to-br from-gold/20 via-transparent to-primary/10 border-gold/40">
+      <Card className="p-6 bg-gradient-to-br from-[#FBF2DE] via-transparent to-gold/10 dark:from-gold/15 border-gold/40 shadow-card">
         <div className="flex items-center gap-2 mb-2">
           <Star className="h-5 w-5 text-gold" />
           <h1 className="font-display font-bold text-2xl">Destaques nos feeds</h1>

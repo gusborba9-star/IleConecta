@@ -205,7 +205,7 @@ export default function RealMessages() {
           <button
             key={c.id}
             onClick={() => nav(`/mensagens/${c.otherId}`)}
-            className={cn("w-full flex items-center gap-3 px-4 py-3 border-b border-border/50 hover:bg-muted text-left transition", otherId === c.otherId && "bg-primary/5")}
+            className={cn("w-full flex items-center gap-3 px-4 py-3 border-b border-border/50 hover:bg-muted text-left transition", otherId === c.otherId && "bg-gold/10 shadow-[inset_3px_0_0_hsl(var(--gold))]")}
           >
             <Avatar src={c.otherAvatar ?? undefined} name={c.otherName} size={44} ring={c.otherIsHouse ? "gold" : "none"} />
             <div className="min-w-0 flex-1">
@@ -222,7 +222,7 @@ export default function RealMessages() {
       <section className={cn("flex flex-col min-h-0", !otherId && "hidden md:flex")}>
         {otherId && peer ? (
           <>
-            <header className="p-3 border-b border-border flex items-center gap-3 sticky top-0 bg-card">
+            <header className="p-3 border-b border-gold/40 flex items-center gap-3 sticky top-0 bg-card shadow-[0_1px_0_hsl(var(--gold)/0.25)]">
               <button className="md:hidden text-sm font-semibold text-primary px-2" onClick={() => nav("/mensagens")}>Voltar</button>
               <Avatar src={peer.avatar ?? undefined} name={peer.name} size={40} ring={peer.isHouse ? "gold" : "none"} />
               <div className="min-w-0 flex-1">
@@ -249,7 +249,7 @@ export default function RealMessages() {
                     )}
                     <div
                       onClick={() => mine && !deleted && setSelected(selected === m.id ? null : m.id)}
-                      className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-primary text-primary-foreground rounded-br-md cursor-pointer" : "bg-card border border-border rounded-bl-md", deleted && "italic opacity-70")}
+                      className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-forest text-forest-foreground rounded-br-md cursor-pointer shadow-card" : "bg-card border border-border rounded-bl-md shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]", deleted && "italic opacity-70")}
                     >
                       {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
                       {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : (
@@ -259,7 +259,7 @@ export default function RealMessages() {
                           {m.action && m.fromAssistant && otherId && <div><ChatCheckoutButton action={m.action} ownerId={otherId} /></div>}
                         </>
                       )}
-                      <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-primary-foreground/70" : "text-muted-foreground")}>
+                      <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-forest-foreground/70" : "text-muted-foreground")}>
                         {timeAgo(m.createdAt)}
                         {mine && !deleted && (
                           m.read

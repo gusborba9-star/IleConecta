@@ -7,17 +7,17 @@ type BtnSize = "sm" | "md" | "lg" | "icon";
 
 const variantClass: Record<BtnVariant, string> = {
   primary:
-    "bg-primary text-primary-foreground hover:brightness-110 shadow-card",
-  gold: "bg-gold text-gold-foreground hover:brightness-105 shadow-card",
+    "bg-primary text-primary-foreground hover:brightness-110 shadow-cta active:translate-y-px",
+  gold: "bg-gold text-gold-foreground hover:brightness-105 shadow-card active:translate-y-px",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "bg-transparent hover:bg-muted text-foreground",
-  outline: "bg-transparent border border-border hover:bg-muted text-foreground",
+  outline: "bg-card border border-border/80 hover:bg-muted text-foreground shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]",
   danger: "bg-[hsl(var(--danger))] text-white hover:brightness-110",
 };
 const sizeClass: Record<BtnSize, string> = {
-  sm: "h-9 px-3 text-sm rounded-full",
-  md: "h-11 px-5 text-sm rounded-full",
-  lg: "h-12 px-6 text-base rounded-full",
+  sm: "h-9 px-3.5 text-sm rounded-xl",
+  md: "h-11 px-5 text-sm rounded-[14px]",
+  lg: "h-12 px-6 text-base rounded-[14px]",
   icon: "h-10 w-10 rounded-full",
 };
 
@@ -49,7 +49,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
     <input
       ref={ref}
       className={cn(
-        "w-full h-11 px-4 rounded-xl bg-background border border-input placeholder:text-muted-foreground text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent transition",
+        "w-full h-11 px-4 rounded-[14px] bg-card border border-input placeholder:text-muted-foreground text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent transition",
         className
       )}
       {...props}
@@ -63,7 +63,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     <textarea
       ref={ref}
       className={cn(
-        "w-full min-h-[96px] px-4 py-3 rounded-xl bg-background border border-input placeholder:text-muted-foreground text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] transition",
+        "w-full min-h-[96px] px-4 py-3 rounded-[14px] bg-card border border-input placeholder:text-muted-foreground text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] transition",
         className
       )}
       {...props}
@@ -102,12 +102,13 @@ export const Avatar: React.FC<{
 
 // ---------- Badge ----------
 export const Badge: React.FC<
-  React.HTMLAttributes<HTMLSpanElement> & { tone?: "gold" | "primary" | "muted" | "forest" | "danger" }
+  React.HTMLAttributes<HTMLSpanElement> & { tone?: "gold" | "primary" | "muted" | "forest" | "danger" | "plum" }
 > = ({ className, tone = "muted", ...props }) => {
   const tones: Record<string, string> = {
     gold: "bg-gold/20 text-gold-ink border border-gold/30",
     primary: "bg-primary/12 text-primary border border-primary/30",
     forest: "bg-forest/12 text-forest border border-forest/30",
+    plum: "bg-plum/12 text-plum border border-plum/30",
     muted: "bg-muted text-muted-foreground border border-border",
     danger: "bg-[hsl(var(--danger)/0.12)] text-[hsl(var(--danger))] border border-[hsl(var(--danger)/0.3)]",
   };

@@ -29,7 +29,7 @@ export default function Footer({ className = "" }: { className?: string }) {
         <nav aria-label="Informações legais e institucionais" className="hidden md:flex flex-wrap gap-x-4 gap-y-1.5">
           {LINKS}
         </nav>
-        <p>© {new Date().getFullYear()} {BRAND} · Rede das Casas de Religião Afro. Respeite todas as tradições.</p>
+        <p>© {new Date().getFullYear()} {BRAND} · Rede das Casas Espirituais. Respeite todas as tradições.</p>
       </div>
     </footer>
   );
