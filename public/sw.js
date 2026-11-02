@@ -17,6 +17,11 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
+      // Cada mensagem nova toca e vibra de novo, mesmo com o aviso anterior ainda na tela.
+      tag: data.url || "ile",
+      renotify: true,
+      silent: false,
+      vibrate: [180, 80, 180],
       data: { url: data.url || "/" },
     })
   );
