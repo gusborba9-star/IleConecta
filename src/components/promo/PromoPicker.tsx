@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, Button, Card, Input, Label } from "@/components/base";
+import { Button, Card, Input, Label } from "@/components/base";
 import { DAY_PRESETS, MAX_DAYS, MIN_DAYS, clampDays, formatMoney, totalFor, type Money } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
@@ -84,10 +84,10 @@ export default function PromoPicker<K extends string>({
           {current.perDay === null ? "Valor por dia a definir" : `${formatMoney(current.perDay)} × ${days}`}
         </div>
         <div className="font-display font-bold text-3xl text-white mt-3">{total === null ? "—" : formatMoney(total)}</div>
-        <Button variant="gold" className="w-full mt-4" disabled={!canSimulate} onClick={() => onSimulate(current.key, days)}>
+        <Button variant="gold" className="w-full mt-4" style={canSimulate ? undefined : { background: "rgba(255,255,255,.12)", color: "rgba(255,255,255,.78)", border: "1px solid rgba(255,255,255,.22)" }} disabled={!canSimulate} onClick={() => onSimulate(current.key, days)}>
           Simular
         </Button>
-        {!canSimulate && <Badge tone="muted" className="mt-3">{disabledReason}</Badge>}
+        {!canSimulate && <p className="mt-3 text-center text-xs text-gold">{disabledReason}</p>}
       </Card>
     </div>
   );

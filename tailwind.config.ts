@@ -60,7 +60,8 @@ export default {
       boxShadow: {
         card: "0 0 0 1px hsla(22,30%,20%,0.05), 0 14px 28px -18px hsla(22,40%,15%,0.35)",
         lift: "0 1px 0 hsla(0,0%,100%,0.6) inset, 0 22px 36px -22px hsla(22,45%,12%,0.45)",
-        cta: "0 10px 18px -10px hsl(var(--primary) / 0.75)",
+        cta: "inset 0 1px 0 hsl(0 0% 100% / 0.28), 0 10px 18px -10px hsl(var(--primary) / 0.75)",
+        btn: "inset 0 1px 0 hsl(0 0% 100% / 0.3), 0 8px 16px -10px hsl(22 40% 15% / 0.55)",
         glow: "0 0 0 3px hsla(45,85%,52%,0.25)",
         altar: "0 20px 60px -20px hsla(12,60%,20%,0.35)",
       },
