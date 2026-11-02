@@ -13,7 +13,7 @@ const FAQ = [
 export default function Support() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6">
+      <Card className="page-hero p-6">
         <div className="flex items-center gap-2">
           <LifeBuoy className="h-5 w-5 text-primary" />
           <h1 className="font-display font-bold text-2xl">Suporte</h1>

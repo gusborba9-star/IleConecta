@@ -64,7 +64,7 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
         <h3 className="font-display font-bold text-lg">Agenda de atendimento</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Defina os dias e horários em que você atende. Nos serviços marcados com agenda (búzios, cartas, consulta), o cliente escolhe um desses horários e paga pela plataforma. Horários no fuso de Brasília.
+        Defina os dias e horários em que você atende. Nos serviços marcados com agenda (jogos, consultas, atendimentos), o cliente escolhe um desses horários e paga pela plataforma. Horários no fuso de Brasília.
       </p>
 
       <div className="space-y-1">

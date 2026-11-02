@@ -149,6 +149,14 @@
     background: hsl(var(--glass) / 0.75);
     backdrop-filter: blur(12px);
   }
+  /* Cabeçalho de página: marfim com um brilho dourado e fio de ouro na base. */
+  .page-hero {
+    background-image:
+      radial-gradient(520px 200px at 100% 0%, hsl(var(--gold) / 0.22), transparent 70%),
+      linear-gradient(135deg, hsl(var(--card)), hsl(var(--forest) / 0.07));
+    border-color: hsl(var(--gold) / 0.35);
+    box-shadow: 0 1px 0 hsl(var(--gold) / 0.35), 0 14px 28px -18px hsl(22 40% 15% / 0.35);
+  }
   /* Cartão que sobe de leve ao passar o mouse (listas de ofertas, planos). */
   .lift {
     transition: transform 180ms ease, box-shadow 180ms ease;

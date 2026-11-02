@@ -65,7 +65,7 @@ export default function HouseMembers() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6">
+      <Card className="page-hero p-6">
         <div className="space-y-4">
           <div>
             <h1 className="font-display font-bold text-2xl flex items-center gap-2"><Users className="h-6 w-6 text-primary" /> Membros da casa</h1>

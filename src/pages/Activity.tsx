@@ -48,7 +48,7 @@ export default function Activity() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6">
+      <Card className="page-hero p-6">
         <h1 className="font-display font-bold text-2xl">Minha atividade</h1>
         <p className="text-sm text-muted-foreground mt-1">Tudo o que você fez na plataforma, em um só lugar.</p>
       </Card>

@@ -52,12 +52,12 @@ export default function Discover() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6 bg-gradient-to-br from-primary/10 via-gold/10 to-forest/10 border-gold/40 relative overflow-hidden">
+      <Card className="page-hero p-6 relative overflow-hidden">
         <div className="flex items-center gap-2 mb-1">
-          <Compass className="h-5 w-5 text-primary" />
+          <Compass className="h-5 w-5 text-forest" />
           <h1 className="font-display font-bold text-2xl">Descobrir casas</h1>
         </div>
-        <p className="text-sm text-muted-foreground">Explore casas por tradição, cidade e propósito espiritual.</p>
+        <p className="text-sm text-muted-foreground">Explore casas por cidade, categoria e propósito.</p>
       </Card>
 
       <Card className="p-4 space-y-3">
@@ -72,7 +72,7 @@ export default function Discover() {
               onClick={() => setTag(t)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                tag === t ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                tag === t ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
               )}
             >
               {t}
@@ -127,10 +127,10 @@ function HouseTile({ h, featured = false }: { h: HouseUser; featured?: boolean }
 
   return (
     <Link to={`/casa/${h.id}`} className="block group">
-      <Card className="overflow-hidden transition group-hover:shadow-altar group-hover:-translate-y-0.5">
+      <Card className="lift overflow-hidden">
         <div className="relative h-28 sm:h-32">
           <img src={h.cover} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-forest/55 via-transparent to-transparent" />
           {activeBoost ? (
             <Badge tone="gold" className="absolute top-2 right-2 backdrop-blur">
               <TrendingUp className="h-3 w-3" /> {activeBoost.level}
@@ -144,8 +144,8 @@ function HouseTile({ h, featured = false }: { h: HouseUser; featured?: boolean }
         <div className="px-4 pb-4">
           {/* A foto de perfil sobe sobre a capa: precisa ficar numa camada acima dela. */}
           <div className="flex items-end justify-between gap-3 -mt-9">
-            <div className="relative z-10 rounded-full p-1 bg-card shadow-card shrink-0">
-              <Avatar src={h.avatar} name={h.name} size={68} className="ring-2 ring-gold" />
+            <div className="relative z-10 rounded-full p-1 bg-card shadow-card ring-1 ring-gold/60 shrink-0">
+              <Avatar src={h.avatar} name={h.name} size={68} />
             </div>
             {h.rating > 0 && (
               <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">

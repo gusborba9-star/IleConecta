@@ -41,7 +41,7 @@ export default function PostComposer() {
             aria-label="Texto da publicação"
             placeholder={
               isHouse
-                ? "Compartilhe um trabalho, ritual, jogo de búzios ou uma mensagem para seus filhos de santo..."
+                ? "Compartilhe um trabalho, ritual, jogo, consulta ou uma mensagem para a sua comunidade..."
                 : "O que você está sentindo? Compartilhe com a comunidade..."
             }
             value={text}

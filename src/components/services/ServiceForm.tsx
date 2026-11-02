@@ -111,7 +111,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
 
         <div>
           <Label htmlFor="sv-title">Nome do serviço</Label>
-          <Input id="sv-title" maxLength={100} value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="ex.: Jogo de búzios completo" />
+          <Input id="sv-title" maxLength={100} value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="ex.: Jogo completo com consulta" />
           {errors.title && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.title}</p>}
         </div>
 

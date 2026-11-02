@@ -129,7 +129,7 @@ export default function AssistantSettings() {
             maxLength={800}
             value={offeringsValue}
             onChange={(e) => setOfferings(e.target.value)}
-            placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogo de búzios."
+            placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogos e consultas."
           />
           <p className="text-xs text-muted-foreground mt-1">
             É o mesmo texto da sua página. Mesmo sem nada publicado, a assistente apresenta o que a casa faz e chama você para combinar valores e horários. Ela nunca inventa preço.
@@ -137,7 +137,7 @@ export default function AssistantSettings() {
         </div>
         <div>
           <Label htmlFor="pf-trad">Tradição ou linha da casa</Label>
-          <Input id="pf-trad" maxLength={PROFILE_MAX.tradition} value={cfg.profile.tradition} onChange={(e) => patchProfile({ tradition: e.target.value })} placeholder="ex.: Umbanda, Candomblé de Ketu…" />
+          <Input id="pf-trad" maxLength={PROFILE_MAX.tradition} value={cfg.profile.tradition} onChange={(e) => patchProfile({ tradition: e.target.value })} placeholder="ex.: o nome da linha ou tradição da casa" />
         </div>
         <div>
           <Label htmlFor="pf-about">Sobre a casa</Label>
