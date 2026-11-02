@@ -199,7 +199,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
           <>
             <div>
               <Label htmlFor="ep-cat">Tradição / categoria</Label>
-              <Input id="ep-cat" value={category} maxLength={80} placeholder="Ex.: Candomblé Ketu, Umbanda" onChange={(e) => setCategory(e.target.value)} />
+              <Input id="ep-cat" value={category} maxLength={80} placeholder="Ex.: o nome da linha ou tradição da casa" onChange={(e) => setCategory(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="ep-off">Trabalhos e serviços que a casa realiza</Label>
@@ -208,7 +208,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
                 value={offerings}
                 maxLength={800}
                 rows={4}
-                placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogo de búzios."
+                placeholder="Ex.: Trabalhos para todos os fins: amor, prosperidade, abertura de caminhos, segurança, limpeza espiritual. Jogos e consultas."
                 onChange={(e) => setOfferings(e.target.value)}
               />
               <div className="text-[11px] text-muted-foreground">

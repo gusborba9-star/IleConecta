@@ -38,7 +38,7 @@ export default function Rituals() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-5 bg-gradient-to-br from-primary/10 via-gold/10 to-forest/10 border-gold/40 relative overflow-hidden">
+      <Card className="page-hero p-5 relative overflow-hidden">
         <div className="flex items-center gap-3 mb-1">
           <Sparkles className="h-5 w-5 text-gold" />
           <h1 className="font-display font-bold text-2xl">Rituais & Trabalhos</h1>
@@ -51,7 +51,7 @@ export default function Rituals() {
       <Card className="p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por título, ervas, orixá..." className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input placeholder="Buscar por título, tema ou casa..." className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {CATEGORIES.map((c) => (
@@ -60,7 +60,7 @@ export default function Rituals() {
               onClick={() => setCat(c)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-xs font-semibold capitalize border transition",
-                cat === c ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                cat === c ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
               )}
             >
               {c}

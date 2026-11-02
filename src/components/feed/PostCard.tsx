@@ -21,7 +21,7 @@ export default function PostCard({ post }: { post: Post }) {
   const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="lift overflow-hidden">
       <div className="p-4 flex items-start gap-3">
         {authorPath ? (
           <Link to={authorPath}>
@@ -40,7 +40,7 @@ export default function PostCard({ post }: { post: Post }) {
             {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>
-                {post.kind === "buzios" ? "Búzios" : post.kind === "trabalho" ? "Trabalho" : post.kind === "ritual" ? "Ritual" : ""}
+                {post.kind === "buzios" ? "Jogo" : post.kind === "trabalho" ? "Trabalho" : post.kind === "ritual" ? "Ritual" : ""}
               </Badge>
             )}
           </div>

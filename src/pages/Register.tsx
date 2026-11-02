@@ -81,7 +81,7 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
     <div className="flex-1 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8">
+      <Card className="w-full max-w-2xl p-6 sm:p-8 shadow-altar">
         <div className="flex items-center gap-3 mb-6">
           <LogoMark size={48} />
           <div>
@@ -139,7 +139,7 @@ export default function Register() {
           {type === "commercial" && (
             <div className="md:col-span-2">
               <Label htmlFor="register-category">Categoria / tradição</Label>
-              <Input id="register-category" placeholder="Ex: Candomblé Ketu, Umbanda..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <Input id="register-category" placeholder="Ex: o nome da linha ou tradição da casa" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
             </div>
           )}
           {isRemoteAuth && (
@@ -174,10 +174,10 @@ function TypeCard({ active, onClick, icon: Icon, title, desc }: { active: boolea
       onClick={onClick}
       className={cn(
         "text-left p-4 rounded-2xl border-2 transition",
-        active ? "border-primary bg-primary/5 shadow-card" : "border-border hover:border-primary/40"
+        active ? "border-forest bg-[#E8F1EA] dark:bg-forest/10 shadow-card ring-1 ring-gold/50" : "border-border bg-card hover:border-forest/40"
       )}
     >
-      <Icon className={cn("h-6 w-6 mb-2", active ? "text-primary" : "text-muted-foreground")} />
+      <Icon className={cn("h-6 w-6 mb-2", active ? "text-forest" : "text-muted-foreground")} />
       <div className="font-display font-bold">{title}</div>
       <div className="text-xs text-muted-foreground mt-1">{desc}</div>
     </button>

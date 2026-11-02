@@ -45,7 +45,7 @@ export default function Mensalidades() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="p-6">
+      <Card className="page-hero p-6">
         <h1 className="font-display font-bold text-2xl">Minhas mensalidades</h1>
         <p className="text-sm text-muted-foreground mt-1">As casas de que você é membro, o que vence e o seu histórico.</p>
       </Card>
