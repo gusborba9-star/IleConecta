@@ -11,6 +11,8 @@ import {
   cleanReply,
   cleanUserText,
   finalizeReply,
+  resolveCheckout,
+  canSell,
   featureEnabled,
   modelParams,
   monthStartISO,
@@ -256,9 +258,17 @@ Deno.serve(async (req) => {
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
-  await admin.from("messages").insert({
-    conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true,
-  });
+  // Botão de pagamento no chat: o modelo só indica o título; quem decide o alvo (e se existe) é o servidor.
+  const action = handoff.checkout && payOn
+    ? resolveCheckout(handoff.checkout, { events: eventsWithSeats, services: servicesWithSlots, selling: canSell(house.plan, assistant) })
+    : null;
+  const baseMsg = { conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true };
+  if (action) {
+    const { error: actErr } = await admin.from("messages").insert({ ...baseMsg, action });
+    if (actErr) await admin.from("messages").insert(baseMsg); // coluna ainda não existe: segue sem o botão
+  } else {
+    await admin.from("messages").insert(baseMsg);
+  }
   // Um aviso por conversa a cada 30 minutos (evita encher a casa de notificações iguais).
   const handoffHref = `/mensagens/${user.id}`;
   const { count: recentHandoffs } = handoff.handoff

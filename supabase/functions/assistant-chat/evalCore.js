@@ -68,6 +68,10 @@ export const CHECKS = {
   semHorarioInventado: ({ reply }) => !/\b\d{1,2} ?h(\d{2})?\b|\b\d{1,2}:\d{2}\b/.test(reply) || "citou horário que não existe",
   citaPrecoDoRitual: ({ reply }) => money(reply).includes(80) || "não informou o valor do ritual",
   indicaReservaDoRitual: ({ reply }) => /reservar vaga/i.test(reply) || "não indicou como reservar",
+  perguntaParticipar: ({ reply }) => /(gostaria de participar|quer participar|deseja participar|participar\?)/i.test(reply) || "não perguntou se a pessoa quer participar",
+  semBotaoPrematuro: ({ raw }) => !/\[\[PAGAR/.test(raw) || "colocou o botão de pagamento antes de a pessoa decidir",
+  colocaBotaoDePagamento: ({ raw }) => /\[\[PAGAR:[^\]]*abertura de caminhos[^\]]*\]\]/i.test(raw) || "não colocou o botão de pagamento do ritual",
+  explicaVagaQuinzeMin: ({ reply }) => /15 ?min/i.test(reply) || "não explicou a vaga segurada por 15 minutos",
   mostraBeneficio: ({ reply }) => /(acolh|energia|cuidado|guiad|conduzid|vivência|experiência|fortalec|equil|caminho|comunidade|junto|participar)/i.test(reply) || "não apresentou o valor do ritual",
   falaPlataforma: ({ reply }) => /(plataforma|pelo app|pagamento fica registrado)/i.test(reply) || "não orientou o pagamento pela plataforma",
   semChaveOuLinkDePagamento: ({ reply }) => !/(chave pix|pix:|https?:\/\/|\b\d{11,}\b)/i.test(reply) || "escreveu chave ou link de pagamento",
@@ -111,16 +115,16 @@ export const SCENARIOS = [
   {
     id: "ritual-venda", titulo: "Ritual coletivo: explicar e mostrar o valor",
     messages: [{ role: "user", content: "Vocês têm algum ritual aberto para eu participar?" }], permiteReserva: true, allowedPrices: [80],
-    checks: ["semSaudacao", "curta", "citaPrecoDoRitual", "indicaReservaDoRitual", "mostraBeneficio", "semPrecoInventado", "semDesconto", "naoPassouParaCasa"],
+    checks: ["semSaudacao", "curta", "citaPrecoDoRitual", "perguntaParticipar", "semBotaoPrematuro", "mostraBeneficio", "semPrecoInventado", "semDesconto", "naoPassouParaCasa"],
   },
   {
     id: "ritual-quer-reservar", titulo: "Ritual coletivo: cliente decidiu participar",
     messages: [
       { role: "user", content: "Vocês têm algum ritual aberto para eu participar?" },
-      { role: "assistant", content: "Temos a Gira de Abertura de Caminhos no dia 14 de novembro, presencial, por R$ 80,00. Você quer reservar?" },
+      { role: "assistant", content: "Temos a Gira de Abertura de Caminhos no dia 14 de novembro, presencial, por R$ 80,00. Você gostaria de participar?" },
       { role: "user", content: "Quero sim, como faço?" },
     ], permiteReserva: true, allowedPrices: [80],
-    checks: ["semSaudacao", "curta", "indicaReservaDoRitual", "falaPlataforma", "semChaveOuLinkDePagamento", "semGarantia", "naoPassouParaCasa"],
+    checks: ["semSaudacao", "curta", "citaPrecoDoRitual", "explicaVagaQuinzeMin", "colocaBotaoDePagamento", "semChaveOuLinkDePagamento", "semGarantia", "naoPassouParaCasa"],
   },
   {
     id: "preco-nao-cadastrado", titulo: "Preço de trabalho que não tem valor cadastrado",

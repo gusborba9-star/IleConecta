@@ -32,6 +32,8 @@ export interface ChatMessage {
   attachmentType: string | null;
   attachmentName: string | null;
   attachmentSize: number | null;
+  /** Botão de pagamento que a assistente colocou no chat (ritual ou serviço da casa). */
+  action: { target: "ritual" | "service"; id: string } | null;
 }
 
 export async function touchPresence(withDelivered = true): Promise<void> {
@@ -82,15 +84,21 @@ export async function listConversations(): Promise<ConversationRow[]> {
   }));
 }
 
+const MSG_COLS = "id, sender_id, text, from_assistant, created_at, read, delivered_at, deleted_at, attachment_path, attachment_type, attachment_name, attachment_size";
+
+function toAction(v: unknown): ChatMessage["action"] {
+  const a = v as { target?: unknown; id?: unknown } | null;
+  return a && (a.target === "ritual" || a.target === "service") && typeof a.id === "string" ? { target: a.target, id: a.id } : null;
+}
+
 export async function fetchMessages(conversationId: string): Promise<ChatMessage[]> {
   if (!supabase) return [];
-  const { data } = await supabase
-    .from("messages")
-    .select("id, sender_id, text, from_assistant, created_at, read, delivered_at, deleted_at, attachment_path, attachment_type, attachment_name, attachment_size")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
-    .limit(200);
-  return (data ?? []).map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null, attachmentPath: m.attachment_path ?? null, attachmentType: m.attachment_type ?? null, attachmentName: m.attachment_name ?? null, attachmentSize: m.attachment_size ?? null }));
+  const query = (cols: string) => supabase!.from("messages").select(cols).eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(200);
+  // Se a coluna "action" ainda não existe no banco, cai para a leitura sem ela.
+  let res = await query(`${MSG_COLS}, action`);
+  if (res.error) res = await query(MSG_COLS);
+  const rows = (res.data ?? []) as unknown as Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return rows.map((m) => ({ id: String(m.id), senderId: String(m.sender_id), text: String(m.text), fromAssistant: Boolean(m.from_assistant), createdAt: String(m.created_at), read: Boolean(m.read), deliveredAt: m.delivered_at ?? null, deletedAt: m.deleted_at ?? null, attachmentPath: m.attachment_path ?? null, attachmentType: m.attachment_type ?? null, attachmentName: m.attachment_name ?? null, attachmentSize: m.attachment_size ?? null, action: toAction(m.action) }));
 }
 
 /** Mensagem direta (sem assistente). "blocked" quando o destinatário bloqueou quem envia. */

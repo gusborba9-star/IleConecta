@@ -85,6 +85,35 @@ export function extractHandoff(raw) {
   return reason ? { handoff, text: clean, reason } : { handoff, text: clean };
 }
 
+/** Marcador de pagamento: [[PAGAR: título]]. O sistema o troca por um botão no chat; nunca chega ao cliente como texto. */
+export function extractCheckout(raw) {
+  const text = typeof raw === "string" ? raw : "";
+  const mark = /\[\[PAGAR(?:\s*:\s*([^\]]*))?\]\]/g;
+  const title = oneLine((new RegExp(mark.source).exec(text) ?? [])[1], 120);
+  const found = /\[\[PAGAR(?:\s*:[^\]]*)?\]\]/.test(text);
+  return { found, title, text: text.replace(mark, "").replace(/[ \t]+\n/g, "\n").trim() };
+}
+
+const norm = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * Descobre qual ritual ou serviço o marcador [[PAGAR: título]] indica. Só vale para ritual aberto com vaga e para
+ * serviço que tem botão na página (Contratar ou Agendar horário); o preço, a vaga e a reserva ficam com o servidor.
+ */
+export function resolveCheckout(title, { events = [], services = [], selling = false } = {}) {
+  const want = norm(title);
+  if (!want) return null;
+  const pick = (list, ok) => {
+    const cands = list.filter((x) => x?.id && ok(x) && norm(x.title));
+    return cands.find((x) => norm(x.title) === want) ?? cands.find((x) => want.includes(norm(x.title)) || norm(x.title).includes(want)) ?? null;
+  };
+  const ev = pick(events, (e) => !(Number.isFinite(Number(e.seats_left)) && Number(e.seats_left) <= 0));
+  if (ev) return { target: "ritual", id: String(ev.id) };
+  if (!selling) return null;
+  const sv = pick(services, (x) => x.bookable || x.delivery !== "presencial");
+  return sv ? { target: "service", id: String(sv.id) } : null;
+}
+
 export const HANDOFF_NOTE = "Avisei a casa: ela vai assumir esta conversa e te responder assim que puder.";
 export const CRISIS_NOTE = "Se você pensa em se machucar ou tirar a própria vida, ligue agora para o CVV: 188 (24 horas, gratuito).";
 
@@ -104,10 +133,12 @@ export function finalizeReply(rawReply, userText) {
   const crisis = detectCrisis(userText);
   const ex = extractHandoff(rawReply);
   const handoff = ex.handoff || crisis;
-  let text = ex.text;
+  const co = extractCheckout(ex.text);
+  let text = co.text;
   if (crisis && !text.includes("188")) text = `${text}${text ? "\n\n" : ""}${CRISIS_NOTE}`;
   if (handoff && !TOLD_HOUSE.test(text)) text = `${text}${text ? "\n\n" : ""}${HANDOFF_NOTE}`;
-  return ex.reason && handoff ? { handoff, text, reason: ex.reason } : { handoff, text };
+  const out = ex.reason && handoff ? { handoff, text, reason: ex.reason } : { handoff, text };
+  return co.found && !handoff ? { ...out, checkout: co.title } : out;
 }
 
 /** Primeiro nome do cliente para a saudação; vazio se não der para usar com segurança (e-mail, números, símbolos). */
@@ -332,8 +363,8 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("- Não prometa resultado espiritual, cura, ganho financeiro ou qualquer garantia. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
   lines.push("- Respeite todas as tradições. Não critique outras religiões.");
   lines.push("- Nunca peça nem aceite senha, dados de cartão ou documentos pelo chat.");
-  lines.push("- Você nunca envia nem promete enviar cobrança, chave Pix, código ou link de pagamento: o pagamento é gerado pelo sistema no botão da página da casa, nunca por você.");
-  lines.push("- Você nunca marca, agenda ou reserva horário por conta própria. Indique só o botão que está escrito em \"como contratar\" de cada serviço ou o \"Reservar vaga\" dos rituais; nunca cite um botão que não esteja escrito ali.");
+  lines.push("- Você nunca envia nem promete enviar cobrança, chave Pix, código ou link de pagamento: o pagamento é gerado pelo sistema, no botão do chat ou da página da casa, nunca por você.");
+  lines.push("- Você nunca marca, agenda ou reserva horário por conta própria. Indique só o botão que está escrito em \"como contratar\" de cada serviço ou o \"Reservar vaga\" dos rituais (ou o botão de pagamento do chat, só pelo marcador [[PAGAR: título]]); nunca cite um botão que não esteja escrito ali.");
   if (discount > 0) {
     lines.push(`- Você pode oferecer desconto de até ${discount}% apenas se o cliente pedir ou hesitar pelo preço, e nunca acima disso.`);
   } else {
@@ -352,7 +383,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("");
   lines.push("CONFORME O ASSUNTO:");
   if (events.length > 0) {
-    lines.push(`- Rituais coletivos (itens de "RITUAIS E EVENTOS ABERTOS"): são vagas que a casa abriu e que você conduz e vende do começo ao fim. Quando perguntarem por ritual, evento ou algo para participar, apresente primeiro estes itens. Diga sempre o nome, a data, o horário, a modalidade e o valor (nunca omita o valor), neste formato: "<nome>: <dia>, às <hora>, <modalidade>, por <valor>."; em seguida, em uma frase, mostre o que a pessoa vive ou recebe participando, usando só a descrição do ritual e sem prometer resultado; cite as vagas restantes só quando forem 5 ou menos. Diga que ela garante a vaga pelo botão "Reservar vaga" na aba Rituais da página da casa${payments ? "" : " (por enquanto o pagamento é combinado com a casa)"} e pergunte se ela quer reservar; nessa primeira apresentação não fale de reembolso.${payments ? " Quando ela decidir participar ou perguntar como pagar, explique que paga pela plataforma, que a vaga fica dela assim que o pagamento é confirmado e que, se cancelar antes do início, o valor volta integralmente." : ""} ${agenda !== null ? "Se a pergunta for só sobre ritual, fale só dos rituais e não acrescente datas da agenda. " : ""}Só os rituais têm reserva. Ritual coletivo é com você: não passe a conversa para a casa por causa dele.`);
+    lines.push(`- Rituais coletivos (itens de "RITUAIS E EVENTOS ABERTOS"): são vagas que a casa abriu e que você conduz e vende do começo ao fim. Quando perguntarem por ritual, evento ou algo para participar, apresente primeiro estes itens. Diga sempre o nome, a data, o horário, a modalidade e o valor (nunca omita o valor), neste formato: "<nome>: <dia>, às <hora>, <modalidade>, por <valor>."; em seguida, em uma frase, mostre o que a pessoa vive ou recebe participando, usando só a descrição do ritual e sem prometer resultado; cite as vagas restantes só quando forem 5 ou menos. ${payments ? "Termine perguntando se ela gostaria de participar; nessa primeira apresentação não fale de reembolso nem de botão. Quando ela disser que quer participar, siga \"BOTÃO DE PAGAMENTO NO CHAT\"." : "Diga que ela garante a vaga pelo botão \"Reservar vaga\" na aba Rituais da página da casa (por enquanto o pagamento é combinado com a casa) e pergunte se ela quer reservar; nessa primeira apresentação não fale de reembolso."} ${agenda !== null ? "Se a pergunta for só sobre ritual, fale só dos rituais e não acrescente datas da agenda. " : ""}Só os rituais têm reserva. Ritual coletivo é com você: não passe a conversa para a casa por causa dele.`);
   } else {
     lines.push("- Rituais coletivos: não há nenhum aberto agora. Se perguntarem por ritual, diga isso com clareza, sem inventar, e ofereça o que a casa tem (serviços ou datas da agenda).");
   }
@@ -364,6 +395,10 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push(`- Serviços publicados: apresente nome, valor e modalidade e diga como contratar exatamente como está em "como contratar". Só diga que a pessoa escolhe a modalidade quando o serviço estiver listado como \"presencial ou à distância (o cliente escolhe ao contratar)\"; nos demais cite apenas a modalidade listada, sem inventar opção. ${selling
     ? "Você pode ajudar o cliente a escolher e fechar a contratação: mostre em uma frase o que o serviço oferece (pela descrição) e leve até o botão de contratar; o pagamento acontece nesse botão, gerado pelo sistema, nunca por você."
     : "A casa preferiu fechar os serviços pessoalmente: informe nome, valor e modalidade, mas não conduza a contratação nem indique botão; quando a pessoa quiser contratar, passe para a casa."}`);
+  }
+  const payable = services.filter((x) => x.bookable || x.delivery !== "presencial");
+  if (payments && (events.length > 0 || (selling && payable.length > 0))) {
+    lines.push(`- BOTÃO DE PAGAMENTO NO CHAT: quando a pessoa disser que quer participar de um ritual aberto${selling && payable.length > 0 ? " ou contratar um serviço que tenha botão (Contratar ou Agendar horário)" : ""}, responda em até 3 frases: diga o valor, que a vaga fica segurada por 15 minutos depois que ela clicar no botão, que é confirmada assim que o pagamento for confirmado e que ela será avisada quando a casa iniciar e quando terminar. Termine com [[PAGAR: título exato do ritual ou serviço]]; o sistema mostra o botão "Ir para o pagamento" no chat. Nunca escreva link, chave Pix nem outro botão. Se houver mais de um item possível e não estiver claro qual, pergunte qual antes e não use o marcador.`);
   }
   if (payments && (services.length > 0 || events.length > 0)) {
     lines.push("- Pagar pela plataforma é mais seguro: quando a pessoa for contratar ou pagar algo que tem botão na plataforma, explique em uma frase que o pagamento fica registrado e que, se ela cancelar antes de a casa iniciar o trabalho, o valor volta integralmente. Não repita isso em toda mensagem, não use isso para pressionar e não fale mal de outra forma de pagamento que a casa use.");

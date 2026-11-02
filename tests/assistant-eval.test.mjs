@@ -47,11 +47,17 @@ test("não deixa inventar horário, preço, desconto nem chave de pagamento", ()
   assert.equal(grade(by("pagamento-plataforma"), "A leitura custa R$ 90,00. Use o botão \"Contratar\" na aba Serviços: pagando pela plataforma, o pagamento fica registrado e volta integral se cancelar antes de a casa iniciar.", false).pass, true);
 });
 
-test("ritual coletivo: precisa informar o valor, mostrar o que a pessoa ganha e indicar a reserva", () => {
+test("ritual coletivo: precisa informar o valor, mostrar o que a pessoa ganha e perguntar se quer participar", () => {
   const s = by("ritual-venda");
-  const boa = "Neste mês há a Gira de Abertura de Caminhos, dia 14, presencial, por R$ 80,00: uma vivência conduzida para fortalecer seus caminhos junto à comunidade. Restam 12 vagas; reserve em \"Reservar vaga\" na aba Rituais. Quer que eu explique como é?";
+  const boa = "Neste mês há a Gira de Abertura de Caminhos, dia 14, presencial, por R$ 80,00: uma vivência conduzida para fortalecer seus caminhos junto à comunidade. Restam 12 vagas. Você gostaria de participar?";
   assert.equal(grade(s, boa, false).pass, true);
   assert.equal(grade(s, "Temos um ritual. Fale com a casa.", false).pass, false);
+  // Botão de pagamento só depois que a pessoa decide.
+  assert.equal(grade(s, boa + " [[PAGAR: Gira de Abertura de Caminhos]]", false, boa + " [[PAGAR: Gira de Abertura de Caminhos]]").pass, false);
+  const q = by("ritual-quer-reservar");
+  const ok = "Combinado! A Gira de Abertura de Caminhos custa R$ 80,00. Depois que você clicar, a vaga fica segurada por 15 minutos e é confirmada quando o pagamento for confirmado; você será avisado quando a casa iniciar e terminar. [[PAGAR: Gira de Abertura de Caminhos]]";
+  assert.equal(grade(q, ok.replace(/ ?\[\[PAGAR[^\]]*\]\]/, ""), false, ok).pass, true);
+  assert.equal(grade(q, ok.replace(/ ?\[\[PAGAR[^\]]*\]\]/, ""), false).pass, false);
 });
 
 test("crise e saúde: CVV garantido pelo servidor, sem promessa de cura", async () => {
@@ -211,7 +217,8 @@ test("rodada de 01/11 (13 cenários): agenda passa na hora, sem perguntar quanta
   // Ritual: reembolso só quando a pessoa decide; na primeira apresentação, resposta curta.
   const r = scenarioPrompt(by("ritual-venda"));
   assert.match(r, /nessa primeira apresentação não fale de reembolso/);
-  assert.match(r, /Quando ela decidir participar ou perguntar como pagar/);
+  assert.match(r, /BOTÃO DE PAGAMENTO NO CHAT/);
+  assert.match(r, /\[\[PAGAR: título exato/);
   // Saúde: já passou para a casa, mas ofereceu "se quiser, posso passar".
   const haiku = "Para questões de saúde, procure um médico. Se quiser, posso passar seu caso para alguém da casa, é só me dizer.";
   assert.ok(grade(by("saude"), haiku, true).results.find((x) => x.name === "semPedirPermissao" && !x.ok));
