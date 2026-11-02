@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Copy, Download, Megaphone, MessageSquareText, Plus, Trash2 } from "lucide-react";
+import { Copy, Download, ImagePlus, Megaphone, MessageSquareText, Plus, Trash2, TrendingUp } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useApp } from "@/contexts/AppContext";
 import {
-  LIMITS, SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, houseIdOf, removeCampaign, removeQuickReply,
-  type Campaign, type DayCount, type QuickReply, type SourceId,
+  LIMITS, SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, fetchTopics, fetchTopServices, houseIdOf, removeCampaign, removeQuickReply,
+  type Campaign, type Count, type DayCount, type QuickReply, type SourceId,
 } from "@/lib/campaigns";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { fetchMyHouseSlug } from "@/lib/publicHouse";
@@ -34,6 +34,12 @@ export default function Divulgacao() {
   const [style, setStyle] = useState<CardStyleId>("folha");
   const [days, setDays] = useState<{ id: string; rows: DayCount[] } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
+  const [cardText, setCardText] = useState("");
+  const [topics, setTopics] = useState<Count[]>([]);
+  const [topServices, setTopServices] = useState<Count[]>([]);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const lim = LIMITS[plan ?? "base"];
   const reload = useCallback(async () => {
@@ -47,15 +53,44 @@ export default function Divulgacao() {
     void fetchMyHouseSlug(uid).then(setSlug);
     void houseIdOf(uid).then(setHouseId);
     void reload();
+    void fetchTopics().then(setTopics);
+    void fetchTopServices().then(setTopServices);
   }, [isRemoteAuth, uid, reload]);
 
   const active = useMemo(() => camps.find((c) => c.id === cardId) ?? camps[0], [camps, cardId]);
   const link = slug && active ? campaignUrl(slug, active.code) : "";
   const allowedStyles = CARD_STYLES.slice(0, lim.cards);
 
+  // A descrição do cartão fica guardada neste aparelho, por link.
   useEffect(() => {
-    if (canvas.current && link && currentUser) drawShareCard(canvas.current, { name: currentUser.name, place: "", link, style: allowedStyles.some((s) => s.id === style) ? style : "folha" });
-  }, [link, style, currentUser, allowedStyles]);
+    if (!active) return;
+    try {
+      setCardText(localStorage.getItem(`cardtxt:${active.code}`) ?? "");
+    } catch {
+      setCardText("");
+    }
+  }, [active]);
+  const onCardText = (v: string) => {
+    setCardText(v);
+    try {
+      if (active) localStorage.setItem(`cardtxt:${active.code}`, v);
+    } catch {
+      /* sem armazenamento: vale só nesta tela */
+    }
+  };
+  const pickPhoto = (f?: File) => {
+    if (!f) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return void toast.error("Escolha uma foto JPG, PNG ou WebP.");
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => { setPhoto(img); URL.revokeObjectURL(url); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast.error("Não foi possível abrir esta imagem."); };
+    img.src = url;
+  };
+
+  useEffect(() => {
+    if (canvas.current && link && currentUser) drawShareCard(canvas.current, { name: currentUser.name, text: cardText, link, style: allowedStyles.some((s) => s.id === style) ? style : "folha", photo });
+  }, [link, style, currentUser, allowedStyles, cardText, photo]);
 
   if (!currentUser || currentUser.type !== "commercial" || !isRemoteAuth) {
     return <Card className="p-6"><h1 className="font-display font-bold text-2xl">Divulgação</h1><p className="text-sm text-muted-foreground mt-1">Esta área é da conta de uma casa.</p></Card>;
@@ -185,6 +220,17 @@ export default function Divulgacao() {
             <canvas ref={canvas} className="w-full max-w-[240px] rounded-2xl ring-1 ring-gold/50 shadow-card" aria-label="Prévia do cartão de divulgação" />
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Cartão do link <strong>{active.label}</strong>, no tamanho de publicação. Quem apontar a câmera chega à sua casa.</p>
+              <div>
+                <Label htmlFor="card-text">Descrição no cartão</Label>
+                <Textarea id="card-text" rows={3} maxLength={140} value={cardText} onChange={(e) => onCardText(e.target.value)} placeholder="ex.: Encontros abertos aos sábados, atendimento com hora marcada" />
+                <div className="text-xs text-muted-foreground mt-1">{cardText.length} de 140</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input ref={fileRef} type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; pickPhoto(f); }} />
+                <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><ImagePlus className="h-4 w-4" /> {photo ? "Trocar imagem" : "Escolher imagem da galeria"}</Button>
+                {photo && <Button size="sm" variant="ghost" onClick={() => setPhoto(null)}>Tirar imagem</Button>}
+                <span className="text-xs text-muted-foreground">A imagem fica só no seu aparelho.</span>
+              </div>
               <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Estilo do cartão">
                 {CARD_STYLES.map((s) => {
                   const ok = allowedStyles.some((a) => a.id === s.id);
@@ -196,6 +242,31 @@ export default function Divulgacao() {
             </div>
           </div>
         )}
+      </Card>
+
+      <Card className="p-5 space-y-3">
+        <h2 className="font-display font-bold text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> O que mais procuram na sua casa</h2>
+        <p className="text-sm text-muted-foreground">Os assuntos que mais aparecem nas mensagens dos últimos 30 dias e os serviços mais pedidos. Use para criar as respostas que você mais precisa.</p>
+        {topics.length === 0 ? <p className="text-sm text-muted-foreground">Quando as pessoas começarem a conversar com a casa, os assuntos mais procurados aparecem aqui.</p> : (
+          <ul className="space-y-2">
+            {(premium ? topics : topics.slice(0, 3)).map((t) => (
+              <li key={t.label} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex justify-between text-sm"><span className="font-semibold">{t.label}</span><span className="text-muted-foreground">{t.total} {t.total === 1 ? "mensagem" : "mensagens"}</span></div>
+                  <div className="mt-1 h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#14543F] to-[#1F7A5C]" style={{ width: `${Math.max(6, (t.total / (topics[0]?.total || 1)) * 100)}%` }} /></div>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => { setRTitle(t.label.slice(0, 40)); formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }}>Criar resposta</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {premium && topServices.length > 0 && (
+          <div className="pillow rounded-2xl bg-muted/30 p-3">
+            <div className="text-xs font-bold uppercase tracking-[0.12em] text-gold-ink">Serviços mais pedidos · 90 dias</div>
+            <ul className="mt-2 space-y-1 text-sm">{topServices.map((t) => <li key={t.label} className="flex justify-between gap-2"><span className="truncate">{t.label}</span><strong>{t.total}</strong></li>)}</ul>
+          </div>
+        )}
+        {!premium && topics.length > 3 && <p className="text-xs text-muted-foreground">No Premium você vê todos os assuntos e os serviços mais pedidos.</p>}
       </Card>
 
       <Card className="p-5 space-y-3">
@@ -213,7 +284,7 @@ export default function Divulgacao() {
           ))}
         </ul>
         {repliesFull ? <p className="text-sm text-muted-foreground">Você usou as {lim.replies} respostas do seu plano.</p> : (
-          <div className="space-y-2">
+          <div ref={formRef} className="space-y-2">
             <div><Label htmlFor="qr-t">Título</Label><Input id="qr-t" maxLength={40} value={rTitle} onChange={(e) => setRTitle(e.target.value)} placeholder="ex.: Endereço e horários" /></div>
             <div><Label htmlFor="qr-b">Texto da resposta</Label><Textarea id="qr-b" rows={3} maxLength={600} value={rBody} onChange={(e) => setRBody(e.target.value)} placeholder="O que você diria a quem pergunta" /></div>
             <Button disabled={rTitle.trim().length < 2 || rBody.trim().length < 2} onClick={() => void addReply()}><Plus className="h-4 w-4" /> Salvar resposta</Button>

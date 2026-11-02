@@ -91,3 +91,17 @@ export async function removeQuickReply(id: string): Promise<boolean> {
   const { error } = await supabase.from("house_quick_replies").delete().eq("id", id);
   return !error;
 }
+
+export interface Count { label: string; total: number }
+/** Assuntos que os clientes mais perguntam nas conversas da casa (últimos 30 dias). */
+export async function fetchTopics(): Promise<Count[]> {
+  if (!supabase) return [];
+  const { data } = await supabase.rpc("my_house_topics", { p_days: 30 });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({ label: String(r.topic), total: Number(r.total) }));
+}
+/** Serviços mais pedidos (últimos 90 dias). */
+export async function fetchTopServices(): Promise<Count[]> {
+  if (!supabase) return [];
+  const { data } = await supabase.rpc("my_top_services", { p_days: 90 });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({ label: String(r.title), total: Number(r.total) }));
+}
