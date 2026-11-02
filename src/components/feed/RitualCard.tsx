@@ -16,7 +16,7 @@ export default function RitualCard({ ritual, compact }: { ritual: Ritual; compac
   const isClient = currentUser?.type === "personal";
 
   return (
-    <div className={cn("rounded-2xl overflow-hidden bg-card border border-border shadow-card", !compact && "hover:shadow-altar transition")}
+    <div className={cn("rounded-[22px] overflow-hidden bg-[#FBF2DE] dark:bg-gold/10 border border-[#AA781E]/30 shadow-card", !compact && "lift")}
     >
       <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="relative">

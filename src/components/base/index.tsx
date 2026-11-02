@@ -2,12 +2,13 @@ import React from "react";
 import { cn, initials } from "@/lib/utils";
 
 // ---------- Button ----------
-type BtnVariant = "primary" | "secondary" | "ghost" | "gold" | "outline" | "danger";
+type BtnVariant = "primary" | "accent" | "secondary" | "ghost" | "gold" | "outline" | "danger";
 type BtnSize = "sm" | "md" | "lg" | "icon";
 
 const variantClass: Record<BtnVariant, string> = {
   primary:
     "bg-primary text-primary-foreground hover:brightness-110 shadow-cta active:translate-y-px",
+  accent: "bg-forest text-forest-foreground hover:brightness-110 shadow-card active:translate-y-px",
   gold: "bg-gold text-gold-foreground hover:brightness-105 shadow-card active:translate-y-px",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "bg-transparent hover:bg-muted text-foreground",
