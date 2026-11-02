@@ -7,9 +7,9 @@ type BtnSize = "sm" | "md" | "lg" | "icon";
 
 const variantClass: Record<BtnVariant, string> = {
   primary:
-    "bg-primary text-primary-foreground hover:brightness-110 shadow-cta active:translate-y-px",
-  accent: "bg-forest text-forest-foreground hover:brightness-110 shadow-card active:translate-y-px",
-  gold: "bg-gold text-gold-foreground hover:brightness-105 shadow-card active:translate-y-px",
+    "bg-gradient-to-b from-[hsl(10_76%_49%)] to-primary text-primary-foreground hover:brightness-110 shadow-cta active:translate-y-px",
+  accent: "bg-gradient-to-b from-[hsl(160_55%_27%)] to-forest text-forest-foreground hover:brightness-110 shadow-btn active:translate-y-px",
+  gold: "bg-gradient-to-b from-[hsl(44_78%_66%)] to-gold text-gold-foreground hover:brightness-105 shadow-btn active:translate-y-px",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "bg-transparent hover:bg-muted text-foreground",
   outline: "bg-card border border-border/80 hover:bg-muted text-foreground shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]",
@@ -29,7 +29,7 @@ export const Button = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center gap-2 font-semibold transition-all outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] disabled:opacity-50 disabled:pointer-events-none",
+      "inline-flex items-center justify-center gap-2 font-semibold tracking-[0.01em] transition-all outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] disabled:pointer-events-none disabled:opacity-100 disabled:bg-none disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:ring-0",
       variantClass[variant],
       sizeClass[size],
       className
