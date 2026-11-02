@@ -1,12 +1,17 @@
 import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Clock, Dices, Flame, Layers, Leaf, Lock, MapPin, Plus, Video, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
 import ContractModal from "@/components/services/ContractModal";
+import OfferCard, { type OfferInfo } from "@/components/OfferCard";
+import { useChatStatus } from "@/hooks/useChatStatus";
+import { paymentsEnabledFor } from "@/lib/consents";
+import { cardHint, primaryLabel, serviceSegment, slotChipLabel } from "@/lib/cardsCore";
 import AgendaManager from "@/components/services/AgendaManager";
+import { fetchSlots } from "@/lib/agenda";
 import { formatSlot } from "@/lib/agendaCore";
 import RefundModal from "@/components/refunds/RefundModal";
 import { fetchMyPaidSources, fetchMyRefunds, isOpenRefund, REFUND_LABEL, withdrawRefund, type RefundRequest } from "@/lib/refunds";
@@ -31,7 +36,15 @@ interface Props {
   onReview?: (orderId: string) => void;
 }
 
-export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, onReview }: Props) {
+const SEGMENT_ICON: Record<"jogo" | "servico" | "trabalho", LucideIcon> = { jogo: Dices, servico: Leaf, trabalho: Flame };
+const DELIVERY_INFO: Record<string, OfferInfo> = {
+  presencial: { icon: MapPin, text: "Presencial" },
+  transmissao: { icon: Video, text: "Transmissão por vídeo" },
+  hibrido: { icon: Video, text: "Presencial ou à distância" },
+  sigilo: { icon: Lock, text: "Realizado com sigilo" },
+};
+
+export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const nav = useNavigate();
@@ -47,6 +60,18 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
   const [reviewable, setReviewable] = useState<Set<string>>(new Set());
   const wantsReview = Boolean(onReview);
   const { currentUser } = useApp();
+  const chatStatus = useChatStatus(ownerId, !isOwn);
+  const [payOn, setPayOn] = useState(false);
+  const [slotsBy, setSlotsBy] = useState<Record<string, string[]>>({});
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [contractSlot, setContractSlot] = useState("");
+  useEffect(() => {
+    let alive = true;
+    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
+    return () => {
+      alive = false;
+    };
+  }, [ownerId]);
 
   const load = useCallback(async () => {
     setItems(await fetchServices(ownerId));
@@ -73,6 +98,16 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
       window.clearInterval(timer);
     };
   }, [load]);
+  useEffect(() => {
+    if (isOwn || !items) return;
+    let alive = true;
+    for (const sv of items.filter((x) => x.bookable && x.active)) {
+      void fetchSlots(sv.id, 14).then((r) => alive && setSlotsBy((m) => ({ ...m, [sv.id]: r.slice(0, 3) })));
+    }
+    return () => {
+      alive = false;
+    };
+  }, [items, isOwn]);
 
   const orderAct = async (fn: () => Promise<string | null>, okMsg: string) => {
     const error = await fn();
@@ -211,7 +246,40 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
         </Card>
       )}
 
-      {items.map((s) => (
+      {items.map((s) => {
+        if (!isOwn && s.active && !myOpenOrder(s.id)) {
+          const segment = serviceSegment(s);
+          const noButton = s.delivery === "presencial" && !s.bookable;
+          const slots = (slotsBy[s.id] ?? []).map((iso) => ({ iso, label: slotChipLabel(iso) }));
+          const delivery = DELIVERY_INFO[s.delivery] ?? DELIVERY_INFO.presencial;
+          const info: OfferInfo[] = segment === "jogo"
+            ? [{ icon: Clock, text: `Sessão de ${s.durationMin} minutos` }, delivery]
+            : segment === "trabalho" && s.stages > 1
+            ? [{ icon: Layers, text: `Em até ${s.stages} etapas de pagamento` }, { icon: Clock, text: "Aviso no início e no fim de cada etapa" }]
+            : [delivery, { icon: Clock, text: "A casa inicia e conclui; você é avisado" }];
+          const chip = segment === "jogo" ? { text: "Com agenda" } : s.delivery === "sigilo" ? { text: "Sigilo", icon: Lock } : { text: deliveryLabel(s.delivery) };
+          return (
+            <OfferCard
+              key={s.id}
+              segment={segment}
+              typeLabel={kindLabel(s.kind, s.customKind)}
+              typeIcon={SEGMENT_ICON[segment === "ritual" ? "servico" : segment]}
+              chip={chip}
+              title={s.title}
+              description={s.description}
+              info={info}
+              slots={segment === "jogo" ? slots : undefined}
+              selectedSlot={picked[s.id]}
+              onPickSlot={(iso) => setPicked((m) => ({ ...m, [s.id]: iso }))}
+              price={formatCents(s.priceCents)}
+              priceNote={segment === "jogo" ? "por sessão" : s.stages > 1 ? `Em ${s.stages} etapas` : "à vista"}
+              primary={noButton ? undefined : { label: primaryLabel(segment, picked[s.id]), onClick: () => { setContractSlot(picked[s.id] ?? ""); setContracting(s); } }}
+              hint={cardHint(segment, payOn, noButton)}
+              chat={{ onClick: () => nav(`/mensagens/${ownerId}`), status: chatStatus, label: "Conversar para agendar" }}
+            />
+          );
+        }
+        return (
         <Card key={s.id} className={`p-5 ${s.active ? "" : "opacity-70"}`}>
           <div className="flex flex-wrap gap-4 items-start">
             <div className="flex-1 min-w-[220px]">
@@ -248,7 +316,6 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
                   </>
                 ) : (
                   <>
-                    {onAskAssistant && <Button size="sm" variant="outline" onClick={onAskAssistant}>Perguntar à assistente</Button>}
                     {s.active && (s.delivery !== "presencial" || s.bookable) && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>{s.bookable ? "Agendar horário" : "Contratar"}</Button>}
                     {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
                       <Button size="sm" variant="outline" onClick={() => ask({ title: "Cancelar o seu pedido?", confirmLabel: "Cancelar pedido", danger: true }, () => orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."))}>Cancelar pedido</Button>
@@ -260,10 +327,11 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onAskAssistant, 
             </div>
           </div>
         </Card>
-      ))}
+        );
+      })}
 
       <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
-      <ContractModal service={contracting} onClose={() => setContracting(null)} onDone={() => void load()} />
+      <ContractModal service={contracting} initialSlot={contractSlot} onClose={() => setContracting(null)} onDone={() => void load()} />
       {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} />}
     </div>
   );
