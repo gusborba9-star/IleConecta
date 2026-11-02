@@ -38,8 +38,8 @@ export default function PromoPicker<K extends string>({
               onClick={() => setScope(s.key)}
               aria-pressed={scope === s.key}
               className={cn(
-                "text-left rounded-2xl border p-4 transition",
-                scope === s.key ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                "lift text-left rounded-[22px] border p-4",
+                scope === s.key ? "border-gold bg-[#FBF2DE] ring-2 ring-gold/60 shadow-card dark:bg-gold/10" : "border-border bg-card hover:border-gold/60"
               )}
             >
               <div className="font-display font-bold">{s.label}</div>
@@ -56,7 +56,7 @@ export default function PromoPicker<K extends string>({
           <Label>Duração</Label>
           <div className="flex flex-wrap gap-2 mt-1">
             {DAY_PRESETS.map((d) => (
-              <Button key={d} type="button" size="sm" variant={days === d ? "primary" : "outline"} onClick={() => setDays(d)}>
+              <Button key={d} type="button" size="sm" variant={days === d ? "accent" : "outline"} onClick={() => setDays(d)}>
                 {d} dias
               </Button>
             ))}
@@ -77,14 +77,14 @@ export default function PromoPicker<K extends string>({
         </Card>
       </div>
 
-      <Card className="p-5 h-fit">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">Resumo</div>
+      <Card className="p-5 h-fit relative overflow-hidden !border-0 text-white shadow-altar lg:sticky lg:top-24" style={{ background: "linear-gradient(135deg,#14543F,#0F3B2D)" }}>
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Resumo</div>
         <div className="mt-2 text-sm">{current.label} · {days} {days === 1 ? "dia" : "dias"}</div>
-        <div className="mt-1 text-xs text-muted-foreground">
+        <div className="mt-1 text-xs text-white/70">
           {current.perDay === null ? "Valor por dia a definir" : `${formatMoney(current.perDay)} × ${days}`}
         </div>
-        <div className="font-display font-bold text-3xl text-primary mt-3">{total === null ? "—" : formatMoney(total)}</div>
-        <Button className="w-full mt-4" disabled={!canSimulate} onClick={() => onSimulate(current.key, days)}>
+        <div className="font-display font-bold text-3xl text-white mt-3">{total === null ? "—" : formatMoney(total)}</div>
+        <Button variant="gold" className="w-full mt-4" disabled={!canSimulate} onClick={() => onSimulate(current.key, days)}>
           Simular
         </Button>
         {!canSimulate && <Badge tone="muted" className="mt-3">{disabledReason}</Badge>}

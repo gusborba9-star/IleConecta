@@ -59,8 +59,20 @@ export default function Plans() {
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>
         <h1 className="font-display font-bold text-3xl mt-1">Cresça no seu ritmo</h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Escolha o plano da sua casa. Quando o pagamento pela plataforma estiver disponível: rituais com vagas têm taxa de 15% e serviços contratados pela plataforma têm 4%. Atendimentos combinados direto com a casa não têm taxa da plataforma.
+          Cada casa cresce no seu tempo. Comece com a presença na rede, ganhe alcance e conte com um colaborador virtual que atende por você, a qualquer hora. Condições, taxas e regras de uso estão nas normas da plataforma.
         </p>
+        <ol className="mt-5 grid gap-3 sm:grid-cols-3" aria-label="Como a casa cresce">
+          {[
+            ["1", "Começar", "Página da casa, rituais, serviços e conversas com quem procura."],
+            ["2", "Crescer", "Atendimento 24 horas e vendas pela plataforma, mesmo com a casa offline."],
+            ["3", "Atender sempre", "Mais respostas por mês e liberdade para definir os seus descontos."],
+          ].map(([n, t, d]) => (
+            <li key={n} className="flex gap-3 rounded-2xl bg-card/70 p-3 ring-1 ring-gold/30">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest font-display font-bold text-forest-foreground">{n}</span>
+              <span><span className="block font-semibold">{t}</span><span className="block text-xs text-muted-foreground mt-0.5">{d}</span></span>
+            </li>
+          ))}
+        </ol>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
