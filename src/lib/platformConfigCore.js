@@ -30,6 +30,8 @@ export const DEFAULT_CONFIG = {
       intermediario: { name: "Profissional", monthly: 139.9 },
       maximo: { name: "Premium", monthly: 199 },
     },
+    // Acesso extra da equipe da casa, por mês e conforme o plano da casa (sobe sozinho quando a casa muda de plano).
+    extra_seat: { base: 29.9, intermediario: 39.9, maximo: 39.9 },
     boost_per_day: { cidade: 19.9, estado: 29.9, pais: 39.9, exterior: null },
     highlight_per_day: { cidade: 29.9, estado: 39.9, pais: 49.9, exterior: null },
   },
@@ -69,6 +71,8 @@ export function sanitizeConfig(raw) {
       monthly: money(x.monthly, d.pricing.plans[id].monthly),
     };
   }
+  const extra_seat = {};
+  for (const id of PLAN_IDS) extra_seat[id] = money(isRecord(p.extra_seat) ? p.extra_seat[id] : undefined, d.pricing.extra_seat[id]);
   const perDay = (key) => {
     const out = {};
     for (const s of SCOPE_KEYS) out[s] = money(isRecord(p[key]) ? p[key][s] : undefined, d.pricing[key][s]);
@@ -93,7 +97,7 @@ export function sanitizeConfig(raw) {
     monthly_cap: whole(rf.monthly_cap, 1, 100, d.referral.monthly_cap),
   };
 
-  return { features, pricing: { plans, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral };
+  return { features, pricing: { plans, extra_seat, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral };
 }
 
 /** Recurso ligado? "beta" liga só para as casas listadas (ids dos donos). */

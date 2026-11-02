@@ -262,6 +262,19 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
             ))}
           </div>
         </div>
+        <div>
+          <div className="text-sm font-semibold mb-1">Acesso extra da equipe (mensal, por plano da casa)</div>
+          <p className="text-xs text-muted-foreground mb-2">Vale o preço do plano em que a casa está: se ela mudar de plano, o valor do acesso muda junto.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {PLAN_IDS.map((id) => (
+              <div key={id}>
+                <div className="text-xs text-muted-foreground mb-1">{draft.pricing.plans[id].name}</div>
+                <MoneyInput aria-label={`Acesso extra no plano ${id}`} value={toText(draft.pricing.extra_seat[id])}
+                  onValueChange={(v) => setDraft({ ...draft, pricing: { ...draft.pricing, extra_seat: { ...draft.pricing.extra_seat, [id]: num(v) } } })} />
+              </div>
+            ))}
+          </div>
+        </div>
         {(["boost_per_day", "highlight_per_day"] as const).map((key) => (
           <div key={key}>
             <div className="text-sm font-semibold mb-2">{key === "boost_per_day" ? "Impulsionar, por dia" : "Destaque, por dia"}</div>

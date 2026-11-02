@@ -74,3 +74,12 @@ test("avaliações: desligadas por padrão e só ligam com 'ligado'", () => {
   assert.equal(isFeatureOn(d, "reviews", "casa1"), false);
   assert.equal(isFeatureOn(sanitizeConfig({ features: { reviews: { state: "on" } } }), "reviews", "casa1"), true);
 });
+
+test("acesso extra da equipe: preço por plano, com padrão e validação", () => {
+  assert.deepEqual(DEFAULT_CONFIG.pricing.extra_seat, { base: 29.9, intermediario: 39.9, maximo: 39.9 });
+  const c = sanitizeConfig({ pricing: { extra_seat: { base: 19.9, intermediario: -1, maximo: "x" } } });
+  assert.equal(c.pricing.extra_seat.base, 19.9);
+  assert.equal(c.pricing.extra_seat.intermediario, 39.9);
+  assert.equal(c.pricing.extra_seat.maximo, 39.9);
+  assert.equal(sanitizeConfig(undefined).pricing.extra_seat.base, 29.9);
+});

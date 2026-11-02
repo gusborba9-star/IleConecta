@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface StaffLink { houseId: string; houseName: string; ownerId: string; staffName: string; canReply: boolean; canOrders: boolean }
-export interface StaffMember { id: string; name: string; canReply: boolean; canOrders: boolean }
+export interface StaffMember { id: string; name: string; canReply: boolean; canOrders: boolean; active: boolean }
 export interface StaffInvite { token: string; name: string; canReply: boolean; canOrders: boolean; expiresAt: string }
 export interface StaffConversation { id: string; otherId: string; otherName: string; lastText: string; lastAt: string }
 export interface StaffMessage { id: string; fromHouse: boolean; text: string; createdAt: string; staffName: string | null; fromAssistant: boolean; attachmentPath: string | null; attachmentType: string | null; attachmentName: string | null; attachmentSize: number | null }
@@ -39,11 +39,11 @@ export function useStaffLink(userId?: string): StaffLink | null {
 export async function fetchTeam(houseId: string): Promise<{ members: StaffMember[]; invites: StaffInvite[] }> {
   if (!supabase) return { members: [], invites: [] };
   const [m, i] = await Promise.all([
-    supabase.from("house_staff").select("id, name, can_reply, can_orders").eq("house_id", houseId).order("created_at"),
+    supabase.from("house_staff").select("id, name, can_reply, can_orders, active").eq("house_id", houseId).order("created_at"),
     supabase.from("house_staff_invites").select("token, name, can_reply, can_orders, expires_at").eq("house_id", houseId).is("used_at", null).gt("expires_at", new Date().toISOString()),
   ]);
   return {
-    members: ((m.data ?? []) as Row[]).map((r) => ({ id: String(r.id), name: String(r.name), canReply: Boolean(r.can_reply), canOrders: Boolean(r.can_orders) })),
+    members: ((m.data ?? []) as Row[]).map((r) => ({ id: String(r.id), name: String(r.name), canReply: Boolean(r.can_reply), canOrders: Boolean(r.can_orders), active: Boolean(r.active) })),
     invites: ((i.data ?? []) as Row[]).map((r) => ({ token: String(r.token), name: String(r.name), canReply: Boolean(r.can_reply), canOrders: Boolean(r.can_orders), expiresAt: String(r.expires_at) })),
   };
 }
@@ -56,11 +56,12 @@ export async function cancelStaffInvite(token: string): Promise<boolean> {
   if (!supabase) return false;
   return !(await supabase.from("house_staff_invites").delete().eq("token", token)).error;
 }
-export async function updateStaff(id: string, patch: { canReply?: boolean; canOrders?: boolean }): Promise<boolean> {
+export async function updateStaff(id: string, patch: { canReply?: boolean; canOrders?: boolean; active?: boolean }): Promise<boolean> {
   if (!supabase) return false;
   const body: Row = {};
   if (patch.canReply !== undefined) body.can_reply = patch.canReply;
   if (patch.canOrders !== undefined) body.can_orders = patch.canOrders;
+  if (patch.active !== undefined) body.active = patch.active;
   return !(await supabase.from("house_staff").update(body).eq("id", id)).error;
 }
 export async function removeStaff(id: string): Promise<boolean> {
@@ -95,4 +96,11 @@ export async function fetchStaffOrders(): Promise<StaffOrder[]> {
   if (!supabase) return [];
   const { data } = await supabase.rpc("staff_orders");
   return ((data ?? []) as Row[]).map((r) => ({ id: String(r.id), title: String(r.title), status: String(r.status), clientName: String(r.client_name), createdAt: String(r.created_at) }));
+}
+
+/** Quantos acessos além do principal a casa pode ter (1 no Premium + extras contratados). */
+export async function fetchSeatAllowance(houseId: string): Promise<number> {
+  if (!supabase) return 0;
+  const { data } = await supabase.rpc("house_seat_allowance", { h: houseId });
+  return typeof data === "number" ? data : 0;
 }

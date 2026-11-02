@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, Camera, Check, Megaphone, TrendingUp, Users, UsersRound } from "lucide-react";
+import { CalendarDays, Camera, Check, Megaphone, TrendingUp, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type ShowcaseKind = "members" | "calendar" | "chat" | "outreach" | "growth" | "team";
+export type ShowcaseKind = "members" | "calendar" | "chat" | "outreach" | "growth";
 
 const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: string[]; icon: typeof Users; badge?: string; cta?: string }> = {
   members: {
@@ -47,16 +47,6 @@ const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: strin
     ],
     icon: TrendingUp,
   },
-  team: {
-    eyebrow: "Equipe da casa",
-    title: "Mais alguém atendendo, com você no controle",
-    points: [
-      "Um segundo acesso, com o nome de quem atende",
-      "Você define o que ele vê e faz",
-      "O cliente vê “Atendido por” e o nome, com a confiança da casa",
-    ],
-    icon: UsersRound,
-  },
   chat: {
     eyebrow: "Fotos e vídeos no chat",
     title: "Mostre e receba o que as palavras não alcançam",
@@ -87,13 +77,6 @@ function Sample({ kind }: { kind: ShowcaseKind }): ReactNode {
         {[["Instagram da casa", "128 visitas", "bg-[#FBF2DE]"], ["WhatsApp", "46 visitas", "bg-[#E8F1EA]"], ["Cartão na porta", "19 visitas", "bg-[#EEE9F5]"]].map(([n, v, bg]) => (
           <div key={n} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm text-[#2B1A10] ${bg}`}><span className="font-semibold">{n}</span><span className="text-xs font-bold">{v}</span></div>
         ))}
-      </div>
-    );
-  if (kind === "team")
-    return (
-      <div className="space-y-2 text-sm">
-        <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/90 px-3 py-2 text-[#2B1A10]">Oi! Qual o horário de sábado?</div>
-        <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-[#14543F] px-3 py-2 text-white"><div className="text-[10px] font-bold text-[#E3BF5A]">Atendido por Marina</div>Sábado às 20h, com vagas abertas.</div>
       </div>
     );
   if (kind === "calendar")
