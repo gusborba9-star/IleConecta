@@ -105,3 +105,15 @@ export async function fetchTopServices(): Promise<Count[]> {
   const { data } = await supabase.rpc("my_top_services", { p_days: 90 });
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({ label: String(r.title), total: Number(r.total) }));
 }
+
+/** Modelos para a casa completar: o texto entra no formulário e ela ajusta antes de salvar. */
+export const REPLY_TEMPLATES: Record<string, string> = {
+  "Endereço e como chegar": "Nossa casa fica em [endereço completo]. Ponto de referência: [referência]. Se precisar de ajuda para chegar, é só avisar por aqui.",
+  "Horários": "Atendemos [dias] das [hora] às [hora]. Os encontros abertos acontecem [dia e horário]. Chegue com um pouco de antecedência.",
+  "Valores": "Os valores variam conforme o atendimento. Você vê cada um na página da casa, com o preço de cada serviço. Qualquer dúvida, me diga qual interessa.",
+  "Agendar e vagas": "Para agendar, escolha o serviço na página da casa e o horário disponível. As vagas dos encontros aparecem em cada ritual, com a quantidade que ainda resta.",
+  "Rituais e encontros": "Os próximos encontros estão na agenda da casa, com data, horário e vagas. Quem quiser participar pode reservar a vaga pela página.",
+  "Trabalhos e atendimentos": "Fazemos [trabalhos e atendimentos]. Cada um tem a descrição e o valor na página da casa. Se tiver dúvida sobre qual escolher, me conte o que você procura.",
+  "O que levar e vestir": "Para vir à casa: [o que levar]. Roupa: [orientação de vestimenta]. Se tiver alguma restrição, avise antes.",
+  "Pagamento e reembolso": "O pagamento é feito pela plataforma, com segurança. Se precisar cancelar, as regras de reembolso estão nas normas da plataforma. Posso te ajudar com o seu pedido.",
+};
