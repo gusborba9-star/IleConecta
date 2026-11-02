@@ -19,11 +19,16 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number, maxLine
     } else cur = t;
   }
   if (cur) lines.push(cur);
-  return lines.slice(0, maxLines);
+  if (lines.length <= maxLines) return lines;
+  const cut = lines.slice(0, maxLines);
+  let last = cut[maxLines - 1];
+  while (last.length > 1 && ctx.measureText(`${last}…`).width > maxW) last = last.slice(0, -1);
+  cut[maxLines - 1] = `${last.trimEnd()}…`;
+  return cut;
 }
 
-/** Cartão 1080×1350 (formato de post) com nome da casa e QR do link de divulgação. Tudo desenhado no aparelho. */
-export function drawShareCard(canvas: HTMLCanvasElement, opts: { name: string; place: string; link: string; style: CardStyleId }) {
+/** Cartão 1080×1350 (formato de post): foto opcional, nome, descrição e QR do link. Tudo desenhado no aparelho; nada é enviado. */
+export function drawShareCard(canvas: HTMLCanvasElement, opts: { name: string; text: string; link: string; style: CardStyleId; photo?: HTMLImageElement | null }) {
   const st = CARD_STYLES.find((s) => s.id === opts.style) ?? CARD_STYLES[0];
   const W = 1080, H = 1350;
   canvas.width = W;
@@ -43,34 +48,61 @@ export function drawShareCard(canvas: HTMLCanvasElement, opts: { name: string; p
 
   ctx.textAlign = "center";
   ctx.fillStyle = st.accent;
-  ctx.font = "700 30px 'DM Sans', system-ui, sans-serif";
-  ctx.fillText("I L Ê   C O N E C T A", W / 2, 150);
+  ctx.font = "700 28px 'DM Sans', system-ui, sans-serif";
+  ctx.fillText("I L Ê   C O N E C T A", W / 2, 120);
+
+  let y = 300;
+  const photo = opts.photo;
+  if (photo && photo.width > 0) {
+    const bx = 120, by = 160, bw = W - 240, bh = 420;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 32);
+    ctx.clip();
+    const k = Math.max(bw / photo.width, bh / photo.height);
+    ctx.drawImage(photo, bx + (bw - photo.width * k) / 2, by + (bh - photo.height * k) / 2, photo.width * k, photo.height * k);
+    ctx.restore();
+    ctx.strokeStyle = st.accent;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 32);
+    ctx.stroke();
+    y = by + bh + 100;
+  }
 
   ctx.fillStyle = st.ink;
-  ctx.font = "700 92px 'Fraunces', Georgia, serif";
-  const lines = wrap(ctx, opts.name, W - 200, 3);
-  const top = 330 - ((lines.length - 1) * 56);
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, top + i * 108));
-  const afterName = top + (lines.length - 1) * 108;
+  let nameSize = photo ? 72 : 92;
+  const fits = () => { ctx.font = `700 ${nameSize}px 'Fraunces', Georgia, serif`; return ctx.measureText(opts.name).width <= (W - 200) * 2 * 0.9; };
+  while (nameSize > 48 && !fits()) nameSize -= 4;
+  ctx.font = `700 ${nameSize}px 'Fraunces', Georgia, serif`;
+  const nameLines = wrap(ctx, opts.name, W - 200, 2);
+  nameLines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * (nameSize + 12)));
+  y += (nameLines.length - 1) * (nameSize + 12);
 
   ctx.fillStyle = st.sub;
-  ctx.font = "500 38px 'DM Sans', system-ui, sans-serif";
-  if (opts.place) ctx.fillText(opts.place, W / 2, afterName + 80);
-  ctx.fillText("Conheça a casa e fale com ela", W / 2, afterName + (opts.place ? 140 : 90));
+  const dSize = photo ? 34 : 38, dLine = photo ? 44 : 50;
+  ctx.font = `500 ${dSize}px 'DM Sans', system-ui, sans-serif`;
+  const text = opts.text.trim() || "Conheça a casa e fale com ela";
+  const desc = wrap(ctx, text, W - 240, photo ? 3 : 4);
+  desc.forEach((l, i) => ctx.fillText(l, W / 2, y + 64 + i * dLine));
+  y += 64 + (desc.length - 1) * dLine;
 
   const m = makeQr(opts.link);
   const n = m.length;
-  const size = 440, pad = 28, cell = Math.floor(size / (n + 2));
-  const box = cell * (n + 2) + pad * 2;
-  const bx = (W - box) / 2, by = 760;
+  const pad = 24;
+  const boxMax = 1232 - (y + 40);
+  const box = Math.max(220, Math.min(photo ? 460 : 580, boxMax));
+  const cell = Math.max(3, Math.floor((box - pad * 2) / (n + 2)));
+  const real = cell * (n + 2) + pad * 2;
+  const bx = (W - real) / 2, by = Math.max(y + 40, 1232 - real);
   ctx.fillStyle = "#FFFFFF";
   ctx.beginPath();
-  ctx.roundRect(bx, by, box, box, 28);
+  ctx.roundRect(bx, by, real, real, 28);
   ctx.fill();
   ctx.fillStyle = "#1b1411";
-  m.forEach((row, y) => row.forEach((on, x) => on && ctx.fillRect(bx + pad + (x + 1) * cell, by + pad + (y + 1) * cell, cell, cell)));
+  m.forEach((row, yy) => row.forEach((on, x) => on && ctx.fillRect(bx + pad + (x + 1) * cell, by + pad + (yy + 1) * cell, cell, cell)));
 
   ctx.fillStyle = st.sub;
-  ctx.font = "500 32px 'DM Sans', system-ui, sans-serif";
-  ctx.fillText("Aponte a câmera para abrir", W / 2, by + box + 70);
+  ctx.font = "500 30px 'DM Sans', system-ui, sans-serif";
+  ctx.fillText("Aponte a câmera para abrir", W / 2, Math.min(by + real + 50, 1282));
 }
