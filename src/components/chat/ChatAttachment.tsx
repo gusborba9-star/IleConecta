@@ -34,6 +34,9 @@ export default function ChatAttachment({ bucket = "chat-files", path, type, name
       </a>
     );
   }
+  if (type.startsWith("video/")) {
+    return <video src={url} controls playsInline preload="metadata" aria-label={name} onClick={(e) => e.stopPropagation()} className="max-h-60 max-w-full rounded-lg bg-black" />;
+  }
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
       <img src={url} alt={name} loading="lazy" className="max-h-60 max-w-full rounded-lg object-cover" />

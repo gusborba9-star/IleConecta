@@ -13,6 +13,8 @@ import {
   type HouseMember, type MemberDue, type MembersOverview, type MemberSituation,
 } from "@/lib/members";
 import { formatBRL } from "@/lib/utils";
+import { useOwnerPlan } from "@/lib/housePlan";
+import PremiumShowcase from "@/components/premium/PremiumShowcase";
 
 const SITUATION: Record<MemberSituation, { label: string; tone: "danger" | "gold" | "forest" | "muted"; name: string }> = {
   vencida: { label: "Em atraso", tone: "danger", name: "text-[hsl(var(--danger))]" },
@@ -33,6 +35,7 @@ export default function HouseMembers() {
   const [defaultsOpen, setDefaultsOpen] = useState(false);
   const [removing, setRemoving] = useState<HouseMember | null>(null);
   const [filter, setFilter] = useState<MemberSituation | "todos">("todos");
+  const { premium, loading: planLoading } = useOwnerPlan(currentUser?.id);
 
   const reload = useCallback(async () => {
     const [o, d] = await Promise.all([fetchMembersOverview(), fetchMemberDefaults()]);
@@ -52,6 +55,9 @@ export default function HouseMembers() {
       </Card>
     );
   }
+
+  if (planLoading) return <div className="h-40" aria-busy />;
+  if (!premium) return <div className="space-y-4 pb-16 lg:pb-4"><PremiumShowcase kind="members" /></div>;
 
   const act = async (fn: () => Promise<string | null>, ok: string) => {
     const err = await fn();
