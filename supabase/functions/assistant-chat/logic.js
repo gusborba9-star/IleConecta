@@ -94,7 +94,7 @@ export function extractCheckout(raw) {
   return { found, title, text: text.replace(mark, "").replace(/[ \t]+\n/g, "\n").trim() };
 }
 
-const norm = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const norm = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /**
  * Descobre qual ritual ou serviço o marcador [[PAGAR: título]] indica. Só vale para ritual aberto com vaga e para
