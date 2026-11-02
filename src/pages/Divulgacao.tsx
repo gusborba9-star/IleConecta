@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Copy, Download, ImagePlus, Megaphone, MessageSquareText, Plus, Trash2, TrendingUp } from "lucide-react";
+import { Copy, ImagePlus, Megaphone, MessageSquareText, Plus, Trash2, TrendingUp } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
+import ShareLinkButtons from "@/components/house/ShareLinkButtons";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useApp } from "@/contexts/AppContext";
 import {
@@ -125,16 +126,6 @@ export default function Divulgacao() {
     if (!rows) return void toast.error("A contagem dia a dia é do plano Premium.");
     setDays({ id: c.id, rows });
   };
-  const download = () => {
-    canvas.current?.toBlob((b) => {
-      if (!b) return void toast.error("Não foi possível gerar a imagem.");
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(b);
-      a.download = `cartao-${active?.code ?? "casa"}.png`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }, "image/png");
-  };
   const addReply = async () => {
     if (!houseId) return;
     const err = await addQuickReply(houseId, rTitle, rBody);
@@ -238,7 +229,11 @@ export default function Divulgacao() {
                     className={`h-10 px-4 rounded-[14px] text-sm font-semibold border ${style === s.id ? "bg-forest text-white border-forest" : "bg-card border-input"} ${ok ? "" : "opacity-50"}`}>{s.label}{ok ? "" : " · Premium"}</button>;
                 })}
               </div>
-              <Button onClick={download}><Download className="h-4 w-4" /> Baixar imagem</Button>
+              <ShareLinkButtons
+                link={link}
+                text={cardText.trim() || `Conheça a casa ${currentUser.name} no Ilê Conecta.`}
+                getImage={() => new Promise<Blob | null>((res) => (canvas.current ? canvas.current.toBlob(res, "image/png") : res(null)))}
+              />
             </div>
           </div>
         )}
