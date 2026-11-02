@@ -5,6 +5,7 @@ import { Bot, Check, CheckCheck, Paperclip, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
+import ChatCheckoutButton from "@/components/chat/ChatCheckoutButton";
 import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
@@ -255,6 +256,7 @@ export default function RealMessages() {
                         <>
                           {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}
                           {!(m.attachmentPath && isPlaceholderText(m.text)) && m.text}
+                          {m.action && m.fromAssistant && otherId && <div><ChatCheckoutButton action={m.action} ownerId={otherId} /></div>}
                         </>
                       )}
                       <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-primary-foreground/70" : "text-muted-foreground")}>
