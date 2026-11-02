@@ -11,8 +11,8 @@ import { useOwnerPlan } from "@/lib/housePlan";
 import { formatMoney } from "@/lib/pricing";
 import { qrSvg } from "@/lib/qr";
 import {
-  cancelStaffInvite, createStaffInvite, fetchSeatAllowance, fetchTeam, removeStaff, staffInviteUrl, updateStaff,
-  type StaffInvite, type StaffMember,
+  PERMS, cancelStaffInvite, createStaffInvite, fetchSeatAllowance, fetchTeam, removeStaff, staffInviteUrl, togglePerm, updateStaff,
+  type PermKey, type StaffInvite, type StaffMember,
 } from "@/lib/staff";
 
 function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint: string }) {
@@ -21,6 +21,24 @@ function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange
       <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span><strong>{label}</strong><span className="block text-xs text-muted-foreground">{hint}</span></span>
     </label>
+  );
+}
+
+/** Todas as ferramentas que a casa pode liberar, uma a uma. */
+function PermList({ perms, onChange, premium }: { perms: PermKey[]; onChange: (p: PermKey[]) => void; premium: boolean }) {
+  return (
+    <fieldset className="space-y-3">
+      <legend className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1">O que esta pessoa pode fazer</legend>
+      {PERMS.map((p) => {
+        const locked = p.premiumOnly && !premium;
+        return (
+          <div key={p.key} className={locked ? "opacity-60" : ""}>
+            <Toggle checked={!locked && perms.includes(p.key)} onChange={(v) => !locked && onChange(togglePerm(perms, p.key, v))} label={`${p.label}${locked ? " · Premium" : ""}`} hint={p.hint} />
+          </div>
+        );
+      })}
+      <p className="text-xs text-muted-foreground">Pagamentos, plano, perfil da casa e a gestão da equipe ficam sempre só com você.</p>
+    </fieldset>
   );
 }
 
@@ -41,8 +59,7 @@ export default function Equipe() {
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [invites, setInvites] = useState<StaffInvite[]>([]);
   const [name, setName] = useState("");
-  const [canReply, setCanReply] = useState(true);
-  const [canOrders, setCanOrders] = useState(false);
+  const [newPerms, setNewPerms] = useState<PermKey[]>(["chat_read", "chat_reply"]);
 
   const reload = useCallback(async (id: string) => {
     const [t, a] = await Promise.all([fetchTeam(id), fetchSeatAllowance(id)]);
@@ -69,7 +86,7 @@ export default function Equipe() {
 
   const invite = async () => {
     if (!houseId || name.trim().length < 2) return void toast.error("Escreva o nome de quem vai atender.");
-    const err = await createStaffInvite(houseId, name, canReply, canOrders);
+    const err = await createStaffInvite(houseId, name, newPerms);
     if (err) return void toast.error(err);
     setName("");
     toast.success("Convite criado. Envie o link ou mostre o QR code.");
@@ -83,7 +100,7 @@ export default function Equipe() {
       toast.error("Não foi possível copiar. Selecione o link e copie.");
     }
   };
-  const change = async (m: StaffMember, patch: { canReply?: boolean; canOrders?: boolean; active?: boolean }) => {
+  const change = async (m: StaffMember, patch: { perms?: PermKey[]; active?: boolean }) => {
     if (!(await updateStaff(m.id, patch))) toast.error("Não foi possível salvar.");
     if (houseId) await reload(houseId);
   };
@@ -92,8 +109,8 @@ export default function Equipe() {
     <div className="space-y-4 pb-16 lg:pb-4">
       <Card className="page-hero p-6">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Equipe da casa</div>
-        <h1 className="font-display font-bold text-2xl flex items-center gap-2 mt-1"><UsersRound className="h-6 w-6 text-primary" /> Mais alguém atendendo, com você no controle</h1>
-        <p className="text-sm text-muted-foreground mt-1">Seu acesso é o principal. Cada pessoa convidada atende os clientes pela casa, vê só o que você liberar e aparece no chat como “Atendido por” com o nome dela. Você pausa ou remove quando quiser.</p>
+        <h1 className="font-display font-bold text-2xl flex items-start gap-2 mt-1"><UsersRound className="h-6 w-6 mt-1 shrink-0 text-primary" /> <span>Mais alguém atendendo, com você no controle</span></h1>
+        <p className="text-sm text-muted-foreground mt-1">Seu acesso é o principal. Cada pessoa convidada atende os clientes pela casa, vê só as ferramentas que você liberar e aparece no chat como “Atendido por” com o nome dela. Você pausa ou remove quando quiser.</p>
       </Card>
 
       <Card className="p-5 space-y-4">
@@ -122,8 +139,7 @@ export default function Equipe() {
                 }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
-            <Toggle checked={m.canReply} onChange={(v) => void change(m, { canReply: v })} label="Responder conversas" hint="Lê e responde os clientes pela casa. Desligado, só lê." />
-            <Toggle checked={m.canOrders} onChange={(v) => void change(m, { canOrders: v })} label="Ver pedidos" hint="Vê a lista de pedidos de serviço, sem alterar nada." />
+            <PermList perms={m.perms} premium={plan === "maximo"} onChange={(p) => void change(m, { perms: p })} />
           </div>
         ))}
 
@@ -147,8 +163,7 @@ export default function Equipe() {
         {free > 0 ? (
           <div className="space-y-3">
             <div><Label htmlFor="eq-name">Nome de quem vai atender</Label><Input id="eq-name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="é o nome que o cliente vê" /></div>
-            <Toggle checked={canReply} onChange={setCanReply} label="Responder conversas" hint="Lê e responde os clientes pela casa." />
-            <Toggle checked={canOrders} onChange={setCanOrders} label="Ver pedidos" hint="Vê a lista de pedidos de serviço, sem alterar nada." />
+            <PermList perms={newPerms} premium={plan === "maximo"} onChange={setNewPerms} />
             <Button onClick={() => void invite()}><Plus className="h-4 w-4" /> Criar convite</Button>
           </div>
         ) : (
