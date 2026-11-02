@@ -8,7 +8,7 @@ import ShareLinkButtons from "@/components/house/ShareLinkButtons";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useApp } from "@/contexts/AppContext";
 import {
-  LIMITS, SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, fetchTopics, fetchTopServices, houseIdOf, removeCampaign, removeQuickReply,
+  LIMITS, SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, REPLY_TEMPLATES, fetchTopics, fetchTopServices, houseIdOf, removeCampaign, removeQuickReply,
   type Campaign, type Count, type DayCount, type QuickReply, type SourceId,
 } from "@/lib/campaigns";
 import { useOwnerPlan } from "@/lib/housePlan";
@@ -128,6 +128,7 @@ export default function Divulgacao() {
   };
   const addReply = async () => {
     if (!houseId) return;
+    if (/\[[^\]]+\]/.test(rBody)) return void toast.error("Complete os trechos entre colchetes antes de salvar.");
     const err = await addQuickReply(houseId, rTitle, rBody);
     if (err) return void toast.error(err);
     setRTitle("");
@@ -250,7 +251,7 @@ export default function Divulgacao() {
                   <div className="flex justify-between text-sm"><span className="font-semibold">{t.label}</span><span className="text-muted-foreground">{t.total} {t.total === 1 ? "mensagem" : "mensagens"}</span></div>
                   <div className="mt-1 h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#14543F] to-[#1F7A5C]" style={{ width: `${Math.max(6, (t.total / (topics[0]?.total || 1)) * 100)}%` }} /></div>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => { setRTitle(t.label.slice(0, 40)); formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }}>Criar resposta</Button>
+                <Button size="sm" variant="outline" onClick={() => { setRTitle(t.label.slice(0, 40)); setRBody(REPLY_TEMPLATES[t.label] ?? ""); formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }}>Criar resposta</Button>
               </li>
             ))}
           </ul>
