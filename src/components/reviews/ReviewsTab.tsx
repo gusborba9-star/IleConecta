@@ -135,7 +135,7 @@ function ReviewCard({ r, isOwn, onChanged }: { r: ReviewItem; isOwn: boolean; on
       </div>
       {r.comment && <p className="text-sm whitespace-pre-line">{r.comment}</p>}
       {r.reply && (
-        <div className="rounded-xl bg-muted/60 p-3 text-sm">
+        <div className="rounded-xl bg-muted/60 p-3 text-sm pillow">
           <div className="text-xs font-semibold mb-0.5">Resposta da casa</div>
           <p className="whitespace-pre-line">{r.reply}</p>
         </div>

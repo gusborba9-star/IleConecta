@@ -109,7 +109,7 @@ export default function VideoRecorder({ onDone, onCancel }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 space-y-3" role="group" aria-label="Gravar vídeo">
+    <div className="rounded-xl border border-border bg-card p-3 space-y-3 pillow" role="group" aria-label="Gravar vídeo">
       {phase !== "review" && (
         <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
           <video ref={liveRef} playsInline muted className="h-full w-full object-cover" />

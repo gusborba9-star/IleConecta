@@ -171,7 +171,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
         </fieldset>
 
         {form.kind && BOOKABLE_KINDS.includes(form.kind) && (
-          <div className="rounded-xl border border-border p-3 space-y-2">
+          <div className="rounded-xl border border-border p-3 space-y-2 pillow">
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={Boolean(form.bookable)} onChange={(e) => set({ bookable: e.target.checked })} />
               <span>

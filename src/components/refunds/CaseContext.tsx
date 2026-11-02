@@ -57,7 +57,7 @@ export default function CaseContext({ refundId }: { refundId: string }) {
   const finished = ctx.timeline.some((t) => t.label.includes("concluí") || t.label.includes("concluiu"));
 
   return (
-    <div className="mt-3 rounded-xl border border-border bg-muted/30 p-3 space-y-3 text-sm">
+    <div className="mt-3 rounded-xl border border-border bg-muted/30 p-3 space-y-3 text-sm pillow">
       <div>
         <div className="font-semibold">{ctx.title} · {formatCents(ctx.price_cents)}</div>
         {ctx.description && <p className="text-muted-foreground whitespace-pre-line mt-1">{ctx.description}</p>}

@@ -60,11 +60,11 @@ export default function RitualPurchaseModal({ ritual, open, onClose }: { ritual:
             </div>
           </div>
 
-          <div className="rounded-xl border border-border p-4 bg-muted/40 space-y-2 text-sm">
+          <div className="rounded-xl border border-border p-4 bg-muted/40 space-y-2 text-sm pillow">
             <Row label="Valor ilustrativo" value={formatBRL(ritual.price)} />
           </div>
 
-          <div className="rounded-xl border border-border p-3 flex items-center gap-3">
+          <div className="rounded-xl border border-border p-3 flex items-center gap-3 pillow">
             <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
               <CreditCard className="h-5 w-5" />
             </div>

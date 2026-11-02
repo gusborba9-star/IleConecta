@@ -41,7 +41,7 @@ Button.displayName = "Button";
 
 // ---------- Card ----------
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...props }) => (
-  <div className={cn("bg-card text-card-foreground rounded-2xl shadow-card border border-border/60", className)} {...props} />
+  <div className={cn("pillow bg-card text-card-foreground rounded-2xl border", className)} {...props} />
 );
 
 // ---------- Input ----------

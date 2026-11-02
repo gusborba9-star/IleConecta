@@ -106,7 +106,7 @@ export default function Profile() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rituals.slice(0, 4).map((r) => (
-            <Link key={r.id} to={`/rituais/${r.id}`} className="lift flex gap-3 p-3 rounded-2xl border border-border bg-card">
+            <Link key={r.id} to={`/rituais/${r.id}`} className="lift flex gap-3 p-3 rounded-2xl border border-border bg-card pillow">
               <img src={r.cover} className="h-16 w-16 rounded-lg object-cover" />
               <div className="min-w-0">
                 <div className="font-semibold text-sm line-clamp-2">{r.title}</div>
@@ -125,7 +125,7 @@ export default function Profile() {
           </div>
           <div className="space-y-2">
             {myPosts.map((p) => (
-              <div key={p.id} className="p-3 border border-border rounded-xl text-sm">
+              <div key={p.id} className="p-3 border border-border rounded-xl text-sm pillow">
                 <div className="text-xs text-muted-foreground">{timeAgo(p.createdAt)}</div>
                 <div>{p.content}</div>
               </div>

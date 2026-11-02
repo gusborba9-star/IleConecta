@@ -113,7 +113,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
             ))}
           </fieldset>
           {draft.title.trim().length >= 2 && draft.date && (
-            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2" aria-live="polite">
+            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2 pillow" aria-live="polite">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Assim aparece</div>
               {previewRows(draft, today).map((r) => (
                 <div key={r.key} className={`flex gap-3 text-sm ${r.on ? "" : "opacity-50"}`}>

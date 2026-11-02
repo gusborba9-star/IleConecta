@@ -160,7 +160,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
           {payOn ? "O pagamento é feito pela plataforma, logo após o pedido. Você cancela com reembolso integral até a casa iniciar o trabalho." : "Por enquanto não há cobrança no app: o pagamento é combinado com a casa."}
         </p>
         {payOn && service.stages > 1 && (
-          <p className="text-sm rounded-xl border border-border p-3">
+          <p className="text-sm rounded-xl border border-border p-3 pillow">
             Pagamento em {service.stages} etapas: {stagePlan(service.priceCents, service.stages).map((v) => formatCents(v)).join(" + ")}.
             Você paga a 1ª etapa agora; as seguintes são combinadas com a casa e você as paga pelo seu pedido.
           </p>

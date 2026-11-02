@@ -56,7 +56,7 @@ export default function AdminUsers() {
       </p>
       <ul className="space-y-2">
         {rows.map((r) => (
-          <li key={r.user_id} className="flex items-center gap-3 text-sm border border-border rounded-xl px-3 py-2">
+          <li key={r.user_id} className="flex items-center gap-3 text-sm border border-border rounded-xl px-3 py-2 pillow">
             <span className="flex-1 break-all">
               {r.email}
               {r.user_id === currentUser?.id && <span className="text-muted-foreground"> (você)</span>}

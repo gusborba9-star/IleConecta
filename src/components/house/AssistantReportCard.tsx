@@ -8,7 +8,7 @@ import { fetchAssistantReport, type AssistantReport } from "@/lib/houseReport";
 import { formatBRL } from "@/lib/utils";
 
 const Stat = ({ value, label }: { value: string | number; label: string }) => (
-  <div className="rounded-xl bg-muted/50 p-3">
+  <div className="rounded-xl bg-muted/50 p-3 pillow">
     <div className="text-2xl font-display font-bold">{value}</div>
     <div className="text-xs text-muted-foreground">{label}</div>
   </div>
