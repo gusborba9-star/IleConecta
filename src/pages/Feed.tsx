@@ -28,6 +28,11 @@ export default function Feed() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       <PendingReviewsCard />
+      <Card className="page-hero p-5">
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Comunidade</div>
+        <h1 className="font-display font-bold text-2xl mt-1">O que as casas estão compartilhando</h1>
+        <p className="text-sm text-muted-foreground mt-1">Momentos, rituais e novidades de quem você acompanha.</p>
+      </Card>
       <div>
         <div className="flex items-end justify-between mb-2">
           <h2 className="font-display font-bold text-xl">Momentos das casas</h2>
@@ -47,18 +52,18 @@ export default function Feed() {
 
 function PromotedBanner() {
   return (
-    <Card className="p-5 bg-gradient-to-br from-primary/10 via-gold/10 to-forest/10 border-gold/40 relative overflow-hidden">
-      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-gold/20 blur-2xl" />
+    <Card className="p-5 relative overflow-hidden border-0 text-white shadow-altar" style={{ background: "linear-gradient(135deg,#14543F,#0F3B2D)" }}>
+      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-gold/25 blur-2xl" />
       <div className="relative flex items-center gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-card">
+        <div className="h-12 w-12 rounded-2xl bg-gold text-gold-foreground grid place-items-center shadow-card">
           <Sparkles className="h-6 w-6" />
         </div>
         <div className="flex-1">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">Publi · Ilê Conecta</div>
+          <div className="text-xs uppercase tracking-widest text-gold">Publi · Ilê Conecta</div>
           <div className="font-display font-bold text-lg">Simule o alcance da sua casa</div>
-          <div className="text-sm text-muted-foreground">Experimente planos demonstrativos. Nenhuma mídia será comprada nem haverá cobrança real.</div>
+          <div className="text-sm text-white/75">Experimente planos demonstrativos. Nenhuma mídia será comprada nem haverá cobrança real.</div>
         </div>
-        <Link to="/impulsionar" className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-card hover:brightness-110 transition">
+        <Link to="/impulsionar" className="px-4 py-2.5 rounded-[14px] bg-gold text-gold-foreground text-sm font-semibold shadow-card hover:brightness-105 transition">
           Impulsionar
         </Link>
       </div>

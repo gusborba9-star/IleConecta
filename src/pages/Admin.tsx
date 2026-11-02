@@ -91,52 +91,66 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      {section === "visao" && <Card className="p-6">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <h1 className="font-display font-bold text-2xl">Painel administrativo</h1>
+      {section === "visao" && <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })} · tempo real</div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1 flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Visão geral da plataforma</h1>
+          <p className="text-sm text-muted-foreground mt-1">As mudanças valem na hora, sem deploy. Tudo fica registrado no histórico.</p>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">As mudanças valem na hora, sem deploy. Tudo fica registrado no histórico.</p>
-      </Card>}
+      </div>}
 
-      {section === "visao" && <Card className="p-5">
-        <h2 className="font-display font-bold text-lg mb-3">Métricas</h2>
-        {!metrics ? (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Stat label="Contas" value={metrics.users_total} />
-              <Stat label="Casas" value={metrics.houses_total} />
-              <Stat label="Clientes" value={metrics.clients_total} />
-              <Stat label="Respostas da assistente (mês)" value={metrics.assistant_month.replies} />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Casas por plano: {Object.entries(metrics.houses_by_plan).map(([p, n]) => `${config.pricing.plans[p as keyof typeof config.pricing.plans]?.name ?? p}: ${n}`).join(" · ") || "nenhuma"}
-              {" · "}Tokens da assistente no mês: {metrics.assistant_month.prompt_tokens.toLocaleString("pt-BR")} entrada, {metrics.assistant_month.completion_tokens.toLocaleString("pt-BR")} saída
-            </div>
-            <div>
-              <div className="text-sm font-semibold mb-1">Cadastros nos últimos 30 dias</div>
-              <div className="text-sm text-muted-foreground">
-                {metrics.signups_30d.length === 0 ? "Nenhum." : metrics.signups_30d.map((s) => `${new Date(s.day + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}: ${s.n}`).join(" · ")}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold mb-1">Onde estão os usuários</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-3">País</th><th className="pr-3">Estado</th><th className="pr-3">Cidade</th><th className="pr-3">Contas</th><th>Casas</th></tr></thead>
-                  <tbody>
-                    {metrics.by_city.map((r, i) => (
-                      <tr key={i} className="border-t border-border"><td className="py-1 pr-3">{r.country}</td><td className="pr-3">{r.state}</td><td className="pr-3">{r.city}</td><td className="pr-3">{r.users}</td><td>{r.houses}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      {section === "visao" && (!metrics ? (
+        <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            <Stat label="Contas" value={metrics.users_total} />
+            <Stat label="Casas" value={metrics.houses_total} />
+            <Stat label="Clientes" value={metrics.clients_total} />
+            <Stat label="Respostas da assistente (mês)" value={metrics.assistant_month.replies} warm />
           </div>
-        )}
-      </Card>}
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <Card className="p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-display font-bold text-lg">Cadastros nos últimos 30 dias</h2>
+                <span className="font-mono text-[11px] text-muted-foreground">{metrics.signups_30d.reduce((t, x) => t + x.n, 0)} no período</span>
+              </div>
+              <SignupBars rows={metrics.signups_30d} />
+            </Card>
+            <Card className="p-5">
+              <h2 className="font-display font-bold text-lg">Casas por plano</h2>
+              <div className="mt-3 space-y-3">
+                {Object.entries(metrics.houses_by_plan).length === 0 && <p className="text-sm text-muted-foreground">Nenhuma.</p>}
+                {Object.entries(metrics.houses_by_plan).map(([p, n]) => {
+                  const total = Math.max(1, metrics.houses_total);
+                  return (
+                    <div key={p}>
+                      <div className="flex justify-between text-sm"><span>{config.pricing.plans[p as keyof typeof config.pricing.plans]?.name ?? p}</span><span className="font-mono font-bold">{n}</span></div>
+                      <div className="mt-1.5 h-2 rounded-full bg-muted"><div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, Math.round((Number(n) / total) * 100))}%` }} /></div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 font-mono text-[11px] text-muted-foreground">tokens da assistente no mês: {metrics.assistant_month.prompt_tokens.toLocaleString("pt-BR")} entrada · {metrics.assistant_month.completion_tokens.toLocaleString("pt-BR")} saída</p>
+            </Card>
+          </div>
+
+          <Card className="p-5">
+            <h2 className="font-display font-bold text-lg mb-2">Onde estão os usuários</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-left font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground"><th className="py-1 pr-3">País</th><th className="pr-3">Estado</th><th className="pr-3">Cidade</th><th className="pr-3">Contas</th><th>Casas</th></tr></thead>
+                <tbody>
+                  {metrics.by_city.map((r, i) => (
+                    <tr key={i} className="border-t border-border"><td className="py-1.5 pr-3">{r.country}</td><td className="pr-3">{r.state}</td><td className="pr-3">{r.city}</td><td className="pr-3 font-mono">{r.users}</td><td className="font-mono">{r.houses}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      ))}
 
       {section === "config" && <>
       <Card className="p-5 space-y-3">
@@ -282,11 +296,30 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, warm = false }: { label: string; value: number; warm?: boolean }) {
   return (
-    <div className="p-3 rounded-xl bg-muted/50 border border-border">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-display font-bold text-2xl">{value.toLocaleString("pt-BR")}</div>
+    <div className={`rounded-2xl p-4 border ${warm ? "border-gold/40 bg-gold/10" : "border-border bg-card"}`}>
+      <div className={`font-mono text-[11px] uppercase tracking-[0.08em] ${warm ? "text-gold" : "text-muted-foreground"}`}>{label}</div>
+      <div className="font-mono font-bold text-3xl mt-2">{value.toLocaleString("pt-BR")}</div>
     </div>
+  );
+}
+
+/** Barras de cadastros por dia (30 dias). Sem dados, mostra o aviso. */
+function SignupBars({ rows }: { rows: { day: string; n: number }[] }) {
+  if (rows.length === 0) return <p className="mt-3 text-sm text-muted-foreground">Nenhum cadastro no período.</p>;
+  const max = Math.max(...rows.map((r) => r.n), 1);
+  const w = 560;
+  const step = w / rows.length;
+  return (
+    <svg viewBox={`0 0 ${w} 140`} className="mt-3 w-full" role="img" aria-label={`Cadastros por dia: ${rows.map((r) => `${r.day.slice(8, 10)}/${r.day.slice(5, 7)} ${r.n}`).join(", ")}`}>
+      {rows.map((r, i) => {
+        const h = Math.max(4, Math.round((r.n / max) * 110));
+        return <rect key={r.day} x={i * step + step * 0.15} y={120 - h} width={step * 0.7} height={h} rx={3} className="fill-primary" opacity={0.85}><title>{`${r.day.slice(8, 10)}/${r.day.slice(5, 7)}: ${r.n}`}</title></rect>;
+      })}
+      <line x1="0" y1="121" x2={w} y2="121" className="stroke-border" />
+      <text x="0" y="136" className="fill-muted-foreground" fontSize="10">{rows[0].day.slice(8, 10)}/{rows[0].day.slice(5, 7)}</text>
+      <text x={w} y="136" textAnchor="end" className="fill-muted-foreground" fontSize="10">{rows[rows.length - 1].day.slice(8, 10)}/{rows[rows.length - 1].day.slice(5, 7)}</text>
+    </svg>
   );
 }
