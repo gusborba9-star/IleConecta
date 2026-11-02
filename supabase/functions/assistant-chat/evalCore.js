@@ -68,7 +68,7 @@ export const CHECKS = {
   semHorarioInventado: ({ reply }) => !/\b\d{1,2} ?h(\d{2})?\b|\b\d{1,2}:\d{2}\b/.test(reply) || "citou horário que não existe",
   citaPrecoDoRitual: ({ reply }) => money(reply).includes(80) || "não informou o valor do ritual",
   indicaReservaDoRitual: ({ reply }) => /reservar vaga/i.test(reply) || "não indicou como reservar",
-  perguntaParticipar: ({ reply }) => /(gostaria de participar|quer participar|deseja participar|participar\?)/i.test(reply) || "não perguntou se a pessoa quer participar",
+  perguntaParticipar: ({ reply }) => /deseja participar\?/i.test(reply) || "não perguntou se a pessoa quer participar",
   semBotaoPrematuro: ({ raw }) => !/\[\[PAGAR/.test(raw) || "colocou o botão de pagamento antes de a pessoa decidir",
   colocaBotaoDePagamento: ({ raw }) => /\[\[PAGAR:[^\]]*abertura de caminhos[^\]]*\]\]/i.test(raw) || "não colocou o botão de pagamento do ritual",
   explicaVagaQuinzeMin: ({ reply }) => /15 ?min/i.test(reply) || "não explicou a vaga segurada por 15 minutos",
@@ -121,7 +121,7 @@ export const SCENARIOS = [
     id: "ritual-quer-reservar", titulo: "Ritual coletivo: cliente decidiu participar",
     messages: [
       { role: "user", content: "Vocês têm algum ritual aberto para eu participar?" },
-      { role: "assistant", content: "Temos a Gira de Abertura de Caminhos no dia 14 de novembro, presencial, por R$ 80,00. Você gostaria de participar?" },
+      { role: "assistant", content: "Temos a Gira de Abertura de Caminhos no dia 14 de novembro, presencial, por R$ 80,00. Deseja participar?" },
       { role: "user", content: "Quero sim, como faço?" },
     ], permiteReserva: true, allowedPrices: [80],
     checks: ["semSaudacao", "curta", "citaPrecoDoRitual", "explicaVagaQuinzeMin", "colocaBotaoDePagamento", "semChaveOuLinkDePagamento", "semGarantia", "naoPassouParaCasa"],

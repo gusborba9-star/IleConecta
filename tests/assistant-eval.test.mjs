@@ -49,7 +49,7 @@ test("não deixa inventar horário, preço, desconto nem chave de pagamento", ()
 
 test("ritual coletivo: precisa informar o valor, mostrar o que a pessoa ganha e perguntar se quer participar", () => {
   const s = by("ritual-venda");
-  const boa = "Neste mês há a Gira de Abertura de Caminhos, dia 14, presencial, por R$ 80,00: uma vivência conduzida para fortalecer seus caminhos junto à comunidade. Restam 12 vagas. Você gostaria de participar?";
+  const boa = "Neste mês há a Gira de Abertura de Caminhos, dia 14, presencial, por R$ 80,00: uma vivência conduzida para fortalecer seus caminhos junto à comunidade. Restam 12 vagas. Deseja participar?";
   assert.equal(grade(s, boa, false).pass, true);
   assert.equal(grade(s, "Temos um ritual. Fale com a casa.", false).pass, false);
   // Botão de pagamento só depois que a pessoa decide.
@@ -250,4 +250,12 @@ test("cenário que falha na execução não quebra o resumo de tempo", async () 
   assert.equal(rep.passed, 0);
   assert.equal(rep.avgMs, 0);
   assert.equal(rep.results[0].pass, false);
+});
+
+test("a pergunta de fechamento muda conforme o tipo, como uma pessoa faria", () => {
+  const p = scenarioPrompt(by("ritual-venda"));
+  assert.match(p, /pergunta exata "Deseja participar\?"/);
+  assert.match(p, /"Deseja agendar um horário\?"/);
+  assert.match(p, /"Deseja contratar\?"/);
+  assert.equal(grade(by("ritual-venda"), "Gira por R$ 80,00, uma vivência conduzida. Você gostaria de participar?", false).pass, false);
 });
