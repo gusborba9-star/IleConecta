@@ -32,7 +32,7 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.ok) {
-        toast.success(result.user ? `Boas-vindas, ${welcomeName(result.user.name, result.user.type !== "personal")}!` : "Boas-vindas!", { description: `${dayPeriodGreeting()}. Axé!` });
+        toast.success(result.user ? `Boas-vindas, ${welcomeName(result.user.name, result.user.type !== "personal")}!` : "Boas-vindas!", { description: `${dayPeriodGreeting()}.` });
         nav(back);
       } else {
         toast.error(result.error);
@@ -53,22 +53,33 @@ export default function Login() {
         <div className="absolute inset-x-0 bottom-0 p-10 text-white">
           <div className="max-w-md space-y-3">
             <div className="text-xs tracking-[0.3em] uppercase text-gold">Ilê Conecta</div>
-            <h1 className="font-display font-bold text-4xl leading-tight">A rede das casas de religião afro.</h1>
+            <h1 className="font-display font-bold text-4xl leading-tight">Casas espirituais e pessoas, conectadas com respeito.</h1>
             <p className="text-white/80">
-              Descubra terreiros, contrate rituais, converse pelo chat e conecte-se com sua espiritualidade em um só lugar.
+              Descubra casas, participe de rituais e encontros, converse pelo chat e conecte-se em um só lugar, com sigilo e segurança.
             </p>
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-center p-6 lg:p-12 bg-background">
-        <Card className="w-full max-w-md p-8">
-          <div className="flex items-center gap-3 mb-6">
+      <div className="flex flex-col lg:items-center lg:justify-center bg-background">
+        <div className="relative lg:hidden overflow-hidden px-6 pt-10 pb-14 text-center text-white" style={{ background: "linear-gradient(160deg, #14543F 0%, #0F3B2D 100%)" }}>
+          <GoldMark size={260} className="absolute -right-16 -top-12 opacity-[0.12] pointer-events-none" />
+          <div className="relative flex flex-col items-center gap-2">
+            <LogoMark size={64} />
+            <div className="font-display font-bold text-3xl">Ilê Conecta</div>
+            <p className="text-sm text-white/80 max-w-xs">Casas espirituais e pessoas, conectadas com respeito.</p>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 h-7 rounded-t-[28px] bg-background" />
+        </div>
+        <div className="flex-1 w-full flex items-start lg:items-center justify-center px-5 pb-8 lg:p-12">
+        <Card className="w-full max-w-md p-6 sm:p-8 lg:shadow-altar">
+          <div className="hidden lg:flex items-center gap-3 mb-6">
             <LogoMark size={48} />
             <div>
               <div className="font-display font-bold text-xl">Ilê Conecta</div>
               <div className="text-xs text-muted-foreground">Entre com sua conta</div>
             </div>
           </div>
+          <h1 className="lg:hidden font-display font-bold text-2xl mb-4">Entrar</h1>
           <form onSubmit={submit} className="space-y-4">
             <div>
               <Label htmlFor="login-email">E-mail</Label>
@@ -102,6 +113,7 @@ export default function Login() {
             </>
           )}
         </Card>
+        </div>
       </div>
     </div>
     <Footer />

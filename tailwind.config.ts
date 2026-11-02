@@ -41,6 +41,7 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         "gold-ink": "hsl(var(--gold-ink))",
+        plum: "hsl(var(--plum))",
         gold: {
           DEFAULT: "hsl(var(--gold))",
           foreground: "hsl(var(--gold-foreground))",
@@ -57,7 +58,9 @@ export default {
         "2xl": "1.5rem",
       },
       boxShadow: {
-        card: "0 1px 2px hsla(20,30%,15%,0.06), 0 8px 24px -12px hsla(20,30%,15%,0.12)",
+        card: "0 0 0 1px hsla(22,30%,20%,0.05), 0 14px 28px -18px hsla(22,40%,15%,0.35)",
+        lift: "0 1px 0 hsla(0,0%,100%,0.6) inset, 0 22px 36px -22px hsla(22,45%,12%,0.45)",
+        cta: "0 10px 18px -10px hsl(var(--primary) / 0.75)",
         glow: "0 0 0 3px hsla(45,85%,52%,0.25)",
         altar: "0 20px 60px -20px hsla(12,60%,20%,0.35)",
       },

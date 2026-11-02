@@ -35,7 +35,7 @@ export default function ReferralCard() {
   if (!isRemoteAuth || !uid || !r || !r.enabled) return null;
 
   const link = referralLink(r.code);
-  const message = `Conheça o Ilê Conecta, a rede das casas de religião afro. Crie a conta da sua casa por este convite: ${link}`;
+  const message = `Conheça o Ilê Conecta, a rede das casas espirituais. Crie a conta da sua casa por este convite: ${link}`;
   const active = r.activeUntil && new Date(r.activeUntil).getTime() > Date.now() ? r.activeUntil : null;
 
   const copy = async () => {

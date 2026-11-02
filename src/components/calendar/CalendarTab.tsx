@@ -6,7 +6,7 @@ import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { deleteCalendarItem, saveCalendarItem, type CalendarDraft, type CalendarItem } from "@/lib/calendar";
 import {
-  KINDS, SUGGESTIONS, VISIBILITY, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, traditionalDates, todayLocal, upcoming,
+  KINDS, MONTHS, SUGGESTIONS, parseDate, VISIBILITY, formatDay, kindDefaultVisibility, kindLabel, nextOccurrence, traditionalDates, todayLocal, upcoming,
   type CalendarKind,
 } from "@/lib/calendarCore";
 
@@ -73,7 +73,7 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="cal-title">Nome da data</Label>
-              <Input id="cal-title" maxLength={80} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="ex.: Gira de Quimbanda, Festa de Xangô, reunião de estudo…" />
+              <Input id="cal-title" maxLength={80} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="ex.: Encontro aberto, festividade da casa, reunião de estudo…" />
             </div>
             <div>
               <Label htmlFor="cal-kind">Tipo</Label>
@@ -161,8 +161,9 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
         <div className="space-y-2">
           {list.map((i) => {
             return (
-              <Card key={i.id} className={`p-4 ${i.next ? "" : "opacity-60"}`}>
-                <div className="flex flex-wrap items-start gap-2">
+              <Card key={i.id} className={`lift p-4 ${i.next ? "" : "opacity-60"} ${i.vis_public ? "bg-[#FBF2DE] border-[#AA781E]/30 dark:bg-gold/10" : "bg-[#E8F1EA] border-[#1F5B43]/25 dark:bg-forest/10"}`}>
+                <div className="flex flex-wrap items-start gap-3">
+                  <DateTile date={i.next ?? i.date} gold={i.vis_public} />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold break-words">{i.title}</div>
                     <div className="text-sm text-muted-foreground">{whenText(i, today)}</div>
@@ -186,6 +187,18 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Quadro com mês e dia, no estilo dos cartões de ritual e jogo. */
+function DateTile({ date, gold }: { date: string; gold: boolean }) {
+  const d = parseDate(date);
+  if (!d) return null;
+  return (
+    <div className={`flex h-14 w-[52px] shrink-0 flex-col items-center justify-center rounded-2xl bg-card shadow-card ring-1 ${gold ? "ring-[#AA781E]/30" : "ring-[#1F5B43]/25"}`} aria-hidden>
+      <span className={`text-[10px] font-bold tracking-[0.1em] ${gold ? "text-[#8A520C]" : "text-[#1F5B43]"}`}>{(MONTHS[d.m - 1] ?? "").slice(0, 3).toUpperCase()}</span>
+      <span className="font-display text-xl font-bold leading-none">{String(d.d).padStart(2, "0")}</span>
     </div>
   );
 }

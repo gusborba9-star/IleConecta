@@ -25,9 +25,11 @@ export default function AdminShell() {
   const current: SectionId = SECTIONS.some((x) => x.id === raw) ? (raw as SectionId) : "visao";
 
   if (!isAdmin) return <Admin />;
+  // Central de comando: o tema escuro vale só dentro desta área (ver .admin-theme em index.css).
 
   return (
-    <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-4 pb-16 lg:pb-4">
+    <div className="admin-theme rounded-3xl p-3 sm:p-4 shadow-altar ring-1 ring-[hsl(160_16%_20%)] lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-4 mb-16 lg:mb-4">
+      <div className="lg:col-span-2 mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-primary"><span className="h-2 w-2 rounded-full bg-primary animate-pulse-slow" />Central de comando · Ilê Conecta</div>
       <nav aria-label="Seções do painel" className="mb-4 lg:mb-0 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-20 lg:self-start rounded-2xl border border-border bg-card p-2">
         {SECTIONS.map(({ id, label, icon: Icon }) => (
           <button
@@ -36,7 +38,7 @@ export default function AdminShell() {
             aria-current={current === id ? "page" : undefined}
             className={cn(
               "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 min-h-11 text-sm font-semibold text-left transition",
-              current === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              current === id ? "bg-primary/15 text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]" : "text-muted-foreground hover:bg-muted"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" /> {label}

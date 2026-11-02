@@ -92,7 +92,7 @@ export default function RightRail() {
       )}
 
       <div className="text-[11px] text-muted-foreground px-2 leading-relaxed">
-        © {new Date().getFullYear()} Ilê Conecta · Rede das Casas de Religião Afro. Respeite todas as tradições.
+        © {new Date().getFullYear()} Ilê Conecta · Rede das Casas Espirituais. Respeite todas as tradições.
       </div>
     </div>
   );

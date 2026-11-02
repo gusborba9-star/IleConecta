@@ -90,23 +90,24 @@ export default function HousePage() {
   return (
     <div className="pb-16 lg:pb-4">
       <Card className="overflow-hidden">
-        <div className="relative h-40 sm:h-52 md:h-64 bg-muted">
+        {/* Capa em faixa própria: a foto de perfil sobe só um pouco e nada do texto fica por baixo dela. */}
+        <div className="relative isolate h-36 sm:h-48 md:h-60 bg-muted overflow-hidden">
           <img src={house.cover} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-forest/60 via-transparent to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
           {activeBoost && (
-            <Badge tone="gold" className="absolute top-4 right-4 shadow-card">
+            <Badge tone="gold" className="sheen absolute top-3 right-3 shadow-card">
               <TrendingUp className="h-3 w-3" /> Impulsionamento demonstrativo · {activeBoost.level}
             </Badge>
           )}
         </div>
-        <div className="px-4 sm:px-6 pb-5">
-          {/* Foto redonda sobre a capa, nome logo abaixo e os botões em uma linha própria. */}
-          <div className="relative z-10 -mt-14 sm:-mt-16 w-fit rounded-full p-1.5 bg-card shadow-card">
-            <Avatar src={house.avatar} name={house.name} size={112} className="ring-2 ring-gold" />
+        <div className="relative z-10 px-4 sm:px-6 pb-5">
+          <div className="-mt-12 sm:-mt-14 w-fit rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60">
+            <Avatar src={house.avatar} name={house.name} size={96} />
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <h1 className="font-display font-bold text-2xl md:text-3xl leading-tight">{house.name}</h1>
-            {house.verified && <Badge tone="primary"><CheckCircle2 className="h-3 w-3" /> Verificada</Badge>}
+            {house.verified && <Badge tone="gold"><CheckCircle2 className="h-3 w-3" /> Verificada</Badge>}
           </div>
           <div className="text-sm text-muted-foreground flex items-center gap-x-3 gap-y-1 flex-wrap mt-1">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {[house.city, house.state].filter(Boolean).join(", ")}</span>
@@ -146,7 +147,7 @@ export default function HousePage() {
           </div>
           <p className="mt-4 text-sm text-muted-foreground max-w-3xl">{house.bio}</p>
           {house.offerings && (
-            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 max-w-3xl">
+            <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/10 p-4 max-w-3xl">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Trabalhos que a casa realiza</div>
               <p className="mt-1 text-sm whitespace-pre-line">{house.offerings}</p>
               {!isOwn && <p className="mt-2 text-xs text-muted-foreground">Não encontrou o que procura nas publicações? Fale com a casa ou com a assistente.</p>}

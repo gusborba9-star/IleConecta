@@ -21,11 +21,11 @@ export default function Profile() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       <Card className="overflow-hidden">
-        <div className="h-24 sm:h-28 bg-gradient-to-br from-[#14543F] to-[#0A2E22] border-b-2 border-gold/60" aria-hidden />
+        <div className="relative h-24 sm:h-28 overflow-hidden bg-gradient-to-br from-[#14543F] to-[#0A2E22] border-b-2 border-gold/60" aria-hidden><div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "24px 24px" }} /></div>
         <div className="px-5 sm:px-6 pb-6">
           <div className="-mt-12 flex items-end justify-between gap-3">
-            <div className="rounded-full p-1.5 bg-card shadow-card">
-              <Avatar src={currentUser.avatar} name={currentUser.name} size={88} className="ring-2 ring-gold" />
+            <div className="rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60">
+              <Avatar src={currentUser.avatar} name={currentUser.name} size={88} />
             </div>
             <Button variant="outline" size="sm" className="mb-1 shrink-0" onClick={() => setEditing(true)}>
               <Pencil className="h-4 w-4" /> Editar perfil
@@ -106,7 +106,7 @@ export default function Profile() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rituals.slice(0, 4).map((r) => (
-            <Link key={r.id} to={`/rituais/${r.id}`} className="flex gap-3 p-3 rounded-xl border border-border hover:shadow-card transition">
+            <Link key={r.id} to={`/rituais/${r.id}`} className="lift flex gap-3 p-3 rounded-2xl border border-border bg-card">
               <img src={r.cover} className="h-16 w-16 rounded-lg object-cover" />
               <div className="min-w-0">
                 <div className="font-semibold text-sm line-clamp-2">{r.title}</div>
