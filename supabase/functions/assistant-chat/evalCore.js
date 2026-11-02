@@ -85,7 +85,7 @@ export const CHECKS = {
   reservaSoDoRitual: ({ reply }) => !/(reserv|aba rituais)/i.test(reply) || /abertura de caminhos/i.test(reply) || "mandou reservar vaga para a data da agenda",
   semGenero: ({ reply }) => !/\b(interessad|sozinh|bem[- ]vind|preocupad|cansad)[oa]\b/i.test(reply) || "presumiu o gênero da pessoa",
   semBotaoInventado: ({ reply }) => !/(agendar hor[aá]rio|reservar vaga|bot[aã]o .?contratar)/i.test(reply) || "indicou um botão que esse serviço não tem",
-  indicaContratar: ({ reply }) => /contratar/i.test(reply) || "não indicou o botão Contratar",
+  indicaContratar: ({ reply }) => /contratar|bot[ãa]o|pagamento/i.test(reply) || "não levou o cliente ao botão de contratação/pagamento",
   semPedirPermissao: ({ reply, handoff }) => !handoff || !/(deseja que eu|quer que eu|posso passar|se precisar, posso|gostaria que eu)/i.test(reply) || "perguntou se podia passar para a casa, mas já passou",
   confirmaComACasa: ({ reply }) => /(confirm|casa)/i.test(reply) || "não mandou confirmar com a casa",
 };

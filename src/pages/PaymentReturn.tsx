@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button, Card } from "@/components/base";
 import { syncPayment } from "@/lib/payments";
+import { AFTER_PAYMENT } from "@/lib/cardsCore";
 
 /** Para onde o Stripe devolve o cliente depois da página de pagamento. Confere o resultado direto no Stripe. */
 export default function PaymentReturn() {
@@ -40,7 +41,7 @@ export default function PaymentReturn() {
         : "Tudo certo! A casa já foi avisada. Você pode acompanhar na sua atividade."
       : state === "checking"
         ? "Estamos conferindo com o Stripe. Leva alguns segundos."
-        : "Ainda estamos confirmando com o Stripe. No Pix isso pode levar alguns instantes; você recebe uma notificação assim que for confirmado.";
+        : AFTER_PAYMENT;
   return (
     <Card className="p-8 max-w-xl mx-auto text-center space-y-3" role="status">
       <h1 className="font-display font-bold text-2xl">{title}</h1>
