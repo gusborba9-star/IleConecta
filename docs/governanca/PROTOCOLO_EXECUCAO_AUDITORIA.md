@@ -72,13 +72,13 @@ Não interpretar “prossiga”, “corrija” ou “implemente” como autoriza
 
 ## 7. Método de execução
 
-1. Ler Blueprint, Roadmap, protocolo e documentos subordinados aplicáveis.
+1. Consultar Blueprint, Roadmap, este protocolo e documentos subordinados **somente nas partes pertinentes ao escopo**. Ler documentos completos apenas quando a tarefa exigir visão integral ou quando houver conflito/ambiguidade.
 2. Confirmar branch/commit atual.
 3. Inspecionar implementação e testes antes de alterar.
 4. Mapear ownership e efeitos colaterais.
 5. Reproduzir problema quando aplicável.
 6. Implementar a menor alteração suficiente dentro do escopo.
-7. Executar testes relevantes e regressão.
+7. Executar testes relevantes e regressão proporcional ao risco.
 8. Revisar diff e arquivos alterados.
 9. Reportar resultado, evidências e riscos.
 10. Não executar etapas não autorizadas.
@@ -112,26 +112,40 @@ Não converter “não verificado” em “não existe”. Não converter “imp
 
 ## 10. Relatório obrigatório do executor
 
-Entregar:
-- Resumo objetivo.
+Entregar, de forma concisa e verificável:
+- Resumo objetivo do resultado.
 - Branch e commits.
 - Arquivos alterados e justificativa.
-- Comportamento anterior e posterior.
+- Comportamento anterior e posterior, quando houve mudança funcional.
 - Testes executados e resultados reais.
 - Evidências reproduzíveis.
-- Itens não testados e limitações.
-- Riscos e regressões possíveis.
-- Decisões necessárias.
+- Itens não testados, limitações, riscos e decisões necessárias.
 - Confirmação explícita de ações não realizadas (merge, deploy, migrations, produção etc.).
 
-Não alegar sucesso de teste que não foi executado.
+Não narrar cada comando, reproduzir arquivos completos ou repetir contexto já documentado, salvo quando solicitado ou necessário para demonstrar uma falha. Não alegar sucesso de teste que não foi executado.
 
-## 11. Critérios de encerramento
+## 11. Eficiência de execução e consumo de contexto
+
+**Objetivo:** maximizar entregas tecnicamente validadas por execução, sem reduzir segurança, qualidade ou rastreabilidade.
+
+1. **Contexto sob demanda:** não despejar nem resumir novamente o Blueprint, Roadmap, histórico ou auditorias. Consultar apenas documentos, seções e arquivos necessários. Usar caminhos e referências em vez de copiar conteúdo extenso.
+2. **Baseline anterior:** partir de auditorias, decisões e testes já registrados. Verificar se o estado atual mudou; repetir investigação somente quando houver mudança, evidência insuficiente ou risco de obsolescência.
+3. **Investigação concentrada:** localizar de início os pontos de entrada, consumidores, dependências, persistência e testes relevantes. Evitar leituras amplas sem relação demonstrável com o escopo.
+4. **Planejamento econômico:** identificar internamente sequência, riscos e critérios antes de editar. Não produzir plano longo ou relatório intermediário se a tarefa puder prosseguir com segurança.
+5. **Unidade funcional completa:** agrupar mudanças tecnicamente relacionadas que compartilhem arquivos, dependências ou validações. Concluir implementação, testes e revisão do diff na mesma execução sempre que possível. Não agrupar tarefas independentes apenas para reduzir o número de execuções.
+6. **Autonomia delimitada:** resolver falhas e decisões técnicas reversíveis dentro do escopo e das regras aprovadas. Perguntar ao proprietário apenas quando faltar decisão de produto, regra, dado, risco ou autorização material.
+7. **Ferramentas sem redundância:** evitar chamadas, comandos, leituras e testes duplicados. Reutilizar resultados ainda válidos; repetir verificações quando uma alteração puder invalidá-los ou quando a confiabilidade exigir.
+8. **Validação proporcional:** executar testes focados primeiro e regressão mais ampla conforme o risco e o alcance da mudança. Nunca omitir testes críticos para economizar tokens.
+9. **Saída compacta:** priorizar resultados, evidências e exceções. Não narrar cadeia de pensamento, comandos triviais, tentativas irrelevantes ou conteúdo integral de arquivos.
+10. **Continuidade:** se o contexto ou limite de execução ameaçar a conclusão, registrar um checkpoint curto com commit-base, objetivo, arquivos inspecionados/alterados, decisões, testes, resultados e próximos passos. Não reconstruir o histórico inteiro.
+11. **Critério de eficiência:** uma execução barata que deixa a unidade incompleta ou transfere falhas previsíveis para outra execução não é eficiente. A métrica é entrega validada por consumo, subordinada à qualidade e à segurança.
+
+## 12. Critérios de encerramento
 
 Uma execução só é concluída quando todos os critérios da ordem forem demonstrados. Se o código foi alterado, mas testes falharam ou não foram executados, classificar como implementado, não como validado.
 
 Roadmap só é atualizado após validação pelo CTO. Uma execução não altera Blueprint automaticamente.
 
-## 12. Regra final
+## 13. Regra final
 
 O executor não possui autoridade para mudar a visão do Ilê Conecta. Sua função é executar com precisão, resolver problemas dentro do escopo e apresentar evidências. Qualquer mudança de produto, regra ou decisão comercial retorna ao proprietário/CTO para aprovação.
