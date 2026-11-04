@@ -145,6 +145,60 @@ test("adaptador: tarifa e forma de pagamento", async () => {
   assert.deepEqual(await a.fetchFees({ ref: "cs_1", account: "acct_1" }), { feeCents: 150, method: "pix" });
 });
 
+// ---- EXEC-01: conciliação de tarifa — desconhecida fica pendente (null), nunca zero ----
+const feeAdapter = (pi) => adapterWith({
+  "GET /v1/checkout/sessions/cs_f": { body: { id: "cs_f", payment_intent: "pi_f" } },
+  "GET /v1/payment_intents/pi_f": pi,
+}).a;
+const feeOf = (pi) => feeAdapter(pi).fetchFees({ ref: "cs_f", account: "acct_1" });
+
+test("tarifa 1/5: disponível (cartão) é lida e fecha com o total do lançamento", async () => {
+  const r = await feeOf({ body: { latest_charge: { payment_method_details: { type: "card" }, balance_transaction: { fee: 1587, fee_details: [{ type: "stripe_fee", amount: 837 }, { type: "application_fee", amount: 750 }] } } } });
+  assert.deepEqual(r, { feeCents: 837, method: "card" });
+});
+
+test("tarifa 2/5: balance_transaction nulo (ou ainda só um id) -> null, não zero", async () => {
+  assert.equal(await feeOf({ body: { latest_charge: { payment_method_details: { type: "card" }, balance_transaction: null } } }), null);
+  assert.equal(await feeOf({ body: { latest_charge: { payment_method_details: { type: "card" }, balance_transaction: "txn_123" } } }), null);
+  assert.equal(await feeOf({ body: { latest_charge: null } }), null);
+  assert.equal(await feeOf({ body: { latest_charge: "ch_123" } }), null);
+});
+
+test("tarifa 3/5: fee_details ausente, vazio sem total ou incompleto -> null; zero só com evidência", async () => {
+  const card = (bt) => ({ body: { latest_charge: { payment_method_details: { type: "card" }, balance_transaction: bt } } });
+  assert.equal(await feeOf(card({})), null, "sem fee_details");
+  assert.equal(await feeOf(card({ fee_details: [] })), null, "vazio sem total = desconhecida");
+  assert.equal(await feeOf(card({ fee: 837, fee_details: [] })), null, "total diz que há tarifa, detalhe vazio = incompleto");
+  assert.equal(await feeOf(card({ fee: 2337, fee_details: [{ type: "application_fee", amount: 1500 }] })), null, "sem item stripe_fee e total não fecha");
+  assert.equal(await feeOf(card({ fee_details: [{ type: "application_fee", amount: 1500 }] })), null, "só application_fee, sem stripe_fee nem total");
+  assert.deepEqual(await feeOf(card({ fee: 0, fee_details: [] })), { feeCents: 0, method: "card" }, "zero com evidência (total 0)");
+  assert.deepEqual(await feeOf(card({ fee_details: [{ type: "stripe_fee", amount: 0 }] })), { feeCents: 0, method: "card" }, "zero explícito do Stripe");
+});
+
+test("tarifa 4/5: falha temporária da API propaga erro; a conciliação não grava nada e não derruba", async () => {
+  const a = adapterWith({
+    "GET /v1/checkout/sessions/cs_f": { body: { id: "cs_f", payment_intent: "pi_f" } },
+    "GET /v1/payment_intents/pi_f": { ok: false, status: 503, body: { error: { message: "indisponível" } } },
+  }).a;
+  await assert.rejects(() => a.fetchFees({ ref: "cs_f", account: "acct_1" }));
+  const { reconcileFee } = await import("../supabase/functions/payments/core.js");
+  const recorded = [];
+  const store = { recordFee: async (...x) => recorded.push(x) };
+  const ok = await reconcileFee({ registry: { forPayment: () => a }, store, pay: { id: "p1", provider_ref: "cs_f", stripe_account_id: "acct_1" }, log: quiet });
+  assert.equal(ok, false); assert.equal(recorded.length, 0);
+});
+
+test("tarifa 5/5: reprocessamento posterior — null não grava; depois disponível, grava uma vez", async () => {
+  const { reconcileFee } = await import("../supabase/functions/payments/core.js");
+  let bt = null; const recorded = [];
+  const adapter = { fetchFees: async () => (bt ? { feeCents: bt, method: "card" } : null) };
+  const store = { recordFee: async (pay, f) => recorded.push(f) };
+  const args = { registry: { forPayment: () => adapter }, store, pay: { id: "p1", provider_ref: "cs_f", stripe_account_id: "acct_1" }, log: quiet };
+  assert.equal(await reconcileFee(args), false); assert.equal(recorded.length, 0);
+  bt = 837;
+  assert.equal(await reconcileFee(args), true); assert.deepEqual(recorded, [{ feeCents: 837, method: "card" }]);
+});
+
 test("adaptador: erro do Stripe vira ProviderError", async () => {
   const { a } = adapterWith({ "GET /v1/checkout/sessions/cs_x": { ok: false, status: 400, body: { error: { message: "No such session" } } } });
   await assert.rejects(a.getCheckout({ ref: "cs_x", account: "acct_1" }), (e) => e instanceof ProviderError && /No such session/.test(e.message));
