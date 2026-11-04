@@ -17,13 +17,15 @@
 
 ## 2. Planos de assinatura aprovados
 
-| Plano | Preço mensal |
-|---|---:|
-| Essencial | R$ 89,90 |
-| Profissional | R$ 179,90 |
-| Premium | R$ 299,90 |
+| Plano | Preço mensal | Preço anual (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 89,90 | R$ 899,00 |
+| Profissional | R$ 179,90 | R$ 1.799,00 |
+| Premium | R$ 299,90 | R$ 2.999,00 |
 
-Valores iniciais de lançamento aprovados em 02/11/2026. Para cobrança mensal, a modalidade recorrente (Pix Automático ou cartão recorrente) utiliza o preço-base. Pagamento manual mensal por Pix ou cartão tem adicional comercial de 5%, informado com preço final antes da contratação. Ciclo, tributos, prorrata, inadimplência, carência, cancelamento e política de reajuste precisam estar descritos no contrato e implementados de forma coerente antes de cobrança real. A política de preços deve ser versionada e não pode alterar retroativamente contratos/assinaturas existentes.
+Valores mensais aprovados em 02/11/2026. O plano anual, aprovado em 03/11/2026, concede 12 meses de vigência por valor equivalente a 10 mensalidades-base (desconto efetivo de 16,67% frente a 12 mensalidades), com pagamento antecipado. Para a contratação mensal, a modalidade recorrente (Pix Automático ou cartão recorrente) utiliza o preço-base. Pagamento manual mensal por Pix ou cartão tem adicional comercial de 5%, informado com preço final antes da contratação. O adicional de 5% é regra do pagamento manual mensal e não deve ser aplicado automaticamente ao preço anual, que possui valor próprio aprovado. Ciclo, tributos, prorrata, inadimplência, carência, cancelamento e política de reajuste precisam estar descritos no contrato e implementados de forma coerente antes de cobrança real. A política de preços deve ser versionada e não pode alterar retroativamente contratos/assinaturas existentes.
+
+A vigência anual é de 12 meses, mas as franquias de recursos continuam mensais: cada limite é renovado no respectivo ciclo mensal, não é multiplicado por 12 na contratação e não acumula saldo não utilizado. O plano anual concede desconto de preço, não uma franquia anual antecipada.
 
 As tarifas de cobrança recorrente da Efí serão absorvidas inicialmente pelo Ilê Conecta como custo de aquisição/operação. A decisão poderá ser revista por alteração futura de preços no painel, com vigência prospectiva, transparência e preservação das condições contratadas. O custo real por modalidade deve ser monitorado e conciliado; não presumir que o recurso de recorrência gratuito signifique transação sem tarifa.
 
@@ -53,13 +55,13 @@ O histórico de 17% encontrado em estruturas antigas não deve ser aplicado como
 
 ## 4. Vagas adicionais de equipe
 
-| Plano | Preço |
-|---|---:|
-| Essencial | R$ 29,90/mês por vaga adicional |
-| Profissional | R$ 39,90/mês por vaga adicional |
-| Premium | 1 vaga adicional incluída; extras R$ 39,90/mês |
+| Plano | Mensal por vaga adicional | Anual por vaga adicional (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 29,90 | R$ 299,00 |
+| Profissional | R$ 39,90 | R$ 399,00 |
+| Premium | 1 vaga incluída; extras R$ 39,90 | 1 vaga incluída; extras R$ 399,00 |
 
-Upgrade/downgrade não pode gerar cobrança ou vaga duplicada. Definir tratamento de vaga ocupada, cancelamento, ciclo e prorrata antes de ativar cobrança.
+A vaga adicional anual concede 12 meses de acesso pelo preço equivalente a 10 mensalidades da vaga. As vagas adicionais devem ser cobradas junto à assinatura principal da casa, com vigência/ciclo coordenados, sem criar assinaturas independentes por colaborador. A vaga não cria franquia própria de mensagens ou outros recursos: utiliza os limites do plano da casa. Upgrade/downgrade não pode gerar cobrança ou vaga duplicada. Regras de contratação no meio do ciclo, prorrata, substituição de colaborador, cancelamento e renovação precisam ser formalizadas antes da cobrança real.
 
 ## 5. Créditos de IA
 
