@@ -59,3 +59,9 @@ Regras herdadas do que a EXEC-01 provou útil: confirmação financeira atômica
 
 - Esta recomendação não define preços, planos, regras de cancelamento nem tratamento fiscal de planos/impulsionamentos (decisões comerciais/jurídicas pendentes).
 - Nenhuma conformidade da Efí (Pix, boleto, cartão, webhooks, mTLS) foi verificada; depende de execução futura com credenciais fornecidas pelo proprietário.
+
+## Anexo — Pontos de verificação do Marketplace (EXEC-01, 2026-11-04)
+
+- **Função implantada em produção (versão 18)** é anterior à EXEC-01: grava tarifa 0 quando o Stripe ainda não liberou a `balance_transaction` (causa do pagamento 435e) e cria nova sessão sempre que a anterior não está "aberta", inclusive quando já está paga (causa mais provável das duas cobranças do de60). A PR #140 corrige ambos; a correção só vale depois de migrations (0064–0066) e deploy autorizados.
+- **Webhook de produção** (único endpoint) aponta para a função de produção. Na versão 18, um evento de pagamento desconhecido é gravado em `stripe_events` e ignorado; não confirma nem altera pagamento. Compras de teste feitas em outro banco continuariam chegando ao banco de produção como linhas de `stripe_events`.
+- **Leitura somente leitura do Stripe**: objetos de cobrança direta ficam na conta conectada e não são visíveis do contexto da plataforma; a listagem de cobranças sem vínculo (lado Stripe) exige leitura na conta conectada e permanece como procedimento manual.
