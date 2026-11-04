@@ -43,12 +43,19 @@ export function createStore(admin) {
     async failPending(pay) {
       must(await admin.from("payments").update({ status: "falhou" }).eq("id", pay.id).eq("provider", pay.provider).eq("status", "pendente"), "fail_pending");
     },
-    /** Grava a cobrança aberta; só enquanto pendente, no mesmo provedor. O gatilho do banco impede trocar provedor/conta. */
+    /**
+     * Grava a cobrança aberta com compare-and-set: só enquanto pendente, no mesmo provedor E se a referência ainda for a que
+     * foi lida (null -> primeira cobrança; ref antiga -> substituição de sessão expirada). Assim uma segunda abertura concorrente
+     * nunca sobrescreve em silêncio a referência de outra sessão (que ficaria paga e sem vínculo).
+     * Devolve true se gravou, false se a transação mudou (o chamador decide). O gatilho do banco impede trocar provedor/conta.
+     */
     async attachCheckout(pay, { provider, ref, account }) {
-      const rows = must(await admin.from("payments")
+      let q = admin.from("payments")
         .update({ provider_ref: ref, stripe_account_id: account, payment_method: null })
-        .eq("id", pay.id).eq("provider", provider).eq("status", "pendente").select("id"), "attach_checkout");
-      if (!rows?.length) throw new Error("Não foi possível abrir o pagamento.");
+        .eq("id", pay.id).eq("provider", provider).eq("status", "pendente");
+      q = pay.provider_ref ? q.eq("provider_ref", pay.provider_ref) : q.is("provider_ref", null);
+      const rows = must(await q.select("id"), "attach_checkout");
+      return Boolean(rows?.length);
     },
 
     // ----- tarifa do processador (separada da confirmação) -----
