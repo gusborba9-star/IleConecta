@@ -11,7 +11,7 @@ const msg = (e) => String(e?.message ?? e).slice(0, 500);
  * trata e fecha. Devolve { status, body } para a camada HTTP.
  *  - duplicado já concluído  -> 200
  *  - outro processo está tratando -> 409 (o provedor reenvia depois)
- *  - divergência (provedor/ref/conta) -> 200, evento fechado como rejeitado (não adianta reenviar)
+ *  - signed divergência (provedor/ref/conta) -> 200, evento fechado como rejeitado (não adianta reenviar)
  *  - falha de processamento ou de persistência -> 500 (o provedor reenvia)
  */
 export async function processWebhook({ registry, store, providerId, rawBody, headers, log = console }) {
@@ -70,8 +70,15 @@ async function handleEvent({ registry, store, adapter, event, log }) {
   if (ev.kind === "paid_candidate") {
     if (!ev.paid) return; // Pix ainda aguardando: vem outro aviso quando pagar
     const pay = await findPayment(store, adapter.id, ev);
-    if (!pay) return;
-    assertSameTransaction(pay, { provider: adapter.id, ref: ev.ref, account: ev.account });
+    // Cobrança PAGA sem pagamento correspondente: nunca ignorar em silêncio. O evento é fechado como rejeitado (visível em
+    // payments_provider_anomalies) para investigação; não há o que reenviar, e nenhum valor é lançado ou devolvido sozinho.
+    if (!pay) throw new DivergenceError(`Cobrança paga sem pagamento correspondente (ref=${ev.ref || "?"}, pagamento=${ev.paymentId ?? "?"}).`);
+    try {
+      assertSameTransaction(pay, { provider: adapter.id, ref: ev.ref, account: ev.account });
+    } catch (e) {
+      if (e instanceof DivergenceError) throw new DivergenceError(`${e.message} (ref do aviso=${ev.ref || "?"}, pagamento=${pay.id}, ref registrada=${pay.provider_ref ?? "?"})`);
+      throw e;
+    }
     await confirmAndReconcile({ registry, store, pay, log });
   } else if (ev.kind === "failed") {
     const pay = await findPayment(store, adapter.id, ev);
@@ -155,7 +162,16 @@ export async function openCheckout({ registry, store, pay, providerId, houseAcco
   const created = await adapter.createCheckout({
     payment: pay, title, appUrl, clientEmail: email, account, expiresAt, idempotencyKey: `cs_${pay.id}_${pay.provider_ref ?? "0"}`,
   });
-  await store.attachCheckout(pay, { provider: adapter.id, ref: created.ref, account });
+  const attached = await store.attachCheckout(pay, { provider: adapter.id, ref: created.ref, account });
+  if (attached === false) {
+    // A transação mudou entre a leitura e a gravação. Mesma sessão (chave de idempotência igual) = abertura concorrente benigna.
+    const cur = await store.paymentById(pay.id);
+    if (cur?.provider_ref === created.ref) return { url: created.url };
+    // Outra sessão ficou registrada (ou o pagamento deixou de estar pendente): esta sessão nova NÃO é gravada. Fica sem vínculo,
+    // mas não paga nada por si; expira sozinha. O registro abaixo permite localizar a sessão órfã.
+    log.error("checkout_orphan_session", pay.id, created.ref, cur?.provider_ref ?? null, cur?.status ?? null);
+    throw new CheckoutStateError("Outra cobrança já foi aberta para este pagamento. Atualize a página e tente novamente.");
+  }
   return { url: created.url };
 }
 
