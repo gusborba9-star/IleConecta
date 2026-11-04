@@ -6,8 +6,8 @@
 - **Data de consolidação:** 03/11/2026
 - **Repositório oficial:** `gusborba9-star/IleConecta`
 - **Branch de referência:** `main`
-- **Commit-base:** `5463dbd8d32b1ab6acbca9026bc36363ef18ba8c`
-- **Status:** consolidado para aprovação formal do proprietário.
+- **Commit-base:** `8900a3fce294410531bac32068fcecd907419777`
+- **Status:** arquitetura multi-provedor aprovada pelo proprietário em 03/11/2026; implementação sujeita ao Roadmap e às ordens específicas.
 - **Escopo desta inclusão:** documentação exclusivamente. Não autoriza alterações de código, banco, migrations, configurações, integrações, deploy ou comportamento em produção.
 
 ---
@@ -463,13 +463,43 @@ Oferece registro da venda, comprovante, histórico, operação contínua, integr
 
 A casa pode optar por atendimento manual e, em modalidades elegíveis, desativar venda pela plataforma. Isso não desativa automaticamente pagamento interno. Rituais coletivos permanecem obrigatoriamente no fluxo interno.
 
-## 19.4 Provedor e retenção
+## 19.4 Provedores e roteamento financeiro
 
-A implementação identificada utiliza Stripe Connect. Direct charges e `application_fee_amount` não significam escrow ou retenção de recursos na conta da plataforma. Application fee representa comissão; não comprova retenção até três dias após evento.
+A arquitetura aprovada utiliza dois provedores com responsabilidades comerciais distintas:
 
-Repasse, retenção, saldo, disputas e responsabilidades devem respeitar produtos e contratos efetivamente disponíveis no provedor escolhido. Não prometer retenção ou prazo de repasse sem validação técnica, contratual e jurídica.
+**Stripe — marketplace (clientes e casas):**
+- Stripe Connect Direct Charges.
+- A casa é a recebedora direta da cobrança; a plataforma recebe sua comissão por `application_fee_amount`.
+- Comissão de 15% em rituais coletivos e 4% nas demais transações elegíveis.
+- Não existe escrow, retenção de 72 horas ou reserva financeira pela plataforma nesse fluxo.
+- Tarifas do provedor e responsabilidades seguem a configuração e os contratos aplicáveis à conta conectada.
 
-Referências antigas a Asaas e Mercado Pago devem ser reconciliadas. Código/configuração histórica não comprova provedor ativo.
+**Efí — monetização própria da plataforma:**
+- Planos e assinaturas das casas.
+- Vagas adicionais de equipe.
+- Créditos de IA.
+- Destaques e impulsionamentos.
+- Outros produtos e serviços cuja receita pertence ao Ilê Conecta.
+- Modalidades previstas: Pix Automático, cartão recorrente e cobranças avulsas por Pix/cartão; boleto poderá ser habilitado quando validado para o produto.
+- O adicional de 5% para pagamento mensal manual por Pix ou cartão é regra comercial aprovada, sujeito à apresentação transparente antes da contratação e à validação jurídica/contratual.
+
+**Payment Core e identidade do provedor:**
+- Um único núcleo financeiro independente dos provedores.
+- Adaptadores específicos para Stripe e Efí, com contratos internos comuns.
+- Cada transação e assinatura preserva provedor, ambiente, categoria, modalidade, identificadores externos, versão de preço/regra e estado.
+- Uma assinatura ou transação permanece vinculada ao provedor de origem durante todo seu ciclo de vida, inclusive consulta, renovação, cancelamento, reembolso, webhook e conciliação.
+- A configuração atual de roteamento nunca altera transações ou assinaturas já iniciadas.
+- Não realizar fallback silencioso nem trocar provedor no meio de uma operação.
+- A arquitetura poderá receber outros provedores futuramente, sem implementar abstrações especulativas ou integrações não aprovadas.
+
+**Roteamento administrativo futuro:**
+- O painel central poderá selecionar provedor por categoria comercial e modalidade de pagamento, dentro das capacidades efetivamente suportadas.
+- Antes de ativar uma combinação, validar ambiente, conexão, credenciais, produto contratado, capacidades, webhooks, recorrência, devoluções e conciliação.
+- Alterações devem possuir autorização, histórico, validação e possibilidade de reversão; não podem afetar operações existentes.
+
+As credenciais e certificados são exclusivamente de backend, separados entre homologação e produção. Segredos nunca são expostos ao frontend, repositório ou logs.
+
+A aprovação da arquitetura não comprova que os dois adaptadores estejam implementados ou que todos os fluxos da Efí estejam homologados. Stripe permanece o primeiro fluxo ativo; Efí será integrada à monetização própria após validação em homologação.
 
 ## 19.5 Reembolsos
 
@@ -541,6 +571,8 @@ Gestão financeira: transações, conciliação, reembolsos, disputas, tarifas e
 
 Gestão de segurança: usuários, permissões, ações administrativas, auditoria e incidentes.
 
+O superadministrador possui autoridade administrativa integral sobre todos os domínios e capacidades da plataforma. Essa autoridade é distinta das permissões delegadas a administradores financeiros, operacionais, técnicos e de suporte. Acesso privilegiado deve seguir menor privilégio, autenticação reforçada quando aplicável e trilha de auditoria; credenciais privadas de provedores nunca são exibidas no painel.
+
 Documentos oficiais possuem versão, vigência, responsável, histórico, aprovação e registro de aceite quando necessário.
 
 ---
@@ -561,9 +593,13 @@ Banco é fonte persistente de verdade. Estado local melhora experiência, mas n�
 
 Pagamento, comissão, reserva, confirmação, reembolso, assinatura, controle de vagas, permissões e operações administrativas críticas ocorrem em ambiente confiável. Chaves privilegiadas nunca são expostas no frontend.
 
-## 25.4 Integrações
+## 25.4 Integrações e Payment Core
 
 Provedores de pagamento, IA, e-mail, push e mídia são isolados por adaptadores. Trocar fornecedor não deve exigir reconstrução dos módulos de negócio.
+
+No financeiro, Payment Core é proprietário das regras internas de transação, assinatura, comissão, ledger, idempotência e conciliação. Stripe Adapter atende o marketplace; Efí Adapter atende a monetização própria da plataforma. O roteamento é configurável por categoria/modalidade no painel administrativo, mas só seleciona combinações previamente validadas. Identidade do provedor é persistida em cada operação e não pode ser inferida a partir da configuração corrente.
+
+Homologação e produção possuem credenciais, endpoints e estados independentes. A ativação de produção exige autorização explícita e validação integrada; possuir Client ID, Client Secret ou certificado não equivale a habilitar cobranças reais.
 
 ## 25.5 Ownership dos dados
 
