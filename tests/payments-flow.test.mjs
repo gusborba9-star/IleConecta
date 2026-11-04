@@ -55,7 +55,10 @@ function memStore(seed = []) {
       const p = s.payments.get(pay.id);
       if (p.provider !== provider) throw new Error("provedor diferente");
       if (p.stripe_account_id && p.stripe_account_id !== account) throw new Error("gatilho: conta imutável");
+      // compare-and-set (espelha store.js): só grava se a transação segue pendente e a referência é a que o chamador leu
+      if (p.status !== "pendente" || (p.provider_ref ?? null) !== (pay.provider_ref ?? null)) return false;
       Object.assign(p, { provider_ref: ref, stripe_account_id: account });
+      return true;
     },
     async recordFee(pay, { feeCents }) {
       boom("recordFee");
@@ -269,11 +272,25 @@ test("pagamento histórico sem conta registrada (marcado) continua confirmando (
   assert.equal(c.store.payments.get("p1").status, "confirmado");
 });
 
-test("referência desconhecida e sem id de pagamento: ignora", async () => {
+test("cobrança PAGA sem pagamento correspondente: nada confirmado e o evento fica rejeitado/visível (não é ignorado)", async () => {
   const c = setup();
   const ev = paidEvent(); ev.data.object = { id: "cs_x", payment_status: "paid" };
-  assert.equal((await deliver(c, ev)).status, 200);
+  const r = await deliver(c, ev);
+  assert.equal(r.status, 200); assert.equal(r.body.rejected, true);
   assert.equal(c.store.log.confirm, 0);
+  const e = [...c.store.events.values()].at(-1);
+  assert.match(e.error, /^rejeitado: Cobrança paga sem pagamento correspondente \(ref=cs_x/);
+  assert.ok(e.processed_at, "não fica reenviando");
+});
+
+test("sessão paga com referência diferente da registrada: rejeitado com os identificadores para investigação", async () => {
+  const c = setup();
+  const ev = paidEvent(); ev.data.object.id = "cs_OUTRA";
+  const r = await deliver(c, ev);
+  assert.equal(r.body.rejected, true);
+  const e = [...c.store.events.values()].at(-1);
+  assert.match(e.error, /ref do aviso=cs_OUTRA, pagamento=p1, ref registrada=cs_1/);
+  assert.equal(c.store.payments.get("p1").status, "pendente");
 });
 
 // ---------- expiração ----------
@@ -439,6 +456,34 @@ test("checkout: falha ao gravar a cobrança aberta é propagada", async () => {
   const c = setup([{ id: "p1", gross_cents: 10000, fee_cents: 1500, provider_ref: null, stripe_account_id: null }]);
   c.store.fail.attach = 1;
   await assert.rejects(core.openCheckout(openArgs(c, c.store.payments.get("p1"))), /attach/);
+});
+
+test("checkout CAS: outra sessão foi gravada no meio -> NÃO sobrescreve, 409 e a referência existente permanece", async () => {
+  const c = setup(undefined, { sessionStatus: "expired" });
+  const pay = { ...c.store.payments.get("p1") };
+  const orig = c.store.attachCheckout;
+  c.store.attachCheckout = async (p, a) => { c.store.payments.get("p1").provider_ref = "cs_CONCORRENTE"; return orig(p, a); }; // outra abertura grava primeiro
+  await assert.rejects(core.openCheckout(openArgs(c, pay)), (e) => e.name === "CheckoutStateError" && /Outra cobrança já foi aberta/.test(e.message));
+  assert.equal(c.store.payments.get("p1").provider_ref, "cs_CONCORRENTE");
+});
+
+test("checkout CAS: mesma sessão gravada por abertura concorrente (idempotência) é benigna", async () => {
+  const c = setup([{ id: "p1", gross_cents: 10000, fee_cents: 1500, provider_ref: null, stripe_account_id: null }]);
+  const pay = { ...c.store.payments.get("p1") };
+  const orig = c.store.attachCheckout;
+  c.store.attachCheckout = async (p, a) => { c.store.payments.get("p1").provider_ref = a.ref; return orig(p, a); }; // a outra requisição gravou a MESMA sessão
+  const r = await core.openCheckout(openArgs(c, pay));
+  assert.equal(r.url, "https://pay/new");
+  assert.equal(c.store.payments.get("p1").provider_ref, "cs_new");
+});
+
+test("checkout CAS: pagamento deixou de estar pendente durante a abertura -> 409, nada gravado", async () => {
+  const c = setup([{ id: "p1", gross_cents: 10000, fee_cents: 1500, provider_ref: null, stripe_account_id: null }]);
+  const pay = { ...c.store.payments.get("p1") };
+  const orig = c.store.attachCheckout;
+  c.store.attachCheckout = async (p, a) => { c.store.payments.get("p1").status = "confirmado"; return orig(p, a); };
+  await assert.rejects(core.openCheckout(openArgs(c, pay)), (e) => e.name === "CheckoutStateError");
+  assert.equal(c.store.payments.get("p1").provider_ref, null);
 });
 
 // ---------- conferência manual ----------

@@ -1,4 +1,4 @@
-// E2E local da EXEC-01: Edge Function REAL (index.ts) no Deno + supabase-js real + PostgreSQL 16 real com as migrations 0001–0064.
+// E2E local da EXEC-01: Edge Function REAL (index.ts) no Deno + supabase-js real + PostgreSQL 16 real com as migrations 0001–0065.
 // Substitutos declarados: PostgREST/GoTrue -> restShim.mjs; API do Stripe -> fakeStripe.mjs (NÃO é Stripe real).
 // Uso: DENO_BIN=<deno> node supabase/verify/e2e/run_e2e.mjs   (requer Postgres em 127.0.0.1:5544 e `npm i --no-save pg`)
 import { boot, WEBHOOK_SECRET, CRON_SECRET } from "./boot.mjs";
@@ -152,7 +152,19 @@ const whPaid = (id, ref, pid, extra = {}) => ({ id, type: "checkout.session.comp
   ok("S9 rotina agendada concilia a tarifa faltante (cron secret válido)", sw.status === 200 && sw.body.fees_done >= 1 && r2.pf === 310, JSON.stringify(sw.body));
   const sw2 = await sweep();
   ok("S9 conciliação repetida não duplica (1 lançamento taxa_provedor)", (await ledger(p2.pid)).filter((x) => x.t === "taxa_provedor").length === 1 && sw2.body.fees_done === 0);
-  ok("S9 rotina sem segredo correto -> 401", (await post({ "x-cron-secret": "errado" }, "{}")).status === 401);
+  // balance_transaction ainda nulo: tarifa fica PENDENTE (null, sem lançamento); quando o Stripe lança, a rotina concilia
+  const p3 = await mk("fee2", { ref: "cs_fee2" });
+  await sess("cs_fee2", { status: "complete", payment_status: "paid", payment_intent: "pi_fee2", fee: null });
+  const w3 = await hook(whPaid("evt_fee2", "cs_fee2", p3.pid));
+  const q1 = await pay(p3.pid);
+  ok("S9b balance_transaction nulo: confirma, tarifa pendente (null) e sem lançamento taxa_provedor", w3.status === 200 && q1.s === "confirmado" && q1.pf === null && (await ledger(p3.pid)).filter((x) => x.t === "taxa_provedor").length === 0);
+  await sweep();
+  ok("S9b rotina com tarifa ainda indisponível mantém pendente (não grava zero)", (await pay(p3.pid)).pf === null);
+  await sess("cs_fee2", { fee: 310 });
+  const sw3 = await sweep();
+  const q2 = await pay(p3.pid);
+  ok("S9b tarifa disponibilizada depois: rotina concilia uma única vez (310)", sw3.body.fees_done >= 1 && q2.pf === 310 && (await ledger(p3.pid)).filter((x) => x.t === "taxa_provedor").length === 1, JSON.stringify(sw3.body));
+  ok("S9 rotina sem segredo correto -> 401",(await post({ "x-cron-secret": "errado" }, "{}")).status === 401);
 }
 // refund helpers
 async function confirmed(tag, o = {}) {
@@ -281,6 +293,53 @@ const refundsFor = async (pi) => (await stripeCalls()).refunds.filter((r) => r.p
   await c.query(`insert into stripe_events(id,type,account_id,payload,locked_until,attempts,lease_token) values ('evt_ls2','checkout.session.completed','acct_1','{}',now() - interval '1 minute',1,gen_random_uuid())`);
   const r = await hook(whPaid("evt_ls2", "cs_ls2", p.pid));
   ok("P4 processo que caiu (lease vencida, sem token ativo) -> próximo reenvio assume e conclui", r.status === 200 && (await evRow("evt_ls2")).attempts === 2 && (await pay(p.pid)).s === "confirmado");
+}
+{ // checkout simultâneo do MESMO pagamento (apuração de de60: duas cobranças pagas para um pagamento)
+  await reset();
+  const p = await mk("cco1");
+  const rs = await Promise.all(Array.from({ length: 6 }, () => act(U.client, { action: "checkout", payment_id: p.pid })));
+  const posted = (await stripeCalls()).calls.filter((x) => x.method === "POST" && x.path === "/v1/checkout/sessions");
+  const row = await pay(p.pid);
+  const urls = new Set(rs.filter((x) => x.status === 200).map((x) => x.body.url));
+  ok("S11 6 checkouts simultâneos do mesmo pagamento -> uma única sessão no Stripe (mesma Idempotency-Key) e a mesma URL", new Set(posted.map((x) => x.idem)).size === 1 && urls.size === 1 && urls.has(`https://checkout.fake/${row.provider_ref}`), `posts=${posted.length} idem=${new Set(posted.map((x) => x.idem)).size} urls=${urls.size} status=${rs.map((x) => x.status)}`);
+  // sessão paga ainda não confirmada: novo checkout é recusado (não abre segunda cobrança)
+  await sess(row.provider_ref, { status: "complete", payment_status: "paid", payment_intent: "pi_cco1" });
+  const again = await act(U.client, { action: "checkout", payment_id: p.pid });
+  ok("S11 sessão já paga: novo checkout -> 409 e nenhuma sessão adicional", again.status === 409 && (await stripeCalls()).calls.filter((x) => x.method === "POST" && x.path === "/v1/checkout/sessions").length === posted.length);
+}
+{ // migration 0065 + CAS do checkout + cobrança paga sem pagamento (E2E com SQL real)
+  await reset();
+  ok("M65 migration 0065 aplicada sem erro; check_cron_secret REAL (Vault) aceita o segredo e recusa o errado", (await one(`select public.check_cron_secret($1) a, public.check_cron_secret('errado') b`, [CRON_SECRET])).a === true && (await one(`select public.check_cron_secret('errado') b`)).b === false);
+  ok("M65 check_cron_secret fechada para papéis comuns (sem EXECUTE para anon/authenticated)", (await one(`select has_function_privilege('anon','public.check_cron_secret(text)','execute') a, has_function_privilege('authenticated','public.check_cron_secret(text)','execute') b, has_function_privilege('service_role','public.check_cron_secret(text)','execute') s`)).s === true && !(await one(`select has_function_privilege('anon','public.check_cron_secret(text)','execute') a`)).a);
+  // CAS: outra abertura grava uma sessão no meio da criação desta
+  const p = await mk("cas1", { ref: "cs_cas1" });
+  await sess("cs_cas1", { status: "expired" });
+  await t.ctl("delay", { match: "^POST /v1/checkout/sessions", ms: 1500, once: true });
+  const aP = act(U.client, { action: "checkout", payment_id: p.pid });
+  await sleep(500);
+  await c.query(`update payments set provider_ref = 'cs_CONCORRENTE' where id = $1`, [p.pid]);
+  const a = await aP;
+  ok("S12 CAS: outra sessão gravada durante a criação -> 409, e a referência da outra NÃO é sobrescrita", a.status === 409 && (await pay(p.pid)).provider_ref === "cs_CONCORRENTE", JSON.stringify({ s: a.status, ref: (await pay(p.pid)).provider_ref, body: a.body }));
+  // cobrança PAGA sem pagamento correspondente: rejeitada e visível; nada confirmado
+  const orphan = { id: "evt_orphan1", type: "checkout.session.completed", account: "acct_1", data: { object: { id: "cs_ORFA", payment_status: "paid", metadata: { payment_id: "99999999-0000-4000-8000-000000000001" } } } };
+  const w = await hook(orphan);
+  ok("S12 cobrança paga sem pagamento: 200 rejected, nada confirmado", w.status === 200 && w.body.rejected === true);
+  // sessão paga com referência diferente da registrada (caso de60): rejeitada com identificadores
+  const p2 = await mk("div1", { ref: "cs_div1" });
+  const w2 = await hook(whPaid("evt_div1", "cs_OUTRA_SESSAO", p2.pid));
+  ok("S12 sessão paga com ref diferente da registrada: rejeitada e pagamento segue pendente", w2.body.rejected === true && (await pay(p2.pid)).s === "pendente");
+  // tarifa zero suspeita de cartão
+  const p3 = await mk("z1", { ref: "cs_z1" });
+  await sess("cs_z1", { status: "complete", payment_status: "paid", payment_intent: "pi_z1", fee: 250 });
+  await hook(whPaid("evt_z1", "cs_z1", p3.pid));
+  await c.query("set session_replication_role = replica"); await c.query(`update payments set processor_fee_cents = 0 where id = $1`, [p3.pid]); await c.query("set session_replication_role = origin");
+  const an = (await q(`select * from public.payments_provider_anomalies(500)`));
+  const has = (k, f) => an.some((x) => x.kind === k && f(x));
+  ok("M65 payments_provider_anomalies lista: evento rejeitado (órfã e divergente) e tarifa zero suspeita", has("evento_rejeitado", (x) => x.event_id === "evt_orphan1" && /sem pagamento correspondente/.test(x.detail)) && has("evento_rejeitado", (x) => x.event_id === "evt_div1" && x.payment_id === p2.pid && /ref do aviso=cs_OUTRA_SESSAO/.test(x.detail)) && has("tarifa_zero_suspeita", (x) => x.payment_id === p3.pid), JSON.stringify(an.map((x) => [x.kind, x.event_id])));
+  ok("M65 anomalias não listam pagamento íntegro (confirmado, com tarifa, ledger fechado)", !has("tarifa_zero_suspeita", (x) => x.payment_id !== p3.pid) && !an.some((x) => x.kind === "ledger_desbalanceado" || x.kind === "sem_ledger"), JSON.stringify(an.map((x) => [x.kind, x.payment_id])));
+  const denied = await c.query(`select set_config('test.role','authenticated',false)`).then(() => c.query(`select * from public.payments_provider_anomalies(1)`)).then(() => null, (e) => e.message);
+  await c.query(`select set_config('test.role','service_role',false)`);
+  ok("M65 payments_provider_anomalies recusa quem não é service_role", /Não autorizado/.test(denied ?? ""), denied);
 }
 { // confirmação simultânea
   await reset();

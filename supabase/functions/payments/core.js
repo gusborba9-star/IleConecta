@@ -11,7 +11,7 @@ const msg = (e) => String(e?.message ?? e).slice(0, 500);
  * trata e fecha. Devolve { status, body } para a camada HTTP.
  *  - duplicado já concluído  -> 200
  *  - outro processo está tratando -> 409 (o provedor reenvia depois)
- *  - signed divergência (provedor/ref/conta) -> 200, evento fechado como rejeitado (não adianta reenviar)
+ *  - divergência (provedor/ref/conta) -> 200, evento fechado como rejeitado (não adianta reenviar)
  *  - falha de processamento ou de persistência -> 500 (o provedor reenvia)
  */
 export async function processWebhook({ registry, store, providerId, rawBody, headers, log = console }) {
