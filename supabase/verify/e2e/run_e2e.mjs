@@ -1,4 +1,4 @@
-// E2E local da EXEC-01: Edge Function REAL (index.ts) no Deno + supabase-js real + PostgreSQL 16 real com as migrations 0001–0065.
+// E2E local da EXEC-01: Edge Function REAL (index.ts) no Deno + supabase-js real + PostgreSQL 16 real com as migrations 0001–0066.
 // Substitutos declarados: PostgREST/GoTrue -> restShim.mjs; API do Stripe -> fakeStripe.mjs (NÃO é Stripe real).
 // Uso: DENO_BIN=<deno> node supabase/verify/e2e/run_e2e.mjs   (requer Postgres em 127.0.0.1:5544 e `npm i --no-save pg`)
 import { boot, WEBHOOK_SECRET, CRON_SECRET } from "./boot.mjs";
@@ -90,6 +90,8 @@ const whPaid = (id, ref, pid, extra = {}) => ({ id, type: "checkout.session.comp
   ok("S2 pagamento confirmado + reserva confirmada", row.s === "confirmado" && (await one(`select status::text s from reservations where id=$1`, [p.res])).s === "confirmada");
   ok("S2 ledger: bruto 10000 / plataforma 1500 / casa 8500 (+ taxa_provedor 250)", JSON.stringify(l.map((x) => [x.t, x.a])) === JSON.stringify([["bruto", 10000], ["casa", 8500], ["plataforma", 1500], ["taxa_provedor", 250]]), JSON.stringify(l.map((x) => [x.t, x.a])));
   ok("S9 tarifa do processador conciliada (processor_fee_cents=250)", row.pf === 250);
+  const rf = await one(`select provider_payment_ref pi, provider_charge_ref ch from payments where id=$1`, [p.pid]);
+  ok("M66 PaymentIntent e Charge registrados ao confirmar (pi_pay1 / ch_pi_pay1)", rf.pi === "pi_pay1" && rf.ch === "ch_pi_pay1", JSON.stringify(rf));
   ok("S2 Stripe direto: sem payout/retenção da plataforma", (await one(`select count(*)::int n from payouts`)).n === 0);
   const e = await evRow("evt_pay1");
   ok("S3 evento fechado como concluído", e.done === true && e.error === null && e.attempts === 1);
@@ -143,7 +145,8 @@ const whPaid = (id, ref, pid, extra = {}) => ({ id, type: "checkout.session.comp
   // webhook com falha na API de tarifa: confirma mesmo assim; rotina concilia depois
   const p2 = await mk("fee1", { ref: "cs_fee1" });
   await sess("cs_fee1", { status: "complete", payment_status: "paid", payment_intent: "pi_fee1", fee: 310 });
-  await t.ctl("fail", { match: "^GET /v1/payment_intents/", mode: "503" });
+  await t.ctl("fail", { match: "^GET /v1/payment_intents/", mode: "503" }); // 1ª consulta ao PaymentIntent: vínculo PaymentIntent/Charge
+  await t.ctl("fail", { match: "^GET /v1/payment_intents/", mode: "503" }); // 2ª consulta ao PaymentIntent: tarifa
   const w = await hook(whPaid("evt_fee1", "cs_fee1", p2.pid));
   const r1 = await pay(p2.pid);
   ok("S8/S9 falha na API de tarifa NÃO derruba a confirmação (200, confirmado, tarifa pendente)", w.status === 200 && r1.s === "confirmado" && r1.pf === null);
@@ -340,6 +343,36 @@ const refundsFor = async (pi) => (await stripeCalls()).refunds.filter((r) => r.p
   const denied = await c.query(`select set_config('test.role','authenticated',false)`).then(() => c.query(`select * from public.payments_provider_anomalies(1)`)).then(() => null, (e) => e.message);
   await c.query(`select set_config('test.role','service_role',false)`);
   ok("M65 payments_provider_anomalies recusa quem não é service_role", /Não autorizado/.test(denied ?? ""), denied);
+}
+{ // migration 0066: vínculo PaymentIntent/Charge (SQL real)
+  await reset();
+  const a = await confirmed("rk1");
+  const b = await confirmed("rk2");
+  const ra = await one(`select provider_payment_ref pi, provider_charge_ref ch from payments where id=$1`, [a.pid]);
+  ok("M66 cada pagamento confirmado guarda a sua própria Charge", ra.pi === "pi_rk1" && ra.ch === "ch_pi_rk1");
+  const call = (pid, ref, pi, ch, acct = "acct_1") => one(`select public.record_provider_refs_for($1::uuid,'stripe',$2,$3,$4,$5) r`, [pid, ref, acct, pi, ch]).then((x) => x.r);
+  ok("M66 repetir o mesmo par -> 'ja_registrada' (idempotente)", (await call(a.pid, "cs_rk1", "pi_rk1", "ch_pi_rk1")) === "ja_registrada");
+  ok("M66 Charge diferente para o mesmo pagamento -> 'conflito', nada sobrescrito", (await call(a.pid, "cs_rk1", "pi_OUTRO", "ch_OUTRA")) === "conflito" && (await one(`select provider_charge_ref ch from payments where id=$1`, [a.pid])).ch === "ch_pi_rk1");
+  await c.query(`update payments set provider_payment_ref = null, provider_charge_ref = null where id = $2 and $1::text is not null`, ["x", b.pid]);
+  ok("M66 Charge já usada por OUTRO pagamento -> 'duplicada' (índice único), nada gravado", (await call(b.pid, "cs_rk2", "pi_rk2", "ch_pi_rk1")) === "duplicada" && (await one(`select provider_charge_ref ch from payments where id=$1`, [b.pid])).ch === null);
+  ok("M66 identidade errada (ref/conta) -> 'divergente'", (await call(b.pid, "cs_ERRADA", "pi_rk2", "ch_pi_rk2")) === "divergente" && (await call(b.pid, "cs_rk2", "pi_rk2", "ch_pi_rk2", "acct_OUTRA")) === "divergente");
+  const pend = await mk("rk3", { ref: "cs_rk3" });
+  ok("M66 pagamento pendente não recebe Charge -> 'nao_confirmada'", (await call(pend.pid, "cs_rk3", "pi_rk3", "ch_pi_rk3")) === "nao_confirmada");
+  // rotina completa o que ficou faltando (histórico)
+  const miss = await q(`select id from public.payments_missing_provider_refs(50)`);
+  ok("M66 payments_missing_provider_refs lista o confirmado sem Charge (b) e não lista o pendente nem o completo", miss.some((x) => x.id === b.pid) && !miss.some((x) => x.id === a.pid || x.id === pend.pid));
+  const sw = await sweep();
+  ok("M66 rotina agendada vincula o que faltava (refs_done>=1) e b passa a ter a Charge dele", sw.status === 200 && sw.body.refs_done >= 1 && (await one(`select provider_charge_ref ch from payments where id=$1`, [b.pid])).ch === "ch_pi_rk2", JSON.stringify(sw.body));
+  // anomalia: confirmado há mais de 1 h sem Charge
+  await c.query("set session_replication_role = replica");
+  await c.query(`update payments set provider_payment_ref = null, provider_charge_ref = null where id = $1`, [a.pid]);
+  await c.query(`update ledger_entries set created_at = now() - interval '2 hours' where payment_id = $1 and entry_type = 'bruto'`, [a.pid]);
+  await c.query("set session_replication_role = origin");
+  const an = await q(`select * from public.payments_provider_anomalies(500)`);
+  ok("M66 anomalia 'sem_referencia_cobranca' aparece para confirmado há >1 h sem Charge", an.some((x) => x.kind === "sem_referencia_cobranca" && x.payment_id === a.pid), JSON.stringify(an.map((x) => [x.kind, x.payment_id === a.pid])));
+  const denied = await c.query(`select set_config('test.role','authenticated',false)`).then(() => c.query(`select public.record_provider_refs_for($1::uuid,'stripe','cs_rk1','acct_1','pi','ch')`, [a.pid])).then(() => null, (e) => e.message);
+  await c.query(`select set_config('test.role','service_role',false)`);
+  ok("M66 record_provider_refs_for recusa quem não é service_role", /Não autorizado/.test(denied ?? ""), denied);
 }
 { // confirmação simultânea
   await reset();
