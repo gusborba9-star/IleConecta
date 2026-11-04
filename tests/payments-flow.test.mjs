@@ -17,7 +17,7 @@ function memStore(seed = []) {
     payments: new Map(seed.map((p) => [p.id, { status: "pendente", provider: "stripe", stripe_account_id: "acct_1", identity_strict: true, processor_fee_cents: null, member_due_id: null, ...p }])),
     events: new Map(),
     refundRequests: new Map(), // id -> { id, payment_id, status }
-    log: { confirm: 0, ledger: 0, fee: 0, completeRefund: 0, completeCancel: 0 },
+    log: { confirm: 0, ledger: 0, fee: 0, refs: 0, completeRefund: 0, completeCancel: 0 },
     fail: {}, // { finishEvent: n, confirm: n, recordFee: n, completeRefund: n, attach: n } -> quantas próximas chamadas falham
   };
   const boom = (k) => { if (s.fail[k] > 0) { s.fail[k]--; throw new Error(`falha simulada: ${k}`); } };
@@ -59,6 +59,19 @@ function memStore(seed = []) {
       if (p.status !== "pendente" || (p.provider_ref ?? null) !== (pay.provider_ref ?? null)) return false;
       Object.assign(p, { provider_ref: ref, stripe_account_id: account });
       return true;
+    },
+    async recordReferences(pay, { paymentRef, chargeRef }) {
+      boom("recordRefs");
+      const p = s.payments.get(pay.id);
+      if (!identityMatches(p, pay.provider, pay.provider_ref, pay.stripe_account_id)) throw new DivergenceError("banco: divergente");
+      if (!["confirmado", "estornado"].includes(p.status)) return "nao_confirmada";
+      if (p.provider_payment_ref || p.provider_charge_ref) return p.provider_payment_ref === paymentRef && p.provider_charge_ref === chargeRef ? "ja_registrada" : "conflito";
+      if ([...s.payments.values()].some((o) => o.id !== p.id && (o.provider_charge_ref === chargeRef || o.provider_payment_ref === paymentRef))) return "duplicada";
+      Object.assign(p, { provider_payment_ref: paymentRef, provider_charge_ref: chargeRef }); s.log.refs++;
+      return "registrada";
+    },
+    async paymentsMissingRefs(limit) {
+      return [...s.payments.values()].filter((p) => ["confirmado", "estornado"].includes(p.status) && !p.provider_charge_ref && p.provider === "stripe" && p.provider_ref && p.stripe_account_id).slice(0, limit);
     },
     async recordFee(pay, { feeCents }) {
       boom("recordFee");
@@ -102,9 +115,9 @@ function stripeFake(opts = {}) {
     if (key === "GET /v1/refunds") return ok({ data: st.refunds });
     if (key === "POST /v1/refunds") { st.refundsCreated++; const r = { id: `re_${st.refundsCreated}`, status: "succeeded" }; st.refunds.push(r); return ok(r); }
     if (st.sessionError && key.startsWith("GET /v1/checkout/sessions/")) { if (st.sessionError === "network") throw new TypeError("fetch failed"); return { ok: false, status: st.sessionError, json: async () => ({ error: { message: `http ${st.sessionError}` } }) }; }
-    if ((m = key.match(/^GET \/v1\/checkout\/sessions\/(.+)$/))) return ok({ id: m[1], status: st.sessionStatus ?? "open", url: "https://pay/open", payment_status: st.paid === false ? "unpaid" : "paid", payment_intent: "pi_1" });
+    if ((m = key.match(/^GET \/v1\/checkout\/sessions\/(.+)$/))) return ok({ id: m[1], status: st.sessionStatus ?? "open", url: "https://pay/open", payment_status: st.paid === false ? "unpaid" : "paid", payment_intent: st.noIntent ? null : "pi_1" });
     if (key === "POST /v1/checkout/sessions") return ok({ id: "cs_new", url: "https://pay/new" });
-    if (key.startsWith("GET /v1/payment_intents/")) return st.feeFail ? bad("fee api down") : ok({ latest_charge: { payment_method_details: { type: "card" }, balance_transaction: { fee_details: [{ type: "stripe_fee", amount: 250 }] } } });
+    if (key.startsWith("GET /v1/payment_intents/")) return st.feeFail ? bad("fee api down") : ok({ latest_charge: { id: `ch_${st.chargeTag ?? "1"}`, payment_method_details: { type: "card" }, balance_transaction: { fee_details: [{ type: "stripe_fee", amount: 250 }] } } });
     return bad(`sem rota ${key}`);
   };
   return { st, adapter: createStripeAdapter({ secret: "sk", webhookSecret: SECRET, fetchImpl, log: quiet }) };
@@ -504,7 +517,7 @@ test("sync: não pago continua pendente", async () => {
 test("rotina: reembolsos pendentes + tarifas faltantes", async () => {
   const c = setup([{ ...confirmedPay, reservation_id: "r9" }]);
   c.store.sources = [{ kind: "reserva", id: "r9" }];
-  assert.deepEqual(await core.sweep({ registry: c.registry, store: c.store, log: quiet }), { refunded: 1, failed: 0, fees_done: 0, fees_failed: 0 });
+  assert.deepEqual(await core.sweep({ registry: c.registry, store: c.store, log: quiet }), { refunded: 1, failed: 0, fees_done: 0, fees_failed: 0, refs_done: 1, refs_failed: 0 });
 });
 
 // ---------- propriedade da trava (lease com dono) ----------
@@ -618,4 +631,51 @@ test("sync: transação nova sem conta registrada não confirma (divergência)",
   const c = setup([{ ...PAY, stripe_account_id: null }]);
   assert.deepEqual(await core.syncPayment({ registry: c.registry, store: c.store, pay: c.store.payments.get("p1"), log: quiet }), { status: "pendente" });
   assert.equal(c.store.log.confirm, 0);
+});
+
+// ---------- vínculo Checkout ↔ PaymentIntent ↔ Charge ----------
+test("refs: aviso pago registra PaymentIntent e Charge uma única vez", async () => {
+  const c = setup();
+  await deliver(c, paidEvent());
+  const p = c.store.payments.get("p1");
+  assert.deepEqual([p.provider_payment_ref, p.provider_charge_ref], ["pi_1", "ch_1"]);
+  await core.linkReferences({ registry: c.registry, store: c.store, pay: p, log: quiet });
+  assert.equal(c.store.log.refs, 1);
+});
+
+test("refs: falha ao buscar/gravar as referências não derruba a confirmação; a rotina completa depois", async () => {
+  const c = setup();
+  c.store.fail.recordRefs = 1;
+  assert.equal((await deliver(c, paidEvent())).status, 200);
+  assert.equal(c.store.payments.get("p1").status, "confirmado");
+  assert.equal(c.store.payments.get("p1").provider_charge_ref, undefined);
+  assert.deepEqual(await core.linkMissingReferences({ registry: c.registry, store: c.store, log: quiet }), { refs_done: 1, refs_failed: 0 });
+  assert.equal(c.store.payments.get("p1").provider_charge_ref, "ch_1");
+  assert.deepEqual(await core.linkMissingReferences({ registry: c.registry, store: c.store, log: quiet }), { refs_done: 0, refs_failed: 0 });
+});
+
+test("refs: outra Charge para o mesmo pagamento é conflito visível e NADA é sobrescrito", async () => {
+  const errors = [];
+  const c = setup([{ ...PAY, status: "confirmado", provider_payment_ref: "pi_1", provider_charge_ref: "ch_ANTIGA" }]);
+  const ok = await core.linkReferences({ registry: c.registry, store: c.store, pay: c.store.payments.get("p1"), log: { error: (...a) => errors.push(a) } });
+  assert.equal(ok, false);
+  assert.equal(c.store.payments.get("p1").provider_charge_ref, "ch_ANTIGA");
+  assert.equal(errors[0][0], "provider_ref_conflict");
+  assert.equal(errors[0][2], "conflito");
+});
+
+test("refs: Charge já vinculada a OUTRO pagamento é duplicada e visível", async () => {
+  const errors = [];
+  const c = setup([{ ...PAY, status: "confirmado", provider_payment_ref: "pi_0", provider_charge_ref: "ch_1" }, { id: "p2", provider_ref: "cs_2", status: "confirmado", reservation_id: "r2" }]);
+  const ok = await core.linkReferences({ registry: c.registry, store: c.store, pay: c.store.payments.get("p2"), log: { error: (...a) => errors.push(a) } });
+  assert.equal(ok, false);
+  assert.equal(c.store.payments.get("p2").provider_charge_ref, undefined);
+  assert.equal(errors[0][2], "duplicada");
+});
+
+test("refs: sessão sem PaymentIntent (ainda não paga) não grava nada", async () => {
+  const c = setup([{ ...PAY, status: "confirmado" }]);
+  c.fake.st.noIntent = true;
+  assert.equal(await core.linkReferences({ registry: c.registry, store: c.store, pay: c.store.payments.get("p1"), log: quiet }), false);
+  assert.equal(c.store.log.refs, 0);
 });
