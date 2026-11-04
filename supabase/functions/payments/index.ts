@@ -7,7 +7,7 @@
 // Segredos (Supabase > Edge Functions > Secrets): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, APP_URL (opcional).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { sessionExpiry } from "./logic.js";
-import { DivergenceError, ProviderError, createRegistry } from "./provider.js";
+import { CheckoutStateError, DivergenceError, ProviderError, createRegistry } from "./provider.js";
 import { createStripeAdapter } from "./stripeAdapter.js";
 import { createStore, PAYMENT_COLS } from "./store.js";
 import * as core from "./core.js";
@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("payments_error", String(e));
-    if (e instanceof DivergenceError) return fail(e.message, 409);
+    if (e instanceof DivergenceError || e instanceof CheckoutStateError) return fail(e.message, 409);
     if (e instanceof ProviderError) return fail(`Provedor: ${e.message}`.slice(0, 300), 502);
     return fail("Não foi possível concluir agora. Tente de novo.", 500);
   }

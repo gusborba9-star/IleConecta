@@ -54,15 +54,31 @@ test("registro: provedor da transação, sem troca silenciosa", () => {
 });
 
 test("identidade: provedor, referência e conta precisam bater", () => {
-  const pay = { provider: "stripe", provider_ref: "cs_1", stripe_account_id: "acct_1" };
+  const pay = { provider: "stripe", provider_ref: "cs_1", stripe_account_id: "acct_1", identity_strict: true };
   assert.doesNotThrow(() => assertSameTransaction(pay, { provider: "stripe", ref: "cs_1", account: "acct_1" }));
   assert.throws(() => assertSameTransaction(pay, { provider: "outro", ref: "cs_1", account: "acct_1" }), DivergenceError);
   assert.throws(() => assertSameTransaction(pay, { provider: "stripe", ref: "cs_2", account: "acct_1" }), DivergenceError);
   assert.throws(() => assertSameTransaction(pay, { provider: "stripe", ref: "cs_1", account: "acct_2" }), DivergenceError);
   assert.throws(() => assertSameTransaction(pay, { provider: "stripe", ref: "cs_1", account: null }), DivergenceError);
   assert.throws(() => assertSameTransaction(null, { provider: "stripe" }), DivergenceError);
-  // sem conta registrada, não exige conta
-  assert.doesNotThrow(() => assertSameTransaction({ provider: "stripe", provider_ref: "cs_1" }, { provider: "stripe", ref: "cs_1", account: null }));
+});
+
+test("identidade estrita: transação nova sem conta registrada nunca passa", () => {
+  const nova = { provider: "stripe", provider_ref: "cs_1", stripe_account_id: null, identity_strict: true };
+  for (const account of ["acct_1", null, undefined]) {
+    assert.throws(() => assertSameTransaction(nova, { provider: "stripe", ref: "cs_1", account }), DivergenceError);
+  }
+  // campo ausente = estrito (nunca presume histórico)
+  assert.throws(() => assertSameTransaction({ provider: "stripe", provider_ref: "cs_1", stripe_account_id: null }, { provider: "stripe", ref: "cs_1", account: "acct_1" }), DivergenceError);
+});
+
+test("identidade: histórico explicitamente marcado (identity_strict=false) sem conta registrada passa", () => {
+  const historico = { provider: "stripe", provider_ref: "cs_1", stripe_account_id: null, identity_strict: false };
+  assert.doesNotThrow(() => assertSameTransaction(historico, { provider: "stripe", ref: "cs_1", account: "acct_1" }));
+  assert.doesNotThrow(() => assertSameTransaction(historico, { provider: "stripe", ref: "cs_1", account: null }));
+  // mas provedor/ref continuam estritos
+  assert.throws(() => assertSameTransaction(historico, { provider: "outro", ref: "cs_1", account: null }), DivergenceError);
+  assert.throws(() => assertSameTransaction(historico, { provider: "stripe", ref: "cs_2", account: null }), DivergenceError);
 });
 
 test("isolamento: só o adaptador fala com o Stripe", () => {
