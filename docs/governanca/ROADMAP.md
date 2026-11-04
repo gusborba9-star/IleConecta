@@ -176,6 +176,25 @@ Esta trilha registra a arquitetura aprovada, mas não autoriza execução autom�
 
 A ordem é dependente de evidências: se o painel já possuir parte desses controles, integrar e validar em vez de reconstruir. EXEC-02 não começa antes da validação da EXEC-01. Roteamento e painel não devem antecipar a integração homologada.
 
+## 3.2 Trilha futura — Central de Conexões e Studio da Casa
+
+Esta trilha registra uma direção arquitetural aprovada para evolução futura. Não constitui ordem de execução, não altera a prioridade da trilha financeira e não autoriza conectar contas reais, contratar fornecedores ou iniciar desenvolvimento.
+
+**Direção estrutural:** criar uma Central de Conexões transversal, consumida pelos módulos do Ilê Conecta. O Studio da Casa será um dos consumidores dessa infraestrutura, não seu proprietário. A Central deverá contemplar conectores de IA (por exemplo, OpenAI/GPT e Gemini), ferramentas criativas e de produtividade (por exemplo, Canva), ferramentas de desenvolvimento (por exemplo, Lovable e Replit) e serviços de armazenamento/código (por exemplo, Google Drive e GitHub), sempre limitados às APIs, permissões e operações oficialmente suportadas por cada fornecedor.
+
+**Etapas futuras, sujeitas a priorização e ordens específicas:**
+
+1. **Auditoria de reutilização:** inventariar autenticação, integrações, armazenamento, permissões, gestão de segredos, multi-tenancy, auditoria e componentes de interface já existentes. Identificar ownership e evitar duplicação.
+2. **Matriz de conectores:** para cada fornecedor, documentar mecanismo oficial de conexão, escopos, operações suportadas, quotas, custos, restrições contratuais, revogação, webhooks e requisitos de segurança. Distinguir API, OAuth, importação/exportação e simples abertura de ferramenta.
+3. **Fundação da Central:** especificar contratos de conectores, cadastro de conexões por organização/casa, autorização por módulo/operação, gestão segura de credenciais, isolamento, auditoria, desconexão e tratamento de falhas. Implementação depende de ordem aprovada.
+4. **Piloto controlado:** selecionar um conector de IA e um conector criativo com operações oficialmente suportadas; validar conexão, permissões, fluxo de dados, custos, revogação e isolamento antes de ampliar o catálogo.
+5. **Studio da Casa:** definir escopo funcional, experiência, integrações, dependências e critérios de qualidade; consumir a Central sem incorporar lógica própria de autenticação de cada fornecedor.
+6. **Decisão de produto e negócio:** avaliar localização do Studio nos ambientes, público-alvo, planos, precificação, venda como vertical independente ou oferta combinada. Comparar custos e requisitos de identidade, billing, suporte, armazenamento, termos, marca e operação. Nenhuma dessas alternativas está escolhida neste Roadmap.
+
+**Critérios mínimos antes de ampliar conectores:** evidência de API/integração oficial; permissões mínimas; isolamento entre casas; segredos protegidos no backend; revogação funcional; limites e custos transparentes; testes de falha e expiração; trilha de auditoria; ausência de fallback silencioso; e confirmação de que os dados enviados ao fornecedor são necessários e autorizados.
+
+A lista de nomes é indicativa, não compromisso de disponibilidade. A integração com Canva, Lovable, Replit, Google AI Studio ou qualquer outro serviço só poderá ser especificada após verificar os mecanismos oficiais e capacidades concretas. Não prometer controle completo da interface de terceiros quando o fornecedor não oferecer essa capacidade.
+
 ## 4. Priorização
 
 Prioridade P0: risco de segurança, vazamento, perda de dados, cobrança incorreta, pagamento indevido, dupla reserva ou estado financeiro falso.
