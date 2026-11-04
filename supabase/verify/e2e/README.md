@@ -1,6 +1,6 @@
 # E2E local da EXEC-01 (Deno + PostgreSQL)
 
-Executa o `supabase/functions/payments/index.ts` **real** no Deno, com o `supabase-js` real, contra um PostgreSQL 16 real com as migrations 0001–0065.
+Executa o `supabase/functions/payments/index.ts` **real** no Deno, com o `supabase-js` real, contra um PostgreSQL 16 real com as migrations 0001–0066.
 
 ## O que é real e o que é substituto
 
@@ -8,7 +8,7 @@ Executa o `supabase/functions/payments/index.ts` **real** no Deno, com o `supaba
 |---|---|
 | Edge Function (`index.ts`, `core.js`, `store.js`, `provider.js`, `stripeAdapter.js`) | **real**, executada no Deno 2.9.6 (`denoEntry.ts` só redireciona `api.stripe.com` para a API simulada e fixa a porta) |
 | `@supabase/supabase-js` | **real** (`npm:@supabase/supabase-js@2.45.4`, o mesmo do `index.ts`) |
-| PostgreSQL + migrations 0001–0065 | **real** (PG 16 local; stubs de `auth`, `storage`, `cron`, `vault`, `net`) |
+| PostgreSQL + migrations 0001–0066 | **real** (PG 16 local; stubs de `auth`, `storage`, `cron`, `vault`, `net`) |
 | PostgREST / GoTrue | **substituído** por `restShim.mjs` (traduz o subconjunto usado: select/update/rpc/embed muitos-para-um e `/auth/v1/user`) |
 | API do Stripe | **simulada** por `fakeStripe.mjs` — NÃO é o Stripe real |
 | `check_cron_secret` | **real** (migration 0065, lê `vault.decrypted_secrets`); só o Vault é simulado, com o segredo do teste |
@@ -21,7 +21,7 @@ npm i --no-save pg deno          # deno via npm (binário oficial)
 DENO_BIN=node_modules/.bin/deno node supabase/verify/e2e/run_e2e.mjs
 ```
 
-Saída esperada: `94 PASS / 0 FAIL` (uma linha PASS/FAIL por verificação; a execução de referência está na descrição da PR #140). Cada execução recria o banco `e2e`.
+Saída esperada: `105 PASS / 0 FAIL` (uma linha PASS/FAIL por verificação; a execução de referência está na descrição da PR #140). Cada execução recria o banco `e2e`.
 
 ## Sensibilidade (testes de mutação)
 
