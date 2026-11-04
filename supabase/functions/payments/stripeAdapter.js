@@ -83,9 +83,21 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
       const s = await call(`/v1/checkout/sessions/${ref}`, { account });
       if (!s.payment_intent) return null;
       const pi = await call(`/v1/payment_intents/${s.payment_intent}?expand[0]=latest_charge.balance_transaction`, { account });
-      const details = pi.latest_charge?.balance_transaction?.fee_details ?? [];
-      const feeCents = details.filter((d) => d.type === "stripe_fee").reduce((a, d) => a + Number(d.amount), 0);
-      const type = pi.latest_charge?.payment_method_details?.type;
+      const charge = pi.latest_charge, bt = charge?.balance_transaction;
+      // Tarifa DESCONHECIDA nunca vira zero: sem cobrança expandida ou sem lançamento (balance_transaction nulo/ainda um id),
+      // devolve null e o pagamento fica pendente para a rotina tentar de novo.
+      if (!charge || typeof charge !== "object" || !bt || typeof bt !== "object") return null;
+      const details = bt.fee_details;
+      if (!Array.isArray(details)) return null;
+      const known = details.every((d) => d && Number.isFinite(Number(d.amount)));
+      if (!known) return null;
+      const stripeEntries = details.filter((d) => d.type === "stripe_fee");
+      const feeCents = stripeEntries.reduce((a, d) => a + Number(d.amount), 0);
+      // Total do lançamento (quando informado) precisa fechar com o detalhamento; senão o detalhamento está incompleto.
+      if (Number.isFinite(Number(bt.fee)) && details.reduce((a, d) => a + Number(d.amount), 0) !== Number(bt.fee)) return null;
+      // Zero só com evidência: item stripe_fee explícito, ou lançamento com total (fee) igual a 0. Detalhamento vazio sem total = desconhecida.
+      if (feeCents === 0 && !stripeEntries.length && !(typeof bt.fee === "number" && bt.fee === 0)) return null;
+      const type = charge.payment_method_details?.type;
       return { feeCents, method: type === "pix" ? "pix" : type === "card" ? "card" : null };
     },
 
