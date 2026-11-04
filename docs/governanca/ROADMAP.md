@@ -190,6 +190,24 @@ Estados permitidos: não iniciado, em auditoria, evidência parcial, pronto para
 
 Não marcar fase concluída se houver P0 aberto ou se os critérios de saída não estiverem demonstrados.
 
+### Registro: EXEC-01 — subsistema financeiro do Marketplace (Stripe)
+
+Estado em 2026-11-04 (PR #140, Draft; sem merge, sem deploy, sem migration remota). Estados conforme a lista acima.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| Desacoplamento do provedor (contrato, adaptador Stripe, núcleo, banco) | testado | 271 testes unitários; E2E 105 verificações (Deno + supabase-js + PostgreSQL 16 reais, migrations 0001–0066) |
+| Tarifa do processador sem falso zero (`fetchFees`) | testado | replay de 7 eventos reais (26 verificações) reproduz a causa do pagamento 435e e confirma a correção |
+| Webhook: assinatura, idempotência, trava com dono, concorrência | testado | E2E: 12 entregas simultâneas, lease vencida, worker antigo não altera evento de outro |
+| Checkout: sem segunda cobrança sem evidência; compare-and-set | testado | E2E: 6 checkouts simultâneos → 1 sessão; sessão paga → 409; corrida de gravação → 409 sem sobrescrever |
+| Vínculo Checkout ↔ PaymentIntent ↔ Charge ↔ Pagamento ↔ Ledger | testado | migration 0066 (colunas, índices únicos, `record_provider_refs_for`); E2E M66 |
+| Detecção de anomalias (`payments_provider_anomalies`) | testado | E2E M65/M66; consulta somente leitura em produção sinaliza apenas o pagamento 435e |
+| `check_cron_secret` reproduzível | testado | migration 0065 (aplicada 2x em PostgreSQL local) |
+| Integração real (Stripe real, assinatura real de webhook, Supabase Edge Runtime) | bloqueado | exige Supabase isolado e webhook de teste (custo/autorização do CTO) |
+| Divergências históricas 435e e de60 | em auditoria | diagnóstico feito; nenhuma correção de dado sem autorização |
+
+Nada acima está aplicado em produção: a função `payments` implantada (versão 18) é a anterior à EXEC-01.
+
 ## 7. Declaração de governança
 
 O Roadmap é o plano mestre de evolução. Não é uma lista para implementar tudo em sequência sem auditoria. A primeira obrigação é descobrir e validar o que já existe. Só então se autorizam correções específicas. O Blueprint permanece estável; o Roadmap registra ordem e estado.
