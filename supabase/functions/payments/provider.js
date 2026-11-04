@@ -22,6 +22,14 @@ export class DivergenceError extends Error {
   }
 }
 
+/** A cobrança não pode ser (re)aberta agora: já paga, em processamento ou em estado desconhecido. Não é falha de rede. */
+export class CheckoutStateError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "CheckoutStateError";
+  }
+}
+
 /** Operações que todo adaptador precisa oferecer. */
 export const PROVIDER_METHODS = [
   "createCheckout", // ({ payment, title, appUrl, clientEmail, account, expiresAt }) -> { ref, url }
@@ -78,11 +86,17 @@ export function createRegistry(adapters, active) {
 
 /**
  * Confere se um aviso ou pedido pertence mesmo à transação: provedor, referência e conta de origem registrados.
- * A conta, quando registrada, precisa ser igual (ausente no aviso também é divergência).
+ *  - A conta registrada precisa ser igual (ausente no aviso também é divergência).
+ *  - Sem conta registrada, só passa histórico explicitamente marcado (identity_strict === false: Stripe anterior a este controle).
+ *    Transação nova sem conta registrada NUNCA é aceita (estrito por padrão, inclusive quando o campo não vem).
  */
 export function assertSameTransaction(payment, { provider, ref, account }) {
   if (!payment) throw new DivergenceError("Pagamento não encontrado.");
   if (payment.provider !== provider) throw new DivergenceError("Provedor diferente do registrado na transação.");
   if (ref !== undefined && ref !== null && payment.provider_ref !== ref) throw new DivergenceError("Referência diferente da registrada na transação.");
-  if (payment.stripe_account_id && payment.stripe_account_id !== account) throw new DivergenceError("Conta de origem diferente da registrada na transação.");
+  if (payment.stripe_account_id) {
+    if (payment.stripe_account_id !== account) throw new DivergenceError("Conta de origem diferente da registrada na transação.");
+  } else if (payment.identity_strict !== false) {
+    throw new DivergenceError("Transação sem conta de origem registrada não pode ser validada.");
+  }
 }

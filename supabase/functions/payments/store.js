@@ -3,7 +3,7 @@
 // aqui só se chamam essas funções.
 import { DivergenceError } from "./provider.js";
 
-export const PAYMENT_COLS = "id, provider, provider_ref, stripe_account_id, status, gross_cents, fee_cents, reservation_id, order_id, member_due_id, stage_no";
+export const PAYMENT_COLS = "id, provider, provider_ref, stripe_account_id, identity_strict, status, gross_cents, fee_cents, reservation_id, order_id, member_due_id, stage_no";
 const LEASE_SECONDS = 120;
 
 function must({ data, error }, what) {
@@ -14,11 +14,15 @@ function must({ data, error }, what) {
 export function createStore(admin) {
   return {
     // ----- eventos (trava atômica) -----
+    /** { outcome: "acquired" | "done" | "busy", token } — o token identifica o dono da trava. */
     async acquireEvent({ id, type, account, payload }) {
-      return must(await admin.rpc("acquire_stripe_event", { p_id: id, p_type: type ?? "", p_account: account, p_payload: payload, p_lease_seconds: LEASE_SECONDS }), "acquire_event");
+      const rows = must(await admin.rpc("acquire_stripe_event", { p_id: id, p_type: type ?? "", p_account: account, p_payload: payload, p_lease_seconds: LEASE_SECONDS }), "acquire_event");
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return { outcome: row?.outcome ?? "busy", token: row?.lease_token ?? null };
     },
-    async finishEvent(id, outcome, error) {
-      must(await admin.rpc("finish_stripe_event", { p_id: id, p_outcome: outcome, p_error: error ?? null }), "finish_event");
+    /** true só se este worker ainda é o dono da trava; false = a lease venceu e outro assumiu (nada foi alterado). */
+    async finishEvent(id, token, outcome, error) {
+      return must(await admin.rpc("finish_stripe_event", { p_id: id, p_token: token, p_outcome: outcome, p_error: error ?? null }), "finish_event") === true;
     },
 
     // ----- transações -----

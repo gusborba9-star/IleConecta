@@ -1,7 +1,7 @@
 // Núcleo financeiro: fluxos de cobrança, aviso, reembolso e conciliação de tarifa.
 // Não conhece Stripe nem Supabase: fala com o provedor REGISTRADO na transação (registry) e com o banco por "portas" (store).
 // Pode ser testado em Node com um provedor e um banco falsos.
-import { DivergenceError, ProviderError, assertSameTransaction } from "./provider.js";
+import { CheckoutStateError, DivergenceError, ProviderError, assertSameTransaction } from "./provider.js";
 
 const msg = (e) => String(e?.message ?? e).slice(0, 500);
 
@@ -26,39 +26,43 @@ export async function processWebhook({ registry, store, providerId, rawBody, hea
   }
   if (!event?.id) return { status: 400, body: { error: "Aviso sem identificador." } };
 
-  let acquired;
+  let lease;
   try {
-    acquired = await store.acquireEvent({ id: event.id, type: event.type, account: event.account ?? null, payload: event });
+    lease = await store.acquireEvent({ id: event.id, type: event.type, account: event.account ?? null, payload: event });
   } catch (e) {
     log.error("acquire_failed", event.id, msg(e));
     return { status: 500, body: { error: "Falha ao registrar o aviso." } };
   }
-  if (acquired === "done") return { status: 200, body: { received: true, duplicate: true } };
-  if (acquired !== "acquired") return { status: 409, body: { error: "Aviso em processamento." } };
+  if (lease.outcome === "done") return { status: 200, body: { received: true, duplicate: true } };
+  if (lease.outcome !== "acquired" || !lease.token) return { status: 409, body: { error: "Aviso em processamento." } };
+
+  // Só o dono da trava (token desta aquisição) conclui, rejeita ou libera. Um worker cuja lease venceu não mexe no evento de outro.
+  const finish = async (outcome, error) => {
+    try {
+      const owned = await store.finishEvent(event.id, lease.token, outcome, error);
+      if (!owned) log.error("lease_lost", event.id, outcome);
+      return owned;
+    } catch (e) {
+      log.error("finish_failed", event.id, msg(e));
+      return null; // falha de persistência
+    }
+  };
 
   try {
     await handleEvent({ registry, store, adapter, event, log });
   } catch (e) {
-    const rejected = e instanceof DivergenceError;
-    try {
-      await store.finishEvent(event.id, rejected ? "rejected" : "retry", msg(e));
-    } catch (e2) {
-      log.error("finish_failed", event.id, msg(e2));
-    }
-    if (rejected) {
+    if (e instanceof DivergenceError) {
       log.error("event_rejected", event.id, msg(e));
+      await finish("rejected", msg(e));
       return { status: 200, body: { received: true, rejected: true } };
     }
+    await finish("retry", msg(e));
     return { status: 500, body: { error: "Falha ao processar." } };
   }
-  try {
-    await store.finishEvent(event.id, "done", null);
-  } catch (e) {
-    // O efeito financeiro já aconteceu e é idempotente: o reenvio, depois que a reserva do evento vencer, apenas repete sem duplicar.
-    log.error("finish_failed", event.id, msg(e));
-    return { status: 500, body: { error: "Falha ao concluir o aviso." } };
-  }
-  return { status: 200, body: { received: true } };
+  // Os efeitos financeiros são idempotentes; se não for mais o dono, o worker atual é quem conclui (o provedor reenvia).
+  const done = await finish("done", null);
+  if (done === true) return { status: 200, body: { received: true } };
+  return { status: done === false ? 409 : 500, body: { error: done === false ? "Aviso assumido por outro processo." : "Falha ao concluir o aviso." } };
 }
 
 async function handleEvent({ registry, store, adapter, event, log }) {
@@ -138,10 +142,14 @@ export async function openCheckout({ registry, store, pay, providerId, houseAcco
   if (pay.stripe_account_id && pay.stripe_account_id !== houseAccount) throw new DivergenceError("A conta de recebimento da casa mudou depois da cobrança aberta.");
   const account = pay.stripe_account_id ?? houseAccount;
   if (pay.provider_ref) {
-    try {
-      const s = await registry.forPayment(pay).getCheckout({ ref: pay.provider_ref, account });
-      if (s.status === "open" && s.url) return { url: s.url };
-    } catch (_) { /* cria outra abaixo */ }
+    // Erros de consulta (rede, autenticação, indisponibilidade) PROPAGAM: sem evidência não se abre outra cobrança.
+    const s = await registry.forPayment(pay).getCheckout({ ref: pay.provider_ref, account });
+    if (s.status === "open" && s.url) return { url: s.url };
+    if (s.status !== "expired") {
+      if (s.status === "complete") throw new CheckoutStateError(s.paid ? "Este pagamento já foi realizado; aguarde a confirmação." : "O pagamento está em processamento; aguarde a confirmação.");
+      throw new CheckoutStateError("Não foi possível confirmar o estado da cobrança anterior.");
+    }
+    // Evidência: o provedor informa que a sessão anterior expirou — só então cria outra.
   }
   const adapter = registry.forNew(providerId);
   const created = await adapter.createCheckout({
@@ -241,4 +249,4 @@ export async function sweep({ registry, store, log = console }) {
   return { ...r, ...f };
 }
 
-export { ProviderError, DivergenceError };
+export { ProviderError, DivergenceError, CheckoutStateError };
