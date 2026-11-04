@@ -596,6 +596,43 @@ Banco é fonte persistente de verdade. Estado local melhora experiência, mas n�
 Pagamento, comissão, reserva, confirmação, reembolso, assinatura, controle de vagas, permissões e operações administrativas críticas ocorrem em ambiente confiável. Chaves privilegiadas nunca são expostas no frontend.
 
 ## 25.4 Integrações e Payment Core
+## 25.5 Central de Conexões e integrações externas
+
+O Ilê Conecta deve possuir uma Central de Conexões como infraestrutura transversal para administrar integrações de contas, provedores e ferramentas externas utilizadas pelos módulos da plataforma. A Central não é exclusiva do Studio da Casa e não deve ser implementada como uma coleção de integrações isoladas dentro de cada módulo.
+
+A Central deve separar pelo menos três famílias de integração:
+
+1. **Provedores de modelos e serviços de IA:** OpenAI/GPT, Google Gemini e outros fornecedores compatíveis, incluindo serviços de geração de texto, imagem, áudio ou vídeo quando houver API e autorização adequadas.
+2. **Ferramentas de criação, produtividade e desenvolvimento:** Canva, Lovable, Replit, Google AI Studio e ferramentas equivalentes, conforme as capacidades oficiais de integração de cada fornecedor.
+3. **Armazenamento, arquivos, código e serviços operacionais:** Google Drive, GitHub e outros serviços que possam fornecer conexão autorizada e útil aos fluxos do produto.
+
+A lista de fornecedores é ilustrativa e extensível; não representa promessa de integração já disponível nem garante que todos ofereçam API pública, OAuth, operações de edição ou automação adequadas. Cada conector deve ter escopo funcional documentado, baseado nas APIs, permissões e termos oficiais do fornecedor. Não simular controle de uma ferramenta externa quando a integração só permitir importar, exportar ou abrir conteúdo.
+
+A conexão de uma conta não concede automaticamente acesso irrestrito aos módulos. Cada integração deve declarar:
+- método de conexão suportado (OAuth, chave/API credential ou outro mecanismo oficial);
+- titularidade e organização proprietária da conexão;
+- escopos e permissões concedidos;
+- módulos e operações autorizados a utilizá-la;
+- estado, validade, revogação e necessidade de reconexão;
+- limites, quotas e custos conhecidos, quando disponibilizados pelo fornecedor;
+- ambiente e identificador do provedor necessários para rastreabilidade.
+
+Sempre que tecnicamente e contratualmente possível, a casa poderá utilizar suas próprias contas e credenciais (BYOK — Bring Your Own Key), pagando diretamente o fornecedor pelo consumo. Isso não elimina custos próprios do Ilê Conecta com infraestrutura, armazenamento, tráfego, processamento, suporte ou funcionalidades nativas. Não misturar consumo de provedores externos com créditos internos do assistente ou outros produtos sem regra comercial explícita.
+
+A infraestrutura deve ser multi-tenant e segura: credenciais e tokens protegidos no backend, criptografia em repouso, segregação por casa/organização, menor privilégio, rotação e revogação, trilha de auditoria e ausência de segredos em frontend, variáveis públicas, repositório ou logs. A autorização deve ser validada no servidor em cada operação; a interface não é autoridade de acesso.
+
+A camada de integração deve usar adaptadores e contratos comuns quando apropriado, sem forçar APIs incompatíveis a um modelo artificial único. Falha, expiração ou indisponibilidade de um conector não pode comprometer os demais módulos nem provocar fallback silencioso para outra conta, provedor ou modalidade de cobrança. Operações externas devem ser rastreáveis por casa, usuário autorizado, conector, provedor, finalidade e resultado, respeitando minimização e retenção de dados.
+
+## 25.6 Studio da Casa e independência da Central
+
+Studio da Casa é um produto/módulo consumidor da Central de Conexões, não o proprietário nem a implementação da infraestrutura de integrações. Seu escopo funcional, ambiente de acesso, posicionamento, identidade comercial, modelo de planos e eventual contratação independente permanecem decisões de produto e negócio a serem definidas em etapa posterior.
+
+A arquitetura deve preservar, sem assumir qualquer modelo comercial agora, três possibilidades: Studio como módulo nativo do Ilê Conecta; Studio comercializado como vertical independente; ou oferta combinada, com integração nativa e contratação autônoma. A eventual independência comercial exige avaliar identidade e autenticação, organizações/tenants, billing, suporte, armazenamento, permissões, termos, marca e integração com o ecossistema. Não presumir que a simples separação de código ou interface seja suficiente para torná-lo produto independente.
+
+O Studio poderá consumir conectores de IA e ferramentas criativas, como Canva, quando operações oficiais permitirem. Fluxos como criar, importar, editar, exportar e publicar devem ser especificados individualmente por integração; não prometer edição embutida ou sincronização bidirecional sem suporte técnico confirmado. Dados estruturados já existentes no Ilê Conecta (por exemplo, nome, data, valor, vagas e identidade visual de uma oferta) poderão alimentar fluxos de criação mediante autorização da casa, com revisão humana antes da publicação.
+
+A localização do Studio nos ambientes do produto, seu acesso por plano, sua precificação, venda separada, público externo e roadmap de lançamento ficam explicitamente **em decisão pendente**. Esta definição arquitetural não autoriza implementação, contratação de fornecedor, conexão de contas reais ou alteração comercial.
+
 
 Provedores de pagamento, IA, e-mail, push e mídia são isolados por adaptadores. Trocar fornecedor não deve exigir reconstrução dos módulos de negócio.
 
