@@ -36,6 +36,7 @@ export const PROVIDER_METHODS = [
   "getCheckout", // ({ ref, account }) -> { ref, status, url, paid, paymentRef }
   "refund", // ({ ref, account, correlation, idempotencyKey }) -> { refundRef, status, reused }
   "fetchFees", // ({ ref, account }) -> { feeCents, method } | null (null = tarifa ainda desconhecida: fica pendente, nunca zero)
+  "fetchReferences", // ({ ref, account }) -> { paymentRef, chargeRef } | null (null = cobrança ainda não existe no provedor)
   "verifyWebhook", // (rawBody, headers) -> Promise<boolean>
   "parseEvent", // (event) -> { id, kind, account, paymentId, ref, paid, fullyRefunded }
   "onboardAccount", // ({ existingAccount, house, userId, email, appUrl }) -> { account, url }
