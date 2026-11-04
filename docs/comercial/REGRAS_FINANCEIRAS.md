@@ -23,7 +23,9 @@
 | Profissional | R$ 179,90 |
 | Premium | R$ 299,90 |
 
-Valores iniciais de lançamento aprovados em 02/11/2026. Ciclo, tributos, prorrata, inadimplência, carência, cancelamento e política de reajuste precisam estar descritos no contrato e implementados de forma coerente antes de cobrança real.
+Valores iniciais de lançamento aprovados em 02/11/2026. Para cobrança mensal, a modalidade recorrente (Pix Automático ou cartão recorrente) utiliza o preço-base. Pagamento manual mensal por Pix ou cartão tem adicional comercial de 5%, informado com preço final antes da contratação. Ciclo, tributos, prorrata, inadimplência, carência, cancelamento e política de reajuste precisam estar descritos no contrato e implementados de forma coerente antes de cobrança real. A política de preços deve ser versionada e não pode alterar retroativamente contratos/assinaturas existentes.
+
+As tarifas de cobrança recorrente da Efí serão absorvidas inicialmente pelo Ilê Conecta como custo de aquisição/operação. A decisão poderá ser revista por alteração futura de preços no painel, com vigência prospectiva, transparência e preservação das condições contratadas. O custo real por modalidade deve ser monitorado e conciliado; não presumir que o recurso de recorrência gratuito signifique transação sem tarifa.
 
 ## 3. Comissões aprovadas
 
@@ -78,13 +80,33 @@ Não são o mesmo produto. Devem ter inventário, entrega, métricas e identific
 
 Preços, posições, frequência, limites, critérios de entrega, reembolso por não entrega e regras de concorrência entre campanhas ainda não estão aprovados. Compra real estava desabilitada para contas reais na auditoria; não presumir disponibilidade.
 
-## 7. Pagamentos e provedor
+## 7. Provedores e distribuição de responsabilidades
 
-A implementação auditada identificou Stripe Connect com direct charges e `application_fee_amount`. Essa configuração representa cobrança e comissão da plataforma; não equivale a escrow nem prova retenção do saldo na plataforma.
+A arquitetura aprovada separa os fluxos por natureza econômica:
 
-A decisão final sobre provedor e estrutura de liquidação deve ser formalizada. Há referências históricas/residuais a Asaas e Mercado Pago que precisam de reconciliação. Não ativar múltiplos provedores simultaneamente sem desenho e autorização.
+**Stripe — marketplace (clientes/casas):**
+- Stripe Connect Direct Charges.
+- Casa recebe diretamente sua parcela; plataforma recebe comissão via `application_fee_amount`.
+- Comissão: 15% em rituais coletivos e 4% nas demais transações elegíveis.
+- Sem escrow, retenção de 72 horas ou reserva financeira pela plataforma.
 
-Não declarar que os valores ficam retidos até três dias após o evento. Qualquer retenção, reserva, split ou prazo de repasse depende de produto do provedor, contrato, legislação e validação de ponta a ponta.
+**Efí — monetização própria do Ilê Conecta:**
+- Planos/assinaturas, vagas adicionais, créditos de IA, destaque, impulsionamento e outros produtos próprios.
+- Modalidades previstas: Pix Automático e cartão recorrente pelo preço-base; Pix manual e cartão manual com adicional de 5%.
+- Tarifas das modalidades recorrentes serão absorvidas inicialmente pela plataforma.
+- Preços e tarifas podem ser revistos prospectivamente, preservando contratos e assinaturas existentes.
+- Boleto pode ser considerado quando houver validação específica do fluxo e da experiência.
+
+**Payment Core:**
+- Núcleo único independente de provedor, com adaptadores Stripe e Efí.
+- Provedor, ambiente, categoria, modalidade, IDs externos e versão das regras ficam registrados por transação/assinatura.
+- Operações posteriores usam sempre o provedor de origem.
+- Não existe troca retroativa, fallback silencioso ou alteração de provedor em operação já iniciada.
+- Roteamento administrativo por categoria/modalidade será habilitado somente após validação da combinação e autorização.
+
+A arquitetura está aprovada; a integração Efí ainda depende de homologação de assinaturas, Pix Automático, cobranças avulsas, cancelamentos, devoluções, webhooks e conciliação. Credenciais e certificados ficam apenas no backend, separados por ambiente.
+
+Não declarar que valores de marketplace ficam retidos até três dias após o evento. A casa recebe diretamente conforme o modelo Stripe Direct Charges aprovado.
 
 ## 8. Cancelamentos, reembolsos e disputas
 
@@ -125,6 +147,12 @@ O sistema deve distinguir:
 Não registrar repasse como realizado sem evidência do provedor. Não somar valores pendentes como receita liquidada. O ledger deve ser append-only ou preservar histórico imutável por lançamentos compensatórios.
 
 ## 11. Pendências obrigatórias antes de produção
+
+- Confirmar tarifas Efí efetivas para cada modalidade, inclusive cartão recorrente e Pix Automático, e monitorar custo por plano.
+- Homologar autorização, cobrança inicial e subsequente, cancelamento, inadimplência, retries, webhooks e conciliação do Pix Automático.
+- Homologar assinaturas de cartão e cobranças avulsas Efí.
+- Validar adicional de 5% para pagamento mensal manual com jurídico e apresentação transparente no checkout.
+- Validar regras de reajuste prospectivo, versionamento de preço e preservação de assinaturas existentes.
 
 - Parecer jurídico sobre intermediação, responsabilidade e modelo de pagamento.
 - Provedor definitivo e modelo de Connect/liquidação.
