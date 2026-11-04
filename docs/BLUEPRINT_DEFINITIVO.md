@@ -471,6 +471,12 @@ Repasse, retenção, saldo, disputas e responsabilidades devem respeitar produto
 
 Referências antigas a Asaas e Mercado Pago devem ser reconciliadas. Código/configuração histórica não comprova provedor ativo.
 
+### 19.4.1 Estado da arquitetura financeira (EXEC-01)
+
+Marketplace (Stripe Connect) e Platform Billing (cobranças próprias da plataforma, a cargo da Efí) são domínios independentes, com integrações, registros, webhooks, estados financeiros e conciliações próprios; falha em um não pode afetar o outro. O contrato do Marketplace está implementado e testado em ambiente local (PR #140, Draft, ainda não aplicada em produção); o contrato recomendado para Platform Billing está em `docs/financeiro/CONTRATOS_MARKETPLACE_E_PLATFORM_BILLING.md` e **não está implementado**.
+
+No Marketplace, o código da EXEC-01 registra por pagamento: provedor, conta de origem, sessão de checkout, PaymentIntent e Charge, comissão, tarifa do processador (desconhecida = pendente, nunca zero) e lançamentos no ledger. Validação em integração real (Stripe real e Edge Runtime do Supabase) ainda não foi feita e não deve ser afirmada.
+
 ## 19.5 Reembolsos
 
 Distinguir cancelamento antes do início, não execução, atraso, execução iniciada/concluída, divergência, reclamação de qualidade, fraude e disputa.
