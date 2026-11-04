@@ -29,11 +29,13 @@ create function net.http_post(url text, body jsonb default null, headers jsonb d
 `;
 export async function admin() { const c = new pg.Client({ ...CONN, database: "postgres" }); await c.connect(); return c; }
 export async function connect(db) { const c = new pg.Client({ ...CONN, database: db }); await c.connect(); await c.query("select set_config('test.role','service_role',false)"); return c; }
-export async function freshDb(name, { with64 = false } = {}) {
+export async function freshDb(name, { with64 = false, vaultSecret = null } = {}) {
   const a = await admin();
   await a.query(`drop database if exists ${name} with (force)`); await a.query(`create database ${name}`); await a.end();
   const c = await connect(name);
   await c.query(STUBS);
+  // Vault simulado do harness (vault.secrets -> view decrypted_secrets): permite exercitar a função REAL da migration 0065, sem stub.
+  if (vaultSecret) await c.query(`insert into vault.secrets(name, secret) values ('cron_secret', '${vaultSecret}')`);
   const failed = [];
   for (const f of readdirSync(MIG).filter((f) => f.endsWith(".sql") && (with64 || !f.startsWith("0064"))).sort()) {
     let sql = readFileSync(MIG + f, "utf8").replace(/create extension[^;]*(pg_cron|pg_net|supabase_vault)[^;]*;/gi, "");

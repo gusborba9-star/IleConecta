@@ -1,4 +1,4 @@
-// Sobe: PostgreSQL local (já rodando em 127.0.0.1:5544) com 0001–0064, Stripe simulado, camada REST, e a Edge Function REAL no Deno.
+// Sobe: PostgreSQL local (já rodando em 127.0.0.1:5544) com 0001–0065, Stripe simulado, camada REST, e a Edge Function REAL no Deno.
 import { spawn } from "node:child_process";
 import { freshDb } from "../pgbase.mjs";
 import { startFakeStripe, TEST_KEY } from "./fakeStripe.mjs";
@@ -10,9 +10,8 @@ const FN_DIR = new URL("../../functions/payments/", import.meta.url);
 const ENTRY = new URL("./denoEntry.ts", import.meta.url).pathname;
 
 export async function boot({ db = "e2e", denoBin = process.env.DENO_BIN ?? "deno", port = 18787 } = {}) {
-  const { c, failed } = await freshDb(db, { with64: true });
-  // check_cron_secret existe no banco real mas NÃO está em nenhuma migration do repositório; stub só para o harness.
-  await c.query(`create or replace function public.check_cron_secret(p_secret text) returns boolean language sql stable as $$ select p_secret = '${CRON_SECRET}' $$`);
+  // check_cron_secret agora vem da migration 0065 (função real, lendo o Vault); aqui só o Vault é simulado, com o segredo do teste.
+  const { c, failed } = await freshDb(db, { with64: true, vaultSecret: CRON_SECRET });
   const stripe = await startFakeStripe();
   const shim = await startShim({ conn: { host: "127.0.0.1", port: 5544, user: "postgres", database: db }, serviceKey: "svc-key-e2e" });
   const env = {
