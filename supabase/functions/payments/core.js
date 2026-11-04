@@ -109,6 +109,7 @@ async function findPayment(store, provider, ev) {
  */
 async function confirmAndReconcile({ registry, store, pay, log }) {
   const res = await store.confirm(pay);
+  await linkReferences({ registry, store, pay, log });
   await reconcileFee({ registry, store, pay, log });
   if (res === "reembolso_pendente" && pay.member_due_id) await refundMemberPayment({ registry, store, paymentId: pay.id, log });
   return res;
@@ -127,6 +128,34 @@ export async function reconcileFee({ registry, store, pay, log = console }) {
     log.error("record_fee_failed", pay.id, msg(e)); // informativo: não impede a confirmação; a rotina tenta de novo
     return false;
   }
+}
+
+// ---------- vínculo Checkout ↔ PaymentIntent ↔ Charge ----------
+/**
+ * Registra o PaymentIntent e a Charge do pagamento confirmado. Melhor esforço: nunca derruba a confirmação financeira;
+ * o que falhar fica para a rotina. Um conflito (outra Charge já registrada) ou referência duplicada em outro pagamento é
+ * sinal de cobrança em dobro e fica no log para investigação — nada é sobrescrito.
+ */
+export async function linkReferences({ registry, store, pay, log = console }) {
+  try {
+    if (!pay.provider_ref || !pay.stripe_account_id) return false;
+    const refs = await registry.forPayment(pay).fetchReferences({ ref: pay.provider_ref, account: pay.stripe_account_id });
+    if (!refs) return false;
+    const res = await store.recordReferences(pay, refs);
+    if (res === "conflito" || res === "duplicada") log.error("provider_ref_conflict", pay.id, res, refs.paymentRef, refs.chargeRef);
+    return res === "registrada" || res === "ja_registrada";
+  } catch (e) {
+    log.error("link_references_failed", pay.id, msg(e));
+    return false;
+  }
+}
+
+/** Rotina: confirmados/estornados ainda sem PaymentIntent/Charge registrados. */
+export async function linkMissingReferences({ registry, store, limit = 25, log = console }) {
+  const list = await store.paymentsMissingRefs(limit);
+  let done = 0, failed = 0;
+  for (const pay of list) (await linkReferences({ registry, store, pay, log })) ? done++ : failed++;
+  return { refs_done: done, refs_failed: failed };
 }
 
 /** Rotina: confirmados sem tarifa registrada. */
@@ -261,11 +290,12 @@ export async function settlePending({ registry, store, scope = null, log = conso
   return { refunded, failed };
 }
 
-/** Rotina agendada: reembolsos pendentes de qualquer pessoa + tarifas que ficaram sem registro. */
+/** Rotina agendada: reembolsos pendentes de qualquer pessoa + tarifas e vínculos que ficaram sem registro. */
 export async function sweep({ registry, store, log = console }) {
   const r = await settlePending({ registry, store, scope: null, log });
   const f = await reconcileFees({ registry, store, log });
-  return { ...r, ...f };
+  const k = await linkMissingReferences({ registry, store, log });
+  return { ...r, ...f, ...k };
 }
 
 export { ProviderError, DivergenceError, CheckoutStateError };

@@ -71,6 +71,20 @@ export function createStore(admin) {
       return must(await admin.rpc("payments_missing_processor_fee", { p_limit: limit }), "missing_fee") ?? [];
     },
 
+    // ----- vínculo com PaymentIntent/Charge (grava uma vez; nunca sobrescreve) -----
+    /** 'registrada' | 'ja_registrada' | 'conflito' | 'duplicada' | 'nao_confirmada'; divergência de identidade levanta DivergenceError. */
+    async recordReferences(pay, { paymentRef, chargeRef }) {
+      const res = must(await admin.rpc("record_provider_refs_for", {
+        p_payment: pay.id, p_provider: pay.provider, p_provider_ref: pay.provider_ref, p_account: pay.stripe_account_id,
+        p_payment_ref: paymentRef, p_charge_ref: chargeRef,
+      }), "record_refs");
+      if (res === "divergente") throw new DivergenceError("O banco recusou o vínculo: identidade da transação divergente.");
+      return res;
+    },
+    async paymentsMissingRefs(limit) {
+      return must(await admin.rpc("payments_missing_provider_refs", { p_limit: limit }), "missing_refs") ?? [];
+    },
+
     // ----- reembolso -----
     async approvedRefundRequest(paymentId) {
       return must(await admin.from("refund_requests").select("id, payment_id").eq("payment_id", paymentId).eq("status", "aprovado").maybeSingle(), "approved_refund");
