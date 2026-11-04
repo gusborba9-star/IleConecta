@@ -13,7 +13,8 @@ const SECRET = "whsec_test";
 function memStore(seed = []) {
   const s = {
     now: 1_000_000,
-    payments: new Map(seed.map((p) => [p.id, { status: "pendente", provider: "stripe", stripe_account_id: "acct_1", processor_fee_cents: null, member_due_id: null, ...p }])),
+    seq: 0,
+    payments: new Map(seed.map((p) => [p.id, { status: "pendente", provider: "stripe", stripe_account_id: "acct_1", identity_strict: true, processor_fee_cents: null, member_due_id: null, ...p }])),
     events: new Map(),
     refundRequests: new Map(), // id -> { id, payment_id, status }
     log: { confirm: 0, ledger: 0, fee: 0, completeRefund: 0, completeCancel: 0 },
@@ -24,24 +25,26 @@ function memStore(seed = []) {
     async acquireEvent({ id, type, account, payload }) {
       await Promise.resolve(); // dá chance a outro concorrente de chegar junto; a decisão abaixo é atômica (como o INSERT ... ON CONFLICT)
       const e = s.events.get(id);
-      if (!e) { s.events.set(id, { id, type, account, payload, processed_at: null, locked_until: s.now + 120_000, attempts: 1, error: null }); return "acquired"; }
-      if (e.processed_at) return "done";
-      if (e.locked_until === null || e.locked_until < s.now) { e.locked_until = s.now + 120_000; e.attempts++; return "acquired"; }
-      return "busy";
+      if (!e) { s.events.set(id, { id, type, account, payload, processed_at: null, locked_until: s.now + 120_000, attempts: 1, error: null, lease_token: `tok${++s.seq}` }); return { outcome: "acquired", token: s.events.get(id).lease_token }; }
+      if (e.processed_at) return { outcome: "done", token: null };
+      if (e.locked_until === null || e.locked_until < s.now) { e.locked_until = s.now + 120_000; e.attempts++; e.lease_token = `tok${++s.seq}`; return { outcome: "acquired", token: e.lease_token }; }
+      return { outcome: "busy", token: null };
     },
-    async finishEvent(id, outcome, error) {
+    async finishEvent(id, token, outcome, error) {
       boom("finishEvent");
       const e = s.events.get(id);
+      if (!e || e.lease_token !== token || e.processed_at) return false; // só o dono da trava vigente (espelha finish_stripe_event)
       if (outcome === "done") Object.assign(e, { processed_at: s.now, error: null, locked_until: null });
       else if (outcome === "rejected") Object.assign(e, { processed_at: s.now, error: `rejeitado: ${error}`, locked_until: null });
       else Object.assign(e, { error, locked_until: null });
+      return true;
     },
     async paymentById(id) { return s.payments.get(id) ?? null; },
     async paymentByRef(provider, ref) { return [...s.payments.values()].find((p) => p.provider === provider && p.provider_ref === ref) ?? null; },
     async confirm(pay) {
       boom("confirm");
       const p = s.payments.get(pay.id);
-      if (!p || p.provider !== pay.provider || p.provider_ref !== pay.provider_ref || (p.stripe_account_id && p.stripe_account_id !== pay.stripe_account_id)) throw new DivergenceError("banco: divergente");
+      if (!identityMatches(p, pay.provider, pay.provider_ref, pay.stripe_account_id)) throw new DivergenceError("banco: divergente");
       if (p.status === "confirmado") return "ja_confirmado";
       p.status = "confirmado"; s.log.confirm++; s.log.ledger += 3;
       return "confirmado";
@@ -77,6 +80,12 @@ function memStore(seed = []) {
   });
 }
 
+// Espelha payment_identity_matches (0064): conta registrada deve ser igual; sem conta, só histórico marcado (identity_strict=false).
+function identityMatches(p, provider, ref, account) {
+  if (!p || p.provider !== provider || !p.provider_ref || p.provider_ref !== ref) return false;
+  return p.stripe_account_id ? p.stripe_account_id === account : p.identity_strict === false;
+}
+
 // ---------- Stripe falso (fetch) ----------
 function stripeFake(opts = {}) {
   const st = { refundsCreated: 0, refunds: [], calls: [], feeFail: false, ...opts };
@@ -89,6 +98,7 @@ function stripeFake(opts = {}) {
     let m;
     if (key === "GET /v1/refunds") return ok({ data: st.refunds });
     if (key === "POST /v1/refunds") { st.refundsCreated++; const r = { id: `re_${st.refundsCreated}`, status: "succeeded" }; st.refunds.push(r); return ok(r); }
+    if (st.sessionError && key.startsWith("GET /v1/checkout/sessions/")) { if (st.sessionError === "network") throw new TypeError("fetch failed"); return { ok: false, status: st.sessionError, json: async () => ({ error: { message: `http ${st.sessionError}` } }) }; }
     if ((m = key.match(/^GET \/v1\/checkout\/sessions\/(.+)$/))) return ok({ id: m[1], status: st.sessionStatus ?? "open", url: "https://pay/open", payment_status: st.paid === false ? "unpaid" : "paid", payment_intent: "pi_1" });
     if (key === "POST /v1/checkout/sessions") return ok({ id: "cs_new", url: "https://pay/new" });
     if (key.startsWith("GET /v1/payment_intents/")) return st.feeFail ? bad("fee api down") : ok({ latest_charge: { payment_method_details: { type: "card" }, balance_transaction: { fee_details: [{ type: "stripe_fee", amount: 250 }] } } });
@@ -244,8 +254,16 @@ test("pagamento de outro provedor não é confirmado por aviso do Stripe", async
   assert.equal(c.store.log.confirm, 0);
 });
 
-test("pagamento histórico sem conta registrada continua confirmando (compatibilidade)", async () => {
-  const c = setup([{ ...PAY, stripe_account_id: null }]);
+test("pagamento NOVO sem conta registrada: rejeitado, mesmo com conta no aviso", async () => {
+  const c = setup([{ ...PAY, stripe_account_id: null }]); // identity_strict=true (padrão de linha nova)
+  const r = await deliver(c, paidEvent({ account: "acct_1" }));
+  assert.equal(r.body.rejected, true);
+  assert.equal(c.store.payments.get("p1").status, "pendente");
+  assert.equal(c.store.log.confirm, 0);
+});
+
+test("pagamento histórico sem conta registrada (marcado) continua confirmando (compatibilidade)", async () => {
+  const c = setup([{ ...PAY, stripe_account_id: null, identity_strict: false }]);
   const r = await deliver(c, paidEvent({ account: "acct_1" }));
   assert.equal(r.status, 200);
   assert.equal(c.store.payments.get("p1").status, "confirmado");
@@ -442,4 +460,117 @@ test("rotina: reembolsos pendentes + tarifas faltantes", async () => {
   const c = setup([{ ...confirmedPay, reservation_id: "r9" }]);
   c.store.sources = [{ kind: "reserva", id: "r9" }];
   assert.deepEqual(await core.sweep({ registry: c.registry, store: c.store, log: quiet }), { refunded: 1, failed: 0, fees_done: 0, fees_failed: 0 });
+});
+
+// ---------- propriedade da trava (lease com dono) ----------
+test("lease: worker antigo (lease vencida) não conclui o evento do novo dono", async () => {
+  const c = setup();
+  const old = await c.store.acquireEvent({ id: "evt_1", type: "checkout.session.completed", account: "acct_1", payload: {} });
+  assert.equal(old.outcome, "acquired");
+  c.store.now += 121_000; // a lease do worker antigo venceu
+  const nw = await c.store.acquireEvent({ id: "evt_1", type: "checkout.session.completed", account: "acct_1", payload: {} });
+  assert.equal(nw.outcome, "acquired");
+  assert.notEqual(nw.token, old.token);
+  // o worker antigo não consegue concluir, rejeitar nem liberar
+  assert.equal(await c.store.finishEvent("evt_1", old.token, "done", null), false);
+  assert.equal(await c.store.finishEvent("evt_1", old.token, "rejected", "x"), false);
+  assert.equal(await c.store.finishEvent("evt_1", old.token, "retry", "x"), false);
+  const e = c.store.events.get("evt_1");
+  assert.equal(e.processed_at, null);
+  assert.equal(e.lease_token, nw.token);
+  assert.ok(e.locked_until > c.store.now); // trava do novo dono intacta
+  assert.equal((await c.store.acquireEvent({ id: "evt_1", type: "t", account: null, payload: {} })).outcome, "busy");
+  assert.equal(await c.store.finishEvent("evt_1", nw.token, "done", null), true);
+});
+
+test("lease: worker lento termina depois de outro assumir -> 409 e o evento do novo dono não é tocado", async () => {
+  const c = setup();
+  // o handler do worker A demora: durante a execução, a lease vence e B assume
+  const origConfirm = c.store.confirm;
+  let takeover;
+  c.store.confirm = async (pay) => {
+    c.store.now += 121_000;
+    takeover = await c.store.acquireEvent({ id: "evt_1", type: "checkout.session.completed", account: "acct_1", payload: {} });
+    return origConfirm(pay);
+  };
+  const r = await deliver(c, paidEvent());
+  assert.equal(r.status, 409);
+  const e = c.store.events.get("evt_1");
+  assert.equal(e.processed_at, null);
+  assert.equal(e.lease_token, takeover.token);
+  assert.equal(c.store.log.confirm, 1); // efeito financeiro continua único
+  // B conclui normalmente (confirmação idempotente)
+  c.store.confirm = origConfirm;
+  assert.equal(await c.store.finishEvent("evt_1", takeover.token, "done", null), true);
+});
+
+test("lease: worker antigo com divergência não rejeita o evento do novo dono", async () => {
+  const c = setup();
+  const origConfirm = c.store.confirm;
+  c.store.confirm = async () => {
+    c.store.now += 121_000;
+    await c.store.acquireEvent({ id: "evt_1", type: "t", account: null, payload: {} });
+    throw new DivergenceError("banco: divergente");
+  };
+  const r = await deliver(c, paidEvent());
+  assert.equal(r.body.rejected, true);
+  assert.equal(c.store.events.get("evt_1").processed_at, null); // o rejeito do worker antigo foi ignorado pelo banco
+  c.store.confirm = origConfirm;
+});
+
+test("lease: duas entregas em lotes concorrentes após expiração — só uma assume", async () => {
+  const c = setup();
+  await c.store.acquireEvent({ id: "evt_1", type: "t", account: null, payload: {} });
+  c.store.now += 121_000;
+  const orig = c.store.acquireEvent; let arrived = 0; let release; const gate = new Promise((r) => { release = r; });
+  c.store.acquireEvent = async (e) => { if (++arrived === 4) release(); await gate; return orig(e); };
+  const rs = await Promise.all([1, 2, 3, 4].map(() => deliver(c, paidEvent())));
+  assert.deepEqual(rs.map((r) => r.status).sort(), [200, 409, 409, 409]);
+  assert.equal(c.store.log.confirm, 1);
+});
+
+// ---------- checkout: sem nova cobrança sem evidência ----------
+test("checkout: erro de rede na consulta PROPAGA e não cria nova cobrança", async () => {
+  const c = setup(undefined, { sessionError: "network" });
+  await assert.rejects(core.openCheckout(openArgs(c, c.store.payments.get("p1"))), /fetch failed/);
+  assert.ok(!c.fake.st.calls.includes("POST /v1/checkout/sessions"));
+  assert.equal(c.store.payments.get("p1").provider_ref, "cs_1");
+});
+
+for (const code of [401, 403, 429, 500, 503]) {
+  test(`checkout: HTTP ${code} do provedor propaga (autenticação/indisponibilidade) sem nova cobrança`, async () => {
+    const c = setup(undefined, { sessionError: code });
+    await assert.rejects(core.openCheckout(openArgs(c, c.store.payments.get("p1"))), (e) => e.name === "ProviderError");
+    assert.ok(!c.fake.st.calls.includes("POST /v1/checkout/sessions"));
+    assert.equal(c.store.payments.get("p1").provider_ref, "cs_1");
+  });
+}
+
+test("checkout: sessão paga/em processamento não abre outra cobrança", async () => {
+  for (const paid of [true, false]) {
+    const c = setup(undefined, { sessionStatus: "complete", paid });
+    await assert.rejects(core.openCheckout(openArgs(c, c.store.payments.get("p1"))), (e) => e.name === "CheckoutStateError");
+    assert.ok(!c.fake.st.calls.includes("POST /v1/checkout/sessions"));
+  }
+});
+
+test("checkout: estado desconhecido da sessão não abre outra cobrança", async () => {
+  const c = setup(undefined, { sessionStatus: "algo_novo" });
+  await assert.rejects(core.openCheckout(openArgs(c, c.store.payments.get("p1"))), (e) => e.name === "CheckoutStateError");
+  assert.ok(!c.fake.st.calls.includes("POST /v1/checkout/sessions"));
+});
+
+test("checkout: só a evidência de sessão expirada autoriza nova cobrança", async () => {
+  const c = setup(undefined, { sessionStatus: "expired" });
+  const r = await core.openCheckout(openArgs(c, c.store.payments.get("p1")));
+  assert.equal(r.url, "https://pay/new");
+  assert.equal(c.fake.st.calls.filter((k) => k === "POST /v1/checkout/sessions").length, 1);
+  assert.equal(c.store.payments.get("p1").provider_ref, "cs_new");
+});
+
+// ---------- identidade estrita no sync / fila de tarifas ----------
+test("sync: transação nova sem conta registrada não confirma (divergência)", async () => {
+  const c = setup([{ ...PAY, stripe_account_id: null }]);
+  assert.deepEqual(await core.syncPayment({ registry: c.registry, store: c.store, pay: c.store.payments.get("p1"), log: quiet }), { status: "pendente" });
+  assert.equal(c.store.log.confirm, 0);
 });
