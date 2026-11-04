@@ -401,11 +401,13 @@ Toda promoção é identificada. Período contratado é respeitado; início e ex
 
 ## 18.1 Planos
 
-| Plano | Mensalidade |
-|---|---:|
-| Essencial | R$ 89,90 |
-| Profissional | R$ 179,90 |
-| Premium | R$ 299,90 |
+| Plano | Mensal | Anual (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 89,90 | R$ 899,00 |
+| Profissional | R$ 179,90 | R$ 1.799,00 |
+| Premium | R$ 299,90 | R$ 2.999,00 |
+
+O plano anual concede 12 meses de vigência pelo preço equivalente a 10 mensalidades-base (desconto efetivo de 16,67% frente a 12 mensalidades). A contratação anual é paga antecipadamente. A franquia de cada recurso continua mensal, renovada a cada ciclo mensal, sem multiplicação antecipada por 12 e sem acúmulo de saldo não utilizado. O benefício anual altera o preço e a vigência, não a capacidade mensal de consumo.
 
 Direcionamento:
 - **Essencial:** presença e operação básica; atendimento manual; sem assistente virtual.
@@ -416,13 +418,13 @@ A matriz exata de recursos e limites deve ser central. Módulos não criam regra
 
 ## 18.2 Equipe adicional
 
-| Plano | Regra |
-|---|---|
-| Essencial | R$ 29,90/mês por vaga adicional |
-| Profissional | R$ 39,90/mês por vaga adicional |
-| Premium | 1 vaga adicional incluída; extras R$ 39,90/mês |
+| Plano | Mensal por vaga adicional | Anual por vaga adicional (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 29,90 | R$ 299,00 |
+| Profissional | R$ 39,90 | R$ 399,00 |
+| Premium | 1 vaga incluída; extras R$ 39,90 | 1 vaga incluída; extras R$ 399,00 |
 
-Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos não podem gerar vagas duplicadas ou cobranças indevidas.
+A vaga adicional anual concede 12 meses de acesso pelo preço equivalente a 10 mensalidades da vaga. A contratação deve permanecer vinculada à assinatura principal da casa, com ciclo e vigência coordenados; não criar assinaturas independentes por colaborador. A vaga amplia o acesso da equipe, mas não multiplica nem cria franquias próprias de recursos da casa. Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos não podem gerar vagas duplicadas ou cobranças indevidas.
 
 ## 18.3 Créditos de IA
 
