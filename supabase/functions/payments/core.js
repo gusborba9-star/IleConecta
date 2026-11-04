@@ -231,7 +231,10 @@ export async function refundMemberPayment({ registry, store, paymentId, log = co
   }
 }
 
-/** Conclui os reembolsos de cancelamento pendentes. `scope` limita a uma pessoa (null = todos). */
+/**
+ * Conclui os reembolsos de cancelamento pendentes. `scope` limita a uma pessoa (null = todos).
+ * @param {{ registry: any, store: any, scope?: string | null, log?: any }} args
+ */
 export async function settlePending({ registry, store, scope = null, log = console }) {
   const sources = await store.pendingSources(scope, 50);
   let refunded = 0, failed = 0;
