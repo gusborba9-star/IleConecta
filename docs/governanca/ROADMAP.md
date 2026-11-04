@@ -98,8 +98,9 @@ Jornadas mínimas:
 10. Cliente acompanha pedido, pagamento e solicitação de suporte.
 11. Casa acompanha a pessoa no CRM sem duplicação de dados.
 12. Titular convida colaborador e concede apenas permissões autorizadas.
-13. Casa contrata plano/adicional e capacidades são recalculadas corretamente.
-14. Divulgação comprada é entregue e identificada como patrocinada.
+13. Casa contrata plano mensal ou anual, e capacidades/franquias são aplicadas por ciclo corretamente.
+14. Vagas adicionais de equipe são cobradas junto à assinatura principal, em ciclo mensal ou anual, sem assinaturas independentes por colaborador.
+15. Divulgação comprada é entregue e identificada como patrocinada.
 
 Critério de saída:
 - Cenários executados em ambiente controlado.
@@ -117,6 +118,8 @@ Entregas:
 - Definição formal de tarifas do provedor, repasses, cancelamentos, reembolsos e disputas.
 - Validação jurídica de intermediação, responsabilidade e termos da casa.
 - Regras finais de planos, equipe, créditos IA e divulgação.
+- Validar planos anuais (12 meses por 10 mensalidades) e vagas anuais de equipe, incluindo ciclo, renovação, upgrade/downgrade, prorrata, cancelamento e preservação de preço contratado.
+- Validar renovação mensal das franquias durante a vigência anual, sem antecipação ou acúmulo.
 - Testes de cobrança, estorno e conciliação em sandbox.
 
 Critério de saída:
