@@ -101,6 +101,17 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
       return { feeCents, method: type === "pix" ? "pix" : type === "card" ? "card" : null };
     },
 
+    // ---------- vínculo Checkout ↔ PaymentIntent ↔ Charge ----------
+    async fetchReferences({ ref, account }) {
+      const s = await call(`/v1/checkout/sessions/${ref}`, { account });
+      const paymentRef = typeof s.payment_intent === "string" ? s.payment_intent : s.payment_intent?.id;
+      if (!paymentRef) return null;
+      const pi = await call(`/v1/payment_intents/${paymentRef}`, { account });
+      const chargeRef = typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id;
+      if (!chargeRef) return null;
+      return { paymentRef: String(paymentRef), chargeRef: String(chargeRef) };
+    },
+
     // ---------- avisos ----------
     verifyWebhook(rawBody, headers) {
       const h = typeof headers?.get === "function" ? headers.get("stripe-signature") : headers?.["stripe-signature"];

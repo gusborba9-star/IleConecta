@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const sql = readFileSync(new URL("../supabase/migrations/0064_payment_provider_decoupling.sql", import.meta.url), "utf8");
+const sql66 = readFileSync(new URL("../supabase/migrations/0066_payments_provider_refs.sql", import.meta.url), "utf8");
 
 test("0064: só adiciona; não derruba nem reescreve o que existe", () => {
   // únicos drops permitidos: as 3 funções novas deste PR (assinatura mudou antes de qualquer aplicação) e o próprio gatilho
@@ -38,7 +39,7 @@ test("código não referencia funções que a migração não cria", () => {
   const store = readFileSync(new URL("../supabase/functions/payments/store.js", import.meta.url), "utf8");
   const used = [...store.matchAll(/rpc\("([a-z_]+)"/g)].map((m) => m[1]);
   const existing = new Set(["complete_refund", "complete_cancel_refund"]); // já existem no banco real (0019)
-  for (const fn of used) assert.ok(existing.has(fn) || new RegExp(`function public\\.${fn}\\b`).test(sql), fn);
+  for (const fn of used) assert.ok(existing.has(fn) || new RegExp(`function public\\.${fn}\\b`).test(sql + sql66), fn);
 });
 
 test("0064: finish só pelo dono da trava (token) e aquisição devolve token", () => {
@@ -75,4 +76,24 @@ test("0064: estorno usa o ledger registrado e nunca recalcula pela regra atual",
     assert.ok(!/-pay\.gross_cents/.test(body));
   }
   assert.match(sql, /Comissão registrada não encontrada para o estorno/);
+});
+
+test("0066: só adiciona (colunas nulas, índices únicos parciais) e é idempotente", () => {
+  assert.doesNotMatch(sql66, /\b(drop table|drop column|delete from|truncate)\b/i);
+  assert.match(sql66, /add column if not exists provider_payment_ref/i);
+  assert.match(sql66, /add column if not exists provider_charge_ref/i);
+  assert.match(sql66, /create unique index if not exists payments_provider_charge_ref_uq[\s\S]*where provider_charge_ref is not null/i);
+  assert.match(sql66, /create unique index if not exists payments_provider_payment_ref_uq[\s\S]*where provider_payment_ref is not null/i);
+  assert.doesNotMatch(sql66, /update public\.payments set (status|gross_cents|fee_cents|processor_fee_cents)/i);
+});
+
+test("0066: funções exigem service_role, não são públicas e gravam uma única vez", () => {
+  for (const fn of ["record_provider_refs_for", "payments_missing_provider_refs", "payments_provider_anomalies"]) {
+    assert.match(sql66, new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`));
+    assert.match(sql66, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`));
+  }
+  assert.match(sql66, /return 'conflito'/);
+  assert.match(sql66, /return 'ja_registrada'/);
+  assert.match(sql66, /exception when unique_violation then\s+return 'duplicada'/);
+  assert.match(sql66, /payment_identity_matches\(pay, p_provider, p_provider_ref, p_account\)/);
 });
