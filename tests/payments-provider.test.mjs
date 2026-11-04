@@ -226,3 +226,20 @@ test("adaptador: assinatura do aviso", async () => {
   assert.equal(await a.verifyWebhook(raw, { "stripe-signature": "t=1,v1=00" }), false);
   assert.equal(await a.verifyWebhook(raw, {}), false);
 });
+
+// ---------- fetchReferences (Checkout -> PaymentIntent -> Charge) ----------
+function refsAdapter({ intent = "pi_9", charge = "ch_9" } = {}) {
+  const fetchImpl = async (url) => {
+    const path = new URL(url).pathname;
+    const ok = (b) => ({ ok: true, status: 200, json: async () => b });
+    if (path.startsWith("/v1/checkout/sessions/")) return ok({ id: "cs_r", payment_intent: intent });
+    if (path.startsWith("/v1/payment_intents/")) return ok({ id: intent, latest_charge: charge });
+    return { ok: false, status: 404, json: async () => ({ error: { message: "x" } }) };
+  };
+  return createStripeAdapter({ secret: "sk", webhookSecret: "w", fetchImpl, log: { error() {} } });
+}
+test("fetchReferences: devolve PaymentIntent e Charge (latest_charge como id ou objeto)", async () => {
+  assert.deepEqual(await refsAdapter().fetchReferences({ ref: "cs_r", account: "acct_1" }), { paymentRef: "pi_9", chargeRef: "ch_9" });
+  assert.deepEqual(await refsAdapter({ charge: null }).fetchReferences({ ref: "cs_r", account: "acct_1" }), null);
+  assert.deepEqual(await refsAdapter({ intent: null }).fetchReferences({ ref: "cs_r", account: "acct_1" }), null);
+});
