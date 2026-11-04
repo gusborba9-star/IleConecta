@@ -6,8 +6,8 @@
 - **Data de consolidação:** 03/11/2026
 - **Repositório oficial:** `gusborba9-star/IleConecta`
 - **Branch de referência:** `main`
-- **Commit-base:** `5463dbd8d32b1ab6acbca9026bc36363ef18ba8c`
-- **Status:** consolidado para aprovação formal do proprietário.
+- **Commit-base:** `8900a3fce294410531bac32068fcecd907419777`
+- **Status:** arquitetura multi-provedor aprovada pelo proprietário em 03/11/2026; implementação sujeita ao Roadmap e às ordens específicas.
 - **Escopo desta inclusão:** documentação exclusivamente. Não autoriza alterações de código, banco, migrations, configurações, integrações, deploy ou comportamento em produção.
 
 ---
@@ -401,11 +401,13 @@ Toda promoção é identificada. Período contratado é respeitado; início e ex
 
 ## 18.1 Planos
 
-| Plano | Mensalidade |
-|---|---:|
-| Essencial | R$ 89,90 |
-| Profissional | R$ 179,90 |
-| Premium | R$ 299,90 |
+| Plano | Mensal | Anual (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 89,90 | R$ 899,00 |
+| Profissional | R$ 179,90 | R$ 1.799,00 |
+| Premium | R$ 299,90 | R$ 2.999,00 |
+
+O plano anual concede 12 meses de vigência pelo preço equivalente a 10 mensalidades-base (desconto efetivo de 16,67% frente a 12 mensalidades). A contratação anual é paga antecipadamente. A franquia de cada recurso continua mensal, renovada a cada ciclo mensal, sem multiplicação antecipada por 12 e sem acúmulo de saldo não utilizado. O benefício anual altera o preço e a vigência, não a capacidade mensal de consumo.
 
 Direcionamento:
 - **Essencial:** presença e operação básica; atendimento manual; sem assistente virtual.
@@ -416,13 +418,13 @@ A matriz exata de recursos e limites deve ser central. Módulos não criam regra
 
 ## 18.2 Equipe adicional
 
-| Plano | Regra |
-|---|---|
-| Essencial | R$ 29,90/mês por vaga adicional |
-| Profissional | R$ 39,90/mês por vaga adicional |
-| Premium | 1 vaga adicional incluída; extras R$ 39,90/mês |
+| Plano | Mensal por vaga adicional | Anual por vaga adicional (12 meses) |
+|---|---:|---:|
+| Essencial | R$ 29,90 | R$ 299,00 |
+| Profissional | R$ 39,90 | R$ 399,00 |
+| Premium | 1 vaga incluída; extras R$ 39,90 | 1 vaga incluída; extras R$ 399,00 |
 
-Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos não podem gerar vagas duplicadas ou cobranças indevidas.
+A vaga adicional anual concede 12 meses de acesso pelo preço equivalente a 10 mensalidades da vaga. A contratação deve permanecer vinculada à assinatura principal da casa, com ciclo e vigência coordenados; não criar assinaturas independentes por colaborador. A vaga amplia o acesso da equipe, mas não multiplica nem cria franquias próprias de recursos da casa. Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos não podem gerar vagas duplicadas ou cobranças indevidas.
 
 ## 18.3 Créditos de IA
 
@@ -463,13 +465,43 @@ Oferece registro da venda, comprovante, histórico, operação contínua, integr
 
 A casa pode optar por atendimento manual e, em modalidades elegíveis, desativar venda pela plataforma. Isso não desativa automaticamente pagamento interno. Rituais coletivos permanecem obrigatoriamente no fluxo interno.
 
-## 19.4 Provedor e retenção
+## 19.4 Provedores e roteamento financeiro
 
-A implementação identificada utiliza Stripe Connect. Direct charges e `application_fee_amount` não significam escrow ou retenção de recursos na conta da plataforma. Application fee representa comissão; não comprova retenção até três dias após evento.
+A arquitetura aprovada utiliza dois provedores com responsabilidades comerciais distintas:
 
-Repasse, retenção, saldo, disputas e responsabilidades devem respeitar produtos e contratos efetivamente disponíveis no provedor escolhido. Não prometer retenção ou prazo de repasse sem validação técnica, contratual e jurídica.
+**Stripe — marketplace (clientes e casas):**
+- Stripe Connect Direct Charges.
+- A casa é a recebedora direta da cobrança; a plataforma recebe sua comissão por `application_fee_amount`.
+- Comissão de 15% em rituais coletivos e 4% nas demais transações elegíveis.
+- Não existe escrow, retenção de 72 horas ou reserva financeira pela plataforma nesse fluxo.
+- Tarifas do provedor e responsabilidades seguem a configuração e os contratos aplicáveis à conta conectada.
 
-Referências antigas a Asaas e Mercado Pago devem ser reconciliadas. Código/configuração histórica não comprova provedor ativo.
+**Efí — monetização própria da plataforma:**
+- Planos e assinaturas das casas.
+- Vagas adicionais de equipe.
+- Créditos de IA.
+- Destaques e impulsionamentos.
+- Outros produtos e serviços cuja receita pertence ao Ilê Conecta.
+- Modalidades previstas: Pix Automático, cartão recorrente e cobranças avulsas por Pix/cartão; boleto poderá ser habilitado quando validado para o produto.
+- O adicional de 5% para pagamento mensal manual por Pix ou cartão é regra comercial aprovada, sujeito à apresentação transparente antes da contratação e à validação jurídica/contratual.
+
+**Payment Core e identidade do provedor:**
+- Um único núcleo financeiro independente dos provedores.
+- Adaptadores específicos para Stripe e Efí, com contratos internos comuns.
+- Cada transação e assinatura preserva provedor, ambiente, categoria, modalidade, identificadores externos, versão de preço/regra e estado.
+- Uma assinatura ou transação permanece vinculada ao provedor de origem durante todo seu ciclo de vida, inclusive consulta, renovação, cancelamento, reembolso, webhook e conciliação.
+- A configuração atual de roteamento nunca altera transações ou assinaturas já iniciadas.
+- Não realizar fallback silencioso nem trocar provedor no meio de uma operação.
+- A arquitetura poderá receber outros provedores futuramente, sem implementar abstrações especulativas ou integrações não aprovadas.
+
+**Roteamento administrativo futuro:**
+- O painel central poderá selecionar provedor por categoria comercial e modalidade de pagamento, dentro das capacidades efetivamente suportadas.
+- Antes de ativar uma combinação, validar ambiente, conexão, credenciais, produto contratado, capacidades, webhooks, recorrência, devoluções e conciliação.
+- Alterações devem possuir autorização, histórico, validação e possibilidade de reversão; não podem afetar operações existentes.
+
+As credenciais e certificados são exclusivamente de backend, separados entre homologação e produção. Segredos nunca são expostos ao frontend, repositório ou logs.
+
+A aprovação da arquitetura não comprova que os dois adaptadores estejam implementados ou que todos os fluxos da Efí estejam homologados. Stripe permanece o primeiro fluxo ativo; Efí será integrada à monetização própria após validação em homologação.
 
 ## 19.5 Reembolsos
 
@@ -541,6 +573,8 @@ Gestão financeira: transações, conciliação, reembolsos, disputas, tarifas e
 
 Gestão de segurança: usuários, permissões, ações administrativas, auditoria e incidentes.
 
+O superadministrador possui autoridade administrativa integral sobre todos os domínios e capacidades da plataforma. Essa autoridade é distinta das permissões delegadas a administradores financeiros, operacionais, técnicos e de suporte. Acesso privilegiado deve seguir menor privilégio, autenticação reforçada quando aplicável e trilha de auditoria; credenciais privadas de provedores nunca são exibidas no painel.
+
 Documentos oficiais possuem versão, vigência, responsável, histórico, aprovação e registro de aceite quando necessário.
 
 ---
@@ -561,9 +595,50 @@ Banco é fonte persistente de verdade. Estado local melhora experiência, mas n�
 
 Pagamento, comissão, reserva, confirmação, reembolso, assinatura, controle de vagas, permissões e operações administrativas críticas ocorrem em ambiente confiável. Chaves privilegiadas nunca são expostas no frontend.
 
-## 25.4 Integrações
+## 25.4 Integrações e Payment Core
+## 25.5 Central de Conexões e integrações externas
+
+O Ilê Conecta deve possuir uma Central de Conexões como infraestrutura transversal para administrar integrações de contas, provedores e ferramentas externas utilizadas pelos módulos da plataforma. A Central não é exclusiva do Studio da Casa e não deve ser implementada como uma coleção de integrações isoladas dentro de cada módulo.
+
+A Central deve separar pelo menos três famílias de integração:
+
+1. **Provedores de modelos e serviços de IA:** OpenAI/GPT, Google Gemini e outros fornecedores compatíveis, incluindo serviços de geração de texto, imagem, áudio ou vídeo quando houver API e autorização adequadas.
+2. **Ferramentas de criação, produtividade e desenvolvimento:** Canva, Lovable, Replit, Google AI Studio e ferramentas equivalentes, conforme as capacidades oficiais de integração de cada fornecedor.
+3. **Armazenamento, arquivos, código e serviços operacionais:** Google Drive, GitHub e outros serviços que possam fornecer conexão autorizada e útil aos fluxos do produto.
+
+A lista de fornecedores é ilustrativa e extensível; não representa promessa de integração já disponível nem garante que todos ofereçam API pública, OAuth, operações de edição ou automação adequadas. Cada conector deve ter escopo funcional documentado, baseado nas APIs, permissões e termos oficiais do fornecedor. Não simular controle de uma ferramenta externa quando a integração só permitir importar, exportar ou abrir conteúdo.
+
+A conexão de uma conta não concede automaticamente acesso irrestrito aos módulos. Cada integração deve declarar:
+- método de conexão suportado (OAuth, chave/API credential ou outro mecanismo oficial);
+- titularidade e organização proprietária da conexão;
+- escopos e permissões concedidos;
+- módulos e operações autorizados a utilizá-la;
+- estado, validade, revogação e necessidade de reconexão;
+- limites, quotas e custos conhecidos, quando disponibilizados pelo fornecedor;
+- ambiente e identificador do provedor necessários para rastreabilidade.
+
+Sempre que tecnicamente e contratualmente possível, a casa poderá utilizar suas próprias contas e credenciais (BYOK — Bring Your Own Key), pagando diretamente o fornecedor pelo consumo. Isso não elimina custos próprios do Ilê Conecta com infraestrutura, armazenamento, tráfego, processamento, suporte ou funcionalidades nativas. Não misturar consumo de provedores externos com créditos internos do assistente ou outros produtos sem regra comercial explícita.
+
+A infraestrutura deve ser multi-tenant e segura: credenciais e tokens protegidos no backend, criptografia em repouso, segregação por casa/organização, menor privilégio, rotação e revogação, trilha de auditoria e ausência de segredos em frontend, variáveis públicas, repositório ou logs. A autorização deve ser validada no servidor em cada operação; a interface não é autoridade de acesso.
+
+A camada de integração deve usar adaptadores e contratos comuns quando apropriado, sem forçar APIs incompatíveis a um modelo artificial único. Falha, expiração ou indisponibilidade de um conector não pode comprometer os demais módulos nem provocar fallback silencioso para outra conta, provedor ou modalidade de cobrança. Operações externas devem ser rastreáveis por casa, usuário autorizado, conector, provedor, finalidade e resultado, respeitando minimização e retenção de dados.
+
+## 25.6 Studio da Casa e independência da Central
+
+Studio da Casa é um produto/módulo consumidor da Central de Conexões, não o proprietário nem a implementação da infraestrutura de integrações. Seu escopo funcional, ambiente de acesso, posicionamento, identidade comercial, modelo de planos e eventual contratação independente permanecem decisões de produto e negócio a serem definidas em etapa posterior.
+
+A arquitetura deve preservar, sem assumir qualquer modelo comercial agora, três possibilidades: Studio como módulo nativo do Ilê Conecta; Studio comercializado como vertical independente; ou oferta combinada, com integração nativa e contratação autônoma. A eventual independência comercial exige avaliar identidade e autenticação, organizações/tenants, billing, suporte, armazenamento, permissões, termos, marca e integração com o ecossistema. Não presumir que a simples separação de código ou interface seja suficiente para torná-lo produto independente.
+
+O Studio poderá consumir conectores de IA e ferramentas criativas, como Canva, quando operações oficiais permitirem. Fluxos como criar, importar, editar, exportar e publicar devem ser especificados individualmente por integração; não prometer edição embutida ou sincronização bidirecional sem suporte técnico confirmado. Dados estruturados já existentes no Ilê Conecta (por exemplo, nome, data, valor, vagas e identidade visual de uma oferta) poderão alimentar fluxos de criação mediante autorização da casa, com revisão humana antes da publicação.
+
+A localização do Studio nos ambientes do produto, seu acesso por plano, sua precificação, venda separada, público externo e roadmap de lançamento ficam explicitamente **em decisão pendente**. Esta definição arquitetural não autoriza implementação, contratação de fornecedor, conexão de contas reais ou alteração comercial.
+
 
 Provedores de pagamento, IA, e-mail, push e mídia são isolados por adaptadores. Trocar fornecedor não deve exigir reconstrução dos módulos de negócio.
+
+No financeiro, Payment Core é proprietário das regras internas de transação, assinatura, comissão, ledger, idempotência e conciliação. Stripe Adapter atende o marketplace; Efí Adapter atende a monetização própria da plataforma. O roteamento é configurável por categoria/modalidade no painel administrativo, mas só seleciona combinações previamente validadas. Identidade do provedor é persistida em cada operação e não pode ser inferida a partir da configuração corrente.
+
+Homologação e produção possuem credenciais, endpoints e estados independentes. A ativação de produção exige autorização explícita e validação integrada; possuir Client ID, Client Secret ou certificado não equivale a habilitar cobranças reais.
 
 ## 25.5 Ownership dos dados
 
