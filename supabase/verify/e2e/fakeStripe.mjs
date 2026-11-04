@@ -62,7 +62,8 @@ export function startFakeStripe() {
     if ((m = key.match(/^GET \/v1\/payment_intents\/(.+)$/))) {
       const s = [...st.sessions.values()].find((x) => x.payment_intent === m[1]);
       if (!s) return send(404, { error: { message: "No such payment_intent (fake)" } });
-      return send(200, { id: m[1], latest_charge: { payment_method_details: { type: s.method }, balance_transaction: { fee_details: [{ type: "stripe_fee", amount: s.fee }, { type: "application_fee", amount: 1500 }] } } });
+      // s.fee === null simula balance_transaction ainda indisponível (o Stripe devolve null quando a tarifa ainda não foi lançada)
+      return send(200, { id: m[1], latest_charge: { payment_method_details: { type: s.method }, balance_transaction: s.fee === null ? null : { fee_details: [{ type: "stripe_fee", amount: s.fee }, { type: "application_fee", amount: 1500 }] } } });
     }
     return send(404, { error: { message: `sem rota ${key} (fake)` } });
   });
