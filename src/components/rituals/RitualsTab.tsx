@@ -121,7 +121,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
     if (res.ok) {
       toast.success(okMsg(res.notified));
       await load();
-    } else toast.error(res.message);
+    } else toast.error("message" in res ? res.message : "Não foi possível concluir.");
   };
 
   const cancelMine = async (r: RealRitual) => {

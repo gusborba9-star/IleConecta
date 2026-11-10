@@ -75,6 +75,14 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
     .limit(50);
   if (error || !data) return { posts: [], commenters: [] };
 
+  // Contagem pública de curtidas: a tabela só mostra ao visitante as próprias curtidas.
+  const counts = new Map<string, number>();
+  const ids = (data as Row[]).map((r) => String(r.id));
+  if (ids.length > 0) {
+    const { data: cnt } = await supabase.rpc("post_like_counts", { p_posts: ids });
+    for (const c of (cnt as Row[] | null) ?? []) counts.set(String(c.post_id), Number(c.n ?? 0));
+  }
+
   const commenters = new Map<string, User>();
   const posts: Post[] = [];
   for (const row of data as Row[]) {
@@ -109,6 +117,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
       image: row.image_url ?? undefined,
       kind: row.kind,
       likes: ((row.post_likes as Row[]) ?? []).map((l) => String(l.user_id)),
+      likeCount: counts.get(String(row.id)),
       comments,
       createdAt: String(row.created_at),
     });

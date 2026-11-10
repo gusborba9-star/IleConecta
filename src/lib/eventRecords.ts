@@ -53,7 +53,7 @@ export async function addRecord(eventId: string, kind: RecordKind, caption: stri
   if (!supabase) return { ok: false, message: "Indisponível." };
   if (!file.type.startsWith("image/")) return { ok: false, message: "Envie uma foto (JPG, PNG ou WebP)." };
   const prep = await prepareFile(file);
-  if (!prep.ok) return { ok: false, message: prep.message };
+  if ("message" in prep) return { ok: false, message: prep.message };
   if (prep.file.size > 5 * 1024 * 1024) return { ok: false, message: "A foto passa de 5 MB." };
   const up = await uploadFile("ritual-records", eventId, prep.file);
   if (!up) return { ok: false, message: "Não foi possível enviar a foto. Tente novamente." };

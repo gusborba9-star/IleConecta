@@ -6,7 +6,7 @@ import { cardHint, dateTile } from "@/lib/cardsCore";
 import RitualRecords from "@/components/rituals/RitualRecords";
 import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
-import { grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
+import { bookingOpen, grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
 
 interface Props {
@@ -58,7 +58,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
     };
   }, [r.id, canSeeStream]);
 
-  const open = r.status === "publicado" && !live && new Date(r.startsAt) > new Date();
+  const open = r.status === "publicado" && !live && bookingOpen(r.startsAt);
 
   // Cliente sem vaga: card premium com descrição, informações, botão Participar e Conversar.
   if (!isOwn && !mine) {
@@ -146,7 +146,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           <>
             {open && state !== "esgotado" && <Button size="sm" onClick={onReserve}>Reservar vaga</Button>}
             {open && state === "esgotado" && onToggleWait && (
-              <Button size="sm" variant={waiting ? "outline" : "default"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
+              <Button size="sm" variant={waiting ? "outline" : "primary"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
             )}
             <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
           </>

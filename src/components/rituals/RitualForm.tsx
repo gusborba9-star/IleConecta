@@ -18,7 +18,7 @@ interface Props {
   onSubmit: (value: RitualValue, publish: boolean) => Promise<boolean>;
 }
 
-const EMPTY: RitualFormInput = { title: "", description: "", priceText: "", seatsText: "", mode: "", date: "", time: "", streamUrl: "", fields: [{ id: "nome_completo", label: "Nome completo", required: true }] };
+const EMPTY: RitualFormInput = { title: "", description: "", priceText: "", seatsText: "", durationText: "", mode: "", date: "", time: "", streamUrl: "", fields: [{ id: "nome_completo", label: "Nome completo", required: true }] };
 
 export default function RitualForm({ open, onClose, initial, initialStreamUrl, onSubmit }: Props) {
   const [form, setForm] = useState<RitualFormInput>(EMPTY);
@@ -46,6 +46,7 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
       description: initial.description ?? "",
       priceText: centsToMasked(initial.priceCents),
       seatsText: String(initial.seatsTotal),
+      durationText: initial.durationMin ? String(initial.durationMin) : "",
       mode: initial.mode,
       date: when.date,
       time: when.time,
@@ -98,6 +99,12 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
             <Label htmlFor="rt-seats">Número de vagas</Label>
             <Input id="rt-seats" inputMode="numeric" value={form.seatsText} onChange={(e) => set({ seatsText: e.target.value.replace(/\D/g, "") })} placeholder="300" />
             {err("seats")}
+          </div>
+          <div>
+            <Label htmlFor="rt-duration">Duração (minutos)</Label>
+            <Input id="rt-duration" inputMode="numeric" value={form.durationText} onChange={(e) => set({ durationText: e.target.value.replace(/\D/g, "") })} placeholder="120" />
+            <p className="mt-1 text-xs text-muted-foreground">O ritual ocupa esse tempo na sua agenda de atendimentos.</p>
+            {err("duration")}
           </div>
           <div>
             <Label htmlFor="rt-date">Data</Label>

@@ -100,7 +100,7 @@ export default function RitualRecords({ eventId, isOwn, started, closedForNew }:
     setBusy(true);
     const res = await addRecord(eventId, kind, caption, secret, file);
     setBusy(false);
-    if (!res.ok) return void toast.error(res.message);
+    if ("message" in res) return void toast.error(res.message);
     toast.success(`Registro publicado. ${res.notified} ${res.notified === 1 ? "participante avisado" : "participantes avisados"}.`);
     setCaption("");
     setSecret(false);
@@ -115,7 +115,7 @@ export default function RitualRecords({ eventId, isOwn, started, closedForNew }:
     setBusy(true);
     const res = await addVideoRecord(eventId, kind, caption, secret, blob);
     setBusy(false);
-    if (!res.ok) return void toast.error(res.message);
+    if ("message" in res) return void toast.error(res.message);
     toast.success(`Vídeo publicado. ${res.notified} ${res.notified === 1 ? "participante avisado" : "participantes avisados"}.`);
     setCaption("");
     setSecret(false);

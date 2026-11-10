@@ -190,6 +190,57 @@ Estados permitidos: não iniciado, em auditoria, evidência parcial, pronto para
 
 Não marcar fase concluída se houver P0 aberto ou se os critérios de saída não estiverem demonstrados.
 
+### Registro: EXEC-01 — subsistema financeiro do Marketplace (Stripe)
+
+Estado em 2026-11-04 (PR #140, Draft; sem merge, sem deploy, sem migration remota). Estados conforme a lista acima.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| Desacoplamento do provedor (contrato, adaptador Stripe, núcleo, banco) | testado | 271 testes unitários; E2E 105 verificações (Deno + supabase-js + PostgreSQL 16 reais, migrations 0001–0066) |
+| Tarifa do processador sem falso zero (`fetchFees`) | testado | replay de 7 eventos reais (26 verificações) reproduz a causa do pagamento 435e e confirma a correção |
+| Webhook: assinatura, idempotência, trava com dono, concorrência | testado | E2E: 12 entregas simultâneas, lease vencida, worker antigo não altera evento de outro |
+| Checkout: sem segunda cobrança sem evidência; compare-and-set | testado | E2E: 6 checkouts simultâneos → 1 sessão; sessão paga → 409; corrida de gravação → 409 sem sobrescrever |
+| Vínculo Checkout ↔ PaymentIntent ↔ Charge ↔ Pagamento ↔ Ledger | testado | migration 0066 (colunas, índices únicos, `record_provider_refs_for`); E2E M66 |
+| Detecção de anomalias (`payments_provider_anomalies`) | testado | E2E M65/M66; consulta somente leitura em produção sinaliza apenas o pagamento 435e |
+| `check_cron_secret` reproduzível | testado | migration 0065 (aplicada 2x em PostgreSQL local) |
+| Integração real (Stripe real, assinatura real de webhook, Supabase Edge Runtime) | bloqueado | exige Supabase isolado e webhook de teste (custo/autorização do CTO) |
+| Divergências históricas 435e e de60 | em auditoria | diagnóstico feito; nenhuma correção de dado sem autorização |
+
+Nada acima está aplicado em produção: a função `payments` implantada (versão 18) é a anterior à EXEC-01.
+
+### Registro: Fase 1 — Auditoria das reconciliações do Blueprint §31.3
+
+Estado em 2026-11-09 (auditoria somente leitura; nenhuma alteração em produção). Detalhe, evidências e achados F1–F12: `AUDITORIA_31_3_RECONCILIACOES.md`.
+
+| # | Reconciliação | Estado | Achado principal |
+|---|---|---|---|
+| 1 | 17% × 15%/4% | testado | dados de produção só com 4% e regra v2; resíduos só em comentários antigos |
+| 2 | Provedores antigos | evidência parcial | sem código ativo; resíduos dormentes no banco (0 linhas) |
+| 3 | Integração × retenção | evidência parcial | cobrança direta sem retenção; caminho legado de repasse dormente |
+| 4 | RLS e exposição pública | evidência parcial | F2 (P1): perfis e curtidas legíveis sem login |
+| 5 | Convite e permissões da equipe | evidência parcial | F1 (P1): um convite aceito por várias pessoas ao mesmo tempo |
+| 6 | Continuidade do handoff | evidência parcial | F4: sem estado de responsável; automação pode falar por cima do humano |
+| 7 | Persistência e recuperação | evidência parcial | F5: dados de demonstração misturados aos reais |
+| 8 | CRM unificado × disperso | lacuna | peças dispersas; timeline e pendências inexistentes (Fase 5) |
+| 9 | Agenda, reserva e checkout | evidência parcial | F3 (P1): ritual não encerra 1 h antes; F7: ritual não ocupa a agenda |
+| 10 | Migrations × Supabase | testado | schema = repo até 0063; registro com 18 de 66; 0064–0066 não aplicadas |
+
+### Registro: EXEC-02 — correções F1, F2, F3, F7, F11 e F12 (2026-11-09)
+
+Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com duração obrigatória; F10 ação dele no painel. Branch `fix/exec-02-f1-f2-f3-f7` (migration 0067 + app + assistente), **sem merge e sem aplicar em produção**.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| F1 convite/limite de acessos | corrigido no branch | corrida 0/30 (convite e limite do plano) |
+| F2 exposição de perfis e curtidas | corrigido no branch | sondagem 163/0, com cada relação testada |
+| F3 janela de 1 h do ritual | corrigido no branch | sondagem + testes unitários |
+| F7 ritual na agenda | corrigido no branch | sondagem (bloqueio, conflito, corrida) |
+| F11, F12 | corrigido no branch | migration idempotente |
+
+Regressão: 273 testes unitários, E2E 105/0, verify_0064 54/0, build OK, sem novos erros de tsc/lint (7 erros de tipos e 2 de lint já existiam). Mutação: remover cada correção faz o teste falhar.
+Pendências: aplicar 0064–0067 em produção e reparar o registro de migrations (autorização expressa); F4, F5, F6 (decisão), F8, F9; F10 no painel.
+
+
 ## 7. Declaração de governança
 
 O Roadmap é o plano mestre de evolução. Não é uma lista para implementar tudo em sequência sem auditoria. A primeira obrigação é descobrir e validar o que já existe. Só então se autorizam correções específicas. O Blueprint permanece estável; o Roadmap registra ordem e estado.

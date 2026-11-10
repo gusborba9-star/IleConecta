@@ -15,13 +15,14 @@ export interface RealRitual {
   seatsTotal: number;
   mode: RitualMode;
   startsAt: string;
+  durationMin: number | null;
   status: EventStatus;
   startedAt: string | null;
   fields: IntakeField[];
   taken: number;
 }
 
-const COLS = "id, house_id, title, description, price_cents, seats_total, mode, starts_at, status, started_at, intake_fields, houses(owner_id, name)";
+const COLS = "id, house_id, title, description, price_cents, seats_total, mode, starts_at, duration_min, status, started_at, intake_fields, houses(owner_id, name)";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toRitual = (r: Record<string, any>, taken: number): RealRitual => ({
@@ -35,6 +36,7 @@ const toRitual = (r: Record<string, any>, taken: number): RealRitual => ({
   seatsTotal: Number(r.seats_total),
   mode: r.mode,
   startsAt: String(r.starts_at),
+  durationMin: r.duration_min == null ? null : Number(r.duration_min),
   status: r.status,
   startedAt: r.started_at ?? null,
   fields: Array.isArray(r.intake_fields) ? r.intake_fields : [],
