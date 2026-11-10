@@ -208,6 +208,25 @@ Estado em 2026-11-04 (PR #140, Draft; sem merge, sem deploy, sem migration remot
 
 Nada acima está aplicado em produção: a função `payments` implantada (versão 18) é a anterior à EXEC-01.
 
+### Registro: Fase 1 — Auditoria das reconciliações do Blueprint §31.3
+
+Estado em 2026-11-09 (auditoria somente leitura; nenhuma alteração em produção). Detalhe, evidências e achados F1–F12: `AUDITORIA_31_3_RECONCILIACOES.md`.
+
+| # | Reconciliação | Estado | Achado principal |
+|---|---|---|---|
+| 1 | 17% × 15%/4% | testado | dados de produção só com 4% e regra v2; resíduos só em comentários antigos |
+| 2 | Provedores antigos | evidência parcial | sem código ativo; resíduos dormentes no banco (0 linhas) |
+| 3 | Integração × retenção | evidência parcial | cobrança direta sem retenção; caminho legado de repasse dormente |
+| 4 | RLS e exposição pública | evidência parcial | F2 (P1): perfis e curtidas legíveis sem login |
+| 5 | Convite e permissões da equipe | evidência parcial | F1 (P1): um convite aceito por várias pessoas ao mesmo tempo |
+| 6 | Continuidade do handoff | evidência parcial | F4: sem estado de responsável; automação pode falar por cima do humano |
+| 7 | Persistência e recuperação | evidência parcial | F5: dados de demonstração misturados aos reais |
+| 8 | CRM unificado × disperso | lacuna | peças dispersas; timeline e pendências inexistentes (Fase 5) |
+| 9 | Agenda, reserva e checkout | evidência parcial | F3 (P1): ritual não encerra 1 h antes; F7: ritual não ocupa a agenda |
+| 10 | Migrations × Supabase | testado | schema = repo até 0063; registro com 18 de 66; 0064–0066 não aplicadas |
+
+Correções de F1, F2 e F3 dependem de migration/RLS (autorização expressa) e, no caso de F2, de decisão do proprietário. Nenhuma foi executada.
+
 ## 7. Declaração de governança
 
 O Roadmap é o plano mestre de evolução. Não é uma lista para implementar tudo em sequência sem auditoria. A primeira obrigação é descobrir e validar o que já existe. Só então se autorizam correções específicas. O Blueprint permanece estável; o Roadmap registra ordem e estado.

@@ -1,0 +1,7 @@
+select jsonb_build_object(
+ 't', (select jsonb_object_agg(t, h) from (select c.relname t, md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull, ',' order by a.attname)) h from pg_class c join pg_namespace n on n.oid=c.relnamespace join pg_attribute a on a.attrelid=c.oid and a.attnum>0 and not a.attisdropped where n.nspname='public' and c.relkind='r' group by 1) x),
+ 'f', (select jsonb_object_agg(f, h) from (select p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' f, substr(md5(regexp_replace(p.prosrc,'\s+','','g')),1,10)||case when p.prosecdef then 'D' else 'I' end h from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind in ('f','p')) x),
+ 'p', (select jsonb_object_agg(k, h) from (select tablename||'|'||policyname k, substr(md5(coalesce(cmd,'')||coalesce(roles::text,'')||regexp_replace(coalesce(qual,''),'\s+','','g')||regexp_replace(coalesce(with_check,''),'\s+','','g')),1,10) h from pg_policies where schemaname='public') x),
+ 'g', (select jsonb_object_agg(k, h) from (select tgrelid::regclass::text||'|'||tgname k, 1 h from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and not tgisinternal) x),
+ 'v', (select jsonb_object_agg(k, h) from (select c.relname k, substr(md5(regexp_replace(pg_get_viewdef(c.oid),'\s+','','g')),1,10) h from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('v','m')) x)
+) as fp;
