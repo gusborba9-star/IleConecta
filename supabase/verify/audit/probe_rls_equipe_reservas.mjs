@@ -166,6 +166,8 @@ const still = (await as("authenticated", U.S, (c) => q(c, `select count(*)::int 
 ok("horário ocupado some da disponibilidade de todos os serviços da casa (fonte única)", still === 0, `ainda aparece: ${still}`);
 // ritual x agenda de serviços (F7): um ritual publicado com duração ocupa a agenda de atendimentos
 const EV5at = (await su.query(`select slot from available_slots($1, null, 7) offset 3 limit 1`, [SV])).rows[0].slot;
+const pre = (await su.query(`select count(*)::int n from available_slots($1, null, 7) where slot=$2`, [SV, EV5at])).rows[0].n;
+ok("F7 (pré-condição): o horário escolhido estava livre antes do ritual", pre === 1, `aparições=${pre}`);
 await su.query(`insert into events(house_id,title,description,price_cents,seats_total,starts_at,status${DC}) values ($1,'Ritual no horário de atendimento','Descrição longa o suficiente para passar na validação mínima de descrição do ritual.',5000,5,$2,'publicado'${DV})`, [HA, EV5at]).catch((e) => info("ritual no horário", e.message));
 const clash = (await su.query(`select count(*)::int n from available_slots($1, null, 7) where slot=$2`, [SV, EV5at])).rows[0].n;
 ok("F7: ritual publicado (com duração) ocupa o horário na agenda de atendimentos", MAX < 67 ? clash === 0 : clash === 0, clash ? "o horário CONTINUA disponível para agendamento" : "horário bloqueado");
