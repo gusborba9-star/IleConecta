@@ -472,4 +472,6 @@ grant execute on function public.record_processor_fee_for(uuid, text, text, text
 grant execute on function public.payments_missing_processor_fee(integer) to service_role;
 grant execute on function public.payment_recorded_amounts(uuid) to service_role;
 grant execute on function public.payment_identity_matches(public.payments, text, text, text) to service_role;
+revoke all on function public.settlement_mode(text) from public, anon, authenticated;
+revoke all on function public.payments_guard_identity() from public, anon, authenticated;
 grant execute on function public.settlement_mode(text) to service_role;
