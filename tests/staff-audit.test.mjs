@@ -25,6 +25,9 @@ test("auditoria da equipe: dados malformados não quebram a tela", () => {
   assert.doesNotThrow(() => describeStaffEvent({ action: "aceito", targetName: "x", details: { perms: "texto" } }));
   assert.equal(actorLabel("dono"), "Você");
   assert.equal(actorLabel("qualquer"), "Alguém");
+  assert.equal(actorLabel("dono", "admin"), "O dono da casa");
+  assert.equal(actorLabel("admin", "admin"), "A administração");
+  assert.equal(actorLabel("equipe", "admin"), "A própria pessoa");
   const e = toAuditEvent({ id: "7", house_id: "h", action: "aceito", actor_role: "equipe", target_name: null, details: null, created_at: "2026-11-10T00:00:00Z" });
   assert.equal(e.id, 7);
   assert.deepEqual(e.details, {});

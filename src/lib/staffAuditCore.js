@@ -8,8 +8,9 @@ export const PERM_LABEL = {
 const permList = (v) => (Array.isArray(v) && v.length ? v.map((k) => PERM_LABEL[k] ?? String(k)).join(", ") : "nenhuma ferramenta");
 const ROLE = { dono: "Você", equipe: "A própria pessoa", admin: "A administração", sistema: "O sistema", outro: "Alguém" };
 
-/** Quem agiu, em palavras. Para o dono lendo o próprio histórico, "dono" vira "Você". */
-export function actorLabel(role) {
+/** Quem agiu, em palavras. Visão do dono ("owner", padrão): "dono" vira "Você". Visão da administração ("admin"): "O dono da casa". */
+export function actorLabel(role, viewer = "owner") {
+  if (viewer === "admin" && role === "dono") return "O dono da casa";
   return ROLE[role] ?? "Alguém";
 }
 
