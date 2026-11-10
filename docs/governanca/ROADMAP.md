@@ -240,7 +240,18 @@ Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com
 
 Regressão: 273 testes unitários, E2E 107/0, verify_0064 54/0, sondagem 164/0 (0067), build OK, tsc e lint sem erros. Mutação: remover cada correção faz o teste falhar.
 Funções publicadas em 2026-11-10 pelo workflow `deploy-functions` (`payments` v19, `assistant-chat` v30, `verify_jwt` desligado como antes). Evidência de integração real (Stripe em modo de teste): a rotina agendada chamou a função nova (POST 200) e completou PaymentIntent e Charge dos 6 pagamentos antigos; o webhook de teste segue habilitado e apontando para a função.
-Pendências: compra de teste de ponta a ponta com webhook assinado novo; 2 pagamentos de cartão antigos (435e, 6cdf) com tarifa do processador 0 (anomalia histórica, correção depende do proprietário); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel e revogação dos tokens (ação do proprietário).
+Pendências: 2 pagamentos de cartão antigos (435e, 6cdf) com tarifa do processador 0 (anomalia histórica, correção depende do proprietário); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel e revogação dos tokens (ação do proprietário).
+
+**Teste real de ponta a ponta (Stripe em modo de teste, 2026-11-10, serviço de R$ 1,00):**
+
+| Cenário | Resultado verificado no banco |
+|---|---|
+| Cartão | pagamento confirmado 1x; PaymentIntent e Charge gravados; comissão 4; tarifa do processador 43 (fim do falso zero); ledger bruto 100 / plataforma 4 / casa 96 / tarifa 43; evento `checkout.session.completed` processado 1x |
+| Reembolso (cancelar pedido) | pagamento estornado, pedido reembolsado, pedido de reembolso concluído; ledger estornado (−100/−4/−96); evento `charge.refunded` processado 1x |
+| Retomada do pagamento + Pix | mesma sessão do Stripe reaproveitada; pagamento Pix confirmado, comissão 4, tarifa do processador 1, ledger correto, evento processado 1x |
+
+Achados do teste, corrigidos e publicados: (a) PR #146 — o botão de contratar/reservar só libera depois de saber se a casa cobra pelo app (antes, um toque rápido criava pedido sem abrir o checkout e avisava a casa); (b) PR #147 — a confirmação de cancelamento informa o reembolso integral; (c) PR #148 — botão "Concluir pagamento" para o cliente (card do serviço, Minha atividade e vaga de ritual). Limite: a cobrança fica na conta de recebimento da casa e a conta da plataforma não a enxerga no Stripe; a prova do estorno vem do webhook assinado e do banco. Pendência de verificação em tela: confirmar no celular, após o deploy, que contratar abre o checkout no primeiro toque (a 3ª tentativa já abriu).
+
 
 ## 7. Declaração de governança
 
