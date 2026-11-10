@@ -126,7 +126,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
 
   const cancelMine = async (r: RealRitual) => {
     const res = mine[r.id];
-    if (!res || !(await confirm({ title: "Cancelar a sua vaga?", confirmLabel: "Cancelar vaga", danger: true }))) return;
+    if (!res || !(await confirm({ title: "Cancelar a sua vaga?", message: "Se já foi paga, o valor é devolvido integralmente.", confirmLabel: "Cancelar vaga", danger: true }))) return;
     const error = await cancelSeat(res.id);
     if (error) toast.error(error);
     else {
