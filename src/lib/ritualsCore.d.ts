@@ -5,7 +5,6 @@ export interface RitualFormInput {
   description: string;
   priceText: string;
   seatsText: string;
-  durationText: string;
   mode: RitualMode | "";
   date: string;
   time: string;
@@ -20,13 +19,12 @@ export interface RitualValue {
   seats_total: number;
   mode: RitualMode;
   starts_at: string;
-  duration_min: number;
   intake_fields: IntakeField[];
   stream_url: string | null;
 }
 export type RitualValidation =
   | { ok: true; errors: Record<string, never>; value: RitualValue }
-  | { ok: false; errors: Partial<Record<"title" | "description" | "price" | "seats" | "duration" | "mode" | "when" | "streamUrl", string>>; value: null };
+  | { ok: false; errors: Partial<Record<"title" | "description" | "price" | "seats" | "mode" | "when" | "streamUrl", string>>; value: null };
 export type AnswersValidation =
   | { ok: true; errors: Record<string, never>; value: Record<string, string> }
   | { ok: false; errors: Record<string, string>; value: null };
@@ -35,11 +33,8 @@ export declare const RITUAL_MODES: { id: RitualMode; label: string; hint: string
 export declare const FIELD_PRESETS: { id: string; label: string }[];
 export declare const MAX_FIELDS: number;
 export declare const MAX_SEATS: number;
-export declare const MIN_DURATION_MIN: number;
-export declare const MAX_DURATION_MIN: number;
-export declare const BOOKING_CUTOFF_MS: number;
-export declare function bookingOpen(startsAtIso: string, now?: Date): boolean;
 export declare function modeLabel(mode: string): string;
+export declare function bookingOpen(startsAt: string, now?: Date): boolean;
 export declare function seatsLeft(total: number, taken: number): number;
 export declare function seatsState(total: number, taken: number): "esgotado" | "ultimas" | "abertas";
 export declare function grossCents(priceCents: number, taken: number): number;

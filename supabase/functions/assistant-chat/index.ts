@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
     admin.from("services").select("id, kind, custom_kind, delivery, title, description, price_cents, bookable, duration_min").eq("house_id", house.id).eq("active", true).limit(30),
     admin.from("events").select("id, title, description, price_cents, mode, starts_at, seats_total, intake_fields")
-      .eq("house_id", house.id).eq("status", "publicado").gt("starts_at", new Date(Date.now() + 3600 * 1000).toISOString())
+      .eq("house_id", house.id).eq("status", "publicado").gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true }).limit(15),
     admin.from("house_catalog_items").select("name, description, price_cents, show_price, active")
       .eq("house_id", house.id).eq("active", true).order("created_at", { ascending: true }).limit(30),

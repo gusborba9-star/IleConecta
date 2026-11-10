@@ -119,7 +119,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setRemotePosts([]);
       setRemoteCommenters([]);
     }
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteUserId]);
 
   const persist = (key: string, value: unknown) => {
@@ -244,12 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const flip = (p: Post): Post => {
         if (p.id !== postId) return p;
         const has = p.likes.includes(uidNow);
-        const base = p.likeCount ?? p.likes.length;
-        return {
-          ...p,
-          likes: has ? p.likes.filter((id) => id !== uidNow) : [...p.likes, uidNow],
-          likeCount: Math.max(0, base + (has ? -1 : 1)),
-        };
+        return { ...p, likes: has ? p.likes.filter((id) => id !== uidNow) : [...p.likes, uidNow] };
       };
       if (isRemoteId(postId)) {
         const current = remotePosts.find((p) => p.id === postId);

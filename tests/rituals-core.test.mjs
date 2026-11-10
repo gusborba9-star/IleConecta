@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bookingOpen, fromIsoToBrt, grossCents, normalizeFields, seatsLeft, seatsState, toStartsAtIso, validateAnswers, validateRitual } from "../src/lib/ritualsCore.js";
+import { fromIsoToBrt, grossCents, normalizeFields, seatsLeft, seatsState, toStartsAtIso, validateAnswers, validateRitual } from "../src/lib/ritualsCore.js";
 
 const now = new Date("2026-10-26T12:00:00Z");
-const ok = { title: " Ritual de Axé ", description: "Ritual coletivo de limpeza e proteção da casa.", priceText: "199,00", seatsText: "300", durationText: "120", mode: "distancia", date: "2026-11-14", time: "19:30", streamUrl: "", fields: [{ label: "Nome completo", required: true }, { label: "Intenção" }] };
+const ok = { title: " Ritual de Axé ", description: "Ritual coletivo de limpeza e proteção da casa.", priceText: "199,00", seatsText: "300", mode: "distancia", date: "2026-11-14", time: "19:30", streamUrl: "", fields: [{ label: "Nome completo", required: true }, { label: "Intenção" }] };
 
 test("vagas: restante, estado e receita bruta", () => {
   assert.equal(seatsLeft(300, 287), 13);
@@ -37,7 +37,6 @@ test("ritual válido devolve valor limpo", () => {
   assert.equal(r.value.price_cents, 19900);
   assert.equal(r.value.seats_total, 300);
   assert.equal(r.value.starts_at, "2026-11-14T22:30:00.000Z");
-  assert.equal(r.value.duration_min, 120);
   assert.equal(r.value.stream_url, null);
   assert.equal(r.value.intake_fields.length, 2);
 });
@@ -58,22 +57,4 @@ test("respostas do participante", () => {
   assert.equal(r.ok, true);
   assert.deepEqual(r.value, { nome_completo: "Maria", intencao: "paz" });
   assert.equal(validateAnswers([], {}).ok, true);
-});
-
-test("duração obrigatória, inteira, de 15 a 1440 minutos", () => {
-  for (const bad of ["", "0", "14", "1441", "90,5", "abc"]) {
-    const r = validateRitual({ ...ok, durationText: bad }, now);
-    assert.equal(r.ok, false, bad);
-    assert.ok(r.errors.duration, bad);
-  }
-  assert.equal(validateRitual({ ...ok, durationText: "15" }, now).value.duration_min, 15);
-  assert.equal(validateRitual({ ...ok, durationText: "1440" }, now).value.duration_min, 1440);
-});
-
-test("janela de reserva: encerra 1 hora antes do início (Blueprint §10.2)", () => {
-  const n = new Date("2026-11-14T12:00:00Z");
-  assert.equal(bookingOpen("2026-11-14T12:59:00Z", n), false);
-  assert.equal(bookingOpen("2026-11-14T13:00:00Z", n), false);
-  assert.equal(bookingOpen("2026-11-14T13:01:00Z", n), true);
-  assert.equal(bookingOpen("2026-11-14T11:00:00Z", n), false);
 });

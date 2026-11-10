@@ -172,7 +172,7 @@ export default function RealMessages() {
     setBusy(true);
     setNotice(null);
     const prep = await prepareFile(file, mediaOk);
-    if ("message" in prep) {
+    if (!prep.ok) {
       toast.error(prep.message);
       setBusy(false);
       return;
