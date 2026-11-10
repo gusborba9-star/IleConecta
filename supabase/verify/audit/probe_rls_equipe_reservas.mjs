@@ -196,6 +196,8 @@ if (MAX >= 67) {
 // F3: fronteira da janela de 1 hora
 const mkEv = async (min) => (await su.query(`insert into events(house_id,title,description,price_cents,seats_total,starts_at,status${DC}) values ($1,'Janela','Descrição longa o suficiente para passar na validação mínima de descrição do ritual.',5000,5,now() + make_interval(mins => $2::int),'publicado'${DV}) returning id`, [HA, min])).rows[0].id;
 await su.query(`update platform_settings set value='{"payments":{"state":"off"},"calendar":{"state":"on"}}'::jsonb where key='features'`);
+// Sem pedidos antigos da casa: o resultado não pode depender da hora do dia em que o teste roda.
+await su.query(`delete from service_orders where house_id=$1`, [HA]).catch(() => null);
 const e59 = await mkEv(59), e61 = await mkEv(61);
 if (MAX >= 67) { ok("F3: a 59 min do início a reserva é recusada", Boolean((await as("authenticated", U.D, (c) => q(c, `select reserve_event($1,'{}'::jsonb) id`, [e59]))).err)); ok("F3: a 61 min do início a reserva é aceita", !(await as("authenticated", U.D, (c) => q(c, `select reserve_event($1,'{}'::jsonb) id`, [e61]))).err); }
 console.log(`\nRESUMO probe${MAX}: ${out.filter((x) => x[0] === "PASS").length} PASS / ${out.filter((x) => x[0] === "FAIL").length} FAIL`);
