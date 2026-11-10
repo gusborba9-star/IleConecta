@@ -35,6 +35,7 @@ const json = (status: number, body: Record<string, unknown>) =>
 const MESSAGES: Record<string, string> = {
   plano_sem_assistente: "A assistente não está disponível no plano desta casa.",
   assistente_desativada: "Esta casa ainda não ativou a assistente. Fale diretamente com a casa.",
+  atendimento_humano: "A casa está atendendo esta conversa e responde por aqui.",
   cota_mensal: "A assistente desta casa atingiu o limite de atendimentos do mês. Fale diretamente com a casa.",
   muitas_mensagens: "Você enviou muitas mensagens seguidas. Aguarde alguns minutos e tente de novo.",
 };
@@ -159,6 +160,24 @@ Deno.serve(async (req) => {
   });
   if (insErr) return json(500, { error: "falha_mensagem" });
 
+  // Estado do atendimento (0071): se a casa ou a equipe está com a conversa, a assistente não responde por cima do humano.
+  // A mensagem do cliente já está gravada; a casa recebe o aviso normal e a resposta vem dela. Se a função do banco ainda não existe
+  // (migration não aplicada), segue o fluxo antigo.
+  const assistantMayReply = async (): Promise<boolean> => {
+    const { data: allowed, error: allowErr } = await admin.rpc("handoff_allows_assistant", { p_conv: conversationId, p_owner: house.owner_id });
+    if (allowErr) { console.error("estado do atendimento indisponível:", allowErr.message); return true; }
+    return allowed !== false;
+  };
+  const deliverToHuman = async () => {
+    const href = `/mensagens/${user.id}`;
+    const { data: who } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    const name = (who?.display_name as string | undefined)?.trim() || "Alguém";
+    await admin.from("notifications").delete().eq("user_id", house.owner_id).eq("href", href).eq("read", false).like("text", "%enviou uma mensagem%");
+    await admin.from("notifications").insert({ user_id: house.owner_id, text: `${name} enviou uma mensagem.`, href });
+    return json(200, { conversation_id: conversationId, reply: null, handled_by_human: true, message: MESSAGES.atendimento_humano });
+  };
+  if (!(await assistantMayReply())) return await deliverToHuman();
+
   const [{ data: history }, { data: services }, { data: events }, { data: catalog }] = await Promise.all([
     admin.from("messages").select("sender_id, from_assistant, text, created_at")
       .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
@@ -257,6 +276,9 @@ Deno.serve(async (req) => {
   }
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 
+  // O humano pode ter respondido enquanto a IA pensava: descarta a resposta (o consumo não é cobrado).
+  if (!(await assistantMayReply())) return await deliverToHuman();
+
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
   // Botão de pagamento no chat: o modelo só indica o título; quem decide o alvo (e se existe) é o servidor.
   const action = handoff.checkout && payOn
@@ -269,23 +291,32 @@ Deno.serve(async (req) => {
   } else {
     await admin.from("messages").insert(baseMsg);
   }
-  // Um aviso por conversa a cada 30 minutos (evita encher a casa de notificações iguais).
-  const handoffHref = `/mensagens/${user.id}`;
-  const { count: recentHandoffs } = handoff.handoff
-    ? await admin.from("notifications").select("id", { count: "exact", head: true })
-      .eq("user_id", house.owner_id).eq("href", handoffHref).like("text", "%precisa de você%")
-      .gte("created_at", new Date(Date.now() - 30 * 60_000).toISOString())
-    : { count: 0 };
-  if (handoff.handoff && (recentHandoffs ?? 0) === 0) {
-    const { data: who } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-    const name = (who?.display_name as string | undefined)?.trim() || "Um cliente";
-    await admin.from("notifications").insert({
-      user_id: house.owner_id,
-      text: handoff.reason
-        ? `${name} precisa de você: ${handoff.reason}. A assistente passou a conversa para a casa.`
-        : `${name} precisa de você: a assistente passou a conversa para a casa.`,
-      href: handoffHref,
-    });
+  // Passou a conversa para a casa: registra o estado "pendente" e avisa (no máximo 1 aviso a cada 30 minutos por conversa, decidido no banco).
+  if (handoff.handoff) {
+    const handoffHref = `/mensagens/${user.id}`;
+    const { data: mark, error: markErr } = await admin.rpc("handoff_mark_pending", { p_conv: conversationId, p_owner: house.owner_id, p_reason: handoff.reason ?? "" });
+    let notify = mark === true;
+    if (markErr) {
+      // Migration ainda não aplicada: mantém o comportamento anterior.
+      console.error("registro de passagem indisponível:", markErr.message);
+      const { count: recent } = await admin.from("notifications").select("id", { count: "exact", head: true })
+        .eq("user_id", house.owner_id).eq("href", handoffHref).like("text", "%precisa de você:%")
+        .gte("created_at", new Date(Date.now() - 30 * 60_000).toISOString());
+      notify = (recent ?? 0) === 0;
+    }
+    if (notify) {
+      const { data: who } = await admin.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+      const name = (who?.display_name as string | undefined)?.trim() || "Um cliente";
+      const row = {
+        user_id: house.owner_id,
+        text: handoff.reason
+          ? `${name} precisa de você: ${handoff.reason}. A assistente passou a conversa para a casa.`
+          : `${name} precisa de você: a assistente passou a conversa para a casa.`,
+        href: handoffHref,
+      };
+      const { error: nErr } = await admin.from("notifications").insert({ ...row, kind: "handoff" });
+      if (nErr) await admin.from("notifications").insert(row); // coluna ainda não existe: segue sem ela
+    }
   }
   await admin.from("assistant_usage").insert({
     house_id: house.id, user_id: user.id, model: usedModel,

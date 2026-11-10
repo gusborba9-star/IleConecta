@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Headset, Send, Trash2 } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
+import HandoffBar from "@/components/chat/HandoffBar";
+import { fetchHandoff } from "@/lib/handoff";
+import type { Handoff } from "@/lib/handoffCore";
 import { useApp } from "@/contexts/AppContext";
 import { fetchCampaigns, fetchTopics, type Campaign, type Count } from "@/lib/campaigns";
 import { isPlaceholderText } from "@/lib/chatFiles";
@@ -30,6 +33,7 @@ function Conversations({ link }: { link: StaffLink }) {
   const [convs, setConvs] = useState<StaffConversation[]>([]);
   const [open, setOpen] = useState<StaffConversation | null>(null);
   const [msgs, setMsgs] = useState<StaffMessage[]>([]);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -38,7 +42,10 @@ function Conversations({ link }: { link: StaffLink }) {
   useEffect(() => {
     void fetchStaffConversations().then(setConvs);
   }, []);
-  const loadThread = useCallback(async (c: StaffConversation) => setMsgs(await fetchStaffMessages(c.id)), []);
+  const loadThread = useCallback(async (c: StaffConversation) => {
+    setMsgs(await fetchStaffMessages(c.id));
+    setHandoff(await fetchHandoff(c.id));
+  }, []);
   useEffect(() => {
     if (!open) return;
     void loadThread(open);
@@ -80,6 +87,7 @@ function Conversations({ link }: { link: StaffLink }) {
         <Button size="icon" variant="ghost" aria-label="Voltar às conversas" onClick={() => setOpen(null)}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="font-semibold">{open.otherName}</div>
       </div>
+      <HandoffBar conversationId={open.id} handoff={handoff} viewer="house" canAct={canReply} onChange={() => void loadThread(open)} />
       <div ref={listRef} className="h-[50dvh] overflow-y-auto p-3 space-y-2">
         {msgs.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">Nenhuma mensagem ainda.</p>}
         {msgs.map((m) => (

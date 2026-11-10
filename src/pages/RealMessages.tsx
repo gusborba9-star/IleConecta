@@ -9,6 +9,9 @@ import ChatCheckoutButton from "@/components/chat/ChatCheckoutButton";
 import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant } from "@/lib/assistant";
+import HandoffBar from "@/components/chat/HandoffBar";
+import { fetchHandoff } from "@/lib/handoff";
+import { shouldCallAssistant, type Handoff } from "@/lib/handoffCore";
 import { fetchAssistantName } from "@/lib/catalog";
 import { fetchQuickReplies, type QuickReply } from "@/lib/campaigns";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
@@ -30,6 +33,7 @@ export default function RealMessages() {
   const [convos, setConvos] = useState<ConversationRow[]>([]);
   const [convId, setConvId] = useState<string | null>(null);
   const [peer, setPeer] = useState<Peer | null>(null);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -100,6 +104,7 @@ export default function RealMessages() {
       if (me && document.visibilityState === "visible" && list.some((m) => m.senderId !== me && !m.read)) void markConversationRead(convId);
     }
     if (otherId) setPeer(await fetchPeer(otherId));
+    if (convId) setHandoff(await fetchHandoff(convId));
     await refreshList();
   }, [convId, otherId, me, refreshList]);
 
@@ -133,15 +138,18 @@ export default function RealMessages() {
     setBusy(true);
     setNotice(null);
     setText("");
-    const fresh = await fetchPeer(otherId);
+    const [fresh, freshHandoff] = await Promise.all([fetchPeer(otherId), fetchHandoff(convId)]);
     if (fresh) setPeer(fresh);
+    setHandoff(freshHandoff);
     const houseOffline = Boolean(fresh?.isHouse && !fresh.online);
     let delivered = false;
-    if (houseOffline && assistantName) {
-      // A casa está offline e tem assistente disponível: ela responde (a função grava a pergunta e a resposta).
+    // Casa offline com assistente disponível e ninguém da casa atendendo: a assistente responde (a função grava a pergunta e a resposta).
+    // Com a casa ou a equipe atendendo, a mensagem vai direto para elas (o servidor também recusa a assistente nesse caso).
+    if (shouldCallAssistant({ houseOffline, hasAssistant: Boolean(assistantName), handoff: freshHandoff })) {
       const res = await askAssistant(otherId, msg, convId);
       delivered = res.ok;
-      if (!res.ok) setNotice(res.message ? `${res.message} A casa verá a sua mensagem quando voltar.` : null);
+      if (res.ok && res.handledByHuman) setNotice(res.message ?? "A casa está atendendo esta conversa.");
+      else if (!res.ok) setNotice(res.message ? `${res.message} A casa verá a sua mensagem quando voltar.` : null);
     }
     if (!delivered) {
       const res = await sendDirect(convId, me, msg);
@@ -245,8 +253,9 @@ export default function RealMessages() {
               <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} onBlockedChange={setIBlocked} />
             </header>
 
+            {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse ? "house" : "client"} onChange={() => void refreshRef.current()} />}
             <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/30" aria-live="polite">
-              {offlineHouse && assistantName && (
+              {offlineHouse && assistantName && !handoff?.active && (
                 <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1"><Bot className="h-3 w-3" /> A casa está offline agora. A assistente responde sobre serviços, rituais, vagas e valores.</div>
               )}
               {msgs.map((m) => {

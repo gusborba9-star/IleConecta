@@ -118,6 +118,8 @@ export interface AskResult {
   conversationId?: string;
   reply?: string;
   assistantName?: string;
+  /** A casa/equipe está com a conversa: a mensagem foi entregue a ela e a assistente não respondeu. */
+  handledByHuman?: boolean;
   error?: string;
   message?: string;
 }
@@ -147,8 +149,10 @@ export async function askAssistant(houseOwnerId: string, message: string, conver
   return {
     ok: true,
     conversationId: data.conversation_id,
-    reply: data.reply,
+    reply: typeof data.reply === "string" ? data.reply : undefined,
     assistantName: data.assistant_name,
+    handledByHuman: data.handled_by_human === true,
+    message: typeof data.message === "string" ? data.message : undefined,
   };
 }
 
