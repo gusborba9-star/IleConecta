@@ -6,7 +6,7 @@ import { cardHint, dateTile } from "@/lib/cardsCore";
 import RitualRecords from "@/components/rituals/RitualRecords";
 import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
-import { grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
+import { bookingOpen, grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
 
 interface Props {
@@ -58,7 +58,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
     };
   }, [r.id, canSeeStream]);
 
-  const open = r.status === "publicado" && !live && new Date(r.startsAt) > new Date();
+  const open = r.status === "publicado" && !live && bookingOpen(r.startsAt);
 
   // Cliente sem vaga: card premium com descrição, informações, botão Participar e Conversar.
   if (!isOwn && !mine) {

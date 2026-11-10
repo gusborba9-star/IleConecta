@@ -65,7 +65,7 @@ test("descrição obrigatória com no mínimo 20 letras, em serviço e em ritual
   assert.match(curta.errors.description, /faltam 5/);
   assert.equal(validateService({ ...ok, description: "x".repeat(20) }).ok, true);
   assert.equal(validateService({ ...ok, description: "x".repeat(19) }).ok, false);
-  const rit = { title: "Ritual", description: "", priceText: "100,00", seatsText: "10", mode: "distancia", date: "2099-01-01", time: "19:00", streamUrl: "", fields: [] };
+  const rit = { title: "Ritual", description: "", priceText: "100,00", seatsText: "10", durationText: "90", mode: "distancia", date: "2099-01-01", time: "19:00", streamUrl: "", fields: [] };
   assert.match(validateRitual(rit).errors.description, /Escreva uma descrição/);
   assert.equal(validateRitual({ ...rit, description: "Ritual coletivo de proteção." }).ok, true);
 });

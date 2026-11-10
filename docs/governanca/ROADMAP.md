@@ -225,7 +225,21 @@ Estado em 2026-11-09 (auditoria somente leitura; nenhuma alteração em produç�
 | 9 | Agenda, reserva e checkout | evidência parcial | F3 (P1): ritual não encerra 1 h antes; F7: ritual não ocupa a agenda |
 | 10 | Migrations × Supabase | testado | schema = repo até 0063; registro com 18 de 66; 0064–0066 não aplicadas |
 
-Correções de F1, F2 e F3 dependem de migration/RLS (autorização expressa) e, no caso de F2, de decisão do proprietário. Nenhuma foi executada.
+### Registro: EXEC-02 — correções F1, F2, F3, F7, F11 e F12 (2026-11-09)
+
+Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com duração obrigatória; F10 ação dele no painel. Branch `fix/exec-02-f1-f2-f3-f7` (migration 0067 + app + assistente), **sem merge e sem aplicar em produção**.
+
+| Item | Estado | Evidência |
+|---|---|---|
+| F1 convite/limite de acessos | corrigido no branch | corrida 0/30 (convite e limite do plano) |
+| F2 exposição de perfis e curtidas | corrigido no branch | sondagem 163/0, com cada relação testada |
+| F3 janela de 1 h do ritual | corrigido no branch | sondagem + testes unitários |
+| F7 ritual na agenda | corrigido no branch | sondagem (bloqueio, conflito, corrida) |
+| F11, F12 | corrigido no branch | migration idempotente |
+
+Regressão: 273 testes unitários, E2E 105/0, verify_0064 54/0, build OK, sem novos erros de tsc/lint (7 erros de tipos e 2 de lint já existiam). Mutação: remover cada correção faz o teste falhar.
+Pendências: aplicar 0064–0067 em produção e reparar o registro de migrations (autorização expressa); F4, F5, F6 (decisão), F8, F9; F10 no painel.
+
 
 ## 7. Declaração de governança
 

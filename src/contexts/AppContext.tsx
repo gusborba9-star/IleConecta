@@ -244,7 +244,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const flip = (p: Post): Post => {
         if (p.id !== postId) return p;
         const has = p.likes.includes(uidNow);
-        return { ...p, likes: has ? p.likes.filter((id) => id !== uidNow) : [...p.likes, uidNow] };
+        const base = p.likeCount ?? p.likes.length;
+        return {
+          ...p,
+          likes: has ? p.likes.filter((id) => id !== uidNow) : [...p.likes, uidNow],
+          likeCount: Math.max(0, base + (has ? -1 : 1)),
+        };
       };
       if (isRemoteId(postId)) {
         const current = remotePosts.find((p) => p.id === postId);

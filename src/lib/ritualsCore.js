@@ -19,6 +19,15 @@ export const FIELD_PRESETS = [
 
 export const MAX_FIELDS = 8;
 export const MAX_SEATS = 5000;
+export const MIN_DURATION_MIN = 15;
+export const MAX_DURATION_MIN = 1440;
+/** Reservas e entradas encerram 1 hora antes do início (Blueprint §10.2). */
+export const BOOKING_CUTOFF_MS = 60 * 60 * 1000;
+
+/** Ainda dá para reservar vaga? Publicado e começa em mais de 1 hora. */
+export function bookingOpen(startsAtIso, now = new Date()) {
+  return new Date(startsAtIso).getTime() > now.getTime() + BOOKING_CUTOFF_MS;
+}
 
 export function modeLabel(mode) {
   return RITUAL_MODES.find((m) => m.id === mode)?.label ?? "Presencial";
@@ -93,6 +102,11 @@ export function validateRitual(input, now = new Date()) {
   const seats = Number(String(input?.seatsText ?? "").trim());
   if (!Number.isInteger(seats) || seats < 1 || seats > MAX_SEATS) errors.seats = `Informe de 1 a ${MAX_SEATS} vagas.`;
 
+  // A duração faz o ritual ocupar a agenda de atendimentos da casa (fonte única de horários).
+  const duration = Number(String(input?.durationText ?? "").trim());
+  if (!Number.isInteger(duration) || duration < MIN_DURATION_MIN || duration > MAX_DURATION_MIN)
+    errors.duration = `Informe a duração em minutos (de ${MIN_DURATION_MIN} a ${MAX_DURATION_MIN}).`;
+
   const mode = RITUAL_MODES.some((m) => m.id === input?.mode) ? input.mode : null;
   if (!mode) errors.mode = "Escolha como o ritual é realizado.";
 
@@ -117,6 +131,7 @@ export function validateRitual(input, now = new Date()) {
       seats_total: seats,
       mode,
       starts_at: startsAt,
+      duration_min: duration,
       intake_fields: fields,
       stream_url: streamUrl || null,
     },

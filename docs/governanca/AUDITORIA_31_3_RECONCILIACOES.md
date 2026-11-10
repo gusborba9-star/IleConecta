@@ -61,6 +61,20 @@ Um ritual publicado no mesmo horário de um atendimento com agenda deixa o horá
 
 **F12 — P2 · Registro de migrations incompleto** (18 de 66) e duas funções de RLS com forma menos eficiente. Reparar o registro e aplicar 0064–0066 exige autorização; as duas funções entram numa migration nova.
 
+## 3.1 Correções preparadas (branch `fix/exec-02-f1-f2-f3-f7`, migration 0067, NÃO aplicada em produção)
+
+Decisões do proprietário (2026-11-09): F2 só casas são públicas (cliente só aparece a quem tem relação; contagem de curtidas pública, quem curtiu só a dona da casa); F7 o ritual ocupa a agenda de atendimentos, com duração obrigatória; F10 ação dele no painel.
+
+| Achado | Correção | Evidência |
+|---|---|---|
+| F1 | `for update` no convite e na casa; limite de acessos serializado | corrida 0/30 (A e B); sem a trava da casa o cenário B falha 27/30 |
+| F2 | `profiles_read`, `likes_read`, `peer_info` restritos; `can_view_profile`; RPC `post_like_counts`; app mostra "Participante" quando não há acesso ao perfil | probe 163/0 incluindo cada relação (pedido, reserva, fila, seguidor, membro, comentário, reembolso) |
+| F3 | reservas, fila e aviso de vaga encerram 1 h antes; assistente não oferece o ritual na janela; cartão do ritual usa a mesma regra | probe (59 min recusa, 61 min aceita) + teste unitário |
+| F7 | `events.duration_min`; gatilho recusa publicar sobre atendimento; `available_slots` e `create_booking` consideram o ritual; formulário exige duração | probe (bloqueio, conflito, corrida ritual×reserva 12 rodadas) |
+| F11, F12 | `search_path` fixo e `(select auth.uid())` nas funções citadas | migration aplica duas vezes sem erro |
+
+Continuam abertos: F4, F5, F6 (decisão do proprietário), F8, F9, F10 (painel Supabase), reparo do registro de migrations (F12), 0064–0067 em produção (exigem autorização).
+
 ## 4. Fora do escopo desta auditoria (confirmado)
 
 Nenhum merge, deploy, migration, alteração de RLS/credencial, dado ou configuração de produção foi feito. As sondagens rodaram em PostgreSQL 16 local com as migrations do repositório; produção só recebeu SELECT.
