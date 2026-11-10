@@ -27,6 +27,15 @@ export default function Rituals() {
   const [cat, setCat] = useState("Todos");
   const [mode, setMode] = useState<typeof MODES[number]>("Todos");
 
+  const realFiltered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return real.filter((r) => {
+      if (mode !== "Todos" && r.mode !== mode) return false;
+      if (term && !`${r.title} ${r.description ?? ""} ${r.houseName}`.toLowerCase().includes(term)) return false;
+      return true;
+    });
+  }, [real, mode, q]);
+
   const filtered = useMemo(() => {
     return rituals.filter((r) => {
       if (cat !== "Todos" && r.category !== cat) return false;
@@ -44,7 +53,7 @@ export default function Rituals() {
           <h1 className="font-display font-bold text-2xl">Rituais & Trabalhos</h1>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Encontre rituais coletivos e trabalhos personalizados oferecidos pelas casas. Dados de demonstração; disponibilidade não é sincronizada entre usuários.
+          Encontre rituais coletivos e trabalhos personalizados oferecidos pelas casas. {isRemoteAuth ? "Reserve direto com a casa; as vagas são atualizadas em tempo real." : "Dados de demonstração; disponibilidade não é sincronizada entre usuários."}
         </p>
       </Card>
 
@@ -54,7 +63,7 @@ export default function Rituals() {
           <Input placeholder="Buscar por título, tema ou casa..." className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {CATEGORIES.map((c) => (
+          {!isRemoteAuth && CATEGORIES.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
@@ -83,10 +92,10 @@ export default function Rituals() {
         </div>
       </Card>
 
-      {real.length > 0 && (
+      {isRemoteAuth && realFiltered.length > 0 && (
         <section aria-label="Rituais das casas" className="space-y-3">
           <h2 className="font-display font-bold text-lg">Próximos rituais das casas</h2>
-          {real.map((r) => (
+          {realFiltered.map((r) => (
             <Card key={r.id} className="p-4">
               <div className="flex flex-wrap items-center gap-3 justify-between">
                 <div className="min-w-0">
@@ -108,8 +117,10 @@ export default function Rituals() {
         {filtered.map((r) => (
           <RitualCard key={r.id} ritual={r} />
         ))}
-        {filtered.length === 0 && (
-          <Card className="p-10 text-center text-muted-foreground">Nenhum ritual encontrado com esses filtros.</Card>
+        {(isRemoteAuth ? realFiltered.length === 0 : filtered.length === 0) && (
+          <Card className="p-10 text-center text-muted-foreground">
+            {isRemoteAuth && real.length === 0 ? "Ainda não há rituais publicados." : "Nenhum ritual encontrado com esses filtros."}
+          </Card>
         )}
       </div>
     </div>
