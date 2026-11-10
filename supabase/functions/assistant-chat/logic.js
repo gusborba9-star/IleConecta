@@ -47,7 +47,7 @@ export function featureEnabled(features, name, ownerId) {
 /** Texto do cliente: remove controles, normaliza espaços e corta no limite. Devolve "" se vazio. */
 export function cleanUserText(raw) {
   if (typeof raw !== "string") return "";
-  // eslint-disable-next-line no-control-regex
+   
   return raw.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, MAX_USER_CHARS);
 }
 
