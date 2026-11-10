@@ -53,8 +53,10 @@ Convite, aceite, pausa, remoção e alteração de permissões não geram regist
 Um ritual publicado no mesmo horário de um atendimento com agenda deixa o horário livre para agendamento. Decisão do proprietário: o ritual consome a agenda da casa? (Blueprint §9 pede fonte única de disponibilidade.)
 
 **F8 — P3 · Cliente altera o próprio `account_type` para `casa` pela API** (`profiles_update`), passando a poder criar casa sem o fluxo de cadastro. Efeito limitado; avaliar travar a coluna.
+**Correção (0070 a):** gatilho `profiles_guard_account_type` recusa a troca quando a sessão é `anon`/`authenticated`; cadastro, service_role e SQL Editor seguem iguais. Testado com ataque real (cliente→casa e casa→cliente recusados, edição de nome/cidade/bio e cadastro de casa preservados).
 
 **F9 — P3 · `anon` e `authenticated` com TRUNCATE/REFERENCES/TRIGGER em todas as tabelas** (padrão do Supabase). RLS não cobre TRUNCATE; a API REST não o expõe. Reforço: revogar esses privilégios (migration).
+**Correção (0070 b):** revoga TRUNCATE, REFERENCES, TRIGGER (e MAINTAIN, que existe no PostgreSQL 17 de produção) de `anon` e `authenticated` nas tabelas existentes e nas futuras (privilégios padrão do dono `postgres`). Verificado: 0 de 62 tabelas expostas; SELECT/INSERT/UPDATE/DELETE e `service_role` intactos; TRUNCATE e criação de gatilho recusados para os dois papéis.
 
 **F10 — P2 · Proteção contra senhas vazadas desativada** (Auth do Supabase). Ação do proprietário no painel (Authentication → Sign In / Providers → Password security).
 

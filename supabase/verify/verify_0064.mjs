@@ -32,7 +32,7 @@ const snap = async (c, pid) => {
 const P1 = "40000000-0000-0000-0000-000000000001";
 
 // ================= 1) equivalência de efeitos: base (confirm_payment antigo) x migrada (confirm_payment_for) =================
-const base = await freshDb("t_base2"); const mig = await freshDb("t_mig");
+const base = await freshDb("t_base2", { max: 63 }); const mig = await freshDb("t_mig", { max: 63 });
 ok("schema 0001-0063 aplica sem erro (base)", base.failed.length === 0, base.failed.join("; "));
 const m = mig.c;
 await m.query(sql64()); await m.query(sql64());
@@ -110,7 +110,7 @@ await mk(P6, R6, "cs_6", { account: null });
 ok("NOVO pagamento Stripe sem conta registrada NÃO confirma (identity_strict=true)", (await conf(P6, "stripe", "cs_6", "acct_1")) === "divergente" && (await conf(P6, "stripe", "cs_6", null)) === "divergente");
 ok("linha nova nasce estrita", (await m.query("select identity_strict s from payments where id=$1", [P6])).rows[0].s === true);
 // histórico: marcado pelo backfill (cria linha ANTES de aplicar 0064 em outro banco)
-const hist = await freshDb("t_hist");
+const hist = await freshDb("t_hist", { max: 63 });
 await seed(hist.c, { pid: P6, ref: "cs_old", account: null, res: R6 });
 await seed(hist.c, { pid: P5, ref: null, account: null, res: R5 });
 await hist.c.query(sql64());
