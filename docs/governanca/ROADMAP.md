@@ -239,7 +239,8 @@ Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com
 | 0068 anomalia de referências e `search_path` do gatilho | aplicado em produção | E2E 107/0 e mutação |
 
 Regressão: 273 testes unitários, E2E 107/0, verify_0064 54/0, sondagem 164/0 (0067), build OK, tsc e lint sem erros. Mutação: remover cada correção faz o teste falhar.
-Pendências: deploy das funções `payments` (v18 → EXEC-01) e `assistant-chat` (v29 → janela de 1 h); validação com Stripe de teste (compra de teste, webhook assinado real); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel (ação do proprietário).
+Funções publicadas em 2026-11-10 pelo workflow `deploy-functions` (`payments` v19, `assistant-chat` v30, `verify_jwt` desligado como antes). Evidência de integração real (Stripe em modo de teste): a rotina agendada chamou a função nova (POST 200) e completou PaymentIntent e Charge dos 6 pagamentos antigos; o webhook de teste segue habilitado e apontando para a função.
+Pendências: compra de teste de ponta a ponta com webhook assinado novo; 2 pagamentos de cartão antigos (435e, 6cdf) com tarifa do processador 0 (anomalia histórica, correção depende do proprietário); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel e revogação dos tokens (ação do proprietário).
 
 ## 7. Declaração de governança
 
