@@ -335,8 +335,12 @@ export function normalizeAgenda(items, now = new Date(), horizon = AGENDA_HORIZO
  * (Agendar horário / Contratar / só conversa). Assim a assistente nunca indica um botão que não existe.
  */
 export function serviceHowTo(s, payments = false) {
-  if (s?.bookable) return `botão "Agendar horário" na aba Serviços da página da casa (o cliente escolhe o horário${payments ? " e paga pela plataforma" : ""})`;
-  if (s?.delivery !== "presencial") return `botão "Contratar" na aba Serviços da página da casa${payments ? " (paga pela plataforma)" : " (o pagamento é combinado com a casa)"}`;
+  // Com pagamento pela plataforma ligado, o cliente contrata pelo botão de pagamento que o sistema mostra no próprio chat
+  // (marcador [[PAGAR]]); a assistente não manda a pessoa procurar a página da casa.
+  if (payments && s?.bookable) return "pelo botão de pagamento do chat, mostrado quando a pessoa disser que quer agendar (ela escolhe o horário na tela do botão); não mande procurar a página da casa";
+  if (payments && s?.delivery !== "presencial") return "pelo botão de pagamento do chat, mostrado quando a pessoa disser que quer contratar; não mande procurar a página da casa";
+  if (s?.bookable) return `botão "Agendar horário" na aba Serviços da página da casa (o cliente escolhe o horário)`;
+  if (s?.delivery !== "presencial") return `botão "Contratar" na aba Serviços da página da casa (o pagamento é combinado com a casa)`;
   return "combinado direto com a casa por esta conversa (não há botão para este serviço)";
 }
 
@@ -393,7 +397,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   }
   if (services.length > 0) {
     lines.push(`- Serviços publicados: apresente nome, valor e modalidade e diga como contratar exatamente como está em "como contratar". Só diga que a pessoa escolhe a modalidade quando o serviço estiver listado como \"presencial ou à distância (o cliente escolhe ao contratar)\"; nos demais cite apenas a modalidade listada, sem inventar opção. ${selling
-    ? "Você pode ajudar o cliente a escolher e fechar a contratação: mostre em uma frase o que o serviço oferece (pela descrição) e leve até o botão de contratar; o pagamento acontece nesse botão, gerado pelo sistema, nunca por você. Termine a apresentação com a pergunta certa para o tipo, como uma pessoa faria: serviço COM AGENDA (jogo de búzios, cartas, consulta): cite no máximo dois dos \"próximos horários livres\" e pergunte \"Deseja agendar um horário?\" (nunca ofereça horário que não esteja na lista; sem horários livres, diga isso e passe para a casa); serviço com botão \"Contratar\": pergunte \"Deseja contratar?\"."
+    ? "Você pode ajudar o cliente a escolher e fechar a contratação: mostre em uma frase o que o serviço oferece (pela descrição) e leve até o botão de contratar; o pagamento acontece nesse botão, gerado pelo sistema, nunca por você. Termine a apresentação com a pergunta certa para o tipo, como uma pessoa faria: serviço COM AGENDA (jogo de búzios, cartas, consulta): cite no máximo dois dos \"próximos horários livres\" e pergunte \"Deseja agendar um horário?\" (nunca ofereça horário que não esteja na lista; sem horários livres, diga isso e passe para a casa); serviço com botão \"Contratar\": pergunte \"Deseja contratar?\"." + (payments ? " Com pagamento pela plataforma, não cite botão nem a página nessa apresentação: o botão só aparece no chat após o \"sim\" (\"BOTÃO DE PAGAMENTO NO CHAT\")." : "")
     : "A casa preferiu fechar os serviços pessoalmente: informe nome, valor e modalidade, mas não conduza a contratação nem indique botão; quando a pessoa quiser contratar, passe para a casa."}`);
   }
   const payable = services.filter((x) => x.bookable || x.delivery !== "presencial");

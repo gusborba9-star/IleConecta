@@ -50,9 +50,18 @@ test("cada serviço diz como contratar, igual ao botão da página", () => {
   ];
   const p = buildSystemPrompt({ ...base, catalog: [], services: svc, payments: true });
   assert.match(p, /Consulta .*como contratar: combinado direto com a casa por esta conversa/);
-  assert.match(p, /Cartas .*como contratar: botão "Contratar" na aba Serviços da página da casa \(paga pela plataforma\)/);
-  assert.match(p, /Búzios .*como contratar: botão "Agendar horário"/);
+  // Com pagamento pela plataforma: o botão está no chat (marcador [[PAGAR]]); a assistente não manda procurar a página.
+  assert.match(p, /Cartas .*como contratar: pelo botão de pagamento do chat.*quer contratar.*não mande procurar a página da casa/);
+  assert.match(p, /Búzios .*como contratar: pelo botão de pagamento do chat.*quer agendar.*escolhe o horário na tela/);
+  assert.doesNotMatch(p, /Cartas .*aba Serviços/);
   assert.match(p, /nunca cite um botão que não esteja escrito ali/);
+  // Sem pagamento pela plataforma: segue o botão da página da casa, como antes.
+  const q = buildSystemPrompt({ ...base, catalog: [], services: svc, payments: false });
+  assert.match(q, /Cartas .*como contratar: botão "Contratar" na aba Serviços da página da casa \(o pagamento é combinado com a casa\)/);
+  assert.match(q, /Búzios .*como contratar: botão "Agendar horário" na aba Serviços/);
+  // A apresentação não cita botão nem página só quando há pagamento pela plataforma e a casa vende.
+  assert.match(p, /não cite botão nem a página nessa apresentação: o botão só aparece no chat após o "sim"/);
+  assert.doesNotMatch(q, /não cite botão nem a página nessa apresentação/);
 });
 
 test("repasse para a casa: só nos casos listados, nunca em ritual coletivo", () => {
