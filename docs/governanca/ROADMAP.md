@@ -240,7 +240,9 @@ Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com
 
 Regressão: 273 testes unitários, E2E 107/0, verify_0064 54/0, sondagem 164/0 (0067), build OK, tsc e lint sem erros. Mutação: remover cada correção faz o teste falhar.
 Funções publicadas em 2026-11-10 pelo workflow `deploy-functions` (`payments` v19, `assistant-chat` v30, `verify_jwt` desligado como antes). Evidência de integração real (Stripe em modo de teste): a rotina agendada chamou a função nova (POST 200) e completou PaymentIntent e Charge dos 6 pagamentos antigos; o webhook de teste segue habilitado e apontando para a função.
-Pendências: 2 pagamentos de cartão antigos (435e, 6cdf) com tarifa do processador 0 (anomalia histórica, correção depende do proprietário); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel e revogação dos tokens (ação do proprietário).
+**Correção das tarifas históricas (autorizada pelo proprietário em 2026-11-10):** 3 pagamentos confirmados tinham tarifa do processador 0 (falso zero da versão anterior): 435e (cartão R$ 200), 6cdf (cartão R$ 200) e 5974 (Pix R$ 300). Método: o proprietário rodou um único UPDATE marcando `processor_fee_cents` como nulo nessas 3 linhas; a rotina agendada (`reconcileFees`, código da v19) buscou a tarifa real no Stripe e gravou pelo caminho normal (`record_processor_fee_for`). Resultado verificado: 435e = 837, 6cdf = 837, 5974 = 357; cada um ganhou um novo lançamento `taxa_provedor` com o valor real e manteve o lançamento 0 antigo como histórico (sem apagar nada); bruto, comissão e repasse não mudaram (plataforma + casa = bruto). Depois disso, nenhum pagamento confirmado ou estornado tem tarifa 0 ou nula (8 no total).
+
+Pendências: reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel e revogação dos tokens (ação do proprietário).
 
 **Teste real de ponta a ponta (Stripe em modo de teste, 2026-11-10, serviço de R$ 1,00):**
 
