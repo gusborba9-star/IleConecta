@@ -192,7 +192,7 @@ Não marcar fase concluída se houver P0 aberto ou se os critérios de saída n�
 
 ### Registro: EXEC-01 — subsistema financeiro do Marketplace (Stripe)
 
-Estado em 2026-11-04 (PR #140, Draft; sem merge, sem deploy, sem migration remota). Estados conforme a lista acima.
+Estado em 2026-11-10 (código em `main` pelo PR #141; migrations 0064–0066 aplicadas em produção; função `payments` ainda na v18, deploy pendente). Estados conforme a lista acima.
 
 | Item | Estado | Evidência |
 |---|---|---|
@@ -206,7 +206,7 @@ Estado em 2026-11-04 (PR #140, Draft; sem merge, sem deploy, sem migration remot
 | Integração real (Stripe real, assinatura real de webhook, Supabase Edge Runtime) | bloqueado | exige Supabase isolado e webhook de teste (custo/autorização do CTO) |
 | Divergências históricas 435e e de60 | em auditoria | diagnóstico feito; nenhuma correção de dado sem autorização |
 
-Nada acima está aplicado em produção: a função `payments` implantada (versão 18) é a anterior à EXEC-01.
+No banco de produção as migrations 0064–0066 estão aplicadas; a função `payments` implantada (versão 18) ainda é a anterior à EXEC-01 e é compatível com o esquema novo. Integração real (Stripe, webhook assinado) só passa a `testado` após o deploy e a compra de teste.
 
 ### Registro: Fase 1 — Auditoria das reconciliações do Blueprint §31.3
 
@@ -225,21 +225,21 @@ Estado em 2026-11-09 (auditoria somente leitura; nenhuma alteração em produç�
 | 9 | Agenda, reserva e checkout | evidência parcial | F3 (P1): ritual não encerra 1 h antes; F7: ritual não ocupa a agenda |
 | 10 | Migrations × Supabase | testado | schema = repo até 0063; registro com 18 de 66; 0064–0066 não aplicadas |
 
-### Registro: EXEC-02 — correções F1, F2, F3, F7, F11 e F12 (2026-11-09)
+### Registro: EXEC-02 — correções F1, F2, F3, F7, F11 e F12 (2026-11-10)
 
-Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com duração obrigatória; F10 ação dele no painel. Branch `fix/exec-02-f1-f2-f3-f7` (migration 0067 + app + assistente), **sem merge e sem aplicar em produção**.
+Decisões do proprietário: F2 só casas públicas; F7 ritual ocupa a agenda com duração obrigatória; F10 ação dele no painel. Merge em `main` pelo PR #141 (junto com EXEC-01 e a auditoria). Migrations 0064–0068 aplicadas em produção pelo proprietário em 19 passos pequenos (`supabase/rollout/`), cada um conferido no banco por impressão digital das funções (33 funções idênticas ao ambiente de teste).
 
 | Item | Estado | Evidência |
 |---|---|---|
-| F1 convite/limite de acessos | corrigido no branch | corrida 0/30 (convite e limite do plano) |
-| F2 exposição de perfis e curtidas | corrigido no branch | sondagem 163/0, com cada relação testada |
-| F3 janela de 1 h do ritual | corrigido no branch | sondagem + testes unitários |
-| F7 ritual na agenda | corrigido no branch | sondagem (bloqueio, conflito, corrida) |
-| F11, F12 | corrigido no branch | migration idempotente |
+| F1 convite/limite de acessos | aplicado em produção (banco) | corrida 0/30; conferido no banco |
+| F2 exposição de perfis e curtidas | aplicado em produção (banco), validado | leitura como visitante em produção: 3 perfis de casas, 0 de clientes, 0 curtidas |
+| F3 janela de 1 h do ritual | aplicado em produção (banco e app) | sondagem + testes unitários |
+| F7 ritual na agenda | aplicado em produção (banco e app) | sondagem (bloqueio, conflito, corrida); ritual existente sem duração não é afetado |
+| F11, F12 | aplicado em produção (banco) | funções conferidas |
+| 0068 anomalia de referências e `search_path` do gatilho | aplicado em produção | E2E 107/0 e mutação |
 
-Regressão: 273 testes unitários, E2E 105/0, verify_0064 54/0, build OK, sem novos erros de tsc/lint (7 erros de tipos e 2 de lint já existiam). Mutação: remover cada correção faz o teste falhar.
-Pendências: aplicar 0064–0067 em produção e reparar o registro de migrations (autorização expressa); F4, F5, F6 (decisão), F8, F9; F10 no painel.
-
+Regressão: 273 testes unitários, E2E 107/0, verify_0064 54/0, sondagem 164/0 (0067), build OK, tsc e lint sem erros. Mutação: remover cada correção faz o teste falhar.
+Pendências: deploy das funções `payments` (v18 → EXEC-01) e `assistant-chat` (v29 → janela de 1 h); validação com Stripe de teste (compra de teste, webhook assinado real); reparo do registro de migrations do Supabase (19 entradas faltantes); F4, F5, F6 (decisão), F8, F9; F10 no painel (ação do proprietário).
 
 ## 7. Declaração de governança
 
