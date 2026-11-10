@@ -25,6 +25,8 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
   const [saving, setSaving] = useState(false);
   const { id: ownerId } = useParams();
   const [payOn, setPayOn] = useState(false);
+  // Só libera o envio depois de saber se a casa cobra pelo app; sem isso um toque rápido criava pedido sem abrir o pagamento.
+  const [payReady, setPayReady] = useState(false);
   const [okCheckout, setOkCheckout] = useState(false);
   const [okSensitive, setOkSensitive] = useState(false);
   const { currentUser } = useApp();
@@ -38,7 +40,7 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
     setOkSensitive(false);
     if (!ritual) return;
     let alive = true;
-    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
+    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v)).finally(() => alive && setPayReady(true));
     if (currentUser?.id) void fetchAcceptedDocs(currentUser.id).then((d) => alive && setTermsDone(d.has("termos_cliente")));
     return () => {
       alive = false;
@@ -49,6 +51,7 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!payReady) return;
     const v = validateAnswers(ritual.fields, answers);
     if (!v.ok) return setErrors(v.errors);
     if (!okSensitive || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
@@ -109,7 +112,7 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
         <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving}>{saving ? "Reservando…" : "Confirmar reserva"}</Button>
+          <Button type="submit" disabled={saving || !payReady}>{saving ? "Reservando…" : "Confirmar reserva"}</Button>
         </div>
       </form>
     </Modal>
