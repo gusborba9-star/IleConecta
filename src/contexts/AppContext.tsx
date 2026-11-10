@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Conversation, HouseUser, Message, Post, Purchase, Ritual, Story, User } from "@/types";
-import { loadKey, saveKey } from "@/lib/storage";
+import { clearAll, loadKey, saveKey } from "@/lib/storage";
 import { seedConversations, seedPosts, seedRituals, seedStories, seedUsers } from "@/lib/mockData";
 import { uid } from "@/lib/utils";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -21,6 +21,7 @@ import {
   remoteCreatePost,
   remoteSetLike,
 } from "@/lib/remoteData";
+import { exposeState } from "@/lib/dataSource";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 import {
   isAuthState,
@@ -67,13 +68,14 @@ interface AppState {
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<User[]>(() => loadKey("users", seedUsers, isUsersState));
-  const [rituals, setRituals] = useState<Ritual[]>(() => loadKey("rituals", seedRituals, (value): value is Ritual[] => isRitualsState(value, users)));
-  const [posts, setPosts] = useState<Post[]>(() => loadKey("posts", seedPosts, (value): value is Post[] => isPostsState(value, users, rituals)));
-  const [stories, setStories] = useState<Story[]>(() => loadKey("stories", seedStories, (value): value is Story[] => isStoriesState(value, users)));
-  const [conversations, setConversations] = useState<Conversation[]>(() => loadKey("conversations", seedConversations, (value): value is Conversation[] => isConversationsState(value, users)));
-  const [purchases, setPurchases] = useState<Purchase[]>(() => loadKey("purchases", [], (value): value is Purchase[] => isPurchasesState(value, users, rituals)));
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadKey("auth", null, (value): value is string | null => isAuthState(value, users)));
+  // Com banco real configurado, nenhum dado de demonstração é carregado (nem o que ficou no navegador de versões antigas).
+  const [users, setUsers] = useState<User[]>(() => (isSupabaseConfigured ? [] : loadKey("users", seedUsers, isUsersState)));
+  const [rituals, setRituals] = useState<Ritual[]>(() => (isSupabaseConfigured ? [] : loadKey("rituals", seedRituals, (value): value is Ritual[] => isRitualsState(value, users))));
+  const [posts, setPosts] = useState<Post[]>(() => (isSupabaseConfigured ? [] : loadKey("posts", seedPosts, (value): value is Post[] => isPostsState(value, users, rituals))));
+  const [stories, setStories] = useState<Story[]>(() => (isSupabaseConfigured ? [] : loadKey("stories", seedStories, (value): value is Story[] => isStoriesState(value, users))));
+  const [conversations, setConversations] = useState<Conversation[]>(() => (isSupabaseConfigured ? [] : loadKey("conversations", seedConversations, (value): value is Conversation[] => isConversationsState(value, users))));
+  const [purchases, setPurchases] = useState<Purchase[]>(() => (isSupabaseConfigured ? [] : loadKey("purchases", [], (value): value is Purchase[] => isPurchasesState(value, users, rituals))));
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => (isSupabaseConfigured ? null : loadKey("auth", null, (value): value is string | null => isAuthState(value, users))));
 
   const [remoteUser, setRemoteUser] = useState<User | null>(null);
   const [remoteHouses, setRemoteHouses] = useState<HouseUser[]>([]);
@@ -128,31 +130,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  useEffect(() => persist("users", users), [users]);
-  useEffect(() => persist("posts", posts), [posts]);
-  useEffect(() => persist("stories", stories), [stories]);
-  useEffect(() => persist("rituals", rituals), [rituals]);
-  useEffect(() => persist("conversations", conversations), [conversations]);
-  useEffect(() => persist("purchases", purchases), [purchases]);
-  useEffect(() => persist("auth", currentUserId), [currentUserId]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("users", users);
+  }, [users]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("posts", posts);
+  }, [posts]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("stories", stories);
+  }, [stories]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("rituals", rituals);
+  }, [rituals]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("conversations", conversations);
+  }, [conversations]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("purchases", purchases);
+  }, [purchases]);
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    persist("auth", currentUserId);
+  }, [currentUserId]);
+  // Limpa do navegador o que versões antigas guardaram da demonstração (contas de exemplo, conversas, compras).
+  useEffect(() => {
+    if (isSupabaseConfigured) clearAll();
+  }, []);
 
   // Com Supabase configurado, só existe usuário logado de verdade; contas demo nunca ficam ativas.
   const currentUser = useMemo(
     () => (isSupabaseConfigured ? remoteUser : users.find((u) => u.id === currentUserId) || null),
     [users, currentUserId, remoteUser]
   );
-  const allUsers = useMemo(() => {
-    // Dados reais do servidor têm prioridade; o usuário logado vem por último para refletir edições locais.
-    const real = new Map<string, User>();
-    [...remoteHouses, ...remoteCommenters].forEach((u) => real.set(u.id, u));
-    if (remoteUser) real.set(remoteUser.id, remoteUser);
-    return [...users.filter((u) => !real.has(u.id)), ...Array.from(real.values())];
-  }, [users, remoteUser, remoteHouses, remoteCommenters]);
-
-  const allPosts = useMemo(
-    () => [...remotePosts, ...posts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [remotePosts, posts]
+  const exposed = useMemo(
+    () => exposeState({
+      remote: isSupabaseConfigured,
+      demo: { users, posts, stories, rituals, conversations, purchases },
+      real: { users: [...remoteHouses, ...remoteCommenters, ...(remoteUser ? [remoteUser] : [])], posts: remotePosts },
+    }),
+    [users, posts, stories, rituals, conversations, purchases, remoteUser, remoteHouses, remoteCommenters, remotePosts]
   );
+  const allUsers = exposed.users;
+  const allPosts = exposed.posts;
 
   const value: AppState = {
     currentUser,
@@ -161,10 +186,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     authReady,
     refreshRemote,
     posts: allPosts,
-    stories,
-    rituals,
-    conversations,
-    purchases,
+    stories: exposed.stories,
+    rituals: exposed.rituals,
+    conversations: exposed.conversations,
+    purchases: exposed.purchases,
     async login(email, password) {
       if (isSupabaseConfigured) {
         const result = await remoteLogin(email, password);
@@ -352,7 +377,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     getConversationWith(otherId) {
       if (!currentUser) return null;
-      return conversations.find(
+      return exposed.conversations.find(
         (c) => c.participantIds.includes(currentUser.id) && c.participantIds.includes(otherId)
       ) ?? null;
     },
