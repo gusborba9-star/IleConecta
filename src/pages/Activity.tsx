@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ORDER_LABEL, canCancelOrder, cancelOrder, fetchMyOrders, subscribeOrders, type ServiceOrder } from "@/lib/serviceOrders";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { settleRefunds } from "@/lib/payments";
+import { goToCheckout, settleRefunds } from "@/lib/payments";
 import { formatBRL, timeAgo } from "@/lib/utils";
 import { CalendarClock, HandHeart, Ticket } from "lucide-react";
 
@@ -80,6 +80,9 @@ export default function Activity() {
                   {o.status === "reembolsado" && <div className="text-xs text-forest mt-0.5">Valor devolvido integralmente.</div>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {o.houseOwnerId && <Button size="sm" variant="outline" onClick={() => nav(`/casa/${o.houseOwnerId}`)}>Ver na casa</Button>}
+                    {o.status === "aguardando_pagamento" && (
+                      <Button size="sm" disabled={busy === o.id} onClick={() => void goToCheckout({ orderId: o.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>
+                    )}
                     {canCancelOrder(o.status) && (
                       <Button size="sm" variant="outline" disabled={busy === o.id} onClick={() => void cancel(o.id)}>
                         {busy === o.id ? "Cancelando…" : "Cancelar pedido"}

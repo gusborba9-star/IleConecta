@@ -1,3 +1,5 @@
+import { goToCheckout } from "@/lib/payments";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { CalendarClock, Clock, MapPin, Sparkles, Users, Video } from "lucide-react";
 import { Badge, Button, Card, Progress } from "@/components/base";
@@ -137,6 +139,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           </>
         ) : mine ? (
           <>
+            {mine.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ reservationId: mine.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
             {open && <Button size="sm" variant="outline" onClick={onCancelMine}>Cancelar minha vaga</Button>}
             {refund && <Badge tone="gold">{REFUND_LABEL[refund.status]}</Badge>}
             {canRefund && onRefund && <Button size="sm" variant="outline" onClick={onRefund}>Relatar problema com a entrega</Button>}
