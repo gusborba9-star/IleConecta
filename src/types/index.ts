@@ -48,7 +48,8 @@ export interface Post {
   image?: string;
   kind: "trabalho" | "ritual" | "buzios" | "story" | "geral";
   ritualId?: string;
-  likes: string[]; // user ids
+  likes: string[]; // user ids visíveis (o banco só mostra as próprias curtidas; a dona da casa vê todas)
+  likeCount?: number; // total público, vindo de post_like_counts
   comments: {
     id: string;
     userId: string;
