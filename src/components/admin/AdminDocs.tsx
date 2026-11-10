@@ -91,7 +91,7 @@ export default function AdminDocs() {
 
   const save = async () => {
     const v = validateDoc({ title, body });
-    if (!v.ok) return void toast.error(v.error);
+    if ("error" in v) return void toast.error(v.error);
     const target = creating ? slugify(v.title) : slug;
     if (!target) return void toast.error("O título precisa ter letras ou números.");
     if (creating && docs?.some((d) => d.slug === target)) return void toast.error("Já existe um documento com esse título.");

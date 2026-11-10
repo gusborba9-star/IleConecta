@@ -33,6 +33,7 @@ const json = (body: unknown, status = 200) =>
 const fail = (message: string, status = 400) => json({ error: message }, status);
 
 // deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Obj = Record<string, any>;
 
 async function userOf(req: Request) {

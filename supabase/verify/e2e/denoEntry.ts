@@ -9,5 +9,6 @@ globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
 }) as typeof fetch;
 const serve = Deno.serve.bind(Deno) as (o: unknown, h: unknown) => unknown;
 // deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (Deno as any).serve = (handler: unknown) => serve({ port: Number(Deno.env.get("PORT")), hostname: "127.0.0.1", onListen: () => console.log("READY") }, handler);
 await import(Deno.env.get("INDEX_URL")!);

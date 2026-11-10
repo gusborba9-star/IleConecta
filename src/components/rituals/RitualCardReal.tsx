@@ -146,7 +146,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           <>
             {open && state !== "esgotado" && <Button size="sm" onClick={onReserve}>Reservar vaga</Button>}
             {open && state === "esgotado" && onToggleWait && (
-              <Button size="sm" variant={waiting ? "outline" : "default"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
+              <Button size="sm" variant={waiting ? "outline" : "primary"} onClick={onToggleWait}>{waiting ? "Sair da fila de espera" : "Entrar na fila de espera"}</Button>
             )}
             <Button size="sm" variant="outline" onClick={onChat}>Conversar com a casa</Button>
           </>
