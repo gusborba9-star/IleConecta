@@ -31,6 +31,8 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
   const [saving, setSaving] = useState(false);
   const { id: ownerId } = useParams();
   const [payOn, setPayOn] = useState(false);
+  // Só libera o envio depois de saber se a casa cobra pelo app; sem isso um toque rápido criava pedido sem abrir o pagamento.
+  const [payReady, setPayReady] = useState(false);
   const [okCheckout, setOkCheckout] = useState(false);
   const [okSensitive, setOkSensitive] = useState(false);
   const { currentUser } = useApp();
@@ -61,7 +63,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
         }
       });
     }
-    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
+    void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v)).finally(() => alive && setPayReady(true));
     if (currentUser?.id) void fetchAcceptedDocs(currentUser.id).then((d) => alive && setTermsDone(d.has("termos_cliente")));
     return () => {
       alive = false;
@@ -72,6 +74,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!payReady) return;
     if (!okSensitive || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
     if (service.bookable && !slot) return void toast.error("Escolha o dia e o horário.");
     if (service.delivery === "hibrido" && !modality) return void toast.error("Escolha como quer receber: presencial ou à distância.");
@@ -176,7 +179,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
         <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
+          <Button type="submit" disabled={saving || !payReady}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
         </div>
       </form>
     </Modal>
