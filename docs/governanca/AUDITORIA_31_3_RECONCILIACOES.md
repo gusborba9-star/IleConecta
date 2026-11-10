@@ -47,6 +47,7 @@ Com Supabase configurado, `AppContext` ainda carrega casas, publicações, ritua
 
 **F6 — P2 · Equipe sem trilha de auditoria.**
 Convite, aceite, pausa, remoção e alteração de permissões não geram registro em `admin_audit` (0 registros após o ciclo completo); Blueprint §15 e §26 pedem auditoria.
+**Correção (0069, decisão do proprietário em 2026-11-10):** tabela `staff_audit` alimentada por gatilhos (convite criado/cancelado, aceite, pausa, reativação, remoção, mudança de permissões e de nome); só o dono da casa lê o histórico da própria casa; a administração consulta por `admin_staff_audit(casa, motivo)`, com motivo obrigatório, consulta registrada e invisível para a casa; ninguém edita nem apaga; retenção de 12 meses (cron `purge-staff-audit`). Não guarda conteúdo de conversa nem token de convite.
 
 **F7 — P2 · Ritual não ocupa a agenda de atendimentos.**
 Um ritual publicado no mesmo horário de um atendimento com agenda deixa o horário livre para agendamento. Decisão do proprietário: o ritual consome a agenda da casa? (Blueprint §9 pede fonte única de disponibilidade.)
@@ -73,7 +74,7 @@ Decisões do proprietário (2026-11-09): F2 só casas são públicas (cliente s�
 | F7 | `events.duration_min`; gatilho recusa publicar sobre atendimento; `available_slots` e `create_booking` consideram o ritual; formulário exige duração | probe (bloqueio, conflito, corrida ritual×reserva 12 rodadas) |
 | F11, F12 | `search_path` fixo e `(select auth.uid())` nas funções citadas | migration aplica duas vezes sem erro |
 
-Continuam abertos: F4, F5, F6 (decisão do proprietário), F8, F9, F10 (painel Supabase), reparo do registro de migrations (F12), 0064–0067 em produção (exigem autorização).
+Continuam abertos: F4, F5, F8, F9, F10 (painel Supabase), reparo do registro de migrations (F12), 0064–0067 em produção (exigem autorização).
 
 ## 4. Fora do escopo desta auditoria (confirmado)
 

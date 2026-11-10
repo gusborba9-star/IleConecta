@@ -9,7 +9,7 @@ const su = await conn(DB); await su.query(STUBS);
 for (const f of readdirSync(MIG).filter((f) => f.endsWith(".sql") && Number(f.slice(0, 4)) <= MAX).sort()) await su.query(readFileSync(MIG + f, "utf8").replace(/create extension[^;]*(pg_cron|pg_net|supabase_vault)[^;]*;/gi, ""));
 // Privilégios como em produção (medidos em 2026-11-09): anon/authenticated com todos os privilégios de tabela; execute conforme has_function_privilege medido.
 const ANON = "accept_staff_invite calendar_enabled calendar_premium_limits campaign_plan_limit cancel_reservation conversation_has_premium_house event_attendees event_stream_url event_taken house_calendar house_seat_allowance is_house_owner leave_waitlist_on_reserve messages_media_needs_premium my_campaign_days my_campaigns_summary my_conversations my_house_topics my_staff_house my_top_services notify_waitlist_on_free_seat open_conversation payment_max_cents payments_enabled peer_info quick_reply_plan_limit referral_lookup reject_blocked_message staff_calendar_add staff_calendar_delete staff_calendar_list staff_can_see_conversation staff_conversations staff_messages staff_orders staff_perm staff_plan_limit staff_post staff_row staff_send touch_presence track_campaign can_view_profile post_like_counts enforce_min_description events_guard_seats fee_cents set_updated_at split_gross_cents stage_amount_cents".split(" ");
-const NOAUTH = "business_release_at check_cron_secret complete_cancel_refund confirm_member_due_payment confirm_payment files_purged files_to_purge handle_new_user has_client_terms has_recent_consent member_drop_open_dues member_due_payment member_dues_daily member_ensure_due notify_new_message notify_push open_auto_refund open_refund_for_payment protect_house_privileged_columns push_config record_processor_fee referral_on_first_login referral_on_signup refund_log_add release_due_payouts review_ask_event review_ask_service".split(" ");
+const NOAUTH = "business_release_at check_cron_secret complete_cancel_refund confirm_member_due_payment confirm_payment files_purged files_to_purge handle_new_user has_client_terms has_recent_consent member_drop_open_dues member_due_payment member_dues_daily member_ensure_due notify_new_message notify_push open_auto_refund open_refund_for_payment protect_house_privileged_columns push_config record_processor_fee referral_on_first_login referral_on_signup refund_log_add release_due_payouts review_ask_event review_ask_service staff_audit_role staff_audit_log trg_staff_invites_audit trg_house_staff_audit".split(" ");
 await su.query(`grant usage on schema public, auth, storage to anon, authenticated, service_role; grant all on all tables in schema public to anon, authenticated, service_role; grant execute on all functions in schema auth to anon, authenticated, service_role, public;`);
 const fns = (await su.query(`select p.oid::regprocedure::text sig, p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace left join pg_depend d on d.objid=p.oid and d.deptype='e' where n.nspname='public' and d.objid is null`)).rows;
 for (const f of fns) { await su.query(`revoke all on function ${f.sig} from public, anon, authenticated`); if (ANON.includes(f.proname)) await su.query(`grant execute on function ${f.sig} to anon`); if (!NOAUTH.includes(f.proname)) await su.query(`grant execute on function ${f.sig} to authenticated`); await su.query(`grant execute on function ${f.sig} to service_role`); }
@@ -202,6 +202,109 @@ await su.query(`update platform_settings set value='{"payments":{"state":"off"},
 await su.query(`delete from service_orders where house_id=$1`, [HA]).catch(() => null);
 const e59 = await mkEv(59), e61 = await mkEv(61);
 if (MAX >= 67) { ok("F3: a 59 min do início a reserva é recusada", Boolean((await as("authenticated", U.D, (c) => q(c, `select reserve_event($1,'{}'::jsonb) id`, [e59]))).err)); ok("F3: a 61 min do início a reserva é aceita", !(await as("authenticated", U.D, (c) => q(c, `select reserve_event($1,'{}'::jsonb) id`, [e61]))).err); }
+
+if (MAX >= 69) {
+  console.log("\n===== [6] F6: trilha de auditoria da equipe =====");
+  const X = "e1000000-0000-0000-0000-0000000000e1", AD = "ad000000-0000-0000-0000-0000000000a6", HZ = "cc000000-0000-0000-0000-0000000000cc", OZ = "e2000000-0000-0000-0000-0000000000e2";
+  for (const [id, nm] of [[X, "Pessoa Equipe"], [AD, "Admin Seis"], [OZ, "Dono Casa Z"]]) { await su.query(`insert into auth.users(id,email) values ($1,$2) on conflict do nothing`, [id, nm.replace(" ", "") + "@x"]); await su.query(`insert into profiles(id,account_type,display_name) values ($1,'cliente',$2) on conflict do nothing`, [id, nm]); }
+  await su.query(`insert into admins(user_id) values ($1) on conflict do nothing`, [AD]);
+  await su.query("set session_replication_role = replica");
+  await su.query(`insert into houses(id,owner_id,name,slug,plan) values ($1,$2,'Casa Z','casa-z','maximo') on conflict do nothing`, [HZ, OZ]);
+  await su.query("set session_replication_role = origin");
+  const audit = async (house, where = "") => (await su.query(`select action, actor_role, target_name, details, actor_id, target_user_id from staff_audit where house_id=$1 ${where} order by id`, [house])).rows;
+  const acts = (rows) => rows.map((r) => r.action).join(",");
+  await su.query(`delete from staff_audit where house_id=$1`, [HZ]);
+
+  // 1) convite
+  const iv = await as("authenticated", OZ, (c) => q(c, `insert into house_staff_invites(house_id,name,perms) values ($1,'Atendente X',array['chat_reply','orders']) returning token`, [HZ]));
+  let rows = await audit(HZ);
+  ok("F6: criar convite gera 1 registro 'convite_criado' feito pelo dono", acts(rows) === "convite_criado" && rows[0].actor_role === "dono" && rows[0].actor_id === OZ && rows[0].target_name === "Atendente X", acts(rows));
+  ok("F6: o registro do convite NÃO guarda o token", !JSON.stringify(rows[0]?.details ?? {}).includes(iv.rows?.[0]?.token ?? "tokenausente"));
+  // 2) aceite
+  const acc = await as("authenticated", X, (c) => q(c, `select accept_staff_invite($1)`, [iv.rows[0].token]));
+  rows = await audit(HZ);
+  ok("F6: aceitar o convite gera 'aceito' (feito pela própria pessoa da equipe)", acts(rows) === "convite_criado,aceito" && rows[1].actor_role === "equipe" && rows[1].target_user_id === X, acc.err ?? acts(rows));
+  // 3) pausa / reativação / permissões / nome
+  await as("authenticated", OZ, (c) => q(c, `update house_staff set active=false where house_id=$1 and user_id=$2`, [HZ, X]));
+  await as("authenticated", OZ, (c) => q(c, `update house_staff set active=true where house_id=$1 and user_id=$2`, [HZ, X]));
+  rows = await audit(HZ, "and id > (select min(id) from staff_audit where house_id=$1 and action='aceito')");
+  ok("F6: pausar e reativar geram 2 registros, nessa ordem, feitos pelo dono", acts(rows) === "pausado,reativado" && rows.every((r) => r.actor_role === "dono"), acts(rows));
+  await as("authenticated", OZ, (c) => q(c, `update house_staff set perms=array['chat_read','post'] where house_id=$1 and user_id=$2`, [HZ, X]));
+  rows = await audit(HZ, "and action='permissoes_alteradas'");
+  ok("F6: mudar permissões guarda a lista antes e depois", rows.length === 1 && JSON.stringify(rows[0].details.antes) === JSON.stringify(["chat_reply", "orders"]) && JSON.stringify(rows[0].details.depois) === JSON.stringify(["chat_read", "post"]), JSON.stringify(rows[0]?.details));
+  await as("authenticated", OZ, (c) => q(c, `update house_staff set perms=array['chat_read','post'] where house_id=$1 and user_id=$2`, [HZ, X]));
+  ok("F6: salvar as mesmas permissões não gera registro novo", (await audit(HZ, "and action='permissoes_alteradas'")).length === 1);
+  const before = (await audit(HZ)).length;
+  await as("authenticated", OZ, (c) => q(c, `update house_staff set name='Nome Novo', active=false, perms=array['stats'] where house_id=$1 and user_id=$2`, [HZ, X]));
+  const multi = (await audit(HZ)).slice(before);
+  ok("F6: uma alteração com 3 mudanças gera 3 registros (pausa, permissões, nome)", multi.length === 3 && new Set(multi.map((r) => r.action)).size === 3 && ["pausado", "permissoes_alteradas", "nome_alterado"].every((a) => acts(multi).includes(a)), acts(multi));
+  // 4) a própria equipe não altera nem apaga o próprio vínculo (e nada é registrado)
+  const cnt0 = (await audit(HZ)).length;
+  const selfUp = await as("authenticated", X, (c) => q(c, `update house_staff set perms=array['chat_read','chat_reply','orders','post','calendar','members','stats'] where user_id=$1 returning id`, [X]));
+  ok("F6: a pessoa da equipe não consegue ampliar as próprias permissões", (selfUp.err || selfUp.n === 0) && (await audit(HZ)).length === cnt0, selfUp.err ?? `${selfUp.n} linha(s)`);
+  // 5) leitura
+  const own = await as("authenticated", OZ, (c) => q(c, `select action from staff_audit`));
+  ok("F6: o dono lê o histórico da própria casa", (own.rows ?? []).length === (await audit(HZ)).length && own.rows.length >= 8, `${own.rows?.length}`);
+  for (const [who, uid] of [["dono de outra casa", U.B], ["cliente sem relação", U.D], ["a própria equipe", X]]) {
+    const r = await as("authenticated", uid, (c) => q(c, `select id from staff_audit where house_id=$1`, [HZ]));
+    ok(`F6: ${who} NÃO lê o histórico da Casa Z`, (r.rows ?? []).length === 0 && !r.err, r.err ?? `${r.rows.length} linha(s)`);
+  }
+  const an = await as("anon", null, (c) => q(c, `select id from staff_audit`));
+  ok("F6: visitante (anon) não lê o histórico", Boolean(an.err) || an.rows.length === 0, an.err ?? "0 linhas");
+  // 6) imutabilidade
+  for (const [who, uid] of [["dono", OZ], ["equipe", X], ["administrador", AD]]) {
+    const r1 = await as("authenticated", uid, (c) => q(c, `insert into staff_audit(house_id,action,actor_role) values ($1,'removido','dono')`, [HZ]));
+    const r2 = await as("authenticated", uid, (c) => q(c, `update staff_audit set action='aceito' where house_id=$1 returning id`, [HZ]));
+    const r3 = await as("authenticated", uid, (c) => q(c, `delete from staff_audit where house_id=$1 returning id`, [HZ]));
+    ok(`F6: ${who} não insere, altera nem apaga o histórico`, Boolean(r1.err) && (r2.err || r2.n === 0) && (r3.err || r3.n === 0), `${r1.err?.slice(0, 40)} | ${r2.err ?? r2.n} | ${r3.err ?? r3.n}`);
+  }
+  const fnC = await as("authenticated", OZ, (c) => q(c, `select staff_audit_log($1,'removido',null,'x','{}'::jsonb)`, [HZ]));
+  ok("F6: o dono não grava registro chamando a função interna", Boolean(fnC.err), fnC.err?.slice(0, 80));
+  ok("F6: nada de falso entrou durante as tentativas", (await audit(HZ, "and action='aceito'")).length === 1 && (await audit(HZ, "and action='removido'")).length === 0);
+  // 7) consulta da administração
+  const nAdm0 = (await audit(HZ)).length;
+  const e1 = await as("authenticated", OZ, (c) => q(c, `select * from admin_staff_audit($1,'quero ver')`, [HZ]));
+  const e2 = await as("authenticated", X, (c) => q(c, `select * from admin_staff_audit($1,'quero ver')`, [HZ]));
+  ok("F6: dono e equipe não usam a consulta da administração", Boolean(e1.err) && Boolean(e2.err) && (await audit(HZ)).length === nAdm0, `${e1.err?.slice(0, 40)} | ${e2.err?.slice(0, 40)}`);
+  const an2 = await as("anon", null, (c) => q(c, `select * from admin_staff_audit($1,'quero ver')`, [HZ]));
+  ok("F6: visitante não usa a consulta da administração", Boolean(an2.err));
+  const noReason = await as("authenticated", AD, (c) => q(c, `select * from admin_staff_audit($1,'  ab ')`, [HZ]));
+  const longReason = await as("authenticated", AD, (c) => q(c, `select * from admin_staff_audit($1,$2)`, [HZ, "x".repeat(301)]));
+  const noHouse = await as("authenticated", AD, (c) => q(c, `select * from admin_staff_audit('99999999-9999-9999-9999-999999999999','investigação de denúncia')`));
+  ok("F6: administração sem motivo válido (ou casa inexistente) é recusada e não deixa registro", Boolean(noReason.err) && Boolean(longReason.err) && Boolean(noHouse.err) && (await audit(HZ)).length === nAdm0);
+  const okq = await as("authenticated", AD, (c) => q(c, `select action, actor_role from admin_staff_audit($1,'  investigação da denúncia 123 ')`, [HZ]));
+  const regAdm = await audit(HZ, "and action='admin_consultou'");
+  ok("F6: consulta válida devolve o histórico e registra 'admin_consultou' com motivo e autor", (okq.rows ?? []).length >= nAdm0 && regAdm.length === 1 && regAdm[0].actor_role === "admin" && regAdm[0].actor_id === AD && regAdm[0].details.motivo === "investigação da denúncia 123", okq.err ?? `${okq.rows?.length} linhas; ${regAdm.length} registro(s)`);
+  const ownAfter = await as("authenticated", OZ, (c) => q(c, `select action from staff_audit`));
+  ok("F6: o dono NÃO vê a consulta da administração", !(ownAfter.rows ?? []).some((r) => r.action === "admin_consultou") && ownAfter.rows.length === nAdm0, `${ownAfter.rows?.length} linhas`);
+  const adm2 = await as("authenticated", AD, (c) => q(c, `select action from admin_staff_audit($1,'segunda consulta de rotina')`, [HZ]));
+  ok("F6: a administração vê as próprias consultas anteriores", (adm2.rows ?? []).filter((r) => r.action === "admin_consultou").length >= 1, `${adm2.rows?.length}`);
+  // 8) cancelar convite; convite usado apagado não gera registro
+  await su.query(`insert into house_extra_seats(house_id,seats) values ($1,2) on conflict (house_id) do update set seats=2`, [HZ]);
+  const iv2 = await as("authenticated", OZ, (c) => q(c, `insert into house_staff_invites(house_id,name) values ($1,'Convite Cancelado') returning token`, [HZ]));
+  if (!iv2.rows) console.log("INFO iv2", iv2.err); await as("authenticated", OZ, (c) => q(c, `delete from house_staff_invites where token=$1`, [iv2.rows?.[0]?.token ?? ""]));
+  ok("F6: cancelar convite gera 'convite_cancelado'", (await audit(HZ, "and action='convite_cancelado'")).length === 1);
+  const nUsed = (await audit(HZ)).length;
+  await as("authenticated", OZ, (c) => q(c, `delete from house_staff_invites where token=$1`, [iv.rows[0].token]));
+  ok("F6: apagar convite já usado não gera registro enganoso", (await audit(HZ)).length === nUsed);
+  // 9) remoção
+  await as("authenticated", OZ, (c) => q(c, `delete from house_staff where house_id=$1 and user_id=$2`, [HZ, X]));
+  rows = await audit(HZ, "and action='removido'");
+  ok("F6: remover gera 'removido' feito pelo dono, com o nome e o alvo", rows.length === 1 && rows[0].actor_role === "dono" && rows[0].target_user_id === X && rows[0].target_name === "Nome Novo", acts(rows));
+  // 10) retenção
+  const d = (await su.query(`select (min(purge_after) between now() + interval '364 days' and now() + interval '366 days') ok from staff_audit where house_id=$1`, [HZ])).rows[0];
+  ok("F6: cada registro nasce com validade de 12 meses", d.ok === true);
+  await su.query(`update staff_audit set purge_after = now() - interval '1 day' where house_id=$1 and action='aceito'`, [HZ]);
+  await su.query(`delete from public.staff_audit where purge_after < now()`);
+  ok("F6: a limpeza apaga só o que venceu", (await audit(HZ, "and action='aceito'")).length === 0 && (await audit(HZ)).length > 5);
+  // 11) apagar a casa com equipe não quebra e o histórico sobrevive (marcado como sistema)
+  await su.query(`insert into house_staff(house_id,user_id,name,perms) values ($1,$2,'Volta','{chat_read}')`, [HZ, X]);
+  const del = await su.query(`delete from houses where id=$1`, [HZ]).then(() => null, (e) => e.message);
+  ok("F6: apagar uma casa com equipe vinculada não é bloqueado pela auditoria", del === null, del ?? "");
+  ok("F6: o histórico da casa apagada permanece até vencer", (await audit(HZ)).length > 5);
+  // 12) ACL medida no banco montado só pelas migrations (sem o ajuste do harness)
+  console.log("INFO F6 ACL: conferida em banco separado montado só pelas migrations (ver README).");
+}
 console.log(`\nRESUMO probe${MAX}: ${out.filter((x) => x[0] === "PASS").length} PASS / ${out.filter((x) => x[0] === "FAIL").length} FAIL`);
 for (const x of out.filter((x) => x[0] === "FAIL")) console.log("  FAIL:", x[1], "—", String(x[2]).slice(0, 200));
 await su.end();
