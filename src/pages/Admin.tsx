@@ -23,6 +23,7 @@ import {
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
+import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
@@ -215,6 +216,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </Card>
 
       <HousePlansCard />
+      <StaffAuditCard />
 
       <ReportedReviewsCard />
 

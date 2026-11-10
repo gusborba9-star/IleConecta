@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/base/Confirm";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { houseIdOf } from "@/lib/campaigns";
+import { actorLabel, describeStaffEvent, fetchStaffAudit, type StaffAuditEvent } from "@/lib/staffAudit";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { formatMoney } from "@/lib/pricing";
 import { qrSvg } from "@/lib/qr";
@@ -58,11 +59,13 @@ export default function Equipe() {
   const [allowance, setAllowance] = useState<number | null>(null);
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [invites, setInvites] = useState<StaffInvite[]>([]);
+  const [history, setHistory] = useState<StaffAuditEvent[]>([]);
   const [name, setName] = useState("");
   const [newPerms, setNewPerms] = useState<PermKey[]>(["chat_read", "chat_reply"]);
 
   const reload = useCallback(async (id: string) => {
-    const [t, a] = await Promise.all([fetchTeam(id), fetchSeatAllowance(id)]);
+    const [t, a, h] = await Promise.all([fetchTeam(id), fetchSeatAllowance(id), fetchStaffAudit(id)]);
+    setHistory(h);
     setMembers(t.members);
     setInvites(t.invites);
     setAllowance(a);
@@ -174,6 +177,23 @@ export default function Equipe() {
             </p>
             <p className="text-xs text-muted-foreground">A contratação dentro do app chega com o pagamento recorrente. Por enquanto, peça pelo <Link to="/suporte" className="text-primary font-semibold">Suporte</Link> e liberamos o acesso para a sua casa.</p>
           </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-3">
+        <h2 className="font-display font-bold text-lg">Histórico da equipe</h2>
+        <p className="text-xs text-muted-foreground">Convites, entradas, pausas, mudanças de permissão e remoções. Só você vê. Guardamos por 12 meses e depois apagamos. Se houver denúncia ou disputa, a administração da plataforma pode consultar para apurar.</p>
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nada registrado ainda.</p>
+        ) : (
+          <ul className="space-y-2">
+            {history.map((e) => (
+              <li key={e.id} className="text-sm border-b border-border/60 pb-2 last:border-0">
+                <div>{describeStaffEvent(e)}</div>
+                <div className="text-xs text-muted-foreground">{actorLabel(e.actorRole)} · {new Date(e.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</div>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
     </div>
