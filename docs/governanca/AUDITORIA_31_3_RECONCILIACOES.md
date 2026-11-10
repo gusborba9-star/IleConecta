@@ -47,7 +47,7 @@ Com Supabase configurado, `AppContext` ainda carrega casas, publicações, ritua
 
 **F6 — P2 · Equipe sem trilha de auditoria.**
 Convite, aceite, pausa, remoção e alteração de permissões não geram registro em `admin_audit` (0 registros após o ciclo completo); Blueprint §15 e §26 pedem auditoria.
-**Correção (0069, decisão do proprietário em 2026-11-10):** tabela `staff_audit` alimentada por gatilhos (convite criado/cancelado, aceite, pausa, reativação, remoção, mudança de permissões e de nome); só o dono da casa lê o histórico da própria casa; a administração consulta por `admin_staff_audit(casa, motivo)`, com motivo obrigatório, consulta registrada e invisível para a casa; ninguém edita nem apaga; retenção de 12 meses (cron `purge-staff-audit`). Não guarda conteúdo de conversa nem token de convite.
+**Correção (0069, decisão do proprietário em 2026-11-10):** tabela `staff_audit` alimentada por gatilhos (convite criado/cancelado, aceite, pausa, reativação, remoção, mudança de permissões e de nome); só o dono da casa lê o histórico da própria casa; a administração consulta por `admin_staff_audit(casa, motivo)`, com motivo obrigatório, consulta registrada e invisível para a casa; ninguém edita nem apaga; retenção de 12 meses (cron `purge-staff-audit`). Não guarda conteúdo de conversa nem token de convite. **Aplicada em produção em 2026-11-10 e validada com consulta real do dono e da administração.**
 
 **F7 — P2 · Ritual não ocupa a agenda de atendimentos.**
 Um ritual publicado no mesmo horário de um atendimento com agenda deixa o horário livre para agendamento. Decisão do proprietário: o ritual consome a agenda da casa? (Blueprint §9 pede fonte única de disponibilidade.)

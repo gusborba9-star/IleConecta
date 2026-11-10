@@ -55,7 +55,7 @@ export default function StaffAuditCard() {
           {events.map((e) => (
             <li key={e.id} className="text-sm border-b border-border/60 pb-2 last:border-0">
               <div>{describeStaffEvent(e)}</div>
-              <div className="text-xs text-muted-foreground">{actorLabel(e.actorRole)} · {new Date(e.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</div>
+              <div className="text-xs text-muted-foreground">{actorLabel(e.actorRole, "admin")} · {new Date(e.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</div>
             </li>
           ))}
         </ul>
