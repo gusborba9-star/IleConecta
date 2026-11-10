@@ -1,4 +1,4 @@
--- PASSO 18 de 18: 0067 h: search_path e auth.uid
+-- PASSO 18 de 19: 0067 h: search_path e auth.uid
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ F11) search_path fixo ============

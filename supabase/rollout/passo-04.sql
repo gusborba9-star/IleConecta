@@ -1,4 +1,4 @@
--- PASSO 4 de 18: 0064 d: tarifa do processador
+-- PASSO 4 de 19: 0064 d: tarifa do processador
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ 4) tarifa do processador por ID ============

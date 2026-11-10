@@ -1,4 +1,4 @@
--- PASSO 3 de 18: 0064 c: confirm_payment e confirm_payment_for
+-- PASSO 3 de 19: 0064 c: confirm_payment e confirm_payment_for
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- Compatibilidade: confirm_payment(ref) continua existindo para chamadores antigos, agora delegando à versão por id.

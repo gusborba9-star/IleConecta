@@ -1,4 +1,4 @@
--- PASSO 1 de 18: 0064 a: trava de eventos, identidade
+-- PASSO 1 de 19: 0064 a: trava de eventos, identidade
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ 1) trava de eventos com dono ============

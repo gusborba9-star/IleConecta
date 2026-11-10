@@ -1,4 +1,4 @@
--- PASSO 14 de 18: 0067 d: duracao do ritual e gatilho
+-- PASSO 14 de 19: 0067 d: duracao do ritual e gatilho
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ F7) duração do ritual ocupa a agenda ============

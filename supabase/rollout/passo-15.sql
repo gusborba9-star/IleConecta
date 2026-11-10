@@ -1,4 +1,4 @@
--- PASSO 15 de 18: 0067 e: available_slots
+-- PASSO 15 de 19: 0067 e: available_slots
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 CREATE OR REPLACE FUNCTION public.available_slots(p_service uuid, p_from date DEFAULT NULL::date, p_days integer DEFAULT 14)

@@ -370,6 +370,20 @@ const refundsFor = async (pi) => (await stripeCalls()).refunds.filter((r) => r.p
   await c.query("set session_replication_role = origin");
   const an = await q(`select * from public.payments_provider_anomalies(500)`);
   ok("M66 anomalia 'sem_referencia_cobranca' aparece para confirmado há >1 h sem Charge", an.some((x) => x.kind === "sem_referencia_cobranca" && x.payment_id === a.pid), JSON.stringify(an.map((x) => [x.kind, x.payment_id === a.pid])));
+  // 0068: pagamento anterior à 0066 (sem referências) não gera a anomalia; as demais continuam valendo
+  await c.query("set session_replication_role = replica");
+  await c.query(`update payments set created_at = '2026-11-01T12:00:00Z' where id = $1`, [a.pid]);
+  await c.query("set session_replication_role = origin");
+  const anOld = await q(`select * from public.payments_provider_anomalies(500)`);
+  ok("M68 pagamento anterior à 0066 sem Charge NÃO gera 'sem_referencia_cobranca'", !anOld.some((x) => x.kind === "sem_referencia_cobranca" && x.payment_id === a.pid), JSON.stringify(anOld.map((x) => [x.kind, x.payment_id === a.pid])));
+  await c.query("set session_replication_role = replica");
+  await c.query(`update payments set payment_method = 'card', processor_fee_cents = 0 where id = $1`, [a.pid]);
+  await c.query("set session_replication_role = origin");
+  const anOld2 = await q(`select * from public.payments_provider_anomalies(500)`);
+  ok("M68 o histórico continua sujeito às demais anomalias (tarifa zero suspeita)", anOld2.some((x) => x.kind === "tarifa_zero_suspeita" && x.payment_id === a.pid), JSON.stringify(anOld2.map((x) => [x.kind, x.payment_id === a.pid])));
+  await c.query("set session_replication_role = replica");
+  await c.query(`update payments set created_at = now(), processor_fee_cents = null where id = $1`, [a.pid]);
+  await c.query("set session_replication_role = origin");
   const denied = await c.query(`select set_config('test.role','authenticated',false)`).then(() => c.query(`select public.record_provider_refs_for($1::uuid,'stripe','cs_rk1','acct_1','pi','ch')`, [a.pid])).then(() => null, (e) => e.message);
   await c.query(`select set_config('test.role','service_role',false)`);
   ok("M66 record_provider_refs_for recusa quem não é service_role", /Não autorizado/.test(denied ?? ""), denied);

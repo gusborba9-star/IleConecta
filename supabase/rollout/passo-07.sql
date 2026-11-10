@@ -1,4 +1,4 @@
--- PASSO 7 de 18: 0064 g: complete_cancel_refund
+-- PASSO 7 de 19: 0064 g: complete_cancel_refund
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 CREATE OR REPLACE FUNCTION public.complete_cancel_refund(p_payment uuid)

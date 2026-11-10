@@ -1,4 +1,4 @@
--- PASSO 2 de 18: 0064 b: confirm_payment_row
+-- PASSO 2 de 19: 0064 b: confirm_payment_row
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ 2) confirmação por ID da linha travada ============

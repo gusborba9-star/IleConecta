@@ -1,4 +1,4 @@
--- PASSO 11 de 18: 0067 a: convite da equipe
+-- PASSO 11 de 19: 0067 a: convite da equipe
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ F1) convite da equipe ============

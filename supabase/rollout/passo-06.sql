@@ -1,4 +1,4 @@
--- PASSO 6 de 18: 0064 f: complete_refund
+-- PASSO 6 de 19: 0064 f: complete_refund
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 CREATE OR REPLACE FUNCTION public.complete_refund(p_id uuid)

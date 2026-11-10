@@ -1,4 +1,4 @@
--- PASSO 13 de 18: 0067 c: fila de espera
+-- PASSO 13 de 19: 0067 c: fila de espera
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 CREATE OR REPLACE FUNCTION public.join_event_waitlist(p_event uuid)

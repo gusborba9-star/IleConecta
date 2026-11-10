@@ -1,4 +1,4 @@
--- PASSO 17 de 18: 0067 g: privacidade
+-- PASSO 17 de 19: 0067 g: privacidade
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ F2) privacidade de perfis e curtidas ============

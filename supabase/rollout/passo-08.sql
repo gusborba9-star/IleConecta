@@ -1,4 +1,4 @@
--- PASSO 8 de 18: 0064 h: gatilho, regra de liquidacao e permissoes
+-- PASSO 8 de 19: 0064 h: gatilho, regra de liquidacao e permissoes
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ 6) gatilho de identidade ============

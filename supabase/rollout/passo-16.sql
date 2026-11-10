@@ -1,4 +1,4 @@
--- PASSO 16 de 18: 0067 f: create_booking
+-- PASSO 16 de 19: 0067 f: create_booking
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 CREATE OR REPLACE FUNCTION public.create_booking(p_service uuid, p_slot timestamp with time zone, p_note text DEFAULT ''::text)

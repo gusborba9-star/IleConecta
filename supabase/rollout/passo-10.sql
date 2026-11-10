@@ -1,4 +1,4 @@
--- PASSO 10 de 18: 0066: referencias do provedor
+-- PASSO 10 de 19: 0066: referencias do provedor
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- 0066 — EXEC-01: integridade de referências Checkout ↔ PaymentIntent ↔ Charge ↔ Pagamento ↔ Ledger.

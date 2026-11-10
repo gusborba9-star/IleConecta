@@ -1,4 +1,4 @@
--- PASSO 12 de 18: 0067 b: reserve_event
+-- PASSO 12 de 19: 0067 b: reserve_event
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ F3) janela de 1 hora ============

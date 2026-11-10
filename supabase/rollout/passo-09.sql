@@ -1,4 +1,4 @@
--- PASSO 9 de 18: 0065: cron secret e deteccao
+-- PASSO 9 de 19: 0065: cron secret e deteccao
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- 0065 — EXEC-01: (1) check_cron_secret reproduzível em ambientes novos; (2) detecção de anomalias entre provedor e banco.

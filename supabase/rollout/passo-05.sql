@@ -1,4 +1,4 @@
--- PASSO 5 de 18: 0064 e: valores registrados do estorno
+-- PASSO 5 de 19: 0064 e: valores registrados do estorno
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 
 -- ============ 5) estorno pelo que foi REGISTRADO ============
