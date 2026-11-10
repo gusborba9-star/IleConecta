@@ -6,7 +6,7 @@ import pg from "pg";
 pg.types.setTypeParser(20, (v) => Number(v)); // bigint -> number, como o PostgREST
 pg.types.setTypeParser(1700, (v) => Number(v));
 const q = (id) => `"${String(id).replace(/"/g, '""')}"`;
-const OPS = { eq: "=", neq: "<>", gt: ">", gte: ">=", lt: "<", lte: "<=" };
+const OPS = { eq: "=", neq: "<>", gt: ">", gte: ">=", lt: "<", lte: "<=", like: "like", ilike: "ilike" };
 
 function splitTop(s) { const out = []; let d = 0, cur = ""; for (const ch of s) { if (ch === "(") d++; if (ch === ")") d--; if (ch === "," && d === 0) { out.push(cur.trim()); cur = ""; } else cur += ch; } if (cur.trim()) out.push(cur.trim()); return out; }
 
@@ -74,6 +74,25 @@ export async function startShim({ conn, serviceKey }) {
       }
       if ((m = u.pathname.match(/^\/rest\/v1\/(\w+)$/))) {
         const table = m[1]; const params = [];
+        if (req.method === "HEAD") {
+          const r = await pool.query(`select count(*)::int n from public.${q(table)}${where(u.searchParams, params)}`, params);
+          res.writeHead(200, { "content-range": `*/${r.rows[0].n}` }); return res.end();
+        }
+        if (req.method === "POST") {
+          const body = JSON.parse(raw); const rows = Array.isArray(body) ? body : [body];
+          const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+          const vals = []; const tuples = rows.map((r) => `(${keys.map((k) => { const v = r[k] === undefined ? null : r[k]; vals.push(v !== null && typeof v === "object" ? JSON.stringify(v) : v); return `$${vals.length}`; }).join(", ")})`);
+          const rep = /return=representation/.test(req.headers.prefer ?? "");
+          const ret = rep ? ` returning ${await selectList(table, u.searchParams.get("select"))}` : "";
+          const r = await pool.query(`insert into public.${q(table)} (${keys.map(q).join(", ")}) values ${tuples.join(", ")}${ret}`, vals);
+          if (!rep) return json(201);
+          if ((req.headers.accept ?? "").includes("vnd.pgrst.object")) return json(201, r.rows[0]);
+          return json(201, r.rows);
+        }
+        if (req.method === "DELETE") {
+          await pool.query(`delete from public.${q(table)}${where(u.searchParams, params)}`, params);
+          return json(204);
+        }
         if (req.method === "GET") {
           const cols = await selectList(table, u.searchParams.get("select"));
           let sql = `select ${cols} from public.${q(table)}${where(u.searchParams, params)}${order(u.searchParams)}`;

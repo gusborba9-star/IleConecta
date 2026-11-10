@@ -246,7 +246,7 @@ Funções publicadas em 2026-11-10 pelo workflow `deploy-functions` (`payments` 
 
 **Incidente 2026-11-10:** o commit f8b6da5 (autor `onspace.ai`, publicado direto no `main` às 16:09) restaurou o `payments/index.ts` antigo e desfez correções F2 e F3 no app e na assistente; revertido pelo PR #151 (estado idêntico ao anterior, 273 testes, build ok). A função publicada no Supabase (v19) não foi afetada porque o deploy é manual. Ação do proprietário: revisar a integração do OnSpace com o repositório e proteger o `main` (exigir PR).
 
-F5, F8 e F9 aplicados e verificados em produção (2026-11-10): F9 deixou 0 de 62 tabelas com TRUNCATE/REFERENCES/TRIGGER/MAINTAIN para anon e authenticated, DML preservado, service_role intacto. Pendências: reparo do registro de migrations do Supabase (19 entradas faltantes); F4; F10 no painel e revogação dos tokens (ação do proprietário).
+F5, F8 e F9 aplicados e verificados em produção (2026-11-10): F9 deixou 0 de 62 tabelas com TRUNCATE/REFERENCES/TRIGGER/MAINTAIN para anon e authenticated, DML preservado, service_role intacto. F4 implementada (0071, passos 26–30; aguardando aplicação em produção e implantação da função `assistant-chat`). Pendências: reparo do registro de migrations do Supabase (19 entradas faltantes); F10 no painel e revogação dos tokens (ação do proprietário).
 
 **Teste real de ponta a ponta (Stripe em modo de teste, 2026-11-10, serviço de R$ 1,00):**
 

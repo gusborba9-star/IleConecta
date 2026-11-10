@@ -18,3 +18,7 @@ npm i --no-save pg
 node supabase/verify/audit/probe_rls_equipe_reservas.mjs 63
 node supabase/verify/audit/race_convite_equipe.mjs probe63
 ```
+
+## F4 — estado do atendimento (0071)
+- `node supabase/verify/verify_0071.mjs` (banco local PG16): 85 verificações — permissões das funções e tabelas, estados, equipe com e sem permissão, expiração de 12 h, aviso único sob 8 chamadas simultâneas, "Não perturbe", relatório. `PASSOS=1` aplica os passos 26–30 do rollout em vez da migration.
+- `DENO_BIN=... node supabase/verify/e2e/run_assistant_e2e.mjs`: a função `assistant-chat` REAL no Deno sobre o banco local, com modelo simulado: assistente responde, para quando a casa/equipe responde, descarta a resposta numa corrida, dedupe do aviso, 401/403, e implantação sem a migration.
