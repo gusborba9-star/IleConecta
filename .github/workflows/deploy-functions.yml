@@ -1,0 +1,52 @@
+name: Deploy Edge Functions (manual)
+
+# Publica uma Edge Function do Supabase a partir da main. Só roda quando alguém clicar em "Run workflow".
+# Exige o segredo SUPABASE_ACCESS_TOKEN (token pessoal do Supabase) cadastrado em Settings > Secrets > Actions.
+# As funções ficam com a verificação de JWT desligada (--no-verify-jwt) porque autenticam por conta própria
+# (webhook do Stripe e rotina agendada), exatamente como já estão em produção.
+
+on:
+  workflow_dispatch:
+    inputs:
+      function:
+        description: "Função a publicar"
+        required: true
+        type: choice
+        options:
+          - payments
+          - assistant-chat
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: filsjhnfrpnqukedlkhf
+
+jobs:
+  deploy:
+    name: Publicar ${{ inputs.function }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Testes unitários (portão antes de publicar)
+        run: npm test
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Publicar
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Segredo SUPABASE_ACCESS_TOKEN não cadastrado."; exit 1; }
+          supabase functions deploy "${{ inputs.function }}" --project-ref "$PROJECT_REF" --no-verify-jwt
