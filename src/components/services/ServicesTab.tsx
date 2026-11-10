@@ -317,6 +317,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
                 ) : (
                   <>
                     {s.active && (s.delivery !== "presencial" || s.bookable) && !myOpenOrder(s.id) && <Button size="sm" onClick={() => setContracting(s)}>{s.bookable ? "Agendar horário" : "Contratar"}</Button>}
+                    {myOpenOrder(s.id)?.status === "aguardando_pagamento" && <Button size="sm" onClick={() => void goToCheckout({ orderId: myOpenOrder(s.id)!.id }).then((e) => e && toast.error(e))}>Concluir pagamento</Button>}
                     {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
                       <Button size="sm" variant="outline" onClick={() => ask({ title: "Cancelar o seu pedido?", message: "Se já foi pago, o valor é devolvido integralmente enquanto a casa não iniciar o trabalho.", confirmLabel: "Cancelar pedido", danger: true }, () => orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."))}>Cancelar pedido</Button>
                     )}
