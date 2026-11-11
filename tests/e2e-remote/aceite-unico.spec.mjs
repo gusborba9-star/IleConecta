@@ -26,7 +26,7 @@ async function serve(page, { type = "cliente", rows = [], consentsStatus = 200, 
     if (path.startsWith("/auth/v1/user")) return json(route, { id: uid, aud: "authenticated", role: "authenticated", email: "t@x.test", app_metadata: {}, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" });
     if (path.startsWith("/auth/v1/logout")) { state.logouts++; return route.fulfill({ status: 204, headers: CORS }); }
     if (path === "/rest/v1/profiles") {
-      const row = { id: uid, account_type: type === "casa" ? "casa" : "pessoa", display_name: "Teste", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
+      const row = { id: uid, account_type: type === "casa" ? "casa" : "cliente", display_name: "Teste", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
       return json(route, (req.headers().accept ?? "").includes("vnd.pgrst.object") ? row : [row]);
     }
     if (path === "/rest/v1/legal_consents" && req.method() === "GET") {
