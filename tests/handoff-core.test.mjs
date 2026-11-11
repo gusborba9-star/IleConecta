@@ -29,6 +29,11 @@ test("handoffView: faixa permanente da casa com assistente (always) mostra 'Assu
   assert.equal(v.action, "take"); assert.equal(v.label, "Assumir");
   assert.equal(handoffView(null, "house", { always: true }).action, "take");
 });
+test("handoffView: pendente oferece também devolver direto à assistente (sem precisar assumir antes)", () => {
+  const p = handoffView(toHandoff({ state: "pendente", active: true }), "house");
+  assert.deepEqual(p.alt, { action: "release", label: "Devolver" });
+  assert.equal(handoffView(toHandoff({ state: "humano", active: true }), "house").alt, undefined);
+});
 test("handoffView: textos curtos (faixa de uma linha)", () => {
   for (const viewer of ["house", "client"]) for (const state of ["pendente", "humano"]) {
     const v = handoffView(toHandoff({ state, active: true, handler_name: "Equipe Um" }), viewer, { always: true });
