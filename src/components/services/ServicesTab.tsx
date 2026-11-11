@@ -50,6 +50,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
   const nav = useNavigate();
   const [items, setItems] = useState<Service[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [agendaVersion, setAgendaVersion] = useState(0);
   const [editing, setEditing] = useState<Service | null>(null);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [contracting, setContracting] = useState<Service | null>(null);
@@ -173,7 +174,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
         </div>
       )}
 
-      {isOwn && <AgendaManager ownerId={ownerId} />}
+      {isOwn && <AgendaManager key={agendaVersion} ownerId={ownerId} />}
 
       {isOwn && orders.length > 0 && (
         <Card className="p-5">
@@ -335,7 +336,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
 
       <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ContractModal service={contracting} initialSlot={contractSlot} onClose={() => setContracting(null)} onDone={() => void load()} />
-      {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} />}
+      {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} ownerId={ownerId} onAgendaChange={() => setAgendaVersion((v) => v + 1)} />}
     </div>
   );
 }

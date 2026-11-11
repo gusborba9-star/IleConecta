@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
+import AgendaInline from "@/components/services/AgendaInline";
 import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked } from "@/lib/moneyMask";
@@ -11,6 +12,10 @@ import { paymentsEnabledFor } from "@/lib/consents";
 import { MAX_PAYMENT_CENTS, MAX_STAGES, stagePlan, stagesNeeded } from "@/lib/paymentsCore";
 
 interface Props {
+  /** Dono da casa: habilita os dias e horários dentro do formulário. */
+  ownerId?: string;
+  /** Avisa a tela quando um horário é adicionado ou removido aqui, para a agenda da casa atualizar junto. */
+  onAgendaChange?: () => void;
   open: boolean;
   onClose: () => void;
   initial: Service | null;
@@ -20,7 +25,7 @@ interface Props {
 
 const EMPTY: ServiceFormInput = { kind: "", customKind: "", title: "", description: "", priceText: "", delivery: "", stages: 1, bookable: false, durationMin: 30 };
 
-export default function ServiceForm({ open, onClose, initial, onSubmit }: Props) {
+export default function ServiceForm({ open, onClose, initial, onSubmit, ownerId, onAgendaChange }: Props) {
   const [form, setForm] = useState<ServiceFormInput>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [saving, setSaving] = useState(false);
@@ -188,9 +193,9 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
                 <Label htmlFor="sv-dur">Duração de cada atendimento (minutos)</Label>
                 <Input id="sv-dur" type="number" min={10} max={240} step={5} className="w-28" value={form.durationMin ?? 30} onChange={(e) => set({ durationMin: e.target.value })} />
                 {errors.durationMin && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.durationMin}</p>}
-                <p className="text-xs text-muted-foreground mt-1">Cadastre seus dias e horários em “Agenda de atendimento”, nesta aba.</p>
               </div>
             )}
+            {form.bookable && ownerId && <AgendaInline ownerId={ownerId} onChange={onAgendaChange} />}
             {errors.bookable && <p className="text-sm text-[hsl(var(--danger))]">{errors.bookable}</p>}
           </div>
         )}
