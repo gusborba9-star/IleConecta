@@ -24,7 +24,12 @@ export function handoffView(h, viewer, { always = false } = {}) {
   return { tone: "info", text: h.state === "pendente" ? "A casa foi avisada e responde por aqui" : "A casa está atendendo", action: null, label: "" };
 }
 
-/** A assistente deve ser chamada pelo app? Com humano atendendo não (o servidor também recusa; isto só poupa uma ida à rede). */
+/**
+ * A assistente deve ser chamada pelo app? Sim quando a casa está offline ou quando a conversa foi passada para a casa e ela ainda não
+ * respondeu (pendente): o cliente não fica sem resposta. Com a casa ou a equipe atendendo (humano) não (o servidor também recusa).
+ */
 export function shouldCallAssistant({ houseOffline, hasAssistant, handoff }) {
-  return Boolean(houseOffline && hasAssistant && !(handoff && handoff.active));
+  if (!hasAssistant) return false;
+  if (handoff && handoff.active && handoff.state === "humano") return false;
+  return Boolean(houseOffline || (handoff && handoff.active && handoff.state === "pendente"));
 }

@@ -10,7 +10,7 @@ export const PLAN_LIMITS = {
 
 export const USER_RATE = { windowMinutes: 10, maxReplies: 20 };
 export const MAX_USER_CHARS = 1000;
-export const HISTORY_LIMIT = 12;
+export const HISTORY_LIMIT = 20;
 export const MAX_REPLY_CHARS = 1500;
 // Principal e reserva, de fornecedores diferentes para não caírem juntos. Escolhidos pelo teste de 31/10/2026:
 // Claude Haiku 5.5 e GPT-6 Luna fizeram 11 de 12 sem erros graves (o GPT-4o mini, 10 e 9) e custam menos.
@@ -114,7 +114,7 @@ export function resolveCheckout(title, { events = [], services = [], selling = f
   return sv ? { target: "service", id: String(sv.id) } : null;
 }
 
-export const HANDOFF_NOTE = "Avisei a casa: ela vai assumir esta conversa e te responder assim que puder.";
+export const HANDOFF_NOTE = "Avisei a casa: ela te responde por aqui assim que puder. Enquanto isso, posso continuar te ajudando.";
 export const CRISIS_NOTE = "Se você pensa em se machucar ou tirar a própria vida, ligue agora para o CVV: 188 (24 horas, gratuito).";
 
 /** A resposta já avisou o cliente que a casa vai responder? (evita repetir o aviso do servidor) */
@@ -378,7 +378,7 @@ export function serviceHowTo(s, payments = false) {
   return "combinado direto com a casa por esta conversa (não há botão para este serviço)";
 }
 
-export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], agenda = null, payments = false, now = new Date() }) {
+export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], agenda = null, payments = false, pending = null, now = new Date() }) {
   const discount = allowedDiscountPercent(plan, assistant);
   const selling = canSell(plan, assistant);
   const profile = normalizeProfile(assistant.profile);
@@ -386,7 +386,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   const items = normalizeCatalog(catalog);
   const lines = [];
   lines.push(`Você é ${oneLine(assistant.display_name || "a assistente", 40)}, atendente virtual da casa espiritual "${oneLine(house.name, 100)}"${house.category ? ` (${oneLine(house.category, 80)})` : ""}.`);
-  lines.push(`Fale sempre em português do Brasil, com tom ${TONES[profile.tone]}, respeito e clareza. Mensagens curtas: no máximo 4 frases (corte o que não for essencial), em texto simples (sem markdown, sem asteriscos), sem exagero de emojis. Não presuma o gênero de quem escreve: use formas neutras (por exemplo "se tiver interesse", "você não está só") e nunca escreva pares como "sozinha ou sozinho": reformule sem gênero.`);
+  lines.push(`Fale sempre em português do Brasil, com tom ${TONES[profile.tone]}, respeito e clareza. Mensagens curtas: no máximo 4 frases, em texto simples (sem markdown, sem asteriscos), sem exagero de emojis. Não presuma o gênero de quem escreve: use formas neutras ("se tiver interesse", "você não está só"), nunca escreva pares como "sozinha ou sozinho".`);
 
   lines.push("");
   lines.push("PRIORIDADES (se entrarem em conflito, siga esta ordem):");
@@ -454,19 +454,23 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push("- Se o que a pessoa pede não está na lista, diga que vai confirmar com a casa e passe para a casa.");
   }
   lines.push("- Se a pessoa pedir para conhecer a casa ou perguntar o que a casa faz (sem falar de um serviço publicado): apresente em poucas frases o que a casa realiza, cite no máximo dois rituais ou serviços abertos agora (se houver) e pergunte se ela quer participar de algum deles ou busca algo específico.");
-  lines.push(`- Assunto delicado (luto, crise emocional, saúde, reclamação, pedido que você não pode resolver)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}: acolha com poucas frases gentis, sem dar conselhos nem diagnósticos, e passe para a casa afirmando que vai passar (nunca \"se quiser, posso passar\"). Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga que a pessoa não está só (use exatamente \"você não está só\"), indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
+  lines.push(`- Assunto delicado (luto, crise emocional, saúde)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}: acolha com poucas frases gentis, sem diagnóstico, e converse a partir do que a casa realiza, sem prometer resultado. Reclamação: acolha e passe para a casa. Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga que a pessoa não está só (use exatamente \"você não está só\"), indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
   lines.push("- Você pode informar o horário de atendimento cadastrado.");
 
+  if (pending) {
+    lines.push("");
+    lines.push(`A CASA JÁ FOI AVISADA${pending.reason ? " sobre: " + oneLine(pending.reason, 160) : ""} e responde por aqui. Você continua atendendo: converse também sobre esse assunto, explicando e vendendo a partir do que a casa oferece, sem prometer resultado nem decidir o que só a casa decide (valor não listado, horário, condição). Se a pessoa falar de outro assunto, atenda normalmente. Não repita que avisou a casa a cada mensagem e não use ${HANDOFF_MARK} de novo para o mesmo assunto.`);
+  }
   lines.push("");
-  lines.push(`PASSAR PARA A CASA (marcador ${HANDOFF_MARK}): o marcador avisa a casa, que passa a responder esta conversa. Use-o SOMENTE quando:`);
+  lines.push(`PASSAR PARA A CASA (marcador ${HANDOFF_MARK}): o marcador avisa a casa. Você é a primeira camada de atendimento e venda: passe só quando não houver mais o que fazer. Use-o SOMENTE quando:`);
   const handoffCases = [];
   if (agenda !== null) handoffCases.push("a pessoa disse que quer participar de uma data da agenda");
   handoffCases.push(`a pessoa quer contratar, ou saber o valor de, algo que só a casa combina (${selling ? "serviço sem botão" : "qualquer serviço"}, trabalho não publicado, item do catálogo)`);
-  handoffCases.push("você disse que vai confirmar algo com a casa");
-  handoffCases.push("assunto delicado, reclamação ou pedido que você não pode resolver");
+  handoffCases.push("o que a pessoa pediu não está em nada do que você recebeu (procure bem antes)");
+  handoffCases.push("reclamação, risco de vida ou pedido que você realmente não pode resolver");
   handoffCases.push("a pessoa pede para falar com alguém da casa");
   handoffCases.forEach((c, i) => lines.push(`${"abcde"[i]}) ${c}${i === handoffCases.length - 1 ? "." : ";"}`));
-  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar nem se a pessoa quer que você passe), que a casa responde por aqui assim que puder e que a pessoa fique de olho nas notificações do app (nunca prometa prazo), e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira de Quimbanda, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo${selling ? ", de desconto ou de serviço com botão" : " ou de desconto"}.`);
+  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar nem se a pessoa quer que você passe), que a casa responde por aqui assim que puder (nunca prometa prazo) e pergunte se pode ajudar em mais alguma coisa enquanto isso, e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo${selling ? ", de desconto ou de serviço com botão" : " ou de desconto"}.`);
 
   lines.push("");
   lines.push(`Data e hora atuais (UTC): ${now.toISOString()}`);

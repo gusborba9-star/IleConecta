@@ -218,9 +218,16 @@ Deno.serve(async (req) => {
   // Pagamento pela plataforma ligado para esta casa? (a assistente só fala dele quando é verdade)
   const { data: payOn } = await admin.rpc("payments_enabled", { p_owner: house.owner_id });
 
+  // Conversa já passada para a casa e ainda sem resposta dela (0075): a assistente segue atendendo e sabe do que se trata.
+  let pending: { reason: string } | null = null;
+  {
+    const { data: hs } = await admin.from("conversation_handoff").select("state, reason, updated_at").eq("conversation_id", conversationId).maybeSingle();
+    if (hs && hs.state === "pendente" && Date.now() - new Date(String(hs.updated_at)).getTime() < 2 * 3600_000) pending = { reason: String(hs.reason ?? "") };
+  }
+
   const system = buildSystemPrompt({
     house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
-    payments: payOn === true,
+    payments: payOn === true, pending,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 

@@ -82,7 +82,7 @@ test("pega os erros vistos na primeira rodada real (31/10)", () => {
   assert.equal(grade(by("agenda-curiosidade"), giras, true).pass, false);
   assert.equal(grade(by("agenda-curiosidade"), giras, false).pass, true);
   // Aviso repetido: a resposta já dizia que ia passar para a casa e o servidor somou outro aviso.
-  const dup = "Vou passar o seu interesse para a casa. Assim que puder, eles responderão por aqui.\n\nAvisei a casa: ela vai assumir esta conversa e te responder assim que puder.";
+  const dup = "Vou passar o seu interesse para a casa. Assim que puder, eles responderão por aqui.\n\nAvisei a casa: ela te responde por aqui assim que puder. Enquanto isso, posso continuar te ajudando.";
   assert.ok(grade(by("agenda-quer-ir"), dup, true).results.find((r) => r.name === "semAvisoDuplicado" && !r.ok));
   // Mandou agendar um serviço que não tem agenda.
   const agendou = "Para contratar a consulta espiritual, você pode agendar um horário na aba Serviços, clicando em \"Agendar horário\".";
@@ -223,7 +223,8 @@ test("rodada de 01/11 (13 cenários): agenda passa na hora, sem perguntar quanta
   // Saúde: já passou para a casa, mas ofereceu "se quiser, posso passar".
   const haiku = "Para questões de saúde, procure um médico. Se quiser, posso passar seu caso para alguém da casa, é só me dizer.";
   assert.ok(grade(by("saude"), haiku, true).results.find((x) => x.name === "semPedirPermissao" && !x.ok));
-  assert.match(scenarioPrompt(by("saude")), /nunca "se quiser, posso passar"/);
+  assert.match(scenarioPrompt(by("saude")), /converse a partir do que a casa realiza/);
+  assert.match(scenarioPrompt(by("saude")), /nunca pergunte se pode passar/);
 });
 
 test("o teste mede o tempo de cada resposta, o tamanho do prompt e resume média e mais lenta", async () => {

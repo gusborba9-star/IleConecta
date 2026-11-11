@@ -101,16 +101,16 @@ test("formata dinheiro em centavos sem erro de ponto flutuante", () => {
 });
 
 test("histórico: limita, mantém ordem e separa assistente de cliente", () => {
-  const history = Array.from({ length: 20 }, (_, i) => ({
+  const history = Array.from({ length: 30 }, (_, i) => ({
     sender_id: i % 2 ? "dono" : "cliente",
     from_assistant: i % 2 === 1,
     text: `m${i}`,
   }));
   const chat = toChatMessages(history, "dono");
   assert.equal(chat.length, HISTORY_LIMIT);
-  assert.equal(chat.at(-1).content, "m19");
+  assert.equal(chat.at(-1).content, "m29");
   assert.equal(chat.at(-1).role, "assistant");
-  assert.equal(chat[0].role, chat[0].content === "m8" ? "user" : "assistant");
+  assert.equal(chat[0].role, chat[0].content === "m10" ? "user" : "assistant");
   // A casa falando como pessoa/equipe entra como "assistant", marcada, para a assistente retomar o combinado.
   const h = toChatMessages([{ sender_id: "cliente", from_assistant: false, text: "quero" }, { sender_id: "dono", from_assistant: false, text: "temos sim" }, { sender_id: "dono", from_assistant: true, text: "ok" }], "dono");
   assert.deepEqual(h.map((m) => m.role), ["user", "assistant", "assistant"]);
@@ -213,4 +213,37 @@ test("garantia: o corte tira só as frases de garantia e nunca deixa a resposta 
   const only = "Não posso prometer resultados.";
   assert.equal(stripGuaranteeTalk(only), only);
   assert.equal(stripGuaranteeTalk("Tudo certo por aqui."), "Tudo certo por aqui.");
+});
+
+test("conversa passada para a casa: a assistente continua atendendo, fala do assunto e não repete o aviso", () => {
+  const sem = buildSystemPrompt({ ...base, plan: "maximo" });
+  assert.ok(!sem.includes("A CASA JÁ FOI AVISADA"));
+  const com = buildSystemPrompt({ ...base, plan: "maximo", pending: { reason: "Quer saber de limpeza espiritual" } });
+  assert.match(com, /A CASA JÁ FOI AVISADA sobre: Quer saber de limpeza espiritual e responde por aqui\. Você continua atendendo/);
+  assert.match(com, /converse também sobre esse assunto/);
+  assert.match(com, /Se a pessoa falar de outro assunto, atenda normalmente/);
+  assert.match(com, /não use \[\[CASA\]\] de novo para o mesmo assunto/);
+  assert.match(buildSystemPrompt({ ...base, plan: "maximo", pending: { reason: "" } }), /A CASA JÁ FOI AVISADA e responde por aqui/);
+});
+
+test("primeira camada: a assistente passa só quando não há mais o que fazer; assunto delicado é conversado, não repassado", () => {
+  const p = buildSystemPrompt({ ...base, plan: "maximo" });
+  assert.match(p, /primeira camada de atendimento e venda: passe só quando não houver mais o que fazer/);
+  assert.match(p, /Assunto delicado \(luto, crise emocional, saúde\)[^\n]*converse a partir do que a casa realiza/);
+  assert.match(p, /reclamação, risco de vida ou pedido que você realmente não pode resolver/);
+  assert.ok(!/assunto delicado, reclamação ou pedido/.test(p), "assunto delicado não é mais caso automático de repasse");
+  assert.match(p, /pergunte se pode ajudar em mais alguma coisa enquanto isso/);
+  assert.match(p, /você não está só/);
+  assert.match(p, /CVV/);
+});
+
+test("retomada: as mensagens da casa entram marcadas e o histórico é maior (20)", () => {
+  assert.equal(HISTORY_LIMIT, 20);
+  const chat = toChatMessages([
+    { sender_id: "cliente", from_assistant: false, text: "quero o trabalho de amor" },
+    { sender_id: "dono", from_assistant: false, text: "Fica R$ 300, combinado para sexta" },
+    { sender_id: "cliente", from_assistant: false, text: "ok" },
+  ], "dono");
+  assert.equal(chat[1].content, "[Atendimento da casa] Fica R$ 300, combinado para sexta");
+  assert.equal(chat[1].role, "assistant");
 });
