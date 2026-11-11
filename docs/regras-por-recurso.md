@@ -91,13 +91,15 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 - O cliente vê as vantagens de pagar pela plataforma antes de reservar ou contratar: pagamento registrado com comprovante; reembolso integral se cancelar antes de a casa começar; aviso quando a casa iniciar e terminar; histórico do pedido; só quem comprou pela plataforma avalia a casa.
 - Com a venda desligada, a assistente informa nome, valor e modalidade, não indica botão e passa para a casa quando a pessoa quer contratar.
 
-## Passagem da assistente para a casa (0074)
+## Passagem da assistente para a casa (0075)
 
-- A assistente só passa a conversa para a casa nos casos definidos (assunto delicado, serviço sem como contratar, pedido para falar com a casa, algo a confirmar).
-- Passada a conversa, ela fica "aguardando a casa" por **no máximo 15 minutos**. A casa pode assumir ou devolver à assistente a qualquer momento.
-- Nesses 15 minutos a casa recebe um lembrete a cada 4 minutos, até 3, dizendo há quanto tempo o cliente espera e que a assistente volta a atender se a casa não responder.
-- Passados os 15 minutos sem resposta, a assistente volta a atender o cliente. Se ela precisar passar de novo, a casa é avisada de novo.
-- Casa que assumiu e parou (offline) também devolve a conversa à assistente (0072).
+- A assistente é a **primeira camada de atendimento e venda**: responde, explica e vende tudo o que puder e só passa a conversa para a casa quando não há mais o que fazer (data da agenda, serviço sem como contratar, informação que não existe nos textos da casa, reclamação, risco de vida, pedido para falar com a casa).
+- Assunto delicado e saúde **não** são repasse automático: a assistente acolhe e conversa a partir do que a casa realiza, sem diagnóstico, sem conselho médico e sem prometer resultado. Em risco de vida, ela indica o CVV (188) e passa para a casa.
+- Depois de passar, ela **continua atendendo**: conversa também sobre o assunto passado (sem decidir o que só a casa decide: valor não listado, horário, condição) e atende qualquer outro assunto. Não repete o aviso a cada mensagem.
+- Ela só **se cala quando a casa ou a equipe está atendendo** (respondeu ou assumiu). Se a casa sai ou fica parada, a assistente volta (0072).
+- Ao voltar, ela lê as mensagens da casa no histórico (até 20 mensagens, as da casa marcadas) e respeita o que foi combinado.
+- A casa recebe lembretes enquanto a conversa aguarda: a cada 4 minutos nos 3 primeiros, depois a cada 15 minutos, até 2 horas. Se a assistente passar um novo assunto, a casa é avisada de novo (no mínimo 10 minutos entre avisos).
+- Na faixa do chat, a casa pode **Assumir** ou **Devolver** à assistente.
 
 ## Agenda única da casa (0073)
 

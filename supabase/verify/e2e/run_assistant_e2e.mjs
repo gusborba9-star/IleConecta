@@ -87,9 +87,14 @@ ok("passagem: o cliente recebe resposta acolhedora sem o marcador", r.status ===
 let st = (await su.query(`select state, reason from conversation_handoff where conversation_id=$1`, [CONV])).rows[0];
 ok("passagem: estado 'pendente' com o motivo", st?.state === "pendente" && st.reason === "luto na família", JSON.stringify(st));
 ok("passagem: 1 aviso 'precisa de você' identificado por kind='handoff'", (await handoffNotifs()) === 1);
-r = await call("Ainda estou aqui", CONV);
-ok("pendente: a assistente NÃO responde (casa ainda não assumiu)", r.body.handled_by_human === true && r.body.reply === null, JSON.stringify(r.body));
 llm.reply = "Posso ajudar com isso.";
+const bodiesBefore = llm.bodies.length;
+r = await call("Ainda estou aqui", CONV);
+ok("pendente: a assistente CONTINUA respondendo (a casa ainda não assumiu)", r.status === 200 && r.body.handled_by_human !== true && r.body.reply === "Posso ajudar com isso.", JSON.stringify(r.body));
+const sysPend = JSON.stringify(llm.bodies[bodiesBefore] ?? {});
+ok("pendente: o prompt informa que a casa já foi avisada e o motivo", sysPend.includes("A CASA JÁ FOI AVISADA sobre: luto na família"), sysPend.slice(0, 80));
+st = (await su.query(`select state from conversation_handoff where conversation_id=$1`, [CONV])).rows[0];
+ok("pendente: responder não muda o estado nem avisa a casa de novo", st.state === "pendente" && (await handoffNotifs()) === 1);
 // 5) Equipe assume respondendo
 await as(U.S, (c) => c.query(`select staff_send($1,'Oi, sou da equipe da casa')`, [CONV]));
 st = (await su.query(`select state, handler_name from conversation_handoff where conversation_id=$1`, [CONV])).rows[0];

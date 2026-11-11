@@ -49,7 +49,14 @@ test("shouldCallAssistant: só com casa offline, assistente disponível e sem hu
   assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: null }), true);
   assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: toHandoff(null) }), true);
   assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: hum }), false);
-  assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: toHandoff({ state: "pendente", active: true }) }), false);
   assert.equal(shouldCallAssistant({ houseOffline: false, hasAssistant: true, handoff: null }), false);
   assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: false, handoff: null }), false);
+});
+test("shouldCallAssistant: conversa passada para a casa (pendente) não deixa o cliente sem resposta", () => {
+  const pend = toHandoff({ state: "pendente", active: true });
+  assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: pend }), true);
+  assert.equal(shouldCallAssistant({ houseOffline: false, hasAssistant: true, handoff: pend }), true, "casa online mas ainda não respondeu");
+  assert.equal(shouldCallAssistant({ houseOffline: false, hasAssistant: false, handoff: pend }), false, "sem assistente não chama");
+  assert.equal(shouldCallAssistant({ houseOffline: false, hasAssistant: true, handoff: toHandoff({ state: "humano", active: true }) }), false, "a casa atendendo cala a assistente");
+  assert.equal(shouldCallAssistant({ houseOffline: true, hasAssistant: true, handoff: toHandoff({ state: "pendente", active: false }) }), true, "pendente vencido volta ao fluxo normal");
 });
