@@ -235,6 +235,14 @@ test("primeira camada: a assistente passa só quando não há mais o que fazer; 
   assert.match(p, /pergunte se pode ajudar em mais alguma coisa enquanto isso/);
   assert.match(p, /você não está só/);
   assert.match(p, /CVV/);
+  assert.match(p, /Assunto delicado[^\n]*deixe a casa como opção/);
+  assert.ok(!/Não ofereça passar para a casa/.test(p), "no luto a casa é opção, não proibição");
+});
+
+test("mudança de assunto: a última mensagem manda e preço/vaga/horário saem só da lista atual", () => {
+  const p = buildSystemPrompt({ ...base, plan: "maximo" });
+  assert.match(p, /A última mensagem define o assunto: se mudou, responda só sobre o novo/);
+  assert.match(p, /Preço, vaga e horário saem só da lista atual, nunca de mensagens antigas/);
 });
 
 test("retomada: as mensagens da casa entram marcadas e o histórico é maior (20)", () => {
