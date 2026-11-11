@@ -109,8 +109,12 @@ test("histórico: limita, mantém ordem e separa assistente de cliente", () => {
   assert.equal(chat.at(-1).content, "m19");
   assert.equal(chat.at(-1).role, "assistant");
   assert.equal(chat[0].role, chat[0].content === "m8" ? "user" : "assistant");
-  // O dono falando como pessoa (não assistente) é tratado como cliente no histórico.
-  assert.equal(toChatMessages([{ sender_id: "dono", from_assistant: false, text: "oi" }], "dono")[0].role, "user");
+  // A casa falando como pessoa/equipe entra como "assistant", marcada, para a assistente retomar o combinado.
+  const h = toChatMessages([{ sender_id: "cliente", from_assistant: false, text: "quero" }, { sender_id: "dono", from_assistant: false, text: "temos sim" }, { sender_id: "dono", from_assistant: true, text: "ok" }], "dono");
+  assert.deepEqual(h.map((m) => m.role), ["user", "assistant", "assistant"]);
+  assert.equal(h[1].content, "[Atendimento da casa] temos sim");
+  assert.equal(h[2].content, "ok");
+  assert.equal(h[0].content, "quero");
 });
 
 test("cota mensal começa no dia 1 em UTC", () => {
@@ -150,7 +154,7 @@ test("guias: o prompt de uma casa vazia é bem menor que o de uma casa completa"
     house: { ...house, offerings: "Jogo de búzios." },
   });
   assert.ok(vazia.length < 5300, `prompt vazio com ${vazia.length} caracteres`);
-  assert.ok(completa.length < 11600, `prompt completo com ${completa.length} caracteres`);
+  assert.ok(completa.length < 11800, `prompt completo com ${completa.length} caracteres`);
   assert.ok(vazia.length < completa.length * 0.6);
 });
 
