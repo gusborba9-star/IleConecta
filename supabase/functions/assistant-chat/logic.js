@@ -152,14 +152,25 @@ const GUARANTEE_TALK = [
   /n[ãa]o (posso|consigo) (dizer|saber) (que )?(resultado|o que vai)/i,
   /n[ãa]o consigo dizer que resultado/i,
 ];
+// Variantes: qualquer frase que junte promessa/garantia/segurança de resultado com negação ("não é uma promessa de resultado", "sem garantia"),
+// ou diga que o resultado depende/varia. Frases sobre vaga, horário, reserva, pagamento ou reembolso ficam de fora.
+const GT_WORD = /(promess|garant|prometer|prometo|assegur|certeza)/i;
+const GT_NEG = /\b(n[ãa]o|sem|nem|nenhum[a]?|nunca)\b/i;
+const GT_OK = /(vaga|hor[áa]rio|reserva|lugar|pagamento|valor|reembols|confirma|cancel)/i;
+const GT_DEPENDS = /resultados?\s+(depende|dependem|pode variar|podem variar|varia|variam)/i;
+function sentenceHasGuaranteeTalk(x) {
+  if (GUARANTEE_TALK.some((re) => re.test(x))) return true;
+  if (GT_DEPENDS.test(x)) return true;
+  return GT_WORD.test(x) && GT_NEG.test(x) && !GT_OK.test(x);
+}
 export function hasGuaranteeTalk(text) {
-  return typeof text === "string" && GUARANTEE_TALK.some((re) => re.test(text));
+  return typeof text === "string" && text.split(/(?<=[.!?])\s+/).some(sentenceHasGuaranteeTalk);
 }
 /** Tira só as frases que falam de garantia; se sobrar nada, devolve o texto como veio (melhor isso do que resposta vazia). */
 export function stripGuaranteeTalk(text) {
   if (!hasGuaranteeTalk(text)) return text;
   const parts = String(text).split(/(?<=[.!?])\s+/);
-  const kept = parts.filter((x) => !GUARANTEE_TALK.some((re) => re.test(x)));
+  const kept = parts.filter((x) => !sentenceHasGuaranteeTalk(x));
   const out = kept.join(" ").trim();
   return out.length >= 20 ? out : text;
 }
@@ -411,7 +422,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push("");
     lines.push("COMO VENDER:");
     lines.push("- O que a casa escreveu (descrição, o que oferece, tradição) é o briefing do que ela quer dizer, não um texto para copiar. Explique com suas palavras, de forma elaborada, acolhedora e profissional, e desenvolva o sentido e o propósito do serviço ou ritual a partir desse material e do nome dele, ligando ao que a pessoa busca. Pode explicar como funciona na plataforma (pagamento, sigilo, avisos, reembolso) e responder dúvidas.");
-    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado. Fale do propósito, nunca de resultado: diga o que o trabalho é e para que é feito, com convicção e acolhimento, e não comente garantia nem a falta dela (nenhuma frase sobre garantir, prometer, afirmar ou \"não depender de você\"). Quando perguntarem se vai funcionar, ajudar ou dar certo, responda neste formato: \"Esse trabalho é feito exatamente para <propósito>.\" + uma frase só com o que a casa escreveu + o próximo passo. Se a pessoa estiver em dúvida ou questionando, convide a entender o caso dela: ofereça o serviço de consulta ou jogo com agenda da lista (pelo nome), ou, se não houver, passe para a casa. Se já disse que quer contratar, não pergunte de novo: vá ao botão.");
+    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado. Fale do propósito, nunca de resultado: diga o que o trabalho é e para que é feito, com convicção e acolhimento; não comente garantia nem a falta dela. Se perguntarem se vai funcionar, ajudar ou dar certo, responda assim: \"Esse trabalho é feito exatamente para <propósito>.\" + uma frase só com o que a casa escreveu + o próximo passo. Se a pessoa estiver em dúvida, responda a dúvida pelo propósito e convide a contratar; se a lista tiver serviço de consulta ou jogo com agenda, ofereça-o pelo nome para entender o caso dela. Você conduz a venda: não ofereça passar para a casa, só passe nos casos de \"PASSAR PARA A CASA\". Se já disse que quer contratar, não pergunte de novo: vá ao botão.");
   }
 
   lines.push("");
