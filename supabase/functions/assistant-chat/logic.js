@@ -152,14 +152,25 @@ const GUARANTEE_TALK = [
   /n[ãa]o (posso|consigo) (dizer|saber) (que )?(resultado|o que vai)/i,
   /n[ãa]o consigo dizer que resultado/i,
 ];
+// Variantes: qualquer frase que junte promessa/garantia/segurança de resultado com negação ("não é uma promessa de resultado", "sem garantia"),
+// ou diga que o resultado depende/varia. Frases sobre vaga, horário, reserva, pagamento ou reembolso ficam de fora.
+const GT_WORD = /(promess|garant|prometer|prometo|assegur|certeza)/i;
+const GT_NEG = /\b(n[ãa]o|sem|nem|nenhum[a]?|nunca)\b/i;
+const GT_OK = /(vaga|hor[áa]rio|reserva|lugar|pagamento|valor|reembols|confirma|cancel)/i;
+const GT_DEPENDS = /resultados?\s+(depende|dependem|pode variar|podem variar|varia|variam)/i;
+function sentenceHasGuaranteeTalk(x) {
+  if (GUARANTEE_TALK.some((re) => re.test(x))) return true;
+  if (GT_DEPENDS.test(x)) return true;
+  return GT_WORD.test(x) && GT_NEG.test(x) && !GT_OK.test(x);
+}
 export function hasGuaranteeTalk(text) {
-  return typeof text === "string" && GUARANTEE_TALK.some((re) => re.test(text));
+  return typeof text === "string" && text.split(/(?<=[.!?])\s+/).some(sentenceHasGuaranteeTalk);
 }
 /** Tira só as frases que falam de garantia; se sobrar nada, devolve o texto como veio (melhor isso do que resposta vazia). */
 export function stripGuaranteeTalk(text) {
   if (!hasGuaranteeTalk(text)) return text;
   const parts = String(text).split(/(?<=[.!?])\s+/);
-  const kept = parts.filter((x) => !GUARANTEE_TALK.some((re) => re.test(x)));
+  const kept = parts.filter((x) => !sentenceHasGuaranteeTalk(x));
   const out = kept.join(" ").trim();
   return out.length >= 20 ? out : text;
 }

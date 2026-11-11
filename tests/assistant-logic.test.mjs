@@ -197,10 +197,12 @@ test("garantia: detecta 'não garanto/não posso afirmar' e não pega 'garantir 
     "Não consigo afirmar que o trabalho vai abrir portas, porque não há como garantir resultados.",
     "Não posso prometer resultados.", "Eu não garanto resultado nenhum.", "Isso não depende de mim.", "Não há garantia de resultado.",
     "mas não consigo dizer que resultado vai trazer",
+    "Ele não é uma promessa de resultado, mas um cuidado voltado para a busca que você descreveu.",
+    "É um trabalho sem garantia de nada.", "O resultado depende de vários fatores.", "Não existe certeza de que vai funcionar.",
   ]) assert.equal(hasGuaranteeTalk(t), true, t);
   for (const t of [
     "Para garantir a vaga, use o botão Reservar vaga.", "Se você cancelar antes, o valor volta integralmente.",
-    "Ele é feito para abrir caminhos e oportunidades.", "Não consigo garantir a vaga sem pagamento.", "", null,
+    "Ele é feito para abrir caminhos e oportunidades.", "Não consigo garantir a vaga sem pagamento.", "Você garante a sua vaga pelo botão.", "Sem pagamento não há reserva.", "É um trabalho feito com sigilo e cuidado.", "", null,
   ]) assert.equal(hasGuaranteeTalk(t), false, String(t));
 });
 
