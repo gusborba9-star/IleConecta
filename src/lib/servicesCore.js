@@ -60,6 +60,19 @@ export function kindLabel(kind, customKind) {
   return SERVICE_KINDS.find((k) => k.id === kind)?.label ?? "Serviço";
 }
 
+/**
+ * Organiza a lista da dona da casa em blocos: ativos na página, privados (só a assistente vende) e pausados.
+ * A ordem recebida (mais novo primeiro) é mantida dentro de cada bloco; blocos vazios não aparecem.
+ */
+export function groupServices(items) {
+  const defs = [
+    { key: "ativos", title: "Ativos na página", match: (x) => x.active && x.listed !== false },
+    { key: "privados", title: "Privados · só a assistente vende", match: (x) => x.active && x.listed === false },
+    { key: "pausados", title: "Pausados", match: (x) => !x.active },
+  ];
+  return defs.map((d) => ({ key: d.key, title: d.title, items: items.filter(d.match) })).filter((g) => g.items.length > 0);
+}
+
 export function deliveryLabel(delivery) {
   return SERVICE_DELIVERIES.find((d) => d.id === delivery)?.label ?? "Presencial";
 }

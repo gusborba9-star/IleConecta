@@ -69,3 +69,21 @@ test("descrição obrigatória com no mínimo 20 letras, em serviço e em ritual
   assert.match(validateRitual(rit).errors.description, /Escreva uma descrição/);
   assert.equal(validateRitual({ ...rit, description: "Ritual coletivo de proteção." }).ok, true);
 });
+
+test("lista da casa em blocos: ativos, privados e pausados; vazios somem; ordem mantida", async () => {
+  const { groupServices } = await import("../src/lib/servicesCore.js");
+  const items = [
+    { id: "novo-privado", active: true, listed: false },
+    { id: "novo-ativo", active: true, listed: true },
+    { id: "pausado", active: false, listed: true },
+    { id: "pausado-privado", active: false, listed: false },
+    { id: "antigo-ativo", active: true },
+  ];
+  const g = groupServices(items);
+  assert.deepEqual(g.map((x) => x.key), ["ativos", "privados", "pausados"]);
+  assert.deepEqual(g[0].items.map((x) => x.id), ["novo-ativo", "antigo-ativo"]);
+  assert.deepEqual(g[1].items.map((x) => x.id), ["novo-privado"]);
+  assert.deepEqual(g[2].items.map((x) => x.id), ["pausado", "pausado-privado"]);
+  assert.deepEqual(groupServices([]), []);
+  assert.deepEqual(groupServices([{ id: "a", active: true, listed: true }]).map((x) => x.key), ["ativos"]);
+});
