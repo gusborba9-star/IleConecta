@@ -141,6 +141,29 @@ export function finalizeReply(rawReply, userText) {
   return co.found && !handoff ? { ...out, checkout: co.title } : out;
 }
 
+/** Frases em que a assistente fala de garantia (mesmo para negar). O dono não quer isso numa venda: o texto é refeito ou cortado. */
+const GUARANTEE_TALK = [
+  /n[ãa]o (consigo|posso|tenho como|h[áa] como|existe como) (afirmar|prometer|assegurar|dizer que|garantir (resultado|que|nada|isso|o resultado))/i,
+  /n[ãa]o (garanto|prometo|asseguro) (resultado|que|nada|isso)/i,
+  /n[ãa]o (h[áa]|existe|tem|temos) (como )?(garantia|garantir (resultado|que|nada))/i,
+  /(sem|nenhuma) garantia/i,
+  /garantia de (resultado|que)/i,
+  /n[ãa]o (depende|dependem) de mim/i,
+  /n[ãa]o (posso|consigo) (dizer|saber) (que )?(resultado|o que vai)/i,
+  /n[ãa]o consigo dizer que resultado/i,
+];
+export function hasGuaranteeTalk(text) {
+  return typeof text === "string" && GUARANTEE_TALK.some((re) => re.test(text));
+}
+/** Tira só as frases que falam de garantia; se sobrar nada, devolve o texto como veio (melhor isso do que resposta vazia). */
+export function stripGuaranteeTalk(text) {
+  if (!hasGuaranteeTalk(text)) return text;
+  const parts = String(text).split(/(?<=[.!?])\s+/);
+  const kept = parts.filter((x) => !GUARANTEE_TALK.some((re) => re.test(x)));
+  const out = kept.join(" ").trim();
+  return out.length >= 20 ? out : text;
+}
+
 /** Primeiro nome do cliente para a saudação; vazio se não der para usar com segurança (e-mail, números, símbolos). */
 export function firstName(displayName) {
   const first = String(displayName ?? "").trim().split(/\s+/)[0] ?? "";
@@ -364,7 +387,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("");
   lines.push("REGRAS INEGOCIÁVEIS:");
   lines.push(`- Use SOMENTE os serviços, rituais, preços e horários listados abaixo. Nunca invente nem arredonde valores, vagas ou datas. Se algo não está na lista, diga que vai confirmar com a casa.${offerings ? " Os trabalhos descritos em \"TRABALHOS QUE A CASA REALIZA\" existem, mas não têm preço nem horário cadastrados: nunca informe valor deles." : ""}${items.length ? " Os itens do \"CATÁLOGO INTERNO DA CASA\" só podem ter o valor informado quando o item diz \"valor que você pode informar\"; nos demais, nunca cite números." : ""}`);
-  lines.push("- Não prometa resultado espiritual, cura, ganho financeiro ou qualquer garantia. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
+  lines.push("- Não afirme como certo resultado, cura ou ganho; fale do propósito do trabalho. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
   lines.push("- Respeite todas as tradições. Não critique outras religiões.");
   lines.push("- Mensagens com a marca [Atendimento da casa] são da equipe humana e valem: retome de onde pararam, sem repetir; não use a marca.");
   lines.push("- Nunca peça nem aceite senha, dados de cartão ou documentos pelo chat.");
@@ -388,7 +411,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push("");
     lines.push("COMO VENDER:");
     lines.push("- O que a casa escreveu (descrição, o que oferece, tradição) é o briefing do que ela quer dizer, não um texto para copiar. Explique com suas palavras, de forma elaborada, acolhedora e profissional, e desenvolva o sentido e o propósito do serviço ou ritual a partir desse material e do nome dele, ligando ao que a pessoa busca. Pode explicar como funciona na plataforma (pagamento, sigilo, avisos, reembolso) e responder dúvidas.");
-    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado. Mas nunca fale em garantia, nem para negar: não diga \"não garanto\", \"não prometo\", \"não posso afirmar\" nem \"não posso prometer resultados\". Quando perguntarem se vai funcionar, se vai ajudar ou se vai dar certo, responda só pela lógica do trabalho: para que ele é feito e qual é o seu intuito (ex.: \"é feito justamente para <o propósito dele>\"), sem afirmar que o resultado virá, e conduza ao próximo passo. Se a pessoa estiver em dúvida ou questionando, convide a entender o caso dela: ofereça o serviço de consulta ou jogo com agenda da lista (pelo nome), ou, se não houver, passe para a casa. Se já disse que quer contratar, não pergunte de novo: vá ao botão.");
+    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado. Fale do propósito, nunca de resultado: diga o que o trabalho é e para que é feito, com convicção e acolhimento, e não comente garantia nem a falta dela (nenhuma frase sobre garantir, prometer, afirmar ou \"não depender de você\"). Quando perguntarem se vai funcionar, ajudar ou dar certo, responda neste formato: \"Esse trabalho é feito exatamente para <propósito>.\" + uma frase só com o que a casa escreveu + o próximo passo. Se a pessoa estiver em dúvida ou questionando, convide a entender o caso dela: ofereça o serviço de consulta ou jogo com agenda da lista (pelo nome), ou, se não houver, passe para a casa. Se já disse que quer contratar, não pergunte de novo: vá ao botão.");
   }
 
   lines.push("");
