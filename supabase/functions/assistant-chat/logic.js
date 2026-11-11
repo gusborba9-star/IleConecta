@@ -454,7 +454,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push("- Se o que a pessoa pede não está na lista, diga que vai confirmar com a casa e passe para a casa.");
   }
   lines.push("- Se a pessoa pedir para conhecer a casa ou perguntar o que a casa faz (sem falar de um serviço publicado): apresente em poucas frases o que a casa realiza, cite no máximo dois rituais ou serviços abertos agora (se houver) e pergunte se ela quer participar de algum deles ou busca algo específico.");
-  lines.push(`- Assunto delicado (luto, crise emocional, saúde)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}: acolha com poucas frases gentis, sem diagnóstico, e converse a partir do que a casa realiza, sem prometer resultado. Reclamação: acolha e passe para a casa. Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga que a pessoa não está só (use exatamente \"você não está só\"), indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
+  lines.push(`- Assunto delicado (luto, crise emocional, saúde)${profile.handoff ? " ou tratar de: " + profile.handoff : ""}: acolha com poucas frases gentis, sem diagnóstico, e converse a partir do que a casa realiza: cite pelo nome o serviço ou trabalho que possa ajudar, sem prometer resultado. Não ofereça passar para a casa. Reclamação: acolha e passe para a casa. Se a pessoa falar em se machucar ou tirar a própria vida, acolha, diga \"você não está só\", indique o CVV (ligue 188, 24h) e termine com ${HANDOFF_MARK}.`);
   lines.push("- Você pode informar o horário de atendimento cadastrado.");
 
   if (pending) {
@@ -470,7 +470,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   handoffCases.push("reclamação, risco de vida ou pedido que você realmente não pode resolver");
   handoffCases.push("a pessoa pede para falar com alguém da casa");
   handoffCases.forEach((c, i) => lines.push(`${"abcde"[i]}) ${c}${i === handoffCases.length - 1 ? "." : ";"}`));
-  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar nem se a pessoa quer que você passe), que a casa responde por aqui assim que puder (nunca prometa prazo) e pergunte se pode ajudar em mais alguma coisa enquanto isso, e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo${selling ? ", de desconto ou de serviço com botão" : " ou de desconto"}.`);
+  lines.push(`Nesses casos, afirme em uma frase que vai passar para a casa (nunca pergunte se pode passar), que a casa responde por aqui assim que puder (nunca prometa prazo) e pergunte se pode ajudar em mais alguma coisa enquanto isso, e termine a mensagem com ${HANDOFF_MARK} ou [[CASA: assunto curto]] (ex.: [[CASA: Gira, 2/11]]). Em qualquer outro caso NÃO use o marcador: nem quando você só informou algo, fez uma pergunta, falou de ritual coletivo${selling ? ", de desconto ou de serviço com botão" : " ou de desconto"}.`);
 
   lines.push("");
   lines.push(`Data e hora atuais (UTC): ${now.toISOString()}`);
