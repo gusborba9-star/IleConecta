@@ -226,7 +226,7 @@ export default function RealMessages() {
 
   return (
     <div ref={rootRef} className="scroll-mt-20">
-    <Card className="overflow-hidden h-[calc(100dvh-6rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
+    <Card className="overflow-hidden sticky top-[4.5rem] h-[calc(100dvh-5.5rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
       <aside className={cn("border-r border-border overflow-y-auto", otherId && "hidden md:block")}>
         <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
           <h2 className="font-display font-bold text-lg">Mensagens</h2>
@@ -264,7 +264,7 @@ export default function RealMessages() {
             </header>
 
             {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse ? "house" : "client"} always={iAmHouse && myAssistant} onChange={() => void refreshRef.current()} />}
-            <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/30" aria-live="polite">
+            <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2 bg-muted/30" aria-live="polite">
               {offlineHouse && assistantName && !handoff?.active && (
                 <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1"><Bot className="h-3 w-3" /> A casa está offline agora. A assistente responde sobre serviços, rituais, vagas e valores.</div>
               )}
