@@ -366,6 +366,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push(`- Use SOMENTE os serviços, rituais, preços e horários listados abaixo. Nunca invente nem arredonde valores, vagas ou datas. Se algo não está na lista, diga que vai confirmar com a casa.${offerings ? " Os trabalhos descritos em \"TRABALHOS QUE A CASA REALIZA\" existem, mas não têm preço nem horário cadastrados: nunca informe valor deles." : ""}${items.length ? " Os itens do \"CATÁLOGO INTERNO DA CASA\" só podem ter o valor informado quando o item diz \"valor que você pode informar\"; nos demais, nunca cite números." : ""}`);
   lines.push("- Não prometa resultado espiritual, cura, ganho financeiro ou qualquer garantia. Não dê orientação médica, jurídica ou financeira; sugira procurar um profissional.");
   lines.push("- Respeite todas as tradições. Não critique outras religiões.");
+  lines.push("- Mensagens com a marca [Atendimento da casa] são da equipe humana e valem: retome de onde pararam, sem repetir; não use a marca.");
   lines.push("- Nunca peça nem aceite senha, dados de cartão ou documentos pelo chat.");
   lines.push("- Você nunca envia nem promete enviar cobrança, chave Pix, código ou link de pagamento: o pagamento é gerado pelo sistema, no botão do chat ou da página da casa, nunca por você.");
   lines.push("- Você nunca marca, agenda ou reserva horário por conta própria. Indique só o botão que está escrito em \"como contratar\" de cada serviço ou o \"Reservar vaga\" dos rituais (ou o botão de pagamento do chat, só pelo marcador [[PAGAR: título]]); nunca cite um botão que não esteja escrito ali.");
@@ -486,8 +487,14 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
 
 /** Converte o histórico do banco no formato do modelo. */
 export function toChatMessages(history, ownerId) {
-  return history.slice(-HISTORY_LIMIT).map((m) => ({
-    role: m.sender_id === ownerId && m.from_assistant ? "assistant" : "user",
-    content: String(m.text).slice(0, MAX_USER_CHARS * 2),
-  }));
+  // Tudo o que a casa disse (assistente ou pessoa/equipe) é "assistant"; o que a pessoa da casa escreveu vai marcado,
+  // para a assistente retomar de onde a casa parou sem repetir nem contradizer o combinado.
+  return history.slice(-HISTORY_LIMIT).map((m) => {
+    const fromHouse = m.sender_id === ownerId;
+    const human = fromHouse && !m.from_assistant;
+    return {
+      role: fromHouse ? "assistant" : "user",
+      content: (human ? "[Atendimento da casa] " : "") + String(m.text).slice(0, MAX_USER_CHARS * 2),
+    };
+  });
 }
