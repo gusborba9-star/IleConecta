@@ -91,6 +91,14 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 - O cliente vê as vantagens de pagar pela plataforma antes de reservar ou contratar: pagamento registrado com comprovante; reembolso integral se cancelar antes de a casa começar; aviso quando a casa iniciar e terminar; histórico do pedido; só quem comprou pela plataforma avalia a casa.
 - Com a venda desligada, a assistente informa nome, valor e modalidade, não indica botão e passa para a casa quando a pessoa quer contratar.
 
+## Passagem da assistente para a casa (0074)
+
+- A assistente só passa a conversa para a casa nos casos definidos (assunto delicado, serviço sem como contratar, pedido para falar com a casa, algo a confirmar).
+- Passada a conversa, ela fica "aguardando a casa" por **no máximo 15 minutos**. A casa pode assumir ou devolver à assistente a qualquer momento.
+- Nesses 15 minutos a casa recebe um lembrete a cada 4 minutos, até 3, dizendo há quanto tempo o cliente espera e que a assistente volta a atender se a casa não responder.
+- Passados os 15 minutos sem resposta, a assistente volta a atender o cliente. Se ela precisar passar de novo, a casa é avisada de novo.
+- Casa que assumiu e parou (offline) também devolve a conversa à assistente (0072).
+
 ## Agenda única da casa (0073)
 
 - A casa tem **uma só agenda**. Tudo o que tem horário ocupa a agenda; o que não tem horário é só publicação e não bloqueia nada.
