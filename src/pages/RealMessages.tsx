@@ -52,6 +52,7 @@ export default function RealMessages() {
     let alive = true;
     setMsgs([]);
     setNotice(null);
+    setHandoff(null);
     if (!otherId || !me) {
       setConvId(null);
       setPeer(null);
@@ -63,6 +64,7 @@ export default function RealMessages() {
       setConvId(cid);
       setPeer(p);
       if (cid) {
+        void fetchHandoff(cid).then((h) => alive && setHandoff(h));
         const list = await fetchMessages(cid);
         if (!alive) return;
         setMsgs(list);
@@ -85,6 +87,14 @@ export default function RealMessages() {
   }, [otherId, me]);
 
   const peerIsHouse = peer?.isHouse ?? false;
+  // Casa com assistente ativa: a faixa de atendimento fica sempre visível para ela.
+  const [myAssistant, setMyAssistant] = useState(false);
+  useEffect(() => {
+    if (!me || currentUser?.type !== "commercial") { setMyAssistant(false); return; }
+    let alive = true;
+    void fetchAssistantName(me).then((n) => alive && setMyAssistant(Boolean(n)));
+    return () => { alive = false; };
+  }, [me, currentUser?.type]);
   useEffect(() => {
     if (!otherId || !peerIsHouse) {
       setAssistantName(null);
@@ -253,7 +263,7 @@ export default function RealMessages() {
               <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} onBlockedChange={setIBlocked} />
             </header>
 
-            {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse ? "house" : "client"} onChange={() => void refreshRef.current()} />}
+            {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse ? "house" : "client"} always={iAmHouse && myAssistant} onChange={() => void refreshRef.current()} />}
             <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/30" aria-live="polite">
               {offlineHouse && assistantName && !handoff?.active && (
                 <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1"><Bot className="h-3 w-3" /> A casa está offline agora. A assistente responde sobre serviços, rituais, vagas e valores.</div>

@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { Bot, UserCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/base";
 import { releaseConversation, takeConversation } from "@/lib/handoff";
 import { handoffView, type Handoff } from "@/lib/handoffCore";
 import { cn } from "@/lib/utils";
 
-/** Faixa que diz quem está com a conversa (assistente, casa ou equipe) e deixa a casa assumir ou devolver à assistente. */
-export default function HandoffBar({ conversationId, handoff, viewer, canAct = true, onChange }: { conversationId: string; handoff: Handoff | null; viewer: "house" | "client"; canAct?: boolean; onChange: () => void }) {
+/**
+ * Faixa fina de uma linha, logo abaixo do cabeçalho do chat: diz quem está com a conversa (assistente, casa ou equipe)
+ * e deixa a casa assumir ou devolver à assistente. Com `always` (casa com assistente) fica sempre no lugar, sem pular na tela.
+ */
+export default function HandoffBar({ conversationId, handoff, viewer, canAct = true, always = false, onChange }: {
+  conversationId: string; handoff: Handoff | null; viewer: "house" | "client"; canAct?: boolean; always?: boolean; onChange: () => void;
+}) {
   const [busy, setBusy] = useState(false);
-  const base = handoffView(handoff, viewer);
+  const loading = handoff === null;
+  const base = loading ? (viewer === "house" && always ? { tone: "info" as const, text: "Verificando atendimento…", action: null, label: "" } : null) : handoffView(handoff, viewer, { always });
   const view = base && !canAct ? { ...base, action: null } : base;
   if (!view) return null;
   const run = async () => {
@@ -21,13 +26,14 @@ export default function HandoffBar({ conversationId, handoff, viewer, canAct = t
     onChange();
   };
   return (
-    <div role="status" className={cn("px-3 py-2 text-xs flex items-center gap-2 border-b", view.tone === "alert" ? "bg-gold/15 border-gold/40" : "bg-muted/50 border-border")}>
+    <div role="status" className={cn("h-9 px-3 text-xs flex items-center gap-2 border-b shrink-0", view.tone === "alert" ? "bg-gold/15 border-gold/40" : "bg-muted/50 border-border")}>
       {view.action === "release" ? <UserCheck className="h-3.5 w-3.5 shrink-0" /> : <Bot className="h-3.5 w-3.5 shrink-0" />}
-      <span className="flex-1 min-w-0">{view.text}</span>
+      <span className="flex-1 min-w-0 truncate">{view.text}</span>
       {view.action && (
-        <Button size="sm" variant="outline" disabled={busy} onClick={run}>
-          {view.action === "take" ? "Assumir" : "Devolver à assistente"}
-        </Button>
+        <button type="button" disabled={busy} onClick={run}
+          className="shrink-0 h-7 px-3 rounded-full border border-border bg-card text-xs font-semibold hover:bg-muted disabled:opacity-60 touch-manipulation">
+          {view.label}
+        </button>
       )}
     </div>
   );
