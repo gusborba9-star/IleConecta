@@ -291,6 +291,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
                 {!s.active && <Badge tone="muted">Pausado</Badge>}
               </div>
               {s.description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{s.description}</p>}
+              {isOwn && s.active && !s.description?.trim() && <p className="text-xs mt-2 rounded-xl bg-gold/15 px-3 py-2 text-foreground">Sem descrição: a assistente só consegue dizer o nome e o valor. Edite o serviço e escreva o que a pessoa recebe, para ela apresentar e vender melhor.</p>}
               <p className="text-xs text-muted-foreground mt-2">
                 {s.bookable
                   ? "Escolha um horário livre da agenda da casa e pague pela plataforma para confirmar."
