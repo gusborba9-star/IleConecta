@@ -10,16 +10,18 @@ export function toHandoff(row) {
 
 /**
  * O que mostrar na conversa. viewer: "house" (dono ou equipe) ou "client".
- * Devolve null quando não há nada a dizer (a assistente atende normalmente).
+ * Para a casa com assistente, a faixa é permanente (always = true): mostra também quando a assistente atende e
+ * deixa "Assumir" sempre à mão. Para o cliente só aparece quando há atendimento humano. Textos curtos: a faixa é de uma linha.
+ * Devolve null quando não há nada a mostrar.
  */
-export function handoffView(h, viewer) {
-  if (!h || !h.active) return null;
+export function handoffView(h, viewer, { always = false } = {}) {
   if (viewer === "house") {
-    if (h.state === "pendente") return { tone: "alert", text: "A assistente passou esta conversa para a casa. Responda ou assuma para ela não falar por cima.", action: "take" };
-    return { tone: "info", text: h.handlerName ? `${h.handlerName} está atendendo. A assistente está em pausa nesta conversa.` : "A casa está atendendo. A assistente está em pausa nesta conversa.", action: "release" };
+    if (h && h.active && h.state === "pendente") return { tone: "alert", text: "Aguardando você", action: "take", label: "Assumir" };
+    if (h && h.active) return { tone: "info", text: h.handlerName ? `${h.handlerName} atendendo` : "Você está atendendo", action: "release", label: "Devolver à assistente" };
+    return always ? { tone: "info", text: "Assistente ativa", action: "take", label: "Assumir" } : null;
   }
-  if (h.state === "pendente") return { tone: "info", text: "A casa foi avisada e vai responder por aqui.", action: null };
-  return { tone: "info", text: "A casa está atendendo esta conversa.", action: null };
+  if (!h || !h.active) return null;
+  return { tone: "info", text: h.state === "pendente" ? "A casa foi avisada e responde por aqui" : "A casa está atendendo", action: null, label: "" };
 }
 
 /** A assistente deve ser chamada pelo app? Com humano atendendo não (o servidor também recusa; isto só poupa uma ida à rede). */

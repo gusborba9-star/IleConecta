@@ -11,19 +11,33 @@ test("toHandoff: expirado, desconhecido ou lixo vira automação (nunca inventa 
     const h = toHandoff(row); assert.equal(h.state, "automacao"); assert.equal(h.active, false);
   }
 });
-test("handoffView: nada a mostrar quando a assistente atende", () => {
-  assert.equal(handoffView(null, "house"), null);
+test("handoffView: cliente não vê nada quando a assistente atende", () => {
+  assert.equal(handoffView(null, "client"), null);
   assert.equal(handoffView(toHandoff({ state: "automacao", active: false }), "client"), null);
 });
 test("handoffView: casa vê 'assumir' quando pendente e 'devolver' quando humano", () => {
   const p = handoffView(toHandoff({ state: "pendente", active: true }), "house");
-  assert.equal(p.action, "take"); assert.equal(p.tone, "alert");
+  assert.equal(p.action, "take"); assert.equal(p.tone, "alert"); assert.equal(p.label, "Assumir");
   const h = handoffView(toHandoff({ state: "humano", active: true, handler_name: "Ana" }), "house");
-  assert.equal(h.action, "release"); assert.match(h.text, /Ana/);
+  assert.equal(h.action, "release"); assert.match(h.text, /Ana/); assert.match(h.label, /Devolver/);
   assert.equal(handoffView(toHandoff({ state: "humano", active: true }), "house").text.includes("undefined"), false);
 });
+test("handoffView: faixa permanente da casa com assistente (always) mostra 'Assumir' mesmo com a assistente atendendo", () => {
+  const auto = toHandoff({ state: "automacao", active: false });
+  assert.equal(handoffView(auto, "house"), null);
+  const v = handoffView(auto, "house", { always: true });
+  assert.equal(v.action, "take"); assert.equal(v.label, "Assumir");
+  assert.equal(handoffView(null, "house", { always: true }).action, "take");
+});
+test("handoffView: textos curtos (faixa de uma linha)", () => {
+  for (const viewer of ["house", "client"]) for (const state of ["pendente", "humano"]) {
+    const v = handoffView(toHandoff({ state, active: true, handler_name: "Equipe Um" }), viewer, { always: true });
+    assert.ok(v.text.length <= 50, `${viewer}/${state}: ${v.text.length}`);
+  }
+  assert.ok(handoffView(toHandoff(null), "house", { always: true }).text.length <= 50);
+});
 test("handoffView: cliente nunca recebe botão de ação", () => {
-  for (const state of ["pendente", "humano"]) assert.equal(handoffView(toHandoff({ state, active: true }), "client").action, null);
+  for (const state of ["pendente", "humano"]) { const v = handoffView(toHandoff({ state, active: true }), "client", { always: true }); assert.equal(v.action, null); assert.equal(v.label, ""); }
 });
 test("shouldCallAssistant: só com casa offline, assistente disponível e sem humano atendendo", () => {
   const hum = toHandoff({ state: "humano", active: true });
