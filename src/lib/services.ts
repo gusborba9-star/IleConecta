@@ -42,12 +42,12 @@ async function houseIdOf(ownerId: string): Promise<string | null> {
   return data ? String(data.id) : null;
 }
 
-/** O banco já esconde os serviços pausados de quem não é a dona da casa. */
+/** O banco já esconde os serviços pausados de quem não é a dona da casa. O mais novo vem primeiro. */
 export async function fetchServices(ownerId: string): Promise<Service[]> {
   if (!supabase) return [];
   const houseId = await houseIdOf(ownerId);
   if (!houseId) return [];
-  const { data, error } = await supabase.from("services").select(COLS).eq("house_id", houseId).order("created_at", { ascending: true });
+  const { data, error } = await supabase.from("services").select(COLS).eq("house_id", houseId).order("created_at", { ascending: false });
   if (error || !data) {
     console.error("Ilê Conecta: não foi possível carregar os serviços.", error?.message);
     return [];

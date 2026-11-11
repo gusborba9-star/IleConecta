@@ -42,5 +42,6 @@ export declare function descriptionTooShort(length: number): string;
 export declare function parsePriceToCents(text: string): number | null;
 export declare function formatCents(cents: number): string;
 export declare function kindLabel(kind: string, customKind?: string | null): string;
+export declare function groupServices<T extends { active: boolean; listed?: boolean }>(items: T[]): { key: string; title: string; items: T[] }[];
 export declare function deliveryLabel(delivery: string): string;
 export declare function validateService(input: ServiceFormInput): ServiceValidation;

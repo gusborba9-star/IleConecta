@@ -1,5 +1,5 @@
 import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, Dices, Flame, Layers, Leaf, Lock, MapPin, Plus, Video, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ import { useApp } from "@/contexts/AppContext";
 import { goToCheckout } from "@/lib/payments";
 import { fetchReviewable } from "@/lib/reviews";
 import { stagePlan } from "@/lib/paymentsCore";
-import { deliveryLabel, formatCents, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
+import { deliveryLabel, formatCents, groupServices, kindLabel, SERVICE_KINDS, type ServiceValue } from "@/lib/servicesCore";
 
 interface Props {
   /** Id do dono da casa (o mesmo id usado na rota /casa/:id). */
@@ -247,7 +247,10 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
         </Card>
       )}
 
-      {items.map((s) => {
+      {(isOwn ? groupServices(items) : [{ key: "todos", title: "", items }]).map((group, gi, groups) => (
+      <Fragment key={group.key}>
+      {isOwn && groups.length > 1 && <h2 className={`font-display font-bold text-lg ${gi > 0 ? "pt-3" : ""}`}>{group.title} <span className="text-sm font-normal text-muted-foreground">({group.items.length})</span></h2>}
+      {group.items.map((s) => {
         if (!isOwn && s.active && !myOpenOrder(s.id)) {
           const segment = serviceSegment(s);
           const noButton = s.delivery === "presencial" && !s.bookable;
@@ -333,6 +336,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
         </Card>
         );
       })}
+      </Fragment>
+      ))}
 
       <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ContractModal service={contracting} initialSlot={contractSlot} onClose={() => setContracting(null)} onDone={() => void load()} />
