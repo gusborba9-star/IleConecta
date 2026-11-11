@@ -16,7 +16,7 @@ export function toHandoff(row) {
  */
 export function handoffView(h, viewer, { always = false } = {}) {
   if (viewer === "house") {
-    if (h && h.active && h.state === "pendente") return { tone: "alert", text: "Aguardando você", action: "take", label: "Assumir" };
+    if (h && h.active && h.state === "pendente") return { tone: "alert", text: "Aguardando você", action: "take", label: "Assumir", alt: { action: "release", label: "Devolver" } };
     if (h && h.active) return { tone: "info", text: h.handlerName ? `${h.handlerName} atendendo` : "Você está atendendo", action: "release", label: "Devolver à assistente" };
     return always ? { tone: "info", text: "Assistente ativa", action: "take", label: "Assumir" } : null;
   }
