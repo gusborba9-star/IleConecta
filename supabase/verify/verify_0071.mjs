@@ -41,7 +41,7 @@ const rep0 = (await as("authenticated", U.H, (c) => q(c, `select house_assistant
 ok("pré-condição: relatório antigo conta a notificação pelo texto", rep0.handoffs === 1, JSON.stringify(rep0.handoffs));
 
 // Aplica a 0071 duas vezes
-const sql71 = process.env.PASSOS ? readdirSync(ROLL).filter((f) => /^passo-(2[6-9]|3\d)\.sql$/.test(f)).sort().map((f) => readFileSync(ROLL + f, "utf8")).join("\n") : load("0071_estado_do_atendimento.sql");
+const sql71 = process.env.PASSOS ? readdirSync(ROLL).filter((f) => /^passo-(2[6-9]|30)\.sql$/.test(f)).sort().map((f) => readFileSync(ROLL + f, "utf8")).join("\n") : load("0071_estado_do_atendimento.sql");
 let e71 = null; try { await su.query(sql71); await su.query(sql71); } catch (e) { e71 = e.message; }
 ok(`0071 ${process.env.PASSOS ? "(pelos passos) " : ""}aplica duas vezes sem erro (idempotente)`, e71 === null, e71 ?? "");
 
@@ -189,6 +189,31 @@ const other = await as("authenticated", U.H2, (c) => q(c, `select house_assistan
 const ev2 = Number((await su.query(`select count(*) n from handoff_events where house_owner_id=$1 and action='passada_para_casa'`, [U.H2])).rows[0].n);
 ok("relatório: outra casa conta só as próprias passagens", other.rows?.[0]?.r?.handoffs === ev2 && ev2 !== ev, JSON.stringify(other.rows?.[0]?.r?.handoffs ?? other.err));
 r = await as("authenticated", U.C, (c) => q(c, `select house_assistant_report(7)`)); ok("relatório: cliente continua sem acesso", Boolean(r.err), r.err);
+
+// ===== 0072: casa offline e parada => a assistente volta a atender =====
+const sql72 = process.env.PASSOS ? readFileSync(ROLL + "passo-31.sql", "utf8") : load("0072_atendimento_casa_offline.sql");
+let e72 = null; try { await su.query(sql72); await su.query(sql72); } catch (e) { e72 = e.message; }
+ok("0072 aplica duas vezes sem erro (idempotente)", e72 === null, e72 ?? "");
+for (const sig of ["handoff_effective_active(text,timestamptz,uuid)", "handoff_allows_assistant(uuid,uuid)"]) ok(`ACL 0072: ${sig} só o service_role`, (await priv("service_role", "public." + sig)) && !(await priv("anon", "public." + sig)) && !(await priv("authenticated", "public." + sig)));
+const setH = (st, mins) => su.query(`insert into conversation_handoff(conversation_id,house_owner_id,state,since,updated_at) values ($1,$2,$3,now(),now()-($4||' minutes')::interval) on conflict (conversation_id) do update set state=excluded.state, house_owner_id=excluded.house_owner_id, updated_at=excluded.updated_at`, [CV, U.H, st, String(mins)]);
+const seen = (mins) => su.query(`update profiles set last_seen_at = ${mins === null ? "null" : `now()-interval '${mins} minutes'`} where id=$1`, [U.H]);
+await seen(null);
+await setH("humano", 2); ok("0072: humano há 2 min, casa offline => assistente calada", (await allows(CV)) === false);
+await setH("humano", 11); ok("0072: humano há 11 min, casa offline => assistente atende", (await allows(CV)) === true);
+await seen(1); ok("0072: humano há 11 min, casa online => assistente calada", (await allows(CV)) === false);
+await seen(5); ok("0072: casa vista há 5 min (offline) => assistente atende", (await allows(CV)) === true);
+await seen(null); await setH("humano", 13 * 60); ok("0072: humano há 13 h => assistente atende", (await allows(CV)) === true);
+await seen(0); ok("0072: humano há 13 h mesmo com casa online => assistente atende (expira)", (await allows(CV)) === true);
+await seen(null); await setH("pendente", 120); ok("0072: pendente há 2 h, casa offline => continua calada (a casa foi avisada)", (await allows(CV)) === false);
+await setH("pendente", 13 * 60); ok("0072: pendente há 13 h => assistente atende", (await allows(CV)) === true);
+await setH("automacao", 1); ok("0072: automação => assistente atende", (await allows(CV)) === true);
+await setH("humano", 11); r = await state(U.C, CV); ok("0072: o cliente vê ativo=false com a casa offline e parada", r.rows?.[0]?.active === false, JSON.stringify(r.rows ?? r.err));
+await seen(0); r = await state(U.C, CV); ok("0072: o cliente vê ativo=true com a casa online", r.rows?.[0]?.active === true, JSON.stringify(r.rows ?? r.err));
+await seen(null); await setH("humano", 2); r = await state(U.C, CV); ok("0072: o cliente vê ativo=true se a casa respondeu há 2 min", r.rows?.[0]?.active === true);
+r = await as("authenticated", U.X, (c) => q(c, `select * from conversation_handoff_state($1)`, [CV])); ok("0072: estranho continua sem ler o estado", Boolean(r.err), r.err);
+r = await as("authenticated", U.C, (c) => q(c, `select handoff_effective_active('humano', now(), $1)`, [U.H])); ok("0072: authenticated não chama a função interna", Boolean(r.err), r.err);
+await setH("humano", 2); await seen(null);
+ok("0072: outra casa não é afetada (dono diferente)", (await allows(CV, U.H2)) === true);
 
 console.log(bad ? `\n${bad} FALHA(S)` : "\nTODAS AS VERIFICAÇÕES PASSARAM");
 await su.end(); process.exit(bad ? 1 : 0);

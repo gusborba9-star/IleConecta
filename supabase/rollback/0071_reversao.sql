@@ -15,3 +15,6 @@ drop table if exists public.conversation_handoff;
 alter table public.notifications drop constraint if exists notifications_kind_check;
 alter table public.notifications drop column if exists kind;
 do $$ begin perform cron.unschedule('purge-handoff-events'); exception when others then null; end $$;
+
+-- 0072 (se aplicada): volte as duas funções à regra fixa de 12 h (texto original na 0071) e depois:
+-- drop function if exists public.handoff_effective_active(text, timestamptz, uuid);
