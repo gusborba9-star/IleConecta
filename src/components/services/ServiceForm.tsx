@@ -171,7 +171,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           {errors.delivery && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.delivery}</p>}
         </fieldset>
 
-        {form.kind && (
+        {(
           <div className="rounded-xl border border-border p-3 space-y-2 pillow">
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={Boolean(form.bookable)} onChange={(e) => set({ bookable: e.target.checked })} />
@@ -192,7 +192,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           </div>
         )}
 
-        {form.kind && (
+        {(
           <div className="rounded-xl border border-border p-3 pillow">
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={form.listed !== false} onChange={(e) => set({ listed: e.target.checked })} />
