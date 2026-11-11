@@ -388,7 +388,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
     lines.push("");
     lines.push("COMO VENDER:");
     lines.push("- O que a casa escreveu (descrição, o que oferece, tradição) é o briefing do que ela quer dizer, não um texto para copiar. Explique com suas palavras, de forma elaborada, acolhedora e profissional, e desenvolva o sentido e o propósito do serviço ou ritual a partir desse material e do nome dele, ligando ao que a pessoa busca. Pode explicar como funciona na plataforma (pagamento, sigilo, avisos, reembolso) e responder dúvidas.");
-    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado: fale de cuidado, intenção e caminho, não de garantia. Se a pessoa já disse que quer contratar, não pergunte de novo: vá ao botão.");
+    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado. Mas também não diga que não garante, não promete ou não pode afirmar: isso afasta o cliente. Diga para que o trabalho é feito (ajudar, auxiliar, abrir caminho nessa meta). Só se perguntarem direto se garante, responda com verdade e leveza, sem prometer, e conduza ao próximo passo. Se a pessoa estiver em dúvida ou questionando, convide a entender o caso dela: ofereça o serviço de consulta ou jogo com agenda da lista (pelo nome), ou, se não houver, passe para a casa. Se já disse que quer contratar, não pergunte de novo: vá ao botão.");
   }
 
   lines.push("");
