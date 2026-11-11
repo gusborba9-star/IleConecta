@@ -153,6 +153,7 @@ Frentes:
 - Busca, feed e distribuição.
 - Observabilidade, filas, retries e alertas.
 - Acessibilidade e consistência de UX.
+- **Etapa de layout e navegação (decisão do proprietário, 2026-11-11):** ajuste de layout, navegação, telas, subtelas e barra lateral das três visões (casa, cliente e administração) fica reunido nesta etapa, e não é feito em partes antes dela. Observações já levantadas para entrar nela: (a) pedidos recebidos da casa separados em "Em andamento" e "Histórico" (recolhido), mais novo primeiro; (b) etiqueta "Privado" no cartão do serviço é redundante com o bloco "Privados"; (c) serviços com nome e valor repetidos confundem cliente e assistente (avisar a casa ao cadastrar); (d) revisar a lista de itens e a ordem dos menus da barra lateral. Já feito antes da etapa: lista de serviços da casa em blocos (ativos, privados, pausados) com o mais novo primeiro (#177).
 - Testes de carga e capacidade.
 - Experimentos de conversão sem comprometer transparência.
 
