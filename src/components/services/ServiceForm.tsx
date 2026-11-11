@@ -117,7 +117,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
 
         <div>
           <Label htmlFor="sv-desc">Descrição (mín. 20 letras)</Label>
-          <Textarea id="sv-desc" maxLength={600} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="O que está incluído, duração, o que o cliente deve levar. A assistente usa este texto para apresentar o serviço antes do pagamento." />
+          <Textarea id="sv-desc" maxLength={600} value={form.description} onChange={(e) => set({ description: e.target.value })} placeholder="Escreva como se explicasse ao cliente: o que ele recebe, como é feito, duração, o que levar. A assistente usa este texto para apresentar e vender o serviço antes do pagamento." />
           {errors.description && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.description}</p>}
         </div>
 
