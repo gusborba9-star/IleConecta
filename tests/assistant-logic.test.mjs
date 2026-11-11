@@ -158,7 +158,8 @@ test("guias: o prompt de uma casa vazia é bem menor que o de uma casa completa"
   assert.match(completa, /COMO VENDER:/);
   assert.match(completa, /briefing do que ela quer dizer/);
   assert.match(completa, /não pergunte de novo/);
-  assert.match(completa, /também não diga que não garante/);
+  assert.match(completa, /nunca fale em garantia, nem para negar/);
+  assert.match(completa, /responda só pela lógica do trabalho/);
   assert.match(completa, /ofereça o serviço de consulta ou jogo/);
   assert.ok(vazia.length < completa.length * 0.6);
 });
