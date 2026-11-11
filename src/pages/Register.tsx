@@ -8,7 +8,6 @@ import { Gift, User, Store } from "lucide-react";
 import { LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import Footer from "@/components/layout/Footer";
-import { savePendingConsent } from "@/lib/pendingConsent";
 import { cn } from "@/lib/utils";
 import type { AccountType } from "@/types";
 import type { LucideIcon } from "lucide-react";
@@ -17,7 +16,6 @@ export default function Register() {
   const { register, isRemoteAuth } = useApp();
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const [agree, setAgree] = useState(false);
   const nav = useNavigate();
   const [search] = useSearchParams();
   const [type, setType] = useState<AccountType>(search.get("tipo") === "casa" ? "commercial" : "personal");
@@ -49,10 +47,8 @@ export default function Register() {
     const email = form.email.trim().toLowerCase();
     if (!name || !email || !form.password.trim()) return toast.error("Preencha nome, e-mail e senha.");
     if (isRemoteAuth && form.password.length < 8) return toast.error("A senha precisa ter pelo menos 8 caracteres.");
-    if (isRemoteAuth && !agree) return toast.error("Para criar a conta, marque que leu e aceita os termos.");
     setLoading(true);
     try {
-      if (isRemoteAuth) savePendingConsent(email, type === "commercial" ? "termos_casa" : "termos_cliente");
       const result = await register({ ...form, name, email, city: form.city.trim(), state: form.state.trim(), type, referralCode: type === "commercial" && inviter ? refCode : undefined });
       if (!result.ok) return toast.error(result.error);
       if (type === "commercial") forgetReferral();
@@ -143,17 +139,15 @@ export default function Register() {
             </div>
           )}
           {isRemoteAuth && (
-            <label className="md:col-span-2 flex items-start gap-2 text-sm cursor-pointer">
-              <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-              <span>
-                Li e aceito os{" "}
-                <Link to={`/sobre/${type === "commercial" ? "termos-da-casa" : "termos-do-cliente"}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  {type === "commercial" ? "Termos de Uso da Casa Espiritual" : "Termos de Uso"}
-                </Link>{" "}
-                e a{" "}
-                <Link to="/sobre/privacidade-lgpd" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</Link>.
-              </span>
-            </label>
+            <p className="md:col-span-2 text-xs text-muted-foreground">
+              Na primeira entrada você lê e aceita os{" "}
+              <Link to={`/sobre/${type === "commercial" ? "termos-da-casa" : "termos-do-cliente"}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                {type === "commercial" ? "Termos de Uso da Casa Espiritual" : "Termos de Uso"}
+              </Link>{" "}
+              e a{" "}
+              <Link to="/sobre/privacidade-lgpd" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</Link>
+              , uma única vez.
+            </p>
           )}
           <div className="md:col-span-2 flex justify-between items-center pt-2">
             <Link to="/login" className="text-sm text-muted-foreground hover:underline">Já tenho conta</Link>

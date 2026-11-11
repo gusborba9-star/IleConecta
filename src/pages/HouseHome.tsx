@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Bot, Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users, UsersRound } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import ConsentBox from "@/components/legal/ConsentBox";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
@@ -12,7 +11,7 @@ import ReferralCard from "@/components/house/ReferralCard";
 import HouseKpis from "@/components/house/HouseKpis";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
-import { fetchHouseTermsAccepted, recordConsents } from "@/lib/consents";
+import { fetchHouseTermsAccepted } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
 import type { HouseUser } from "@/types";
 
@@ -30,8 +29,6 @@ export default function HouseHome() {
   const nav = useNavigate();
   const house = currentUser?.type === "commercial" ? (currentUser as HouseUser) : null;
   const [termsOk, setTermsOk] = useState(true);
-  const [agree, setAgree] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [members, setMembers] = useState<{ total: number; vencidas: number; perto: number } | null>(null);
   const houseId = house?.id;
 
@@ -54,15 +51,6 @@ export default function HouseHome() {
   }, [isRemoteAuth, houseId]);
 
   if (!house) return null;
-
-  const acceptTerms = async () => {
-    setSaving(true);
-    const error = await recordConsents(["termos_casa"]);
-    setSaving(false);
-    if (error) return void toast.error(error);
-    toast.success("Termos aceitos.");
-    setTermsOk(true);
-  };
 
   const memberText = !members || members.total === 0 ? "Mensalidades e avisos de cobrança" : members.vencidas > 0 ? `${members.vencidas} em atraso` : members.perto > 0 ? `${members.perto} vencem em breve` : `${members.total} em dia`;
   const tiles = [
@@ -94,15 +82,6 @@ export default function HouseHome() {
       </Card>
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
-
-      {!termsOk && (
-        <Card className="p-5 border-gold/50">
-          <h2 className="font-display font-bold text-lg">Termos de Uso da Casa Espiritual</h2>
-          <p className="text-sm text-muted-foreground mt-1 mb-3">Para vender rituais e serviços pela plataforma, leia e aceite os termos. Seu aceite fica registrado com data e versão.</p>
-          <ConsentBox doc="termos_casa" checked={agree} onChange={setAgree} />
-          <Button className="mt-3" disabled={!agree || saving} onClick={() => void acceptTerms()}>{saving ? "Salvando…" : "Aceitar e continuar"}</Button>
-        </Card>
-      )}
 
       {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} />}
 

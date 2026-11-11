@@ -116,6 +116,15 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 - A assistente vende, mostra os horários livres da agenda única, cobra no chat, agenda, bloqueia o horário e avisa casa e cliente.
 - A casa pode desligar a venda da assistente (menos ritual coletivo) depois de ver o aviso "o que perde" (registros, histórico, vendas mesmo offline).
 
+## Aceite único dos Termos (0076)
+
+- **Uma vez por conta.** Na primeira entrada, cliente e casa veem uma única tela com o texto que lhes cabe: cliente aceita os Termos de Uso do cliente e a Política de Privacidade; casa aceita os Termos de Uso da Casa Espiritual. Quem já aceitou a versão vigente nunca vê a tela. Se o texto mudar de versão (`LEGAL_VERSION`), a tela volta uma vez, avisando que os termos foram atualizados.
+- **Duas caixas separadas, nunca pré-marcadas.** Para o cliente, a autorização de dados sobre convicção religiosa vem na mesma tela, em caixa própria e **opcional** (consentimento tem de ser livre): sem marcar, a pessoa usa a plataforma e a autorização é pedida só ao contratar, uma única vez. Depois de dada, vale até ser retirada (não há mais o limite de 2 horas por compra).
+- **O servidor é a prova.** O aceite é gravado em `legal_consents` (conta, documento, versão, data, IP e navegador) e a tela só libera o app depois da confirmação do servidor. O aceite do cadastro deixou de ser guardado no navegador: o cadastro mostra um aviso com os links e o aceite é feito na primeira entrada.
+- **Se não for possível consultar** os aceites, a pessoa não fica presa fora do app; o servidor continua exigindo o aceite do cliente (e a autorização de dados sensíveis) antes de qualquer reserva ou contratação paga, e a casa precisa dos Termos da Casa para vender pela plataforma.
+- **Sempre à mão.** Página "Termos e normas" (menu lateral e "Mais", e um link discreto no rodapé): lista o que a pessoa aceitou com data e versão, os textos completos (termos, privacidade, taxas, normas, conduta) e permite retirar ou dar de novo a autorização de dados sensíveis. A retirada fica registrada (`dados_sensiveis_retirada`) e quem retirou não é cobrado de novo ao entrar; ao contratar, a autorização é pedida de novo.
+- **Fora das telas.** As caixas de aceite saíram da reserva de ritual, da contratação de serviço e da página inicial da casa. Só reaparecem na compra se o servidor ainda não tiver o aceite (caminho de segurança).
+
 ## Agenda (publicação)
 
 - Só publicação, nunca venda.

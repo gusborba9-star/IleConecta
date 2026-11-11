@@ -73,6 +73,7 @@ jobs:
           # Limita o tempo e, se falhar, instala só o navegador (o runner já traz as bibliotecas); os testes rodam do mesmo jeito.
           timeout 240 npx playwright install --with-deps chromium || npx playwright install chromium
           npm run test:e2e
+          npm run test:e2e:remote
       - name: Inventory all dependency advisories
         id: full_audit
         continue-on-error: true

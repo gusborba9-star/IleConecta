@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test": "node --test tests/*.test.mjs",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:remote": "playwright test -c playwright.remote.config.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

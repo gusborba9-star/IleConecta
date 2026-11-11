@@ -1,12 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopBar from "./TopBar";
 import SideNav from "./SideNav";
 import RightRail from "./RightRail";
 import { useApp } from "@/contexts/AppContext";
 import { touchPresence } from "@/lib/messaging";
-import { recordConsents } from "@/lib/consents";
-import { takePendingConsent } from "@/lib/pendingConsent";
+import { fetchConsentRows } from "@/lib/consents";
+import { LEGAL_VERSION, consentStatus, gateDocs, type ConsentDocKey } from "@/lib/legalCore";
+import TermsGate from "@/components/legal/TermsGate";
 import InstallPrompt from "./InstallPrompt";
 import Footer from "./Footer";
 
@@ -14,13 +15,22 @@ export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
   const userId = currentUser?.id;
 
-  // Aceite dado no cadastro: grava na primeira entrada (o aceite vale uma vez, não é pedido de novo no primeiro pagamento).
-  const email = currentUser?.email;
+  // Aceite único: se o servidor não tem o aceite vigente desta conta, aparece só a tela de aceite (uma vez; de novo apenas se o texto mudar).
+  // Se não for possível consultar, a pessoa não fica presa: a compra continua exigindo o aceite no servidor.
+  const accountType = currentUser?.type;
+  const [gate, setGate] = useState<{ required: ConsentDocKey[]; optional: ConsentDocKey[]; renewal: boolean } | null>(null);
   useEffect(() => {
     if (!isRemoteAuth || !userId) return;
-    const doc = takePendingConsent(email);
-    if (doc) void recordConsents([doc]);
-  }, [isRemoteAuth, userId, email]);
+    let alive = true;
+    void fetchConsentRows(userId).then((rows) => {
+      if (!alive || !rows) return;
+      const g = gateDocs(accountType, rows, LEGAL_VERSION);
+      setGate(g.required.length > 0 ? { ...g, renewal: g.required.some((d) => consentStatus(rows, d, LEGAL_VERSION).status === "old") } : null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth, userId, accountType]);
 
   // Presença: avisa que a pessoa está online (a assistente da casa só atende quando a casa está offline).
   useEffect(() => {
@@ -54,7 +64,7 @@ export default function AppShell() {
         </aside>
         <main className="min-w-0">
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
-          <Outlet />
+          {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Outlet />}
         </main>
         {!isRemoteAuth && (
           <aside className="hidden lg:block sticky top-20 self-start">

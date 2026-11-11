@@ -8,7 +8,7 @@ export type PushState = "unsupported" | "denied" | "off" | "on";
 export const pushSupported = () =>
   typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 
-function keyBytes(base64Url: string): Uint8Array {
+function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
   const pad = "=".repeat((4 - (base64Url.length % 4)) % 4);
   const raw = atob((base64Url + pad).replace(/-/g, "+").replace(/_/g, "/"));
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));

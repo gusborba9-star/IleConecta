@@ -106,3 +106,10 @@ Se o usuário não aceitar, não liberar as áreas autenticadas que dependem dos
 ## 9. Limite desta especificação
 
 Este documento define o comportamento desejado. Não comprova que o fluxo esteja implementado. A implementação atual deve ser auditada e reutilizada. Nenhuma migration, alteração de código ou mudança de produção está autorizada por este documento.
+
+## 10. Estado da implementação (2026-11-11, decisão do proprietário)
+
+- O aceite é feito **uma única vez por conta, na primeira entrada** (não necessariamente no login), em tela exclusiva, com confirmação do servidor antes de liberar o app. A tela só reaparece se a versão do texto mudar.
+- A autorização de dados sobre convicção religiosa fica em caixa separada e opcional na mesma tela; vale até ser retirada, e a retirada é registrada.
+- Os termos deixam de aparecer em cada tela e fluxo. O acesso permanente é a página "Termos e normas" (menu lateral, "Mais" e rodapé), para cliente, casa e equipe.
+- Detalhes técnicos e regras: `docs/regras-por-recurso.md`, seção "Aceite único dos Termos (0076)".

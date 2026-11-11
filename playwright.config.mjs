@@ -12,6 +12,8 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     ...devices["Desktop Chrome"],
+    // Opcional: aponta para um Chromium já instalado (ambientes sem acesso ao download do Playwright).
+    ...(process.env.PW_CHROMIUM ? { launchOptions: { executablePath: process.env.PW_CHROMIUM } } : {}),
   },
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 4173 --strictPort",

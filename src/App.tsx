@@ -16,6 +16,7 @@ import Highlights from "@/pages/Highlights";
 import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
+import Terms from "@/pages/Terms";
 import HouseMembers from "@/pages/HouseMembers";
 import Divulgacao from "@/pages/Divulgacao";
 import Equipe from "@/pages/Equipe";
@@ -90,6 +91,7 @@ export default function App() {
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
+        <Route path="/termos" element={<Terms />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
         <Route path="/divulgacao" element={<Divulgacao />} />
         <Route path="/equipe" element={<Equipe />} />

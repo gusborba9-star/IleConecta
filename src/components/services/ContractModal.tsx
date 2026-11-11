@@ -3,10 +3,10 @@ import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { Button, Label, Modal, Textarea } from "@/components/base";
 import ConsentBox from "@/components/legal/ConsentBox";
-import { fetchAcceptedDocs, paymentsEnabledFor, recordConsents } from "@/lib/consents";
+import { fetchConsentRows, paymentsEnabledFor, recordConsents } from "@/lib/consents";
+import { LEGAL_VERSION, consentStatus, type ConsentDocKey } from "@/lib/legalCore";
 import { useApp } from "@/contexts/AppContext";
 import { Link } from "react-router-dom";
-import { CHECKOUT_DOCS } from "@/lib/legalCore";
 import type { Service } from "@/lib/services";
 import { createBooking, createOrder, setOrderModality } from "@/lib/serviceOrders";
 import { goToCheckout } from "@/lib/payments";
@@ -37,6 +37,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
   const [okSensitive, setOkSensitive] = useState(false);
   const { currentUser } = useApp();
   const [termsDone, setTermsDone] = useState(false);
+  const [sensitiveDone, setSensitiveDone] = useState(false);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slot, setSlot] = useState("");
   const [dayPick, setDayPick] = useState("");
@@ -64,7 +65,14 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
       });
     }
     void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v)).finally(() => alive && setPayReady(true));
-    if (currentUser?.id) void fetchAcceptedDocs(currentUser.id).then((d) => alive && setTermsDone(d.has("termos_cliente")));
+    // O aceite vale uma vez só: as caixas aparecem aqui apenas se o servidor ainda não tem o aceite desta pessoa.
+    if (currentUser?.id) {
+      void fetchConsentRows(currentUser.id).then((rows) => {
+        if (!alive || !rows) return;
+        setTermsDone(["ok", "old"].includes(consentStatus(rows, "termos_cliente", LEGAL_VERSION).status));
+        setSensitiveDone(["ok", "old"].includes(consentStatus(rows, "dados_sensiveis", LEGAL_VERSION).status));
+      });
+    }
     return () => {
       alive = false;
     };
@@ -75,11 +83,12 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!payReady) return;
-    if (!okSensitive || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
+    if ((!sensitiveDone && !okSensitive) || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
     if (service.bookable && !slot) return void toast.error("Escolha o dia e o horário.");
     if (service.delivery === "hibrido" && !modality) return void toast.error("Escolha como quer receber: presencial ou à distância.");
     setSaving(true);
-    const consentError = await recordConsents(payOn ? CHECKOUT_DOCS.servico.filter((d) => !(termsDone && d === "termos_cliente")) : ["dados_sensiveis"], service.id);
+    const toRecord: ConsentDocKey[] = [...(payOn && !termsDone ? (["termos_cliente"] as ConsentDocKey[]) : []), ...(sensitiveDone ? [] : (["dados_sensiveis"] as ConsentDocKey[]))];
+    const consentError = toRecord.length ? await recordConsents(toRecord, service.id) : null;
     if (consentError) {
       setSaving(false);
       return void toast.error(consentError);
@@ -170,13 +179,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
         )}
         {payOn && <PlatformBenefits />}
         {payOn && !termsDone && <ConsentBox doc="termos_cliente" checked={okCheckout} onChange={setOkCheckout} />}
-        {payOn && termsDone && (
-          <p className="text-xs text-muted-foreground">
-            Você já aceitou os Termos do cliente.{" "}
-            <Link to="/sobre/termos-do-cliente" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ver os termos</Link>
-          </p>
-        )}
-        <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />
+        {!sensitiveDone && <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={saving || !payReady}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
