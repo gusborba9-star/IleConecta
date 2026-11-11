@@ -187,7 +187,8 @@ test("venda desligada pela casa: serviço passa para a casa, ritual coletivo con
   };
   const on = buildSystemPrompt({ ...base, assistant: { display_name: "Lara", can_sell: true } });
   const off = buildSystemPrompt({ ...base, assistant: { display_name: "Lara", can_sell: false } });
-  assert.match(on, /como contratar: botão "Contratar"/);
+  assert.match(on, /como contratar: pelo botão de pagamento do chat/);
+  assert.doesNotMatch(off, /como contratar: pelo botão/);
   assert.doesNotMatch(off, /como contratar: botão/);
   assert.match(off, /preferiu fechar os serviços pessoalmente/);
   assert.match(off, /\) a pessoa quer contratar.*qualquer serviço/);
