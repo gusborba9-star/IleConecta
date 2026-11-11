@@ -154,8 +154,10 @@ test("guias: o prompt de uma casa vazia é bem menor que o de uma casa completa"
     house: { ...house, offerings: "Jogo de búzios." },
   });
   assert.ok(vazia.length < 5300, `prompt vazio com ${vazia.length} caracteres`);
-  assert.ok(completa.length < 12000, `prompt completo com ${completa.length} caracteres`);
-  assert.match(completa, /vendedora objetiva/);
+  assert.ok(completa.length < 12500, `prompt completo com ${completa.length} caracteres`);
+  assert.match(completa, /COMO VENDER:/);
+  assert.match(completa, /briefing do que ela quer dizer/);
+  assert.match(completa, /não pergunte de novo/);
   assert.ok(vazia.length < completa.length * 0.6);
 });
 
