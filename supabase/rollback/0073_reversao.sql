@@ -1,0 +1,5 @@
+-- Reversão da 0073 (só se necessário). Antes: serviços com listed=false voltam a aparecer na página.
+-- 1) restaurar available_slots e create_service_order da 0067/0070 (reaplicar essas migrations)
+-- 2) alter table public.services drop column listed; recriar a policy services_read com (active or is_house_owner(house_id))
+-- 3) drop function service_for_chat(uuid), service_purchasable(uuid), service_offered_to_me(uuid), house_calendar_blocks(uuid,date,date)
+-- 4) a constraint services_bookable_kind_chk só pode voltar se não houver serviço agendável fora de buzios/cartas/consulta

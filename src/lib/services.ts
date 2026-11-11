@@ -12,10 +12,12 @@ export interface Service {
   active: boolean;
   stages: number;
   bookable: boolean;
+  /** false = serviço privado (fora da página; só a assistente oferece no chat). */
+  listed: boolean;
   durationMin: number;
 }
 
-const COLS = "id, kind, custom_kind, title, description, price_cents, delivery, active, stages, bookable, duration_min";
+const COLS = "id, kind, custom_kind, title, description, price_cents, delivery, active, stages, bookable, listed, duration_min";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toService = (r: Record<string, any>): Service => ({
@@ -29,6 +31,7 @@ const toService = (r: Record<string, any>): Service => ({
   active: Boolean(r.active),
   stages: Number(r.stages ?? 1),
   bookable: Boolean(r.bookable),
+  listed: r.listed !== false,
   durationMin: Number(r.duration_min ?? 30),
 });
 
@@ -50,6 +53,14 @@ export async function fetchServices(ownerId: string): Promise<Service[]> {
     return [];
   }
   return data.map(toService);
+}
+
+/** Serviço para o botão de pagamento do chat: o banco só entrega o privado a quem recebeu a oferta da assistente (0073). */
+export async function fetchServiceForChat(serviceId: string): Promise<Service | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("service_for_chat", { p_service: serviceId });
+  if (error || !Array.isArray(data) || data.length === 0) return null;
+  return toService(data[0]);
 }
 
 export async function createService(ownerId: string, value: ServiceValue): Promise<Service | null> {

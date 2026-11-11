@@ -22,8 +22,8 @@ export const SERVICE_DELIVERIES = [
   { id: "sigilo", label: "Sigilo", hint: "A casa realiza com discrição e avisa o cliente." },
 ];
 
-/** Tipos que podem ter agenda de horários pela plataforma. */
-export const BOOKABLE_KINDS = ["buzios", "cartas", "consulta"];
+/** Qualquer tipo de serviço pode ter agenda de horários pela plataforma (0073). */
+export const BOOKABLE_KINDS = ["trabalho", "buzios", "cartas", "consulta", "limpeza", "outro"];
 
 export const MAX_PRICE_CENTS = 10_000_000; // R$ 100.000,00
 
@@ -93,7 +93,6 @@ export function validateService(input) {
   if (!Number.isInteger(stagesRaw) || stagesRaw < 1 || stagesRaw > MAX_STAGES) errors.stages = `Escolha de 1 a ${MAX_STAGES} etapas.`;
 
   const bookable = Boolean(input?.bookable);
-  if (bookable && !BOOKABLE_KINDS.includes(kind)) errors.bookable = "A agenda vale para jogo de búzios, cartas e consulta.";
   const durationRaw = input?.durationMin === undefined || input?.durationMin === "" ? 30 : Number(input.durationMin);
   if (bookable && (!Number.isInteger(durationRaw) || durationRaw < 10 || durationRaw > 240)) errors.durationMin = "Use de 10 a 240 minutos.";
 
@@ -110,6 +109,7 @@ export function validateService(input) {
       delivery,
       stages: stagesRaw,
       bookable,
+      listed: input?.listed === undefined ? true : Boolean(input.listed),
       duration_min: bookable ? durationRaw : 30,
     },
   };

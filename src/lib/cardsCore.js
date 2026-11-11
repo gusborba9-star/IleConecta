@@ -9,10 +9,10 @@ export const SEGMENTS = {
   trabalho: { label: "Trabalho", bg: "#EEE9F5", border: "rgba(91,63,122,.25)", accent: "#5B3F7A", glow: "rgba(91,63,122,.45)" },
 };
 
-/** Serviço com agenda é "jogo"; trabalho e limpeza são "trabalho"; o resto é "serviço". */
+/** Búzios, cartas e consulta com agenda são "jogo"; trabalho e limpeza são "trabalho" (com ou sem agenda); o resto é "serviço". */
 export function serviceSegment(s) {
-  if (s?.bookable) return "jogo";
   if (s?.kind === "trabalho" || s?.kind === "limpeza") return "trabalho";
+  if (s?.bookable) return "jogo";
   return "servico";
 }
 

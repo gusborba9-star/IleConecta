@@ -288,6 +288,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
                 <Badge tone="gold">{kindLabel(s.kind, s.customKind)}</Badge>
                 <Badge tone="muted">{deliveryLabel(s.delivery)}</Badge>
                 {s.bookable && <Badge tone="primary">Com agenda · {s.durationMin} min</Badge>}
+                {!s.listed && <Badge tone="muted">Privado · só a assistente vende</Badge>}
                 {!s.active && <Badge tone="muted">Pausado</Badge>}
               </div>
               {s.description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{s.description}</p>}

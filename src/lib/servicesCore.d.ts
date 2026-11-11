@@ -10,8 +10,10 @@ export interface ServiceFormInput {
   delivery: ServiceDelivery | "";
   /** Em quantas etapas de pagamento o serviço é pago (1 a 4). */
   stages?: number | string;
-  /** Cliente escolhe dia e horário na agenda da casa (búzios, cartas, consulta). */
+  /** Cliente escolhe dia e horário na agenda da casa (qualquer tipo de serviço). */
   bookable?: boolean;
+  /** Mostrar na página da casa (false = privado: só a assistente oferece no chat). */
+  listed?: boolean;
   durationMin?: number | string;
 }
 export interface ServiceValue {
@@ -23,6 +25,7 @@ export interface ServiceValue {
   delivery: ServiceDelivery;
   stages: number;
   bookable: boolean;
+  listed: boolean;
   duration_min: number;
 }
 export type ServiceValidation =

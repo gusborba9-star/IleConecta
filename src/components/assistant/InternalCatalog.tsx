@@ -65,6 +65,7 @@ export default function InternalCatalog({ houseId }: { houseId: string }) {
         <h3 className="font-semibold">Catálogo interno (privado)</h3>
         <p className="text-xs text-muted-foreground">
           Trabalhos que a casa faz sob procura e valores de referência. Não aparece na sua página: serve só para a assistente atender. Ela só diz o valor quando você marcar a opção; a casa sempre combina horário e fecha.
+          Quer que a assistente venda, marque o horário e cobre no chat? Cadastre como serviço em Serviços e desmarque “Mostrar na página da casa”: fica privado e só ela oferece.
         </p>
       </div>
 
