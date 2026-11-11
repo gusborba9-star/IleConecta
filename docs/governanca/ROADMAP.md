@@ -107,6 +107,11 @@ Critério de saída:
 - Casos de falha, repetição e concorrência cobertos.
 - Nenhum estado crítico inferido de mensagem visual.
 
+**Situação (2026-11-11): concluída na parte que depende só de engenharia.** Matriz e provas em `MATRIZ_JORNADAS_FASE3.md`.
+- Testadas: jornadas 1 a 10 e 12 (banco real local, concorrência, repetição, permissão negada, mutações detectadas). Entregas da etapa: aceite único dos Termos e página "Termos e normas" (0076, passos 40–42); expiração automática das retenções com aviso à fila de espera (0077, passo 43, rotina a cada minuto); assistente com regra de assunto e acolhimento no luto; serviços agrupados por situação.
+- Pendentes de decisão ou de fase: 11 (CRM, Fase 5), 13 (planos, depende de preços e limites), 14 (divulgação, depende de preços e posições) e o canal de suporte da jornada 10 (assistente de suporte + pedidos ao painel administrativo, em desenho com o proprietário).
+- Layout e navegação seguem para a etapa própria (Fase 6).
+
 ### Fase 4 — Modelo comercial, financeiro e jurídico operacional
 
 **Objetivo:** alinhar regra aprovada, implementação, contrato e fluxo real.

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
@@ -53,7 +54,7 @@ export default function PaymentAccountCard({ ownerId, termsOk }: Props) {
           ? "Você já pode vender rituais e serviços pela plataforma. O valor pago cai direto na sua conta Stripe, já sem a comissão da plataforma."
           : "Para vender pela plataforma, cadastre a sua conta de recebimento no Stripe (dados e conta bancária). O dinheiro vai direto para você; a plataforma só retém a comissão."}
       </p>
-      {!termsOk && <p className="text-sm text-[hsl(var(--danger))] mt-2">Aceite antes os Termos de Uso da Casa.</p>}
+      {!termsOk && <p className="text-sm text-[hsl(var(--danger))] mt-2">Aceite antes os Termos de Uso da Casa, em <Link to="/termos" className="underline">Termos e normas</Link>.</p>}
       {!ready && <Button className="mt-3" disabled={busy || !termsOk} onClick={() => void go()}>{busy ? "Abrindo…" : status?.registered ? "Continuar cadastro" : "Cadastrar recebimento"}</Button>}
       {status?.registered && !ready && <Button className="mt-3 ml-2" variant="outline" onClick={() => void refresh()}>Atualizar situação</Button>}
     </Card>

@@ -1,4 +1,4 @@
-import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, type LucideIcon } from "lucide-react";
+import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Star, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, FileText, type LucideIcon } from "lucide-react";
 
 export interface NavEntry { to: string; icon: LucideIcon; label: string; tone?: "gold" }
 export interface NavGroup { title?: string; items: NavEntry[] }
@@ -27,7 +27,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
         { to: "/impulsionar", icon: TrendingUp, label: "Impulsionar", tone: "gold" },
         { to: "/destaques", icon: Star, label: "Destaques nos feeds", tone: "gold" },
       ] },
-      { items: [{ to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },
+      { items: [{ to: "/termos", icon: FileText, label: "Termos e normas" }, { to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },
     ];
   }
   return [
@@ -43,6 +43,6 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
       ...(isStaff ? [{ to: "/atendimento", icon: Headset, label: "Atendimento da casa", tone: "gold" as const }] : []),
       { to: "/perfil", icon: User, label: "Meu perfil" },
     ] },
-    { items: [{ to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },
+    { items: [{ to: "/termos", icon: FileText, label: "Termos e normas" }, { to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },
   ];
 }
