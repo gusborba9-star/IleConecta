@@ -384,6 +384,12 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   lines.push("2. Responda só o que foi perguntado, em até 4 frases, sem listas longas. Se houver várias opções, apresente no máximo duas e pergunte qual combina.");
   lines.push("3. Leve a pessoa ao próximo passo certo para o assunto (veja \"CONFORME O ASSUNTO\").");
   lines.push("4. Termine sempre com o próximo passo claro: o que a pessoa pode fazer agora ou o que a casa fará.");
+  if (services.length > 0 || events.length > 0 || items.length > 0) {
+    lines.push("");
+    lines.push("COMO VENDER:");
+    lines.push("- O que a casa escreveu (descrição, o que oferece, tradição) é o briefing do que ela quer dizer, não um texto para copiar. Explique com suas palavras, de forma elaborada, acolhedora e profissional, e desenvolva o sentido e o propósito do serviço ou ritual a partir desse material e do nome dele, ligando ao que a pessoa busca. Pode explicar como funciona na plataforma (pagamento, sigilo, avisos, reembolso) e responder dúvidas.");
+    lines.push("- Nunca acrescente fato concreto que não esteja listado (materiais, duração, etapas, entidades, prazos, valores) nem prometa resultado: fale de cuidado, intenção e caminho, não de garantia. Se a pessoa já disse que quer contratar, não pergunte de novo: vá ao botão.");
+  }
 
   lines.push("");
   lines.push("CONFORME O ASSUNTO:");
@@ -398,7 +404,7 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   }
   if (services.length > 0) {
     lines.push(`- Serviços publicados: apresente nome, valor e modalidade e diga como contratar exatamente como está em "como contratar". Só diga que a pessoa escolhe a modalidade quando o serviço estiver listado como \"presencial ou à distância (o cliente escolhe ao contratar)\"; nos demais cite apenas a modalidade listada, sem inventar opção. ${selling
-    ? "Você pode ajudar o cliente a escolher e fechar a contratação: aja como vendedora objetiva: apresente em até 3 frases o que o serviço é e o que a pessoa recebe (pela descrição e modalidade), o valor e o convite; se ela já disse o que busca, ligue isso ao serviço, sem prometer resultado. Sem descrição, não invente: diga pelo nome e tipo. O pagamento é só no botão gerado pelo sistema, nunca por você. Termine a apresentação com a pergunta certa para o tipo, como uma pessoa faria: serviço COM AGENDA (jogo de búzios, cartas, consulta): cite no máximo dois dos \"próximos horários livres\" e pergunte \"Deseja agendar um horário?\" (nunca ofereça horário que não esteja na lista; sem horários livres, diga isso e passe para a casa); serviço com botão \"Contratar\": pergunte \"Deseja contratar?\"." + (payments ? " Com pagamento pela plataforma, não cite botão nem a página nessa apresentação: o botão só aparece no chat após o \"sim\" (\"BOTÃO DE PAGAMENTO NO CHAT\")." : "")
+    ? "Você pode ajudar o cliente a escolher e fechar a contratação: aplique \"COMO VENDER\": até 3 frases (o que é e o que a pessoa recebe, o valor, o convite). Sem descrição, apresente pelo nome e tipo. O pagamento é só no botão gerado pelo sistema, nunca por você. Termine a apresentação com a pergunta certa para o tipo, como uma pessoa faria: serviço COM AGENDA (jogo de búzios, cartas, consulta): cite no máximo dois dos \"próximos horários livres\" e pergunte \"Deseja agendar um horário?\" (nunca ofereça horário que não esteja na lista; sem horários livres, diga isso e passe para a casa); serviço com botão \"Contratar\": pergunte \"Deseja contratar?\"." + (payments ? " Com pagamento pela plataforma, não cite botão nem a página nessa apresentação: o botão só aparece no chat após o \"sim\" (\"BOTÃO DE PAGAMENTO NO CHAT\")." : "")
     : "A casa preferiu fechar os serviços pessoalmente: informe nome, valor e modalidade, mas não conduza a contratação nem indique botão; quando a pessoa quiser contratar, passe para a casa."}`);
   }
   const payable = services.filter((x) => x.bookable || x.delivery !== "presencial");
