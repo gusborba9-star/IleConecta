@@ -25,13 +25,13 @@ let bad = 0; const ok = (n, c, d = "") => { console.log(`${c ? "PASS" : "FAIL"} 
 ok("migrations aplicadas sem erro", failed.length === 0, failed.join(" | "));
 
 // Modelo simulado
-const llm = { reply: "Claro! Posso ajudar com isso.", delayMs: 0, calls: 0, onCall: null };
+const llm = { reply: "Claro! Posso ajudar com isso.", queue: [], bodies: [], delayMs: 0, calls: 0, onCall: null };
 const llmServer = createServer(async (req, res) => {
-  for await (const _ of req); llm.calls++;
+  let raw = ""; for await (const ch of req) raw += ch; llm.calls++; llm.bodies.push(raw);
   if (llm.onCall) await llm.onCall();
   if (llm.delayMs) await new Promise((r) => setTimeout(r, llm.delayMs));
   res.writeHead(200, { "content-type": "application/json" });
-  res.end(JSON.stringify({ model: "fake/model", choices: [{ message: { content: llm.reply }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 5 } }));
+  res.end(JSON.stringify({ model: "fake/model", choices: [{ message: { content: llm.queue.length ? llm.queue.shift() : llm.reply }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 5 } }));
 });
 await new Promise((r) => llmServer.listen(0, "127.0.0.1", r));
 const shim = await startShim({ conn: { host: "127.0.0.1", port: 5544, user: "postgres", database: DB }, serviceKey: "svc-key-e2e" });
@@ -131,6 +131,26 @@ llm.reply = "Entendo. [[CASA: caso novo]]";
 await su.query(`delete from notifications where user_id=$1`, [U.H]);
 r = await call("Assunto sensível sem migration", CONV);
 ok("sem as funções da 0071: a passagem ainda avisa a casa (sem a coluna kind)", r.status === 200 && (await n(`select count(*) n from notifications where user_id=$1 and text like '%precisa de você:%'`, [U.H])) === 1, JSON.stringify(r.body).slice(0, 120));
+
+// 10) A casa não quer "não garanto / não posso afirmar": a IA refaz uma vez; se ainda escapar, o servidor corta a frase
+llm.reply = "Esse trabalho é feito para abrir caminhos. Se quiser, é só dizer sim.";
+let cg = llm.calls; llm.bodies = [];
+llm.queue = ["Não consigo afirmar que vai abrir portas, porque não há como garantir resultados. O trabalho é feito com sigilo.", "Esse trabalho é feito exatamente para abrir caminhos e oportunidades. Se quiser contratar, é só dizer sim."];
+r = await call("Esse trabalho vai me ajudar?", CONV);
+ok("garantia: resposta com 'não garanto' é refeita (2 chamadas) e a nova é a salva", llm.calls === cg + 2 && /exatamente para abrir caminhos/.test(r.body.reply) && !/garantir|afirmar/.test(r.body.reply), JSON.stringify(r.body.reply));
+ok("garantia: o pedido de refazer leva o rascunho e a instrução interna", /Instrução interna/.test(llm.bodies[1] ?? "") && /não há como garantir/.test(llm.bodies[1] ?? ""));
+cg = llm.calls; llm.queue = [];
+llm.reply = "Esse trabalho é feito para abrir caminhos. Se quiser, é só dizer sim.";
+r = await call("E o valor?", CONV);
+ok("garantia: resposta limpa usa uma chamada só", llm.calls === cg + 1 && r.status === 200);
+cg = llm.calls; llm.queue = [];
+llm.reply = "Entendo a sua dúvida e é natural. O trabalho de Prosperidade é feito com sigilo para abrir caminhos. Não posso prometer resultados, pois isso não depende de mim. Se quiser, é só dizer sim.";
+r = await call("Será que dá certo?", CONV);
+ok("garantia: se a IA insistir, o servidor corta só as frases de garantia", llm.calls === cg + 2 && !/prometer|depende de mim/.test(r.body.reply) && /abrir caminhos/.test(r.body.reply) && /dizer sim/.test(r.body.reply), JSON.stringify(r.body.reply));
+cg = llm.calls; llm.queue = [];
+llm.reply = "Para garantir a vaga, use o botão Reservar vaga. Se cancelar antes, o valor volta integralmente.";
+r = await call("Como reservo?", CONV);
+ok("garantia: 'garantir a vaga' e reembolso não disparam o filtro", llm.calls === cg + 1 && /garantir a vaga/.test(r.body.reply));
 
 console.log(bad ? `\n${bad} FALHA(S)` : "\nTODAS AS VERIFICAÇÕES PASSARAM");
 if (shim.log.errors.length) console.log("erros do shim:", shim.log.errors.slice(0, 6).join(" | "));

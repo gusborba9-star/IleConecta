@@ -9,6 +9,8 @@ import {
   buildSystemPrompt,
   checkGate,
   cleanReply,
+  hasGuaranteeTalk,
+  stripGuaranteeTalk,
   cleanUserText,
   finalizeReply,
   resolveCheckout,
@@ -231,29 +233,43 @@ Deno.serve(async (req) => {
   let promptTokens = 0;
   let completionTokens = 0;
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${openrouterKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://ile-conecta.vercel.app",
-        "X-Title": "Ile Conecta",
-      },
-      body: JSON.stringify({
-        model: models[0],
-        models,
-        messages: [{ role: "system", content: system }, ...chat],
-        ...modelParams(models[0]),
-        user: user.id,
-      }),
-    });
-    if (!res.ok) throw new Error(`openrouter_${res.status}`);
-    const out = await res.json();
+    const ask = async (extra?: { draft: string; note: string }) => {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${openrouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://ile-conecta.vercel.app",
+          "X-Title": "Ile Conecta",
+        },
+        body: JSON.stringify({
+          model: models[0],
+          models,
+          messages: [{ role: "system", content: system }, ...chat, ...(extra ? [{ role: "assistant", content: extra.draft }, { role: "user", content: extra.note }] : [])],
+          ...modelParams(models[0]),
+          user: user.id,
+        }),
+      });
+      if (!res.ok) throw new Error(`openrouter_${res.status}`);
+      return await res.json();
+    };
+    let out = await ask();
     reply = cleanReply(out?.choices?.[0]?.message?.content);
     usedModel = out?.model ?? models[0];
     promptTokens = Number(out?.usage?.prompt_tokens ?? 0);
     completionTokens = Number(out?.usage?.completion_tokens ?? 0);
+    // A casa não quer frases de "não garanto / não posso afirmar" numa venda: pede para refazer uma vez e, se ainda escapar, corta a frase.
+    if (hasGuaranteeTalk(reply)) {
+      try {
+        out = await ask({ draft: reply, note: "[Instrução interna do sistema, não é do cliente] Reescreva a resposta acima sem nenhuma frase sobre garantia, promessa, resultado ou o que não depende de você. Diga só o que o trabalho é e para que é feito, com acolhimento, e termine com o próximo passo. Mantenha o resto (valor, regras, marcadores entre colchetes). Responda só com o texto novo." });
+        const again = cleanReply(out?.choices?.[0]?.message?.content);
+        if (again) reply = again;
+        promptTokens += Number(out?.usage?.prompt_tokens ?? 0);
+        completionTokens += Number(out?.usage?.completion_tokens ?? 0);
+      } catch (_e2) { /* segue com a primeira resposta e o corte abaixo */ }
+      reply = stripGuaranteeTalk(reply);
+    }
   } catch (_e) {
     // Não consome cota quando o provedor falha.
     return json(502, { error: "falha_ia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });

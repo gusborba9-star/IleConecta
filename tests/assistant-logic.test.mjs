@@ -14,6 +14,8 @@ import {
   formatCents,
   monthStartISO,
   toChatMessages,
+  hasGuaranteeTalk,
+  stripGuaranteeTalk,
 } from "../supabase/functions/assistant-chat/logic.js";
 
 const assistantOn = {
@@ -158,8 +160,8 @@ test("guias: o prompt de uma casa vazia é bem menor que o de uma casa completa"
   assert.match(completa, /COMO VENDER:/);
   assert.match(completa, /briefing do que ela quer dizer/);
   assert.match(completa, /não pergunte de novo/);
-  assert.match(completa, /nunca fale em garantia, nem para negar/);
-  assert.match(completa, /responda só pela lógica do trabalho/);
+  assert.match(completa, /Fale do propósito, nunca de resultado/);
+  assert.match(completa, /Esse trabalho é feito exatamente para/);
   assert.match(completa, /ofereça o serviço de consulta ou jogo/);
   assert.ok(vazia.length < completa.length * 0.6);
 });
@@ -188,4 +190,24 @@ test("guias: itens do catálogo e dos trabalhos só aparecem nas regras quando e
   const com = buildSystemPrompt({ ...base, services: [servico], catalog: [{ name: "Búzios", priceText: "R$ 200", description: "" }], house: { ...house, offerings: "Jogo de búzios." } });
   assert.match(com, /Os itens do "CATÁLOGO INTERNO DA CASA" só podem ter o valor informado/);
   assert.match(com, /Os trabalhos descritos em "TRABALHOS QUE A CASA REALIZA" existem/);
+});
+
+test("garantia: detecta 'não garanto/não posso afirmar' e não pega 'garantir a vaga' nem reembolso", () => {
+  for (const t of [
+    "Não consigo afirmar que o trabalho vai abrir portas, porque não há como garantir resultados.",
+    "Não posso prometer resultados.", "Eu não garanto resultado nenhum.", "Isso não depende de mim.", "Não há garantia de resultado.",
+    "mas não consigo dizer que resultado vai trazer",
+  ]) assert.equal(hasGuaranteeTalk(t), true, t);
+  for (const t of [
+    "Para garantir a vaga, use o botão Reservar vaga.", "Se você cancelar antes, o valor volta integralmente.",
+    "Ele é feito para abrir caminhos e oportunidades.", "Não consigo garantir a vaga sem pagamento.", "", null,
+  ]) assert.equal(hasGuaranteeTalk(t), false, String(t));
+});
+
+test("garantia: o corte tira só as frases de garantia e nunca deixa a resposta vazia", () => {
+  const out = stripGuaranteeTalk("O trabalho é feito para abrir caminhos. Não posso prometer resultados. Se quiser, é só dizer sim.");
+  assert.equal(out, "O trabalho é feito para abrir caminhos. Se quiser, é só dizer sim.");
+  const only = "Não posso prometer resultados.";
+  assert.equal(stripGuaranteeTalk(only), only);
+  assert.equal(stripGuaranteeTalk("Tudo certo por aqui."), "Tudo certo por aqui.");
 });
