@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
-import { BOOKABLE_KINDS, SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
+import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked } from "@/lib/moneyMask";
 import type { Service } from "@/lib/services";
@@ -53,6 +53,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
             delivery: initial.delivery,
             stages: initial.stages,
             bookable: initial.bookable,
+            listed: initial.listed,
             durationMin: initial.durationMin,
           }
         : EMPTY
@@ -170,7 +171,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
           {errors.delivery && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.delivery}</p>}
         </fieldset>
 
-        {form.kind && BOOKABLE_KINDS.includes(form.kind) && (
+        {form.kind && (
           <div className="rounded-xl border border-border p-3 space-y-2 pillow">
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={Boolean(form.bookable)} onChange={(e) => set({ bookable: e.target.checked })} />
@@ -188,6 +189,18 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
               </div>
             )}
             {errors.bookable && <p className="text-sm text-[hsl(var(--danger))]">{errors.bookable}</p>}
+          </div>
+        )}
+
+        {form.kind && (
+          <div className="rounded-xl border border-border p-3 pillow">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={form.listed !== false} onChange={(e) => set({ listed: e.target.checked })} />
+              <span>
+                <span className="block font-semibold">Mostrar na página da casa</span>
+                <span className="block text-muted-foreground">Desmarcado, o serviço fica privado: não aparece na sua página, e só a assistente o oferece no chat, com valor e horário, quando o cliente pedir. Precisa da assistente ligada para vender.</span>
+              </span>
+            </label>
           </div>
         )}
 

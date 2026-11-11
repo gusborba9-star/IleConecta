@@ -28,7 +28,7 @@ test("serviço com agenda só para búzios, cartas e consulta", () => {
   assert.equal(ok.ok, true);
   assert.equal(ok.value.bookable, true);
   assert.equal(ok.value.duration_min, 45);
-  assert.equal(validateService({ ...base, kind: "limpeza", bookable: true }).ok, false);
+  assert.equal(validateService({ ...base, kind: "limpeza", bookable: true }).ok, true); // 0073: agenda vale para qualquer tipo
   assert.equal(validateService({ ...base, kind: "buzios", bookable: true, durationMin: 5 }).ok, false);
   assert.equal(validateService({ ...base, kind: "buzios" }).value.duration_min, 30);
 });

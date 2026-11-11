@@ -91,7 +91,22 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 - O cliente vê as vantagens de pagar pela plataforma antes de reservar ou contratar: pagamento registrado com comprovante; reembolso integral se cancelar antes de a casa começar; aviso quando a casa iniciar e terminar; histórico do pedido; só quem comprou pela plataforma avalia a casa.
 - Com a venda desligada, a assistente informa nome, valor e modalidade, não indica botão e passa para a casa quando a pessoa quer contratar.
 
-## Agenda
+## Agenda única da casa (0073)
+
+- A casa tem **uma só agenda**. Tudo o que tem horário ocupa a agenda; o que não tem horário é só publicação e não bloqueia nada.
+- Ritual coletivo com horário: bloqueia pela duração que a casa escolheu (padrão 2 h).
+- Gira, obrigação, celebração e festa do calendário **com horário**: bloqueiam **2 h** a partir da hora base (só com o calendário ligado). Sem horário: só publicação.
+- Jogo ou serviço com horário marcado: bloqueia o horário contratado. Vale para **qualquer tipo de serviço** e qualquer modalidade (presencial, transmissão, híbrido, com ou sem sigilo).
+- Trabalho remoto em andamento ("iniciar → terminar"): o cliente é avisado; o reembolso automático termina quando a casa inicia.
+
+## Serviço privado (0073)
+
+- No cadastro do serviço a casa escolhe **Mostrar na página da casa: sim/não**.
+- Privado = não aparece na página nem para outras casas; **só a assistente o vende**, e só quem recebeu a oferta dela no chat consegue ver os horários e contratar (o banco confere a oferta; o cliente não consegue forjá-la).
+- A assistente vende, mostra os horários livres da agenda única, cobra no chat, agenda, bloqueia o horário e avisa casa e cliente.
+- A casa pode desligar a venda da assistente (menos ritual coletivo) depois de ver o aviso "o que perde" (registros, histórico, vendas mesmo offline).
+
+## Agenda (publicação)
 
 - Só publicação, nunca venda.
 - Quando a pessoa quer participar, a assistente passa o interesse para a casa na mesma mensagem, sem perguntar mais nada, e diz que a casa confirma.
@@ -105,6 +120,7 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 ## Catálogo privado
 
 - Alimenta apenas a assistente; não aparece para o público.
+- Para a assistente **vender** (horário, cobrança, agenda), cadastre como serviço privado.
 
 ## Planos
 

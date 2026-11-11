@@ -5,6 +5,7 @@ import { AFTER_PAYMENT, SEGMENTS, cardHint, chatStatus, dateTile, primaryLabel, 
 test("segmento do serviço: agenda = jogo; trabalho e limpeza = trabalho; resto = serviço", () => {
   assert.equal(serviceSegment({ bookable: true, kind: "buzios" }), "jogo");
   assert.equal(serviceSegment({ bookable: false, kind: "trabalho" }), "trabalho");
+  assert.equal(serviceSegment({ bookable: true, kind: "trabalho" }), "trabalho");
   assert.equal(serviceSegment({ bookable: false, kind: "limpeza" }), "trabalho");
   assert.equal(serviceSegment({ bookable: false, kind: "cartas" }), "servico");
   assert.equal(serviceSegment(null), "servico");

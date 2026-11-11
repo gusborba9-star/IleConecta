@@ -5,7 +5,7 @@ import { Button } from "@/components/base";
 import ReserveModal from "@/components/rituals/ReserveModal";
 import ContractModal from "@/components/services/ContractModal";
 import { fetchHouseRituals, type RealRitual } from "@/lib/rituals";
-import { fetchServices, type Service } from "@/lib/services";
+import { fetchServiceForChat, type Service } from "@/lib/services";
 
 interface Props {
   action: { target: "ritual" | "service"; id: string };
@@ -26,7 +26,7 @@ export default function ChatCheckoutButton({ action, ownerId }: Props) {
       if (found) setRitual(found);
       else toast.error("Este ritual não está mais disponível.");
     } else {
-      const found = (await fetchServices(ownerId)).find((s) => s.id === action.id && s.active) ?? null;
+      const found = await fetchServiceForChat(action.id);
       if (found) setService(found);
       else toast.error("Este serviço não está mais disponível.");
     }
