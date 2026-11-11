@@ -160,7 +160,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
                   form.delivery === d.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
                 }`}
               >
-                <input type="radio" name="delivery" className="mt-1 h-4 w-4" checked={form.delivery === d.id} onChange={() => set({ delivery: d.id })} />
+                <input type="radio" name="delivery" className="mt-1 h-4 w-4" checked={form.delivery === d.id} onChange={() => set(d.id === "presencial" && !initial ? { delivery: d.id, bookable: true } : { delivery: d.id })} />
                 <span>
                   <span className="block text-sm font-semibold">{d.label}</span>
                   <span className="block text-sm text-muted-foreground">{d.hint}</span>
@@ -169,6 +169,9 @@ export default function ServiceForm({ open, onClose, initial, onSubmit }: Props)
             ))}
           </div>
           {errors.delivery && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.delivery}</p>}
+          {form.delivery === "presencial" && !form.bookable && (
+            <p className="text-xs mt-2 rounded-xl bg-gold/15 px-3 py-2 text-foreground">Presencial sem “Agendar horário pela plataforma”: a assistente não consegue vender nem marcar. Ela avisa você e a conversa passa para a casa. Marque o agendamento abaixo para ela vender e marcar o horário sozinha.</p>
+          )}
         </fieldset>
 
         {(
