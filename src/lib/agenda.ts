@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { calendarOccurrences, type BusyItem } from "@/lib/agendaCore";
+import { fetchHouseCalendar } from "@/lib/calendar";
 
 export interface Window {
   id: string;
@@ -73,4 +75,32 @@ export async function removeBlock(id: string): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from("house_blocks").delete().eq("id", id);
   return !error;
+}
+
+/**
+ * Tudo o que já ocupa a agenda da casa (atendimentos contratados, rituais com duração, bloqueios e datas do calendário com hora),
+ * para avisar a casa antes de ela cadastrar um horário. Só leitura; falha de rede devolve lista vazia.
+ */
+export async function fetchBusyItems(ownerId: string): Promise<BusyItem[]> {
+  if (!supabase) return [];
+  const houseId = await houseIdOf(ownerId);
+  if (!houseId) return [];
+  const nowIso = new Date().toISOString();
+  const [orders, events, blocks, cal] = await Promise.all([
+    supabase.from("service_orders").select("title, scheduled_at, ends_at, profiles!service_orders_client_id_fkey(display_name)").eq("house_id", houseId).in("status", ["confirmado", "em_andamento", "aguardando_pagamento"]).not("scheduled_at", "is", null).gte("ends_at", nowIso),
+    supabase.from("events").select("title, starts_at, duration_min").eq("house_id", houseId).eq("status", "publicado").not("duration_min", "is", null).gte("starts_at", nowIso),
+    supabase.from("house_blocks").select("starts_at, ends_at, note").eq("house_id", houseId).gte("ends_at", nowIso),
+    fetchHouseCalendar(ownerId),
+  ]);
+  const out: BusyItem[] = [];
+  for (const o of orders.data ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const who = (o as any).profiles?.display_name;
+    out.push({ startsAt: String(o.scheduled_at), endsAt: String(o.ends_at), label: `${o.title}${who ? ` com ${who}` : ""}` });
+  }
+  for (const e of events.data ?? []) out.push({ startsAt: String(e.starts_at), endsAt: new Date(new Date(String(e.starts_at)).getTime() + Number(e.duration_min) * 60000).toISOString(), label: `Ritual: ${e.title}` });
+  for (const b of blocks.data ?? []) out.push({ startsAt: String(b.starts_at), endsAt: String(b.ends_at), label: b.note ? `Bloqueio: ${b.note}` : "Bloqueio" });
+  const today = new Date().toISOString().slice(0, 10);
+  out.push(...calendarOccurrences(cal.items.map((c) => ({ title: c.title, onDate: c.date, onTime: c.time, yearly: c.yearly })), today, 60));
+  return out;
 }

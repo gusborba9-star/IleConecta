@@ -69,7 +69,9 @@ jobs:
         continue-on-error: true
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.55.0
-          npx playwright install --with-deps chromium
+          # O espelho de pacotes do Ubuntu às vezes não resolve no runner e a instalação das fontes trava por 10 min.
+          # Limita o tempo e, se falhar, instala só o navegador (o runner já traz as bibliotecas); os testes rodam do mesmo jeito.
+          timeout 240 npx playwright install --with-deps chromium || npx playwright install chromium
           npm run test:e2e
       - name: Inventory all dependency advisories
         id: full_audit
