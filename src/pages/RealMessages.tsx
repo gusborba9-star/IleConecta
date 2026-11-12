@@ -260,7 +260,7 @@ export default function RealMessages() {
                 <button onClick={() => peer.isHouse && nav(`/casa/${peer.id}`)} className="font-semibold hover:underline truncate block max-w-full text-left">{peer.name}</button>
                 <div className="text-xs text-muted-foreground">{peer.isHouse ? (peer.online ? "Casa online" : assistantName ? "Casa offline · a assistente atende" : "Casa offline") : "Cliente"}</div>
               </div>
-              <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} onBlockedChange={setIBlocked} />
+              <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} conversationId={convId} onBlockedChange={setIBlocked} />
             </header>
 
             {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse ? "house" : "client"} always={iAmHouse && myAssistant} onChange={() => void refreshRef.current()} />}

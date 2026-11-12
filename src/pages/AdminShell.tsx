@@ -1,8 +1,9 @@
 import { useSearchParams } from "react-router-dom";
-import { BarChart3, FileText, History, RotateCcw, Settings, Users } from "lucide-react";
+import { BarChart3, FileText, History, LifeBuoy, RotateCcw, Settings, Users } from "lucide-react";
 import Admin, { type AdminSection } from "@/pages/Admin";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminDocs from "@/components/admin/AdminDocs";
+import AdminSupport from "@/components/support/AdminSupport";
 import AdminRefunds from "@/components/refunds/AdminRefunds";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { id: "visao", label: "Visão geral", icon: BarChart3 },
   { id: "reembolsos", label: "Reembolsos", icon: RotateCcw },
+  { id: "suporte", label: "Suporte", icon: LifeBuoy },
   { id: "usuarios", label: "Usuários", icon: Users },
   { id: "config", label: "Configurações", icon: Settings },
   { id: "docs", label: "Documentos", icon: FileText },
@@ -48,6 +50,7 @@ export default function AdminShell() {
       <div className="min-w-0 space-y-4">
         {(current === "visao" || current === "config" || current === "historico") && <Admin section={current as AdminSection} />}
         {current === "reembolsos" && <AdminRefunds />}
+        {current === "suporte" && <AdminSupport />}
         {current === "usuarios" && <AdminUsers />}
         {current === "docs" && <AdminDocs />}
       </div>
