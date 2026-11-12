@@ -1,68 +1,37 @@
--- PASSO 85: 0088_cobranca_motor — parte 10 de 13
+-- PASSO 85: 0088_cobranca_motor — parte 10 de 16
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
--- ============ 10) rotina diária: emite as faturas do ciclo, marca vencidas, avisa e recalcula a suspensão ============
-create or replace function public.platform_billing_tick(p_now timestamptz default now())
+create or replace function public.platform_charge_progress(p_provider text, p_ref text, p_state text, p_now timestamptz default now())
+returns text language plpgsql security definer set search_path = public as $$
+declare c public.platform_charges; ns text; d date := (p_now at time zone 'America/Sao_Paulo')::date;
+begin
+if p_state not in ('processing','failed') then raise exception 'Estado inválido.'; end if;
+select * into c from public.platform_charges where provider = p_provider and provider_ref = p_ref for update;
+if not found then raise exception 'cobranca_desconhecida'; end if;
+if c.status in ('paga','cancelada','estornada') then return c.status; end if;
+ns := case when p_state = 'processing' then 'em_processamento' when c.due_date < d then 'vencida' else 'aberta' end;
+if ns <> c.status then update public.platform_charges set status = ns where id = c.id; end if;
+perform public.platform_house_billing_recompute(c.house_id, p_now);
+return ns;
+end $$;
+
+create or replace function public.platform_charge_confirm(p_provider text, p_ref text, p_paid_cents bigint, p_fee_cents bigint default null, p_now timestamptz default now())
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare cfg jsonb := public.platform_billing_config(); d date := (p_now at time zone 'America/Sao_Paulo')::date; nd int; tol int; pricing jsonb; prices jsonb;
-h record; c record; m int; cand date; due date; amt bigint; seats int; issued int := 0; late int := 0; notices int := 0; houses int := 0; tol_end date;
+declare c public.platform_charges;
 begin
-if coalesce((cfg ->> 'enabled')::boolean, false) is not true then return jsonb_build_object('skipped', 'cobranca_desligada'); end if;
-nd := (cfg ->> 'notice_days')::int; tol := (cfg ->> 'tolerance_business_days')::int;
-select value into pricing from public.platform_settings where key = 'pricing';
-prices := public.platform_billing_prices();
-for h in select p.house_id, p.billing_day, p.started_on, hs.plan::text as plan from public.house_billing_plan p join public.houses hs on hs.id = p.house_id where p.active loop
-begin
-for m in -1..1 loop
-cand := (date_trunc('month', d)::date + make_interval(months => m))::date + (h.billing_day - 1);
-continue when cand - nd < h.started_on or cand < d - 31;
-due := greatest(cand, d + nd);
-amt := case when (pricing -> 'plans' -> h.plan ->> 'monthly') ~ '^[0-9]+(\.[0-9]+)?$' then round((pricing -> 'plans' -> h.plan ->> 'monthly')::numeric * 100)::bigint end;
-if amt is not null and cand - nd <= d then
-begin
-if not exists (select 1 from public.platform_charges where idempotency_key = 'plan:' || h.house_id || ':' || cand) then
-perform public.platform_charge_issue(h.house_id, 'plan', 'plan:' || h.plan, amt, due, cand, 'Mensalidade do plano', 'plan:' || h.house_id || ':' || cand);
-issued := issued + 1;
+select * into c from public.platform_charges where provider = p_provider and provider_ref = p_ref for update;
+if not found then raise exception 'cobranca_desconhecida'; end if;
+if c.status in ('paga','estornada') then return jsonb_build_object('charge', c.id, 'already', true); end if;
+if c.status = 'cancelada' then raise exception 'cobranca_cancelada'; end if;
+if p_paid_cents is distinct from c.amount_cents then raise exception 'valor_divergente'; end if;
+if p_fee_cents is not null and (p_fee_cents < 0 or p_fee_cents > c.amount_cents) then raise exception 'tarifa_invalida'; end if;
+update public.platform_charges set status = 'paga', paid_at = now(), paid_amount_cents = p_paid_cents, processor_fee_cents = p_fee_cents where id = c.id;
+insert into public.platform_ledger_entries (charge_id, house_id, entry_type, amount_cents) values (c.id, c.house_id, 'receita', p_paid_cents);
+if p_fee_cents is not null and p_fee_cents > 0 then
+insert into public.platform_ledger_entries (charge_id, house_id, entry_type, amount_cents) values (c.id, c.house_id, 'taxa_provedor', p_fee_cents);
 end if;
-exception when unique_violation then null;
-end;
+if c.kind in ('boost','highlight') and c.ref_id is not null then
+update public.boosts set paid = true where id = c.ref_id and house_id = c.house_id;
 end if;
-select coalesce(s.seats, 0) into seats from public.house_extra_seats s where s.house_id = h.house_id;
-amt := case when coalesce(seats, 0) > 0 and (prices -> 'extra_seat' ->> h.plan) ~ '^[0-9]+$' then seats * (prices -> 'extra_seat' ->> h.plan)::bigint end;
-if amt is not null and cand - nd <= d then
-begin
-if not exists (select 1 from public.platform_charges where idempotency_key = 'extra_seat:' || h.house_id || ':' || cand) then
-perform public.platform_charge_issue(h.house_id, 'extra_seat', 'extra_seat', amt, due, cand, 'Vagas adicionais de equipe (' || seats || ')', 'extra_seat:' || h.house_id || ':' || cand);
-issued := issued + 1;
-end if;
-exception when unique_violation then null;
-end;
-end if;
-end loop;
-exception when others then
-insert into public.platform_billing_events (provider, event_id, kind, outcome, reason) values ('sistema', gen_random_uuid()::text, 'erro_emissao', 'rejeitado', left(h.house_id::text || ': ' || sqlerrm, 300));
-end;
-end loop;
-update public.platform_charges pc set status = 'cancelada' where pc.status in ('aberta','vencida') and not exists (select 1 from public.houses x where x.id = pc.house_id);
-update public.platform_charges set status = 'vencida' where status = 'aberta' and due_date < d;
-get diagnostics late = row_count;
-for c in select id, due_date from public.platform_charges where status in ('aberta','vencida') loop
-begin
-tol_end := public.billing_add_business_days(c.due_date, tol);
-if public.platform_billing_notice(c.id, 'fatura_disponivel') then notices := notices + 1; end if;
-if d >= c.due_date - 1 and d < c.due_date and public.platform_billing_notice(c.id, 'vespera') then notices := notices + 1; end if;
-if d >= c.due_date and public.platform_billing_notice(c.id, 'dia_vencimento') then notices := notices + 1; end if;
-if d > c.due_date and d <= tol_end and public.platform_billing_notice(c.id, 'tolerancia') then notices := notices + 1; end if;
-exception when others then
-insert into public.platform_billing_events (provider, event_id, kind, charge_id, outcome, reason) values ('sistema', gen_random_uuid()::text, 'erro_aviso', c.id, 'rejeitado', left(sqlerrm, 300));
-end;
-end loop;
-for h in select distinct x.house_id from (select house_id from public.platform_charges where status in ('aberta','vencida','em_processamento') union select house_id from public.house_billing_state where suspended) x loop
-begin
-perform public.platform_house_billing_recompute(h.house_id, p_now);
-houses := houses + 1;
-exception when others then
-insert into public.platform_billing_events (provider, event_id, kind, outcome, reason) values ('sistema', gen_random_uuid()::text, 'erro_recalculo', 'rejeitado', left(h.house_id::text || ': ' || sqlerrm, 300));
-end;
-end loop;
-return jsonb_build_object('issued', issued, 'overdue', late, 'notices', notices, 'houses_checked', houses);
+perform public.platform_house_billing_recompute(c.house_id, p_now);
+return jsonb_build_object('charge', c.id, 'already', false, 'house', c.house_id);
 end $$;

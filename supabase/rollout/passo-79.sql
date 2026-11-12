@@ -1,32 +1,34 @@
--- PASSO 79: 0088_cobranca_motor — parte 4 de 13
+-- PASSO 79: 0088_cobranca_motor — parte 4 de 16
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
-create or replace function public.platform_charges_guard() returns trigger
-language plpgsql set search_path = public as $$
-declare ok boolean;
-begin
-if tg_op = 'DELETE' then raise exception 'Fatura não pode ser apagada; cancele-a.'; end if;
-if new.id is distinct from old.id or new.house_id is distinct from old.house_id or new.kind is distinct from old.kind or new.item_key is distinct from old.item_key
-or new.amount_cents is distinct from old.amount_cents or new.due_date is distinct from old.due_date or new.period_start is distinct from old.period_start
-or new.idempotency_key is distinct from old.idempotency_key or new.ref_id is distinct from old.ref_id or new.created_at is distinct from old.created_at then
-raise exception 'Valor, vencimento, casa e produto da fatura não podem ser alterados.';
-end if;
-if old.provider_ref is not null and (new.provider_ref is distinct from old.provider_ref or new.provider is distinct from old.provider) then
-raise exception 'A referência do provedor já foi definida e não pode mudar.';
-end if;
-if new.status is distinct from old.status then
-ok := case old.status
-when 'aberta' then new.status in ('vencida','em_processamento','paga','cancelada')
-when 'vencida' then new.status in ('em_processamento','paga','cancelada')
-when 'em_processamento' then new.status in ('aberta','vencida','paga','cancelada')
-when 'paga' then new.status = 'estornada'
-else false end;
-if not ok then raise exception 'Mudança de estado inválida: % para %.', old.status, new.status; end if;
-end if;
-new.updated_at := now();
-return new;
-end $$;
+-- ============ 3) eventos do provedor, livro-razão próprio e avisos ============
+create table if not exists public.platform_billing_events (
+id bigint generated always as identity primary key,
+provider text not null check (provider ~ '^[a-z][a-z0-9_]{1,23}$'),
+event_id text not null check (char_length(event_id) between 1 and 200),
+kind text not null check (char_length(kind) between 1 and 60),
+charge_id uuid,
+outcome text not null check (outcome in ('recebido','processado','rejeitado')),
+reason text check (reason is null or char_length(reason) <= 300),
+created_at timestamptz not null default now(),
+unique (provider, event_id)
+);
 
-drop trigger if exists trg_platform_charges_guard on public.platform_charges;
+create table if not exists public.platform_ledger_entries (
+id uuid primary key default gen_random_uuid(),
+charge_id uuid not null references public.platform_charges(id) on delete restrict,
+house_id uuid not null,
+entry_type text not null check (entry_type in ('receita','taxa_provedor','estorno')),
+amount_cents bigint not null check (amount_cents <> 0),
+created_at timestamptz not null default now()
+);
 
-create trigger trg_platform_charges_guard before update or delete on public.platform_charges
-for each row execute function public.platform_charges_guard();
+create index if not exists platform_ledger_charge on public.platform_ledger_entries (charge_id);
+
+create table if not exists public.platform_billing_notices (
+id bigint generated always as identity primary key,
+charge_id uuid not null references public.platform_charges(id) on delete restrict,
+house_id uuid not null,
+stage text not null check (stage in ('fatura_disponivel','vespera','dia_vencimento','tolerancia','suspensao','total_em_breve')),
+created_at timestamptz not null default now(),
+unique (charge_id, stage)
+);

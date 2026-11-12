@@ -1,27 +1,38 @@
--- PASSO 82: 0088_cobranca_motor — parte 7 de 13
+-- PASSO 82: 0088_cobranca_motor — parte 7 de 16
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
--- ============ 8) provedor: guardar a referência (uma vez), andamento do pagamento e confirmação ============
-create or replace function public.platform_charge_attach(p_charge uuid, p_provider text, p_ref text, p_method text, p_url text)
-returns void language plpgsql security definer set search_path = public as $$
-declare c public.platform_charges;
-begin
-select * into c from public.platform_charges where id = p_charge for update;
-if not found then raise exception 'Fatura inexistente.'; end if;
-if c.status not in ('aberta','vencida','em_processamento') then raise exception 'Fatura não está em aberto.'; end if;
-if c.provider_ref is not null and (c.provider is distinct from p_provider or c.provider_ref is distinct from p_ref) then raise exception 'referencia_ja_definida'; end if;
-update public.platform_charges set provider = p_provider, provider_ref = p_ref, provider_method = p_method, checkout_url = p_url where id = p_charge;
-end $$;
+-- ============ 5) quem lê o quê (ninguém escreve direto: só as funções abaixo) ============
+alter table public.house_billing_plan enable row level security;
 
-create or replace function public.platform_charge_progress(p_provider text, p_ref text, p_state text, p_now timestamptz default now())
-returns text language plpgsql security definer set search_path = public as $$
-declare c public.platform_charges; ns text; d date := (p_now at time zone 'America/Sao_Paulo')::date;
-begin
-if p_state not in ('processing','failed') then raise exception 'Estado inválido.'; end if;
-select * into c from public.platform_charges where provider = p_provider and provider_ref = p_ref for update;
-if not found then raise exception 'cobranca_desconhecida'; end if;
-if c.status in ('paga','cancelada','estornada') then return c.status; end if;
-ns := case when p_state = 'processing' then 'em_processamento' when c.due_date < d then 'vencida' else 'aberta' end;
-if ns <> c.status then update public.platform_charges set status = ns where id = c.id; end if;
-perform public.platform_house_billing_recompute(c.house_id, p_now);
-return ns;
-end $$;
+alter table public.house_billing_state enable row level security;
+
+alter table public.platform_charges enable row level security;
+
+alter table public.platform_billing_events enable row level security;
+
+alter table public.platform_ledger_entries enable row level security;
+
+alter table public.platform_billing_notices enable row level security;
+
+drop policy if exists hbp_read on public.house_billing_plan;
+
+create policy hbp_read on public.house_billing_plan for select to authenticated using (public.is_admin() or public.is_house_owner(house_id));
+
+drop policy if exists hbs_read on public.house_billing_state;
+
+create policy hbs_read on public.house_billing_state for select to authenticated using (public.is_admin() or public.is_house_owner(house_id));
+
+drop policy if exists pc_read on public.platform_charges;
+
+create policy pc_read on public.platform_charges for select to authenticated using (public.is_admin() or public.is_house_owner(house_id));
+
+drop policy if exists pbe_read on public.platform_billing_events;
+
+create policy pbe_read on public.platform_billing_events for select to authenticated using (public.is_admin());
+
+drop policy if exists ple_read on public.platform_ledger_entries;
+
+create policy ple_read on public.platform_ledger_entries for select to authenticated using (public.is_admin());
+
+drop policy if exists pbn_read on public.platform_billing_notices;
+
+create policy pbn_read on public.platform_billing_notices for select to authenticated using (public.is_admin() or public.is_house_owner(house_id));

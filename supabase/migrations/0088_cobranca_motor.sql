@@ -3,6 +3,42 @@
 -- Só entram no calendário as casas matriculadas pelo administrador. Não depende de provedor: quem confirma o pagamento é a função confirm, chamada pelo backend
 -- depois que o provedor confirma. Registros financeiros não têm chave estrangeira para a casa: sobrevivem à exclusão da conta (retenção).
 
+-- ============ 0) configuração: prazo do bloqueio total (opcional; vale 30 dias quando ausente) ============
+create or replace function public.billing_config_ok(m jsonb) returns boolean
+language plpgsql immutable set search_path = public as $$
+declare k text; v jsonb; x jsonb; kinds text[] := array['plan','extra_seat','credit_pack','highlight','boost']; meths text[] := array['card','card_recurring','pix'];
+begin
+if coalesce(jsonb_typeof(m), '') <> 'object' then return false; end if;
+if (select array_agg(a order by a) from jsonb_object_keys(m) a where a <> 'total_block_days') is distinct from array['enabled','methods','notice_days','provider','tolerance_business_days'] then return false; end if;
+if m ? 'total_block_days' and (coalesce(jsonb_typeof(m -> 'total_block_days'), '') <> 'number' or (m ->> 'total_block_days') !~ '^[0-9]{1,2}$' or (m ->> 'total_block_days')::int not between 7 and 90) then return false; end if;
+if coalesce(jsonb_typeof(m -> 'enabled'), '') <> 'boolean' then return false; end if;
+foreach k in array array['notice_days','tolerance_business_days'] loop
+if coalesce(jsonb_typeof(m -> k), '') <> 'number' or (m ->> k) !~ '^[0-9]{1,2}$' then return false; end if;
+end loop;
+if (m ->> 'notice_days')::int not between 1 and 15 then return false; end if;
+if (m ->> 'tolerance_business_days')::int not between 0 and 10 then return false; end if;
+foreach k in array array['provider','methods'] loop
+v := m -> k;
+if coalesce(jsonb_typeof(v), '') <> 'object' then return false; end if;
+if (select array_agg(a order by a) from jsonb_object_keys(v) a) is distinct from (select array_agg(a order by a) from unnest(kinds) a) then return false; end if;
+end loop;
+foreach k in array kinds loop
+if coalesce(jsonb_typeof(m -> 'provider' -> k), '') <> 'string' or (m -> 'provider' ->> k) !~ '^[a-z][a-z0-9_]{1,23}$' then return false; end if;
+v := m -> 'methods' -> k;
+if coalesce(jsonb_typeof(v), '') <> 'array' or jsonb_array_length(v) not between 1 and 3 then return false; end if;
+for x in select jsonb_array_elements(v) loop
+if coalesce(jsonb_typeof(x), '') <> 'string' or not ((x #>> '{}') = any (meths)) then return false; end if;
+end loop;
+if (select count(distinct e) from jsonb_array_elements_text(v) e) <> jsonb_array_length(v) then return false; end if;
+end loop;
+return true;
+end $$;
+
+create or replace function public.billing_total_days() returns int
+language sql stable security definer set search_path = public as $$
+select coalesce(nullif((public.platform_billing_config() ->> 'total_block_days'), '')::int, 30);
+$$;
+
 -- ============ 1) matrícula no calendário de cobrança e estado da casa ============
 create table if not exists public.house_billing_plan (
 house_id uuid primary key references public.houses(id) on delete cascade,
@@ -16,8 +52,14 @@ create table if not exists public.house_billing_state (
 house_id uuid primary key references public.houses(id) on delete cascade,
 suspended boolean not null default false,
 since timestamptz,
+total boolean not null default false,
+total_since timestamptz,
 updated_at timestamptz not null default now()
 );
+
+alter table public.house_billing_state add column if not exists total boolean not null default false;
+
+alter table public.house_billing_state add column if not exists total_since timestamptz;
 
 -- ============ 2) faturas ============
 create table if not exists public.platform_charges (
@@ -80,7 +122,7 @@ create table if not exists public.platform_billing_notices (
 id bigint generated always as identity primary key,
 charge_id uuid not null references public.platform_charges(id) on delete restrict,
 house_id uuid not null,
-stage text not null check (stage in ('fatura_disponivel','vespera','dia_vencimento','tolerancia')),
+stage text not null check (stage in ('fatura_disponivel','vespera','dia_vencimento','tolerancia','suspensao','total_em_breve')),
 created_at timestamptz not null default now(),
 unique (charge_id, stage)
 );
@@ -176,6 +218,8 @@ msg := case p_stage
 when 'fatura_disponivel' then 'Sua fatura da plataforma está disponível e vence em ' || to_char(c.due_date, 'DD/MM') || '.'
 when 'vespera' then 'Sua fatura da plataforma vence amanhã (' || to_char(c.due_date, 'DD/MM') || ').'
 when 'dia_vencimento' then 'Sua fatura da plataforma vence hoje.'
+when 'suspensao' then 'Sua casa está com a suspensão parcial: sem vendas novas, campanhas, destaque, impulsionamento e assistente. Pague a fatura para voltar ao normal.'
+when 'total_em_breve' then 'Atenção: se a fatura da plataforma continuar em aberto, sua casa será bloqueada por completo em ' || to_char(tol_end + public.billing_total_days() + 1, 'DD/MM') || '. Pague para evitar.'
 else 'Pague a fatura e evite a suspensão parcial: a tolerância vai até ' || to_char(tol_end, 'DD/MM') || '.' end;
 insert into public.notifications (user_id, text, href) values (owner, msg, '/planos');
 return true;
@@ -268,18 +312,25 @@ end $$;
 -- ============ 9) suspensão parcial: tolerância em dias úteis; nunca suspende com pagamento em processamento ============
 create or replace function public.platform_house_billing_recompute(p_house uuid, p_now timestamptz default now())
 returns boolean language plpgsql security definer set search_path = public as $$
-declare cfg jsonb := public.platform_billing_config(); d date := (p_now at time zone 'America/Sao_Paulo')::date; tol int := (cfg ->> 'tolerance_business_days')::int; late boolean; proc boolean; susp boolean; was boolean;
+declare cfg jsonb := public.platform_billing_config(); d date := (p_now at time zone 'America/Sao_Paulo')::date; tol int := (cfg ->> 'tolerance_business_days')::int; tdays int := public.billing_total_days(); late boolean; fully boolean; proc boolean; susp boolean; tot boolean; was boolean; wast boolean;
 begin
 if not exists (select 1 from public.houses where id = p_house) then return false; end if;
 select exists (select 1 from public.platform_charges c where c.house_id = p_house and c.status in ('aberta','vencida') and public.billing_add_business_days(c.due_date, tol) < d) into late;
+select exists (select 1 from public.platform_charges c where c.house_id = p_house and c.status in ('aberta','vencida') and public.billing_add_business_days(c.due_date, tol) + tdays < d) into fully;
 select exists (select 1 from public.platform_charges c where c.house_id = p_house and c.status = 'em_processamento') into proc;
 susp := coalesce((cfg ->> 'enabled')::boolean, false) and late and not proc;
-select suspended into was from public.house_billing_state where house_id = p_house;
-if was is distinct from susp and (susp or was is not null) then
-insert into public.house_billing_state (house_id, suspended, since, updated_at) values (p_house, susp, case when susp then p_now end, now())
-on conflict (house_id) do update set suspended = excluded.suspended, since = excluded.since, updated_at = now();
+tot := susp and fully;
+select suspended, total into was, wast from public.house_billing_state where house_id = p_house;
+if was is distinct from susp or wast is distinct from tot then
+if susp or was is not null then
+insert into public.house_billing_state (house_id, suspended, since, total, total_since, updated_at) values (p_house, susp, case when susp then p_now end, tot, case when tot then p_now end, now())
+on conflict (house_id) do update set suspended = excluded.suspended, total = excluded.total,
+since = case when excluded.suspended and house_billing_state.suspended then house_billing_state.since else excluded.since end,
+total_since = case when excluded.total and house_billing_state.total then house_billing_state.total_since else excluded.total_since end,
+updated_at = now();
 insert into public.platform_billing_events (provider, event_id, kind, outcome, reason)
-values ('sistema', gen_random_uuid()::text, case when susp then 'casa_suspensa' else 'casa_reativada' end, 'processado', p_house::text);
+values ('sistema', gen_random_uuid()::text, case when tot and not coalesce(wast, false) then 'casa_bloqueio_total' when susp and not coalesce(was, false) then 'casa_suspensa' when susp then 'casa_volta_parcial' else 'casa_reativada' end, 'processado', p_house::text);
+end if;
 end if;
 return susp;
 end $$;
@@ -289,10 +340,19 @@ language sql stable security definer set search_path = public as $$
 select coalesce((public.platform_billing_config() ->> 'enabled')::boolean, false) and coalesce((select s.suspended from public.house_billing_state s where s.house_id = h), false);
 $$;
 
+-- nível da casa: 'ok', 'parcial' (sem venda nova, campanha, destaque, impulsionamento e assistente) ou 'total' (fora da descoberta e do feed; painel só leitura)
+create or replace function public.house_billing_level(h uuid) returns text
+language sql stable security definer set search_path = public as $$
+select case when not coalesce((public.platform_billing_config() ->> 'enabled')::boolean, false) then 'ok'
+when coalesce((select s.total from public.house_billing_state s where s.house_id = h), false) then 'total'
+when coalesce((select s.suspended from public.house_billing_state s where s.house_id = h), false) then 'parcial'
+else 'ok' end;
+$$;
+
 -- ============ 10) rotina diária: emite as faturas do ciclo, marca vencidas, avisa e recalcula a suspensão ============
 create or replace function public.platform_billing_tick(p_now timestamptz default now())
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare cfg jsonb := public.platform_billing_config(); d date := (p_now at time zone 'America/Sao_Paulo')::date; nd int; tol int; pricing jsonb; prices jsonb;
+declare cfg jsonb := public.platform_billing_config(); d date := (p_now at time zone 'America/Sao_Paulo')::date; nd int; tol int; tdays int := public.billing_total_days(); nday int := (public.platform_billing_config() ->> 'notice_days')::int; total_on date; pricing jsonb; prices jsonb;
 h record; c record; m int; cand date; due date; amt bigint; seats int; issued int := 0; late int := 0; notices int := 0; houses int := 0; tol_end date;
 begin
 if coalesce((cfg ->> 'enabled')::boolean, false) is not true then return jsonb_build_object('skipped', 'cobranca_desligada'); end if;
@@ -341,6 +401,9 @@ if public.platform_billing_notice(c.id, 'fatura_disponivel') then notices := not
 if d >= c.due_date - 1 and d < c.due_date and public.platform_billing_notice(c.id, 'vespera') then notices := notices + 1; end if;
 if d >= c.due_date and public.platform_billing_notice(c.id, 'dia_vencimento') then notices := notices + 1; end if;
 if d > c.due_date and d <= tol_end and public.platform_billing_notice(c.id, 'tolerancia') then notices := notices + 1; end if;
+if d > tol_end and public.platform_billing_notice(c.id, 'suspensao') then notices := notices + 1; end if;
+total_on := tol_end + tdays + 1;
+if d >= total_on - nday and d < total_on and public.platform_billing_notice(c.id, 'total_em_breve') then notices := notices + 1; end if;
 exception when others then
 insert into public.platform_billing_events (provider, event_id, kind, charge_id, outcome, reason) values ('sistema', gen_random_uuid()::text, 'erro_aviso', c.id, 'rejeitado', left(sqlerrm, 300));
 end;
@@ -411,9 +474,9 @@ create trigger trg_house_campaigns_billing_block before insert on public.house_c
 for each row execute function public.campaigns_billing_block();
 
 -- ============ 13) permissões ============
-revoke all on function public.platform_billing_immutable(), public.platform_charges_guard(), public.platform_billing_notice(uuid, text), public.platform_charge_issue(uuid, text, text, bigint, date, date, text, text, uuid), public.platform_charge_attach(uuid, text, text, text, text), public.platform_charge_progress(text, text, text, timestamptz), public.platform_charge_confirm(text, text, bigint, bigint, timestamptz), public.platform_charge_cancel(uuid, text), public.platform_house_billing_recompute(uuid, timestamptz), public.house_billing_blocked(uuid), public.platform_billing_tick(timestamptz), public.admin_billing_enroll(uuid, int, text), public.admin_billing_unenroll(uuid, text), public.payments_billing_block(), public.campaigns_billing_block() from public, anon, authenticated;
+revoke all on function public.platform_billing_immutable(), public.platform_charges_guard(), public.platform_billing_notice(uuid, text), public.platform_charge_issue(uuid, text, text, bigint, date, date, text, text, uuid), public.platform_charge_attach(uuid, text, text, text, text), public.platform_charge_progress(text, text, text, timestamptz), public.platform_charge_confirm(text, text, bigint, bigint, timestamptz), public.platform_charge_cancel(uuid, text), public.platform_house_billing_recompute(uuid, timestamptz), public.house_billing_blocked(uuid), public.house_billing_level(uuid), public.billing_total_days(), public.platform_billing_tick(timestamptz), public.admin_billing_enroll(uuid, int, text), public.admin_billing_unenroll(uuid, text), public.payments_billing_block(), public.campaigns_billing_block() from public, anon, authenticated;
 
-grant execute on function public.platform_billing_notice(uuid, text), public.platform_charge_issue(uuid, text, text, bigint, date, date, text, text, uuid), public.platform_charge_attach(uuid, text, text, text, text), public.platform_charge_progress(text, text, text, timestamptz), public.platform_charge_confirm(text, text, bigint, bigint, timestamptz), public.platform_house_billing_recompute(uuid, timestamptz), public.house_billing_blocked(uuid), public.platform_billing_tick(timestamptz) to service_role;
+grant execute on function public.platform_billing_notice(uuid, text), public.platform_charge_issue(uuid, text, text, bigint, date, date, text, text, uuid), public.platform_charge_attach(uuid, text, text, text, text), public.platform_charge_progress(text, text, text, timestamptz), public.platform_charge_confirm(text, text, bigint, bigint, timestamptz), public.platform_house_billing_recompute(uuid, timestamptz), public.house_billing_blocked(uuid), public.house_billing_level(uuid), public.billing_total_days(), public.platform_billing_tick(timestamptz) to service_role;
 
 grant execute on function public.platform_charge_cancel(uuid, text), public.admin_billing_enroll(uuid, int, text), public.admin_billing_unenroll(uuid, text) to authenticated;
 

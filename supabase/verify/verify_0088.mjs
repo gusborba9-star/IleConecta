@@ -102,6 +102,30 @@ await setCfg(false); ok("desligar a cobrança libera tudo na hora (chave geral)"
 r = await pay("order_id", await order(HA)); ok("com a cobrança desligada, a casa vende de novo", !r.err, r.err); await setCfg(true);
 ok("ligando de novo, o estado da casa continua suspenso", (await blocked(HA)) === true);
 
+n1 = await notes(OWN_A); ok("14/11: aviso de suspensão parcial enviado (1 por fatura)", n1.filter((t) => /suspensão parcial: sem vendas novas/.test(t)).length === 2, j(n1.slice(-3)));
+{ const c1 = (await charges(HA))[0]; await q(su, "select public.platform_billing_notice($1,'total_em_breve')", [c1.id]); n1 = await notes(OWN_A);
+ok("aviso de bloqueio total cita a data (14/12) e não repete", n1.filter((t) => /bloqueada por completo em 14\/12/.test(t)).length === 1 && !(await q(su, "select public.platform_billing_notice($1,'total_em_breve') r", [c1.id])).rows[0].r, j(n1.slice(-2))); }
+// ---------- 5b) bloqueio total: 30 dias depois do início da suspensão parcial ----------
+const lvl = async (h) => (await q(su, "select public.house_billing_level($1) l", [h])).rows[0].l;
+const rec = async (h, t) => (await q(su, "select public.platform_house_billing_recompute($1,$2) r", [h, t])).rows[0].r;
+ok("nível da casa suspensa: parcial", (await lvl(HA)) === "parcial");
+ok("nível de casa em dia: ok", (await lvl(HC)) === "ok");
+r = await q(su, "select public.billing_total_days() d"); ok("prazo do bloqueio total vale 30 dias quando não configurado", r.rows[0].d === 30, j(r.rows));
+await rec(HA, "2026-12-13T12:00:00-03:00"); ok("13/12 (30 dias depois da tolerância): ainda só parcial", (await lvl(HA)) === "parcial");
+await rec(HA, "2026-12-14T12:00:00-03:00"); ok("14/12: bloqueio total", (await lvl(HA)) === "total" && (await blocked(HA)) === true);
+r = await q(su, "select count(*) n from platform_billing_events where kind='casa_bloqueio_total'"); ok("bloqueio total registrado uma vez", r.rows[0].n === "1");
+await rec(HA, "2026-12-15T12:00:00-03:00"); r = await q(su, "select count(*) n from platform_billing_events where kind='casa_bloqueio_total'"); ok("continuar em bloqueio total não registra de novo", r.rows[0].n === "1");
+r = await q(su, "select public.platform_billing_config() c"); const cfg0 = r.rows[0].c;
+await q(su, "update platform_settings set value = value || '{\"total_block_days\":15}'::jsonb where key='billing_config'");
+ok("prazo de bloqueio total configurável (15 dias)", (await q(su, "select public.billing_total_days() d")).rows[0].d === 15);
+await q(su, "update platform_settings set value = value || '{\"total_block_days\":3}'::jsonb where key='billing_config'");
+ok("prazo inválido (3 dias) é ignorado e vale o padrão de 30", (await q(su, "select public.billing_total_days() d")).rows[0].d === 30);
+r = await q(su, "select public.billing_config_ok(public.platform_billing_config() || '{\"total_block_days\":200}'::jsonb) ok"); ok("validação recusa prazo fora de 7 a 90", r.rows[0].ok === false);
+await q(su, "update platform_settings set value = $1::jsonb where key='billing_config'", [j(cfg0)]);
+await rec(HA, "2026-11-15T12:00:00-03:00"); ok("voltando a data para antes, o nível desce para parcial", (await lvl(HA)) === "parcial");
+r = await q(su, "select count(*) n from platform_billing_events where kind='casa_volta_parcial'"); ok("a volta ao parcial ficou registrada", r.rows[0].n === "1");
+await q(su, "select public.platform_billing_tick($1)", ["2026-11-15T12:00:00-03:00"]);
+
 // ---------- 6) pagamento em processamento segura a suspensão ----------
 const cp = (await charges(HA)).find((x) => x.kind === "plan");
 r = await q(su, "select public.platform_charge_attach($1,'stripe','ref-plan-1','pix','https://pay.example/1')", [cp.id]); ok("provedor: guardar referência da cobrança", !r.err, r.err);
@@ -205,7 +229,7 @@ for (const s of ["insert into platform_charges (house_id,kind,item_key,amount_ce
 }
 r = await as("anon", null, (c) => q(c, "select count(*) from public.platform_charges")); ok("anon não lê faturas", !!r.err, r.err);
 const hasFn = async (role, sig) => (await su.query("select has_function_privilege($1,$2,'execute') x", [role, sig])).rows[0].x;
-for (const sig of ["platform_billing_tick(timestamptz)", "platform_charge_confirm(text,text,bigint,bigint,timestamptz)", "platform_charge_issue(uuid,text,text,bigint,date,date,text,text,uuid)", "platform_charge_attach(uuid,text,text,text,text)", "platform_charge_progress(text,text,text,timestamptz)", "platform_house_billing_recompute(uuid,timestamptz)", "house_billing_blocked(uuid)", "platform_billing_notice(uuid,text)"]) {
+for (const sig of ["platform_billing_tick(timestamptz)", "platform_charge_confirm(text,text,bigint,bigint,timestamptz)", "platform_charge_issue(uuid,text,text,bigint,date,date,text,text,uuid)", "platform_charge_attach(uuid,text,text,text,text)", "platform_charge_progress(text,text,text,timestamptz)", "platform_house_billing_recompute(uuid,timestamptz)", "house_billing_blocked(uuid)", "house_billing_level(uuid)", "billing_total_days()", "platform_billing_notice(uuid,text)"]) {
   ok(`anon não executa ${sig}`, !(await hasFn("anon", "public." + sig))); ok(`authenticated não executa ${sig}`, !(await hasFn("authenticated", "public." + sig))); ok(`service_role executa ${sig}`, await hasFn("service_role", "public." + sig));
 }
 for (const sig of ["admin_billing_enroll(uuid,int,text)", "admin_billing_unenroll(uuid,text)", "platform_charge_cancel(uuid,text)"]) { ok(`anon não executa ${sig}`, !(await hasFn("anon", "public." + sig))); ok(`authenticated executa ${sig} (com trava interna)`, await hasFn("authenticated", "public." + sig)); }

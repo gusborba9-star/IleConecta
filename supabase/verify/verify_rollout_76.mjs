@@ -1,4 +1,4 @@
-// Verifica que os passos de produção 76–88 (rodados 2x cada, em ordem) deixam o banco idêntico ao da migration 0088.
+// Verifica que os passos de produção 76–91 (rodados 2x cada, em ordem) deixam o banco idêntico ao da migration 0088.
 // Uso: node supabase/verify/verify_rollout_76.mjs   (PG em 127.0.0.1:5544)
 import { readFileSync } from "node:fs";
 import { freshDb } from "./pgbase.mjs";
@@ -7,7 +7,7 @@ const ROLL = new URL("../rollout/", import.meta.url).pathname;
 const A = await freshDb("vf_roll76_a", { with64: true, max: 87 });   // produção hoje: até a 0087
 const B = await freshDb("vf_roll76_b", { with64: true, max: 88 });   // referência: migrations 0001–0088
 ok("bases montadas", A.failed.length === 0 && B.failed.length === 0, [...A.failed, ...B.failed].join(" | "));
-for (let n = 76; n <= 88; n++) {
+for (let n = 76; n <= 91; n++) {
   const sql = readFileSync(`${ROLL}passo-${n}.sql`, "utf8");
   let e1 = null, e2 = null;
   try { await A.c.query(sql); } catch (e) { e1 = e.message; }
@@ -18,7 +18,7 @@ const T = ["house_billing_plan", "house_billing_state", "platform_charges", "pla
 const snap = async (c) => {
   const fn = (await c.query(`select p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' sig, md5(pg_get_functiondef(p.oid)) h, p.prosecdef sd, p.provolatile v,
       array(select (acl).grantee::regrole::text||':'||(acl).privilege_type from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl order by 1) acl
-    from pg_proc p where p.pronamespace='public'::regnamespace and (p.proname like 'platform\\_charge%' or p.proname like 'platform\\_billing%' or p.proname like 'platform\\_house%' or p.proname like 'admin\\_billing%' or p.proname in ('house_billing_blocked','payments_billing_block','campaigns_billing_block')) order by 1`)).rows;
+    from pg_proc p where p.pronamespace='public'::regnamespace and (p.proname like 'platform\\_charge%' or p.proname like 'platform\\_billing%' or p.proname like 'platform\\_house%' or p.proname like 'admin\\_billing%' or p.proname in ('house_billing_blocked','house_billing_level','billing_total_days','payments_billing_block','campaigns_billing_block')) order by 1`)).rows;
   const cols = (await c.query(`select table_name, column_name, data_type, is_nullable, column_default from information_schema.columns where table_schema='public' and table_name = any($1) order by 1, ordinal_position`, [T])).rows;
   const con = (await c.query(`select conrelid::regclass::text t, conname, pg_get_constraintdef(oid) d from pg_constraint where conrelid = any (select ('public.'||x)::regclass from unnest($1::text[]) x) order by 1,2`, [T])).rows;
   const idx = (await c.query(`select tablename, indexname, indexdef from pg_indexes where schemaname='public' and tablename = any($1) order by 1,2`, [T])).rows;
@@ -29,7 +29,7 @@ const snap = async (c) => {
   return { fn, cols, con, idx, trg, pol, rls, tg };
 };
 const [sa, sb] = [await snap(A.c), await snap(B.c)];
-ok("funções do motor existem (17, contando as 2 de leitura da 0087) nas duas bases", sa.fn.length === sb.fn.length && sa.fn.length === 17, `${sa.fn.length}/${sb.fn.length}`);
+ok("funções do motor existem (19, contando as 2 de leitura da 0087) nas duas bases", sa.fn.length === sb.fn.length && sa.fn.length === 19, `${sa.fn.length}/${sb.fn.length}`);
 for (const k of Object.keys(sa)) ok(`idêntico: ${k}`, JSON.stringify(sa[k]) === JSON.stringify(sb[k]), k === "fn" ? sa.fn.filter((x, i) => JSON.stringify(x) !== JSON.stringify(sb.fn[i])).map((x) => x.sig).join(",") : "");
 ok("seis tabelas criadas", sa.rls.length === 6 && sa.rls.every((x) => x.relrowsecurity));
 await A.c.end(); await B.c.end();
