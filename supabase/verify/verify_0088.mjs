@@ -242,5 +242,32 @@ ok("excluir a casa limpa matrícula e estado", (await q(su, "select count(*) n f
 r = await tick("2026-12-10"); ok("a rotina segue funcionando depois da exclusão de uma casa", !!r && !r.skipped && !r.err, j(r));
 ok("faturas abertas de casa excluída são canceladas (não envelhecem nem avisam)", (await q(su, "select count(*) n from platform_charges where house_id=$1 and status in ('aberta','vencida')", [HC])).rows[0].n === "0");
 ok("nenhum erro registrado pela rotina", (await q(su, "select count(*) n from platform_billing_events where outcome='rejeitado'")).rows[0].n === "0");
+
+// ---------- 12) simulação de 3 meses: casa que atrasa sempre e só paga a fatura mais antiga no limite do bloqueio total ----------
+{
+  const OWN_D = "b4000000-0000-0000-0000-0000000000b4", HD = "d4000000-0000-0000-0000-0000000000d4";
+  await su.query("insert into auth.users(id,email) values ($1,$2)", [OWN_D, OWN_D + "@x"]);
+  await su.query("insert into profiles(id,account_type,display_name,city) values ($1,'casa','Pessoa Teste','Salvador') on conflict (id) do update set account_type='casa'", [OWN_D]);
+  await su.query("insert into houses(id,owner_id,name,slug,plan) values ($1,$2,'Casa Atrasada','casa-atrasada','base')", [HD, OWN_D]);
+  await adm(ADM, "select public.admin_billing_enroll($1,20,'simulação de atraso crônico')", [HD]);
+  await su.query("update house_billing_plan set started_on = '2026-08-01' where house_id=$1", [HD]);
+  const lv = async () => (await q(su, "select public.house_billing_level($1) l", [HD])).rows[0].l;
+  const days = { ok: 0, parcial: 0, total: 0 }; let paidInvoices = 0, issuedTotal = 0, ref = 0;
+  const start = new Date("2026-09-01T12:00:00-03:00");
+  for (let i = 0; i < 120; i++) {
+    const dt = new Date(start.getTime() + i * 86400000), ds = dt.toISOString().slice(0, 10);
+    const t = await tick(ds); issuedTotal += t?.issued ?? 0;
+    const l = await lv(); days[l]++;
+    if (l === "total") {
+      const open = (await q(su, "select id, amount_cents from platform_charges where house_id=$1 and status in ('aberta','vencida') order by due_date, created_at limit 1", [HD])).rows[0];
+      if (open) { ref++; await q(su, "select public.platform_charge_attach($1,'stripe',$2,'card','https://pay.example/x')", [open.id, "sim-" + ref]);
+        await q(su, "select public.platform_charge_confirm('stripe',$1,$2,null,$3::timestamptz)", ["sim-" + ref, open.amount_cents, dt.toISOString()]); paidInvoices++; }
+    }
+  }
+  ok(`simulação de 120 dias: dias ok=${days.ok}, parcial=${days.parcial}, total=${days.total}; faturas emitidas=${issuedTotal}, pagas=${paidInvoices}`, true);
+  ok("quem atrasa sempre passa quase todo o tempo SEM poder vender (mais de 80% em parcial/total)", (days.parcial + days.total) / 120 > 0.8, j(days));
+  ok("pagar só a fatura mais antiga não devolve o uso normal enquanto houver outra em aberto", days.ok <= 12, j(days));
+  ok("a rotina não gerou erro durante a simulação", (await q(su, "select count(*) n from platform_billing_events where outcome='rejeitado'")).rows[0].n === "0");
+}
 await su.end();
 console.log(bad ? `\n${bad} FALHA(S) de ${total}` : `\nTUDO OK (${total})`); process.exit(bad ? 1 : 0);
