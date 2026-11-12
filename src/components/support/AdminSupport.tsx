@@ -41,7 +41,7 @@ export default function AdminSupport() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={PRI_TONE[c.priority as keyof typeof PRI_TONE] ?? "muted"}>{c.priority}</Badge>
               {c.overdue && <Badge tone="danger">prazo vencido</Badge>}
-              <span className="font-semibold text-sm">{c.title}</span>
+              <span className="font-semibold text-sm break-words [overflow-wrap:anywhere] min-w-0">{c.title}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               {kindLabel(c.kind)} · {STATUS_LABEL[c.status] ?? c.status} · {c.opener_name ?? "—"}{c.subject_name ? ` → ${c.subject_name}` : ""}{c.house_name ? ` · ${c.house_name}` : ""} · 1ª resposta até {when(c.first_response_due)}
@@ -116,7 +116,7 @@ function Facts({ facts }: { facts: Record<string, unknown> }) {
       {rest.map(([k, v]) => (
         <details key={k} className="rounded-md border border-border/60 p-2" open={k === "pedido" || k === "reserva" || k === "pagamentos"}>
           <summary className="cursor-pointer font-semibold capitalize">{k.replace(/_/g, " ")}</summary>
-          <pre className="mt-1 whitespace-pre-wrap break-words text-[11px]">{JSON.stringify(v, null, 2)}</pre>
+          <pre className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere] break-words text-[11px]">{JSON.stringify(v, null, 2)}</pre>
         </details>
       ))}
       {conv && conv.length > 0 && (
@@ -187,7 +187,7 @@ function CaseDossier({ id, onBack }: { id: string; onBack: () => void }) {
           <Badge tone={PRI_TONE[c.priority as keyof typeof PRI_TONE] ?? "muted"}>{priorityText(c.kind, c.priority)}</Badge>
           <Badge tone="primary">{STATUS_LABEL[c.status] ?? c.status}</Badge><Badge>{kindLabel(c.kind)}</Badge>
         </div>
-        <p className="text-sm whitespace-pre-wrap">{c.description}</p>
+        <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{c.description}</p>
         {c.decision && <p className="text-sm font-semibold">Decisão: {DECISION_LABEL[c.decision] ?? c.decision}</p>}
         <div className="grid gap-2 sm:grid-cols-2"><PartyCard title="Autor do relato" p={d.autor} caseId={id} /><PartyCard title="Envolvido" p={d.envolvido} caseId={id} /></div>
       </Card>
@@ -209,14 +209,14 @@ function CaseDossier({ id, onBack }: { id: string; onBack: () => void }) {
           {(["autor", "envolvido"] as const).map((ch) => (
             <div key={ch} className="rounded-lg border border-border/70 p-3 space-y-1 text-sm">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{ch === "autor" ? "Canal do autor" : "Canal do envolvido"}</div>
-              {d.mensagens.filter((m) => m.canal === ch).map((m) => <div key={m.id}><span className="text-[11px] text-muted-foreground">{m.papel === "parte" ? "Pessoa" : "Equipe"} · {when(m.em)}</span><p className="whitespace-pre-wrap">{m.texto}</p></div>)}
+              {d.mensagens.filter((m) => m.canal === ch).map((m) => <div key={m.id}><span className="text-[11px] text-muted-foreground">{m.papel === "parte" ? "Pessoa" : "Equipe"} · {when(m.em)}</span><p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{m.texto}</p></div>)}
               {d.mensagens.every((m) => m.canal !== ch) && <p className="text-muted-foreground">Sem mensagens.</p>}
               {d.provas.filter((p) => p.canal === ch).map((p) => <div key={p.id}><ChatAttachment bucket="report-evidence" path={p.path} type={/\.pdf$/i.test(p.path) ? "application/pdf" : "image/jpeg"} name={p.nota ?? "Prova"} /><div className="text-[11px] text-muted-foreground">{p.nota} · enviada por escolha em {when(p.consentimento_em)}</div></div>)}
             </div>
           ))}
         </div>
         {d.mensagens.some((m) => m.canal === "interna") && (
-          <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1"><div className="text-[11px] uppercase tracking-wide text-muted-foreground">Notas internas</div>{d.mensagens.filter((m) => m.canal === "interna").map((m) => <p key={m.id} className="whitespace-pre-wrap">{m.texto}</p>)}</div>
+          <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1"><div className="text-[11px] uppercase tracking-wide text-muted-foreground">Notas internas</div>{d.mensagens.filter((m) => m.canal === "interna").map((m) => <p key={m.id} className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{m.texto}</p>)}</div>
         )}
       </Card>
 

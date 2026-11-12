@@ -170,3 +170,15 @@ test("ataque: o e-mail do envio vem sempre da conta, nunca de um valor enviado p
   await runAdminAction(deps, act({ email: "atacante@exemplo.com", to: "atacante@exemplo.com", redirect_to: undefined }));
   assert.deepEqual(sent, [["reset", "maria@exemplo.com"]]);
 });
+
+import { safeRedirect } from "../supabase/functions/support-admin/core.js";
+test("redirecionamento da recuperação: só a tela /redefinir-senha do app; destinos de atacante são descartados", async () => {
+  assert.equal(safeRedirect("https://ile-conecta.vercel.app/redefinir-senha"), "https://ile-conecta.vercel.app/redefinir-senha");
+  assert.equal(safeRedirect("http://localhost:5173/redefinir-senha"), "http://localhost:5173/redefinir-senha");
+  for (const bad of ["https://evil.com/phish", "https://x.com/redefinir-senha?next=//evil.com", "https://x.com/redefinir-senha#a", "http://x.com/redefinir-senha", "javascript:alert(1)", "https://u:p@x.com/redefinir-senha", "//evil.com/redefinir-senha", "", null, undefined, 5]) assert.equal(safeRedirect(bad), null, String(bad));
+  const captured = [];
+  const { deps } = mk(); deps.authPublic.resetPasswordForEmail = async (e, o) => { captured.push(o); return { error: null }; };
+  await runAdminAction(deps, act({ redirect_to: "https://evil.com/phish" }));
+  await runAdminAction(deps, act({ redirect_to: "https://ile-conecta.vercel.app/redefinir-senha" }));
+  assert.equal(captured[0], undefined); assert.deepEqual(captured[1], { redirectTo: "https://ile-conecta.vercel.app/redefinir-senha" });
+});

@@ -47,7 +47,7 @@ export default function ConectaChat() {
       <div className="flex items-center gap-2"><Bot className="h-5 w-5 text-primary" /><h2 className="font-display font-bold text-lg">Fale com a Conecta</h2></div>
       <div className="max-h-96 overflow-y-auto space-y-2 pr-1" role="log" aria-live="polite" aria-label="Conversa com a Conecta">
         {turns.map((t, i) => (
-          <div key={i} className={`rounded-lg p-3 text-sm whitespace-pre-wrap ${t.role === "user" ? "bg-primary/10 ml-8" : "bg-muted/50 mr-8"}`}>
+          <div key={i} className={`rounded-lg p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${t.role === "user" ? "bg-primary/10 ml-8" : "bg-muted/50 mr-8"}`}>
             {t.content}
             {t.actions?.map((a, j) => a.type === "propose_case" ? (
               <div key={j} className="mt-2"><Button size="sm" onClick={() => setDraft(a)}>Abrir chamado (você revisa antes de enviar)</Button></div>

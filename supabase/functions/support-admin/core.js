@@ -6,6 +6,16 @@
 export const ADMIN_ACTIONS = ["send_password_reset", "resend_confirmation", "account_state"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Só aceita voltar para a tela de nova senha do próprio app (https, ou http em localhost); qualquer outro destino é ignorado. */
+export function safeRedirect(v) {
+  try {
+    const u = new URL(String(v ?? ""));
+    const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
+    if ((u.protocol === "https:" || (local && u.protocol === "http:")) && u.pathname === "/redefinir-senha" && !u.username && !u.password && !u.search && !u.hash) return u.toString();
+  } catch { /* inválida */ }
+  return null;
+}
+
 export class SupportError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
 }
@@ -38,7 +48,7 @@ export async function runAdminAction(deps, input) {
       email_mascarado: maskEmail(u.email),
     };
   } else if (action === "send_password_reset") {
-    const { error } = await authPublic.resetPasswordForEmail(u.email, input.redirect_to ? { redirectTo: String(input.redirect_to) } : undefined);
+    const { error } = await authPublic.resetPasswordForEmail(u.email, safeRedirect(input.redirect_to) ? { redirectTo: safeRedirect(input.redirect_to) } : undefined);
     if (error) throw new SupportError("falha_envio", "Não foi possível enviar o e-mail agora. Tente de novo em alguns minutos.", 502);
     result = { enviado_para: maskEmail(u.email) };
   } else {

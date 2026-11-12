@@ -70,7 +70,7 @@ export type AccountAction = "send_password_reset" | "resend_confirmation" | "acc
 /** Ações de conta que precisam do servidor de autenticação (função de borda support-admin). */
 export async function adminAccountAction(action: AccountAction, userId: string, reason: string, caseId: string | null): Promise<Res<Record<string, unknown>>> {
   if (!supabase) return { ok: false, data: undefined as never, error: "Indisponível." };
-  const { data, error } = await supabase.functions.invoke("support-admin", { body: { action, user_id: userId, reason: reason.trim(), case_id: caseId } });
+  const { data, error } = await supabase.functions.invoke("support-admin", { body: { action, user_id: userId, reason: reason.trim(), case_id: caseId, redirect_to: `${window.location.origin}/redefinir-senha` } });
   if (error) {
     try {
       const b = (await (error as { context?: Response }).context?.json()) as { message?: string } | undefined;

@@ -265,3 +265,20 @@ test("Conecta: erro do servidor mostra mensagem amigável e a conversa continua"
   await expect(page.getByText("Você enviou muitas mensagens. Aguarde um pouco e tente de novo.")).toBeVisible();
   await expect(page.getByLabel("Pergunte à Conecta")).toBeEnabled();
 });
+
+test("celular (390px): Suporte, chamado e formulário de ocorrência sem rolagem horizontal", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await serve(page, { email: "suporte@ile.com", detail: detail({ mensagens: [{ id: "m", de: "equipe", texto: "x".repeat(300), em: "2026-11-10T12:00:00Z" }] }) });
+  const over = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  await page.goto("/suporte", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Relatar ocorrência" })).toBeVisible();
+  expect(await over()).toBeLessThanOrEqual(0);
+  await page.getByRole("button", { name: "Relatar ocorrência" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  const box = await page.getByRole("dialog").boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(390);
+  expect(await over()).toBeLessThanOrEqual(0);
+  await page.goto(`/suporte/chamados/${CASE}`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Conversa com a equipe")).toBeVisible();
+  expect(await over()).toBeLessThanOrEqual(0);
+});

@@ -40,7 +40,7 @@ export default function MyCases() {
         {rows?.map((c) => (
           <Link key={c.id} to={`/suporte/chamados/${c.id}`} className="block rounded-lg border border-border/70 p-3 hover:bg-muted/50">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-semibold text-sm">{c.title}</span>
+              <span className="font-semibold text-sm break-words [overflow-wrap:anywhere] min-w-0">{c.title}</span>
               <Badge tone={isClosed(c.status) ? "muted" : c.status === "aguardando_pessoa" ? "gold" : "primary"}>{STATUS_LABEL[c.status] ?? c.status}</Badge>
             </div>
             <div className="text-xs text-muted-foreground mt-1">{c.role === "envolvido" ? "Você foi citado neste caso" : kindLabel(c.kind)} · {when(c.created_at)}</div>
@@ -103,19 +103,19 @@ function CaseView({ id, onBack }: { id: string; onBack: () => void }) {
     <div className="space-y-4 pb-16 lg:pb-4">
       <Card className="p-5 space-y-2">
         <button className="text-sm text-primary font-semibold" onClick={onBack}>← Meus chamados</button>
-        <h1 className="font-display font-bold text-xl">{c.titulo}</h1>
+        <h1 className="font-display font-bold text-xl break-words [overflow-wrap:anywhere]">{c.titulo}</h1>
         <div className="flex flex-wrap gap-2 text-xs">
           <Badge tone="primary">{STATUS_LABEL[c.status] ?? c.status}</Badge>
           {author && <Badge tone="muted">{kindLabel(c.tipo)}</Badge>}
           {author && !closed && <Badge tone="gold">{priorityText(c.tipo, c.prioridade)}</Badge>}
         </div>
-        {c.resumo && <p className="text-sm whitespace-pre-wrap">{c.resumo}</p>}
+        {c.resumo && <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{c.resumo}</p>}
         {!author && <p className="text-xs text-muted-foreground">Você foi citado em um caso. Conte a sua versão abaixo: a equipe decide ouvindo as duas partes, com os fatos registrados na plataforma.</p>}
         {author && !closed && c.prazo_primeira_resposta && <p className="text-xs text-muted-foreground">Primeira resposta até {when(c.prazo_primeira_resposta)}.</p>}
         {closed && c.decisao && (
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <div className="font-semibold">Decisão: {DECISION_LABEL[c.decisao] ?? c.decisao}</div>
-            {c.decisao_nota && <p className="mt-1 whitespace-pre-wrap">{c.decisao_nota}</p>}
+            {c.decisao_nota && <p className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{c.decisao_nota}</p>}
           </div>
         )}
       </Card>
@@ -126,7 +126,7 @@ function CaseView({ id, onBack }: { id: string; onBack: () => void }) {
         {c.mensagens.map((m) => (
           <div key={m.id} className={`rounded-lg p-3 text-sm ${m.de === "voce" ? "bg-primary/10 ml-6" : "bg-muted/50 mr-6"}`}>
             <div className="text-[11px] text-muted-foreground">{m.de === "voce" ? "Você" : "Equipe do Ilê Conecta"} · {when(m.em)}</div>
-            <p className="whitespace-pre-wrap">{m.texto}</p>
+            <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{m.texto}</p>
           </div>
         ))}
         {!closed && (
