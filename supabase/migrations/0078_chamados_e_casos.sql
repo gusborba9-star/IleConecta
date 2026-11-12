@@ -43,6 +43,7 @@ create table if not exists public.support_cases (
   house_id uuid references public.houses(id) on delete set null,
   context_type text check (context_type in ('pedido','reserva','pagamento','conversa','avaliacao','reembolso')),
   context_id uuid,
+  conversation_id uuid,   -- conversa entre as partes (guardada enquanto o caso estiver aberto)
   source text not null default 'pessoa' check (source in ('pessoa','assistente','sistema')),
   title text not null check (char_length(title) between 3 and 120),
   description text not null check (char_length(description) between 10 and 2000),
@@ -136,6 +137,48 @@ drop trigger if exists trg_support_log_immutable on public.support_case_log;
 create trigger trg_support_log_immutable before update or delete on public.support_case_log
   for each row execute function public.support_log_immutable();
 
+
+-- ============ 2b) identidade retida de contas excluídas ============
+-- Quando uma conta é excluída, o nome, o e-mail e o tipo da conta ficam guardados à parte, só para o administrador, por 5 anos,
+-- para identificar com exatidão o autor de aceites e transações em caso de disputa, fraude ou obrigação legal.
+-- Nada disso aparece para outras pessoas. Cada consulta fica no registro de suporte.
+create table if not exists public.deleted_account_identity (
+  user_id uuid primary key,
+  account_type text,
+  display_name text,
+  email text,
+  houses text[] not null default '{}',
+  deleted_at timestamptz not null default now(),
+  retain_until timestamptz not null default (now() + interval '5 years'),
+  request_id uuid
+);
+alter table public.deleted_account_identity enable row level security;
+revoke all on public.deleted_account_identity from anon, authenticated;
+
+create or replace function public.admin_deleted_identity(p_user uuid, p_reason text, p_case uuid default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare d public.deleted_account_identity;
+begin
+  if not public.is_admin() then raise exception 'not_admin' using errcode = '42501'; end if;
+  if char_length(btrim(coalesce(p_reason, ''))) < 10 then raise exception 'Informe o motivo da consulta (mínimo de 10 caracteres).'; end if;
+  select * into d from public.deleted_account_identity where user_id = p_user;
+  if not found then raise exception 'Não há identidade retida para esta pessoa.'; end if;
+  insert into public.support_case_log (case_id, actor, action, reason, data) values (p_case, auth.uid(), 'identidade_consultada', left(btrim(p_reason), 300), jsonb_build_object('usuario', p_user));
+  return jsonb_build_object('usuario', d.user_id, 'tipo_conta', d.account_type, 'nome', d.display_name, 'email', d.email, 'casas', d.houses, 'excluida_em', d.deleted_at, 'guardada_ate', d.retain_until);
+end $$;
+
+-- Mensagem apagada continua no arquivo (só o administrador lê). Enquanto houver chamado aberto sobre a conversa, o arquivo fica retido por até 24 meses.
+create or replace function public.hold_archive_for_open_case()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.support_cases c where c.conversation_id = new.conversation_id and c.status not in ('resolvido','recusado')) then
+    new.purge_after := greatest(new.purge_after, now() + interval '24 months');
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_hold_archive on public.message_archive;
+create trigger trg_hold_archive before insert on public.message_archive for each row execute function public.hold_archive_for_open_case();
+
 -- ============ 3) fatos reais da plataforma ============
 -- A pessoa é parte do contexto? (dono do pedido/reserva/pagamento/conversa/avaliação, ou a casa envolvida)
 create or replace function public.support_context_parties(p_type text, p_id uuid)
@@ -165,6 +208,22 @@ begin
 end $$;
 revoke all on function public.support_context_parties(text, uuid) from public, anon, authenticated;
 
+
+-- Conversa entre as partes do contexto (ou a própria conversa).
+create or replace function public.support_conversation_of(p_type text, p_id uuid)
+returns uuid language plpgsql stable security definer set search_path = public as $$
+declare pt record; cid uuid;
+begin
+  if p_type is null then return null; end if;
+  if p_type = 'conversa' then return p_id; end if;
+  select * into pt from public.support_context_parties(p_type, p_id);
+  if not found then return null; end if;
+  select cm1.conversation_id into cid from public.conversation_members cm1 join public.conversation_members cm2 on cm2.conversation_id = cm1.conversation_id
+   where cm1.user_id = pt.client_id and cm2.user_id = pt.house_owner limit 1;
+  return cid;
+end $$;
+revoke all on function public.support_conversation_of(text, uuid) from public, anon, authenticated;
+
 -- Fatos: só o que o sistema registrou. Nada de texto livre das partes aqui.
 create or replace function public.support_collect_facts(p_type text, p_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
@@ -174,8 +233,10 @@ begin
   select * into pt from public.support_context_parties(p_type, p_id);
   if not found then return jsonb_build_object('contexto', p_type, 'encontrado', false); end if;
   f := jsonb_build_object('contexto', p_type, 'encontrado', true, 'coletado_em', now(),
-    'cliente', (select jsonb_build_object('id', pr.id, 'nome', pr.display_name) from public.profiles pr where pr.id = pt.client_id),
-    'casa', (select jsonb_build_object('id', h.id, 'nome', h.name, 'plano', h.plan) from public.houses h where h.id = pt.house_id));
+    'cliente', (select jsonb_build_object('id', pr.id, 'nome', pr.display_name, 'excluida', pr.deleted_at is not null,
+                  'identidade_retida', (select jsonb_build_object('nome', di.display_name, 'email', di.email, 'excluida_em', di.deleted_at) from public.deleted_account_identity di where di.user_id = pr.id))
+                from public.profiles pr where pr.id = pt.client_id),
+    'casa', (select jsonb_build_object('id', h.id, 'nome', h.name, 'plano', h.plan, 'dono_identidade_retida', (select jsonb_build_object('nome', di.display_name, 'email', di.email, 'excluida_em', di.deleted_at) from public.deleted_account_identity di where di.user_id = h.owner_id)) from public.houses h where h.id = pt.house_id));
   if p_type = 'pedido' then
     f := f || jsonb_build_object('pedido', (select to_jsonb(x) from (select o.id, o.title, o.price_cents, o.status, o.modality, o.scheduled_at, o.created_at, o.started_at, o.finished_at, o.expires_at from public.service_orders o where o.id = p_id) x));
     select array_agg(p.id) into pay_ids from public.payments p where p.order_id = p_id;
@@ -206,8 +267,8 @@ begin
   end if;
   if cid is not null then
     f := f || jsonb_build_object('conversa', coalesce((select jsonb_agg(to_jsonb(x) order by x.at) from (
-      select m.created_at as at, m.sender_id as de, m.from_assistant as assistente, m.staff_name as equipe, m.text as texto, (m.deleted_at is not null) as apagada
-        from public.messages m where m.conversation_id = cid order by m.created_at desc limit 30) x), '[]'::jsonb));
+      select m.created_at as at, m.sender_id as de, m.from_assistant as assistente, m.staff_name as equipe, coalesce(a.original_text, m.text) as texto, (m.deleted_at is not null) as apagada
+        from public.messages m left join public.message_archive a on a.message_id = m.id where m.conversation_id = cid order by m.created_at desc limit 30) x), '[]'::jsonb));
   end if;
   return f;
 end $$;
@@ -242,9 +303,12 @@ begin
   end if;
   if subj = me then subj := null; end if;
   if subj is not null and not exists (select 1 from public.profiles where id = subj) then subj := null; end if;
-  insert into public.support_cases (kind, priority, opened_by, subject_user, house_id, context_type, context_id, source, title, description, first_response_due)
-  values (p_kind, meta.priority, me, subj, hid, p_context_type, p_context_id, p_source, btrim(p_title), btrim(p_description), meta.first_response_due)
+  insert into public.support_cases (kind, priority, opened_by, subject_user, house_id, context_type, context_id, conversation_id, source, title, description, first_response_due)
+  values (p_kind, meta.priority, me, subj, hid, p_context_type, p_context_id, public.support_conversation_of(p_context_type, p_context_id), p_source, btrim(p_title), btrim(p_description), meta.first_response_due)
   returning id into cid;
+  -- mensagens já apagadas dessa conversa ficam retidas enquanto o caso durar
+  update public.message_archive set purge_after = greatest(purge_after, now() + interval '24 months')
+   where conversation_id = (select conversation_id from public.support_cases where id = cid);
   insert into public.support_case_parties (case_id, user_id, role) values (cid, me, 'autor');
   insert into public.support_case_snapshots (case_id, taken_by, facts) values (cid, null, public.support_collect_facts(p_context_type, p_context_id));
   insert into public.support_case_messages (case_id, channel, author_id, author_role, body) values (cid, 'autor', me, 'parte', btrim(p_description));
@@ -358,8 +422,10 @@ begin
   insert into public.support_case_log (case_id, actor, action, reason) values (p_id, me, 'dossie_consultado', left(nullif(btrim(coalesce(p_reason, '')), ''), 300));
   return jsonb_build_object(
     'caso', to_jsonb(c) - 'opened_by' - 'subject_user' || jsonb_build_object('aberto_por', c.opened_by, 'contra', c.subject_user),
-    'autor', (select jsonb_build_object('id', p.id, 'nome', p.display_name, 'tipo_conta', p.account_type) from public.profiles p where p.id = c.opened_by),
-    'envolvido', (select jsonb_build_object('id', p.id, 'nome', p.display_name, 'tipo_conta', p.account_type, 'convidado', exists (select 1 from public.support_case_parties sp where sp.case_id = c.id and sp.user_id = p.id and sp.role = 'envolvido')) from public.profiles p where p.id = c.subject_user),
+    'autor', (select jsonb_build_object('id', p.id, 'nome', p.display_name, 'tipo_conta', p.account_type, 'excluida', p.deleted_at is not null,
+               'identidade_retida', (select jsonb_build_object('nome', di.display_name, 'email', di.email, 'excluida_em', di.deleted_at) from public.deleted_account_identity di where di.user_id = p.id)) from public.profiles p where p.id = c.opened_by),
+    'envolvido', (select jsonb_build_object('id', p.id, 'nome', p.display_name, 'tipo_conta', p.account_type, 'excluida', p.deleted_at is not null,
+               'identidade_retida', (select jsonb_build_object('nome', di.display_name, 'email', di.email, 'excluida_em', di.deleted_at) from public.deleted_account_identity di where di.user_id = p.id), 'convidado', exists (select 1 from public.support_case_parties sp where sp.case_id = c.id and sp.user_id = p.id and sp.role = 'envolvido')) from public.profiles p where p.id = c.subject_user),
     'fatos', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'em', s.taken_at, 'por', s.taken_by, 'fatos', s.facts) order by s.taken_at) from public.support_case_snapshots s where s.case_id = c.id), '[]'::jsonb),
     'mensagens', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'canal', m.channel, 'de', m.author_id, 'papel', m.author_role, 'texto', m.body, 'em', m.created_at) order by m.created_at) from public.support_case_messages m where m.case_id = c.id), '[]'::jsonb),
     'provas', coalesce((select jsonb_agg(jsonb_build_object('id', e.id, 'enviada_por', e.submitted_by, 'canal', e.channel, 'path', e.path, 'nota', e.note, 'consentimento_em', e.consent_at) order by e.created_at) from public.support_case_evidence e where e.case_id = c.id), '[]'::jsonb),
@@ -463,20 +529,29 @@ begin
   return n;
 end $$;
 
+create or replace function public.purge_deleted_identities()
+returns integer language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  with d as (update public.deleted_account_identity set display_name = null, email = null, houses = '{}' where retain_until < now() and (display_name is not null or email is not null) returning 1) select count(*) into n from d;
+  return n;
+end $$;
+
 -- ============ 8) permissões ============
 revoke all on function public.open_support_case(text, text, text, text, uuid, uuid, text), public.my_support_cases(), public.my_support_case(uuid),
   public.add_support_case_message(uuid, text), public.submit_support_evidence(uuid, text, text, boolean),
   public.admin_support_queue(text), public.admin_support_dossier(uuid, text), public.admin_support_refresh_facts(uuid, text), public.admin_support_reply(uuid, text, text),
   public.admin_support_request_version(uuid, text), public.admin_support_set_status(uuid, text, text), public.admin_support_decide(uuid, text, text, boolean),
-  public.purge_support_cases(), public.support_kind_meta(text), public.add_business_days(timestamptz, integer) from public, anon, authenticated;
+  public.purge_support_cases(), public.purge_deleted_identities(), public.admin_deleted_identity(uuid, text, uuid), public.hold_archive_for_open_case(), public.support_kind_meta(text), public.add_business_days(timestamptz, integer) from public, anon, authenticated;
 grant execute on function public.open_support_case(text, text, text, text, uuid, uuid, text), public.my_support_cases(), public.my_support_case(uuid),
   public.add_support_case_message(uuid, text), public.submit_support_evidence(uuid, text, text, boolean),
   public.admin_support_queue(text), public.admin_support_dossier(uuid, text), public.admin_support_refresh_facts(uuid, text), public.admin_support_reply(uuid, text, text),
-  public.admin_support_request_version(uuid, text), public.admin_support_set_status(uuid, text, text), public.admin_support_decide(uuid, text, text, boolean) to authenticated;
+  public.admin_support_request_version(uuid, text), public.admin_support_set_status(uuid, text, text), public.admin_support_decide(uuid, text, text, boolean), public.admin_deleted_identity(uuid, text, uuid) to authenticated;
 
 do $$
 begin
   perform cron.schedule('purge-support-cases', '15 4 * * *', 'select public.purge_support_cases()');
+  perform cron.schedule('purge-deleted-identities', '25 4 * * *', 'select public.purge_deleted_identities()');
 exception when others then
   raise notice 'pg_cron indisponível: agende purge_support_cases() manualmente';
 end $$;

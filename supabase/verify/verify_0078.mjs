@@ -119,6 +119,18 @@ r = await call(A, `select admin_support_dossier($1,'Conferindo o pagamento') j`,
 const dos = r.rows?.[0]?.j;
 ok("dossiê: caso, autor, envolvido, fatos, mensagens e registro", dos && dos.autor.id === U.C && dos.envolvido.id === U.H && dos.envolvido.convidado === false && dos.fatos.length === 1 && dos.mensagens.length === 1, r.err ?? "");
 ok("dossiê: a consulta fica registrada com o motivo", (await su.query(`select reason from support_case_log where case_id=$1 and action='dossie_consultado'`, [c1])).rows[0]?.reason === "Conferindo o pagamento");
+
+// ---------- mensagem apagada continua visível ao administrador enquanto houver caso
+ok("o caso guarda a conversa entre as partes", (await su.query(`select conversation_id from support_cases where id=$1`, [c1])).rows[0].conversation_id === CONV);
+const MID = (await su.query(`select id from messages where conversation_id=$1 and sender_id=$2 limit 1`, [CONV, U.C])).rows[0].id;
+r = await call(U.C, `select delete_message($1)`, [MID]); ok("a pessoa apaga a própria mensagem", !r.err, r.err ?? "");
+ok("a conversa mostra '[mensagem apagada]' para as partes", (await su.query(`select text from messages where id=$1`, [MID])).rows[0].text === "[mensagem apagada]");
+ok("o arquivo da mensagem fica retido por ~24 meses (caso aberto)", new Date((await su.query(`select purge_after from message_archive where message_id=$1`, [MID])).rows[0].purge_after) > new Date(Date.now() + 700 * 864e5));
+r = await call(A, `select admin_support_refresh_facts($1,'Conferir mensagem apagada pela parte')`, [c1]); ok("administrador atualiza os fatos", !r.err, r.err ?? "");
+r = await call(A, `select admin_support_dossier($1) j`, [c1]);
+const convFact = JSON.stringify(r.rows[0].j.fatos);
+ok("dossiê mostra o texto REAL da mensagem apagada, marcada como apagada", convFact.includes("Combinamos sexta às 19h") && convFact.includes(`"apagada":true`), r.err ?? "");
+ok("ataque: a outra parte não lê o arquivo de mensagens", Boolean((await call(U.H, `select * from message_archive`)).err) || (await call(U.H, `select * from message_archive`)).rows.length === 0);
 r = await call(A, `select admin_support_reply($1,'envolvido','Pergunta cedo demais')`, [c1]); ok("não escreve à outra parte antes de convidá-la", Boolean(r.err));
 r = await call(A, `select admin_support_reply($1,'interna','Anotação interna: verificar o ledger')`, [c1]); ok("administrador anota internamente", !r.err);
 ok("anotação interna NÃO conta como resposta ao autor", (await su.query(`select first_response_at from support_cases where id=$1`, [c1])).rows[0].first_response_at === null);
@@ -169,7 +181,7 @@ await su.query(`update service_orders set status='cancelado' where id=$1`, [ORD]
 r = await call(A, `select admin_support_refresh_facts($1,'x')`, [c1]); ok("atualizar fatos exige motivo", Boolean(r.err));
 r = await call(A, `select admin_support_refresh_facts($1,'Conferir o estado atual do pedido')`, [c1]); ok("administrador atualiza os fatos", !r.err, r.err ?? "");
 const dos2 = (await call(A, `select admin_support_dossier($1) j`, [c1])).rows[0].j;
-ok("as duas versões dos fatos ficam (antes e depois), sem sobrescrever", dos2.fatos.length === 2 && dos2.fatos[0].fatos.pedido.status === "confirmado" && dos2.fatos[1].fatos.pedido.status === "cancelado");
+ok("as duas versões dos fatos ficam (antes e depois), sem sobrescrever", dos2.fatos.length === 3 && dos2.fatos[0].fatos.pedido.status === "confirmado" && dos2.fatos[2].fatos.pedido.status === "cancelado");
 
 // ---------- decisão
 r = await call(A, `select admin_support_decide($1,'procedente','curto')`, [c1]); ok("decisão sem motivo suficiente é recusada", Boolean(r.err));

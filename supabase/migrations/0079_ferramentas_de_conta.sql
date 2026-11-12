@@ -7,13 +7,13 @@
 -- ============ 1) e-mail de contato do suporte (editável no painel) ============
 create table if not exists public.support_contact (
   id boolean primary key default true check (id),
-  email text not null check (char_length(email) <= 120 and email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  email text check (email is null or (char_length(email) <= 120 and email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')),   -- vazio até o proprietário cadastrar o e-mail de suporte
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users(id) on delete set null
 );
 alter table public.support_contact enable row level security;
 revoke all on public.support_contact from anon, authenticated;
-insert into public.support_contact (id, email) values (true, 'gusborba9@gmail.com') on conflict (id) do nothing;
+insert into public.support_contact (id, email) values (true, null) on conflict (id) do nothing;
 
 create or replace function public.support_contact_email()
 returns text language sql stable security definer set search_path = public as $$
@@ -26,12 +26,13 @@ declare old_email text;
 begin
   if not public.is_admin() then raise exception 'not_admin' using errcode = '42501'; end if;
   if char_length(btrim(coalesce(p_reason, ''))) < 5 then raise exception 'Informe o motivo da troca.'; end if;
-  if p_email is null or char_length(btrim(p_email)) > 120 or btrim(p_email) !~* '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'E-mail inválido.'; end if;
+  -- vazio apaga o e-mail (a página Suporte deixa de mostrá-lo)
+  if nullif(btrim(coalesce(p_email, '')), '') is not null and (char_length(btrim(p_email)) > 120 or btrim(p_email) !~* '^[^@\s]+@[^@\s]+\.[^@\s]+$') then raise exception 'E-mail inválido.'; end if;
   select email into old_email from public.support_contact where id;
-  insert into public.support_contact (id, email, updated_by) values (true, lower(btrim(p_email)), auth.uid())
+  insert into public.support_contact (id, email, updated_by) values (true, lower(nullif(btrim(coalesce(p_email, '')), '')), auth.uid())
     on conflict (id) do update set email = excluded.email, updated_at = now(), updated_by = auth.uid();
   insert into public.support_case_log (case_id, actor, action, reason, data)
-    values (null, auth.uid(), 'email_contato_alterado', left(btrim(p_reason), 300), jsonb_build_object('de', old_email, 'para', lower(btrim(p_email))));
+    values (null, auth.uid(), 'email_contato_alterado', left(btrim(p_reason), 300), jsonb_build_object('de', old_email, 'para', lower(nullif(btrim(coalesce(p_email, '')), ''))));
 end $$;
 
 -- ============ 2) suspensão reversível ============
@@ -152,6 +153,9 @@ returns jsonb language plpgsql stable security definer set search_path = public 
 declare b jsonb := '[]'::jsonb;
 begin
   if exists (select 1 from public.admins where user_id = p_user) then b := b || '["Conta de administrador: peça a remoção do acesso de administrador primeiro."]'::jsonb; end if;
+  if exists (select 1 from public.support_cases c where (c.opened_by = p_user or c.subject_user = p_user) and c.status not in ('resolvido','recusado') and c.kind not in ('exclusao_conta','exclusao_dados','lgpd_dados','duvida','sugestao','tecnico','conta_acesso')) then
+    b := b || '["Há um chamado em análise envolvendo você. A exclusão só pode ocorrer depois da decisão."]'::jsonb;
+  end if;
   if exists (select 1 from public.refund_requests f where f.client_id = p_user and f.status in ('pendente','aprovado')) then b := b || '["Há um pedido de reembolso seu em andamento."]'::jsonb; end if;
   if exists (select 1 from public.service_orders o where o.client_id = p_user and o.status in ('confirmado','em_andamento','reembolso_pendente')) then b := b || '["Há um serviço contratado em andamento."]'::jsonb; end if;
   if exists (select 1 from public.reservations r join public.events e on e.id = r.event_id where r.user_id = p_user and r.status in ('confirmada','reembolso_pendente') and e.starts_at > now() - interval '1 day') then b := b || '["Há uma reserva de ritual confirmada que ainda não aconteceu."]'::jsonb; end if;
@@ -257,6 +261,15 @@ begin
   end if;
   if jsonb_array_length(public.account_deletion_blockers(p_user)) > 0 then raise exception 'Há impedimentos pendentes.'; end if;
   select coalesce(jsonb_agg(jsonb_build_object('bucket', f.bucket, 'path', f.path)), '[]'::jsonb) into files from public.account_files(p_user) f;
+
+  -- identidade retida (só administrador, 5 anos): autoria de aceites e transações continua identificável
+  insert into public.deleted_account_identity (user_id, account_type, display_name, email, houses, request_id)
+    select p_user, pr.account_type, pr.display_name, (select u.email from auth.users u where u.id = p_user),
+           coalesce((select array_agg(h.name order by h.created_at) from public.houses h where h.owner_id = p_user), '{}'), p_request
+      from public.profiles pr where pr.id = p_user and pr.deleted_at is null
+    on conflict (user_id) do nothing;
+  delete from public.message_archive a where a.sender_id = p_user
+    and not exists (select 1 from public.support_cases c where c.conversation_id = a.conversation_id and c.status not in ('resolvido','recusado'));
 
   -- conteúdo e vínculos pessoais
   delete from public.notifications where user_id = p_user;

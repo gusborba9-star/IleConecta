@@ -63,13 +63,16 @@ await su.query(`insert into follows(follower_id,house_id) values ($1,$2)`, [U.C,
 await su.query(`update profiles set bio='Minha bio pessoal', city='Salvador', avatar_url='https://x/avatar.png' where id=$1`, [U.C]);
 
 // ---------- e-mail de contato
-r = await as("anon", null, (c) => q(c, `select support_contact_email() e`)); ok("visitante lê o e-mail de contato (inicial = o do proprietário)", r.rows?.[0]?.e === "gusborba9@gmail.com", r.err ?? r.rows?.[0]?.e);
+r = await as("anon", null, (c) => q(c, `select support_contact_email() e`)); ok("e-mail de contato nasce vazio (proprietário cadastra depois)", !r.err && r.rows?.[0]?.e == null, r.err ?? r.rows?.[0]?.e);
 r = await call(U.C, `select admin_set_support_email('novo@ile.com','Criei o e-mail oficial')`); ok("ataque: cliente não troca o e-mail de contato", Boolean(r.err));
 r = await call(A, `select admin_set_support_email('sem-arroba','Criei o e-mail oficial')`); ok("e-mail inválido é recusado", Boolean(r.err));
 r = await call(A, `select admin_set_support_email('novo@ile.com','x')`); ok("troca sem motivo é recusada", Boolean(r.err));
 r = await call(A, `select admin_set_support_email('Suporte@Ile.com','Criei o e-mail oficial do suporte')`); ok("administrador troca o e-mail (guardado em minúsculas)", !r.err, r.err ?? "");
 r = await as("anon", null, (c) => q(c, `select support_contact_email() e`)); ok("visitante já vê o novo e-mail", r.rows?.[0]?.e === "suporte@ile.com");
-ok("a troca fica registrada com o e-mail antigo, o novo e o motivo", (await su.query(`select data, reason from support_case_log where action='email_contato_alterado'`)).rows.some((x) => x.data.de === "gusborba9@gmail.com" && x.data.para === "suporte@ile.com" && /oficial/.test(x.reason)));
+ok("a troca fica registrada com o e-mail antigo, o novo e o motivo", (await su.query(`select data, reason from support_case_log where action='email_contato_alterado'`)).rows.some((x) => x.data.de == null && x.data.para === "suporte@ile.com" && /oficial/.test(x.reason)));
+r = await call(A, `select admin_set_support_email('','Ainda não tenho o e-mail oficial')`); ok("administrador pode esvaziar o e-mail", !r.err, r.err ?? "");
+r = await as("anon", null, (c) => q(c, `select support_contact_email() e`)); ok("vazio: visitante não vê e-mail", r.rows?.[0]?.e == null);
+await call(A, `select admin_set_support_email('suporte@ile.com','Criei o e-mail oficial do suporte')`);
 r = await as("anon", null, (c) => q(c, `select * from support_contact`)); ok("ataque: a tabela do e-mail não é lida direto", Boolean(r.err));
 
 // ---------- suspensão
@@ -135,6 +138,10 @@ r = await svcRole(`select * from account_deletions_due()`); ok("impedimento novo
 ok("a pessoa é avisada de que não foi excluída", Number((await su.query(`select count(*)::int n from notifications where user_id=$1 and text like 'Sua exclusão não foi feita%'`, [U.C])).rows[0].n) === 1);
 await su.query(`update service_orders set status='concluido' where id=$1`, [ORD]);
 
+// chamado aberto bloqueia a exclusão até a decisão
+r = await call(U.C, `select open_support_case('disputa','Disputa sobre o atendimento','Descrição detalhada do que aconteceu na disputa.',null,null,null) id`); const DC = r.rows?.[0]?.id; ok("chamado de disputa aberto", Boolean(DC), r.err ?? "");
+r = await call(U.C, `select request_account_deletion('EXCLUIR')`); ok("com chamado de disputa em análise, a exclusão é recusada", Boolean(r.err) && /chamado/.test(r.err), r.err ?? "pediu");
+await su.query(`update support_cases set status='resolvido' where id=$1`, [DC]);
 // pedido definitivo
 r = await call(U.C, `select request_account_deletion('EXCLUIR') id`); const REQ3 = r.rows[0].id;
 r = await call(A, `select admin_decide_account_deletion($1,'antecipar','Pessoa confirmou no chamado que quer excluir já')`, [REQ3]); ok("administrador antecipa a execução a pedido registrado", !r.err, r.err ?? "");
@@ -160,6 +167,17 @@ ok("o motivo livre do reembolso é apagado, o valor e o estado ficam", (await su
 ok("pedido marcado como executado", (await su.query(`select status from account_deletion_requests where id=$1`, [REQ3])).rows[0].status === "executada");
 r = await svcRole(`select anonymize_account($1,$2)`, [U.C, REQ3]); ok("não se anonimiza duas vezes", Boolean(r.err));
 ok("a exclusão fica no registro, sem dados pessoais", (await su.query(`select data from support_case_log where action='conta_excluida'`)).rows.length === 1);
+const idr = (await su.query(`select * from deleted_account_identity where user_id=$1`, [U.C])).rows[0];
+ok("identidade retida: nome e tipo de conta guardados à parte", idr && idr.display_name && idr.display_name !== "Conta excluída" && idr.account_type === "cliente" && new Date(idr.retain_until) > new Date(Date.now() + 4.9 * 365 * 864e5), JSON.stringify(idr));
+r = await call(U.C, `select * from deleted_account_identity`); ok("ataque: ninguém lê a identidade retida direto", Boolean(r.err) || r.rows.length === 0);
+r = await call(U.H, `select admin_deleted_identity($1,'Disputa sobre aceite antigo')`, [U.C]); ok("ataque: não-administrador não consulta a identidade", Boolean(r.err));
+r = await call(A, `select admin_deleted_identity($1,'curto')`, [U.C]); ok("consulta sem motivo é recusada", Boolean(r.err));
+r = await call(A, `select admin_deleted_identity($1,'Disputa sobre aceite antigo') j`, [U.C]); ok("administrador consulta a identidade com motivo", !r.err && r.rows[0].j.nome === idr.display_name, r.err ?? "");
+ok("a consulta fica registrada", Number((await su.query(`select count(*)::int n from support_case_log where action='identidade_consultada'`)).rows[0].n) === 1);
+ok("aceites mantêm o vínculo com a conta excluída (identificável pelo administrador)", Number((await su.query(`select count(*)::int n from legal_consents where user_id=$1`, [U.C])).rows[0].n) > 0);
+await su.query(`update deleted_account_identity set retain_until = now() - interval '1 day' where user_id=$1`, [U.C]);
+await su.query(`select purge_deleted_identities()`);
+ok("vencido o prazo, nome e e-mail são apagados", (await su.query(`select display_name, email from deleted_account_identity where user_id=$1`, [U.C])).rows[0].display_name === null);
 
 // guarda contra tabelas novas: qualquer coluna que aponte para a pessoa precisa estar na lista de tabelas que PODEM guardar o vínculo
 const refs = (await su.query(`select c.conrelid::regclass::text t, a.attname col from pg_constraint c join pg_attribute a on a.attrelid=c.conrelid and a.attnum=c.conkey[1]
