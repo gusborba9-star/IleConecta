@@ -14,8 +14,9 @@ const as = async (role, uid, fn) => { const c = await connect("vf0089"); try { a
 const q = (c, sql, p) => c.query(sql, p).then((r) => ({ rows: r.rows, n: r.rowCount }), (e) => ({ err: e.message, code: e.code }));
 const j = (o) => JSON.stringify(o);
 const ADM = "a1000000-0000-0000-0000-0000000000a1", OWN_A = "b1000000-0000-0000-0000-0000000000b1", OWN_B = "b2000000-0000-0000-0000-0000000000b2";
+const CLI_NOHOUSE = "c9000000-0000-0000-0000-0000000000c9";
 const HA = "d1000000-0000-0000-0000-0000000000d1", HB = "d2000000-0000-0000-0000-0000000000d2";
-for (const [u, t] of [[ADM, "cliente"], [OWN_A, "casa"], [OWN_B, "casa"]]) {
+for (const [u, t] of [[ADM, "cliente"], [OWN_A, "casa"], [OWN_B, "casa"], [CLI_NOHOUSE, "cliente"]]) {
   await su.query("insert into auth.users(id,email) values ($1,$2)", [u, u + "@x"]);
   await su.query("insert into profiles(id,account_type,display_name,city) values ($1,$2,'Pessoa Teste','Salvador') on conflict (id) do update set account_type=excluded.account_type", [u, t]);
 }
@@ -80,6 +81,8 @@ ok("o card traz o fim da tolerância e a data do bloqueio total", !!s0.charges[0
 r = await st(OWN_A, HB); ok("outra casa não lê o status da casa B", !!r.err && /not_allowed/.test(r.err), r.err);
 r = await st(ADM, HB); ok("administrador lê o status de qualquer casa", !r.err);
 r = await st(OWN_A, HA); ok("casa A (tudo pago): sem atraso → card não aparece", !r.err && r.rows[0].s.overdue === false && r.rows[0].s.charges.length === 0, j(r.rows?.[0]));
+r = await as("authenticated", OWN_B, (c) => q(c, "select public.my_house_billing_status() s")); ok("sem informar a casa, a dona consulta a própria", !r.err && r.rows[0].s.house_id === HB, j(r.rows?.[0]));
+r = await as("authenticated", CLI_NOHOUSE, (c) => q(c, "select public.my_house_billing_status() s")); ok("quem não tem casa recebe estado normal, sem erro", !r.err && r.rows[0].s.overdue === false && r.rows[0].s.house_id === null, j(r.rows?.[0]));
 r = await as("anon", null, (c) => q(c, "select public.my_house_billing_status($1)", [HA])); ok("visitante não consulta", !!r.err, r.err);
 r = await sv("select public.platform_charge_attach($1,'stripe','cs_b1','pix','https://pay.example/b1')", [c2]);
 await sv("select public.platform_charge_confirm('stripe','cs_b1',8990,null)");
