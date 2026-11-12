@@ -1,4 +1,4 @@
--- PASSO 66: 0086_painel_financeiro_admin — parte 1 de 3
+-- PASSO 66: 0086_painel_financeiro_admin — parte 1 de 4
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 -- Fase 4: painel financeiro da administração (Blueprint §19.6 e §19.7).
 -- Só leitura. Resumo do período e conferência (pagamentos × livro-razão × regra de comissão vigente na época).

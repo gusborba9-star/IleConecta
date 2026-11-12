@@ -36,7 +36,7 @@ if (process.argv[1].endsWith("split-rollout.mjs")) {
   let num = Number(process.argv[2]); const files = process.argv.slice(3);
   for (const f of files) {
     const sql = readFileSync(`supabase/migrations/${f}`, "utf8");
-    const groups = chunk(statements(sql));
+    const groups = chunk(statements(sql), Number(process.env.MAX_LINES) || 110);
     groups.forEach((g, k) => {
       const body = g.map((s) => s.replace(/^\n+/, "")).join("\n\n");
       const head = `-- PASSO ${num}: ${f.replace(/\.sql$/, "")} — parte ${k + 1} de ${groups.length}\n-- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.\n`;
