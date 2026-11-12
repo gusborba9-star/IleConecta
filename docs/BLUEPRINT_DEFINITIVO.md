@@ -432,11 +432,34 @@ Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos
 | Médio | 200 | R$ 49,90 |
 | Grande | 500 | R$ 89,90 |
 
-Complementam franquia mensal. Falhas e retries técnicos não consomem créditos duplicados. Validade, expiração, ordem de consumo e tratamento em downgrade/cancelamento devem ser definidos em regra central antes da cobrança comercial.
+Complementam franquia mensal. Falhas e retries técnicos não consomem créditos duplicados.
+
+Regras aprovadas em 12/11/2026 (registro em §33.1):
+- **Franquia mensal:** 300 respostas no Profissional e 3.000 no Premium. Não acumula de um mês para o outro.
+- **Validade do pacote:** 3 meses a partir da compra; depois, o saldo restante zera.
+- **Ordem de consumo:** primeiro a franquia mensal; depois os créditos comprados, do pacote mais antigo para o mais novo.
+- **Sem devolução nem ressarcimento:** a venda é concluída e entregue na compra. A cláusula de arrependimento do CDC (7 dias) será verificada com advogado antes da cobrança real.
+- **Débito único por resposta**, mesmo com retries técnicos.
+- **Avisos** ao atingir 80% e 100% da franquia mensal.
+- **Compra instantânea** pela cobrança da plataforma (§18.5). Só entra à venda depois destas regras implementadas e testadas.
+- Em downgrade ou cancelamento, os créditos comprados continuam valendo até o vencimento do próprio pacote, mas só são usados se o plano vigente incluir a assistente.
 
 ## 18.4 Outras receitas
 
 Comissões, assinaturas, vagas adicionais, créditos de IA, destaques, impulsionamentos e outros serviços aprovados.
+
+## 18.5 Cobrança da plataforma às casas e inadimplência
+
+Aprovado em 12/11/2026 (registro em §33.1). Vale para planos, vagas adicionais, destaque, impulsionamento e créditos de IA.
+
+- **Meios:** cartão, cartão recorrente e Pix avulso. O sistema emite mensalmente a cobrança (boleto ou QR code Pix, conforme o provedor), com aviso mínimo de 3 dias antes do vencimento (prazo configurável no painel).
+- **Calendário próprio:** o calendário de cobranças, os avisos e a tolerância ficam no banco da plataforma. O provedor só processa o pagamento.
+- **Avisos escalonados:** fatura disponível; véspera e dia do vencimento; durante a tolerância ("pague e evite a suspensão").
+- **Tolerância:** 3 dias úteis após o vencimento. Sem multa nem juros. Não há suspensão enquanto houver pagamento em processamento.
+- **Suspensão automática e parcial:** a casa só conclui o que já estava em andamento. Não pode fazer novas vendas ou reservas pela plataforma nem iniciar campanhas. Destaques e impulsionamentos ficam pausados. Mantém acesso aos próprios dados. Reverte automaticamente com o pagamento.
+- **Sem selo** de pontualidade ("Casa em dia").
+- **Preços** (plano, vaga adicional, destaque, impulsionamento, pacotes) ficam em tabela central editável no painel, com motivo e auditoria.
+- **Cobrança real** só é ligada por decisão expressa do proprietário.
 
 ---
 
@@ -473,7 +496,7 @@ Referências antigas a Asaas e Mercado Pago devem ser reconciliadas. Código/con
 
 ### 19.4.1 Estado da arquitetura financeira (EXEC-01)
 
-Marketplace (Stripe Connect) e Platform Billing (cobranças próprias da plataforma, a cargo da Efí) são domínios independentes, com integrações, registros, webhooks, estados financeiros e conciliações próprios; falha em um não pode afetar o outro. O contrato do Marketplace está implementado e testado em ambiente local (PR #140, Draft, ainda não aplicada em produção); o contrato recomendado para Platform Billing está em `docs/financeiro/CONTRATOS_MARKETPLACE_E_PLATFORM_BILLING.md` e **não está implementado**.
+Marketplace (Stripe Connect) e Platform Billing (cobranças próprias da plataforma; Stripe como adaptador inicial, com outros provedores incluídos depois por novo adaptador e escolhidos no painel admin, conforme §33.1) são domínios independentes, com integrações, registros, webhooks, estados financeiros e conciliações próprios; falha em um não pode afetar o outro. O contrato do Marketplace está implementado e testado em ambiente local (PR #140, Draft, ainda não aplicada em produção); o contrato recomendado para Platform Billing está em `docs/financeiro/CONTRATOS_MARKETPLACE_E_PLATFORM_BILLING.md` e **não está implementado**.
 
 No Marketplace, o código da EXEC-01 registra por pagamento: provedor, conta de origem, sessão de checkout, PaymentIntent e Charge, comissão, tarifa do processador (desconhecida = pendente, nunca zero) e lançamentos no ledger. Validação em integração real (Stripe real e Edge Runtime do Supabase) ainda não foi feita e não deve ser afirmada.
 
@@ -771,6 +794,17 @@ O produto será estruturalmente consistente quando:
 - **Mudança comercial/jurídica:** altera preço, comissão, contrato, responsabilidade ou política; exige aprovação específica e validação apropriada.
 
 Não criar nova versão documental para cada mudança de implementação. Decisão técnica isolada não altera o produto aprovado.
+
+## 33.1 Registro de mudanças aprovadas
+
+### 12/11/2026 (aprovação do proprietário, em conversa)
+
+| Mudança | Motivo | Impacto |
+|---|---|---|
+| **Provedor da cobrança da plataforma:** Stripe como adaptador inicial, no lugar da Efí citada em §19.4.1. Outros provedores entram depois por adaptador, escolhidos no painel admin. | O Stripe já está integrado e cobre cartão, cartão recorrente e Pix avulso. A Efí e outros ficam como opções futuras. | Platform Billing nasce com o Stripe. Chaves ficam nos segredos do Supabase, nunca no painel. O painel escolhe provedor por tipo de cobrança, meios habilitados e prazos. |
+| **Preços dos planos** confirmados: Essencial R$ 89,90, Profissional R$ 179,90, Premium R$ 299,90 (§18.1). | O código e a produção ainda tinham R$ 139,90 e R$ 199,00. | Configuração de produção alinhada ao Blueprint. Sem cobrança real. |
+| **Inadimplência e cobrança da plataforma** (§18.5). | Definir calendário, avisos, tolerância e suspensão parcial. | Novo domínio de cobrança, com calendário no banco. |
+| **Créditos de IA** (§18.3): validade de 3 meses, sem devolução, ordem de consumo e avisos. | Fechar as regras exigidas antes da venda. | Pacotes só à venda após implementação e testes. Verificação jurídica do CDC pendente. |
 
 ---
 

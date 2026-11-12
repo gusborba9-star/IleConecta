@@ -27,8 +27,8 @@ export const DEFAULT_CONFIG = {
   pricing: {
     plans: {
       base: { name: "Essencial", monthly: 89.9 },
-      intermediario: { name: "Profissional", monthly: 139.9 },
-      maximo: { name: "Premium", monthly: 199 },
+      intermediario: { name: "Profissional", monthly: 179.9 },
+      maximo: { name: "Premium", monthly: 299.9 },
     },
     // Acesso extra da equipe da casa, por mês e conforme o plano da casa (sobe sozinho quando a casa muda de plano).
     extra_seat: { base: 29.9, intermediario: 39.9, maximo: 39.9 },
