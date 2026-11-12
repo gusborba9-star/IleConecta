@@ -1,0 +1,101 @@
+// Regras puras da Cobrança da Plataforma no Stripe (sem rede, sem Deno): montagem do pedido, valor da tarifa, assinatura do aviso.
+const KINDS_BY_METHOD = { card: "card", card_recurring: "card", pix: "pix" };
+
+export function encodeForm(obj, prefix = "", out = []) {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null) continue;
+    const key = prefix ? `${prefix}[${k}]` : k;
+    if (Array.isArray(v)) v.forEach((x, i) => (typeof x === "object" ? encodeForm(x, `${key}[${i}]`, out) : out.push(`${encodeURIComponent(`${key}[${i}]`)}=${encodeURIComponent(String(x))}`)));
+    else if (typeof v === "object") encodeForm(v, key, out);
+    else out.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`);
+  }
+  return out;
+}
+export const formBody = (obj) => encodeForm(obj).join("&");
+
+/** Meios aceitos pelo painel -> tipos do Stripe, sem repetir. Só 'card' e 'pix' existem no Stripe; 'card_recurring' guarda o cartão para cobrar de novo. */
+export function stripeMethodTypes(methods) {
+  const types = [];
+  for (const m of methods ?? []) {
+    const t = KINDS_BY_METHOD[m];
+    if (t && !types.includes(t)) types.push(t);
+  }
+  return types;
+}
+
+/** A página de pagamento vale de 30 min a 24 h no Stripe; o Pix pode durar até o fim da sessão. */
+export function checkoutExpiry(nowMs = Date.now(), hours = 23) {
+  return Math.floor(nowMs / 1000) + Math.round(hours * 3600);
+}
+
+/** Pedido da página de pagamento. O valor vem SEMPRE da fatura (banco), nunca da pessoa. */
+export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtSec }) {
+  const types = stripeMethodTypes(methods);
+  if (!types.length) throw new Error("Nenhum meio de pagamento disponível.");
+  const keepCard = (methods ?? []).includes("card_recurring") && types.includes("card");
+  const params = {
+    mode: "payment",
+    locale: "pt-BR",
+    payment_method_types: types,
+    client_reference_id: charge.id,
+    metadata: { charge_id: charge.id, house_id: charge.house_id, kind: charge.kind },
+    line_items: [{ quantity: 1, price_data: { currency: "brl", unit_amount: Number(charge.amount_cents), product_data: { name: String(charge.description || "Ilê Conecta").slice(0, 120) } } }],
+    payment_intent_data: { description: `Ilê Conecta — ${charge.description || charge.kind}`.slice(0, 300), metadata: { charge_id: charge.id } },
+    success_url: `${appUrl}/planos?fatura=${charge.id}&retorno=pago`,
+    cancel_url: `${appUrl}/planos?fatura=${charge.id}&retorno=cancelado`,
+    expires_at: expiresAtSec,
+  };
+  if (email) params.customer_email = email;
+  if (types.includes("pix")) params.payment_method_options = { pix: { expires_after_seconds: Math.max(60, Math.min(86400, expiresAtSec - Math.floor(Date.now() / 1000))) } };
+  if (keepCard) params.payment_intent_data.setup_future_usage = "off_session";
+  return params;
+}
+
+/**
+ * Tarifa do Stripe a partir do lançamento do saldo. Desconhecida = null, NUNCA zero:
+ * só vale se o detalhamento fecha com o total, ou se há item stripe_fee explícito, ou se o total é 0 de forma explícita.
+ */
+export function feeFromBalanceTransaction(bt) {
+  if (!bt || typeof bt !== "object") return null;
+  const details = bt.fee_details;
+  if (!Array.isArray(details)) return null;
+  if (!details.every((d) => d && Number.isFinite(Number(d.amount)))) return null;
+  if (Number.isFinite(Number(bt.fee)) && details.reduce((a, d) => a + Number(d.amount), 0) !== Number(bt.fee)) return null;
+  const stripeEntries = details.filter((d) => d.type === "stripe_fee");
+  const fee = stripeEntries.reduce((a, d) => a + Number(d.amount), 0);
+  if (fee === 0 && !stripeEntries.length && !(typeof bt.fee === "number" && bt.fee === 0)) return null;
+  return fee;
+}
+
+export function parseSignature(header) {
+  const out = { t: null, v1: [] };
+  for (const part of String(header ?? "").split(",")) {
+    const [k, v] = part.split("=");
+    if (k === "t") out.t = Number(v);
+    else if (k === "v1" && v) out.v1.push(v);
+  }
+  return out;
+}
+
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+function timingSafeEqual(a, b) {
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Assinatura do aviso (HMAC-SHA256) com janela de 5 minutos. */
+export async function verifyStripeSignature(rawBody, header, secret, nowMs = Date.now(), toleranceSec = 300) {
+  const { t, v1 } = parseSignature(header);
+  if (!secret || !t || v1.length === 0) return false;
+  if (Math.abs(nowMs / 1000 - t) > toleranceSec) return false;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = hex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${t}.${rawBody}`)));
+  return v1.some((sig) => sig.length === mac.length && timingSafeEqual(sig, mac));
+}
+
+export function classifyEvent(type) {
+  if (type === "checkout.session.completed" || type === "checkout.session.async_payment_succeeded") return "paid_candidate";
+  if (type === "checkout.session.async_payment_failed" || type === "checkout.session.expired") return "failed";
+  return "ignore";
+}
