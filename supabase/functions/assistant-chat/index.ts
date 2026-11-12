@@ -39,6 +39,7 @@ const MESSAGES: Record<string, string> = {
   assistente_desativada: "Esta casa ainda não ativou a assistente. Fale diretamente com a casa.",
   atendimento_humano: "A casa está atendendo esta conversa e responde por aqui.",
   cota_mensal: "A assistente desta casa atingiu o limite de atendimentos do mês. Fale diretamente com a casa.",
+  casa_indisponivel: "A assistente desta casa está indisponível no momento. Fale diretamente com a casa.",
   muitas_mensagens: "Você enviou muitas mensagens seguidas. Aguarde alguns minutos e tente de novo.",
 };
 
@@ -115,6 +116,13 @@ Deno.serve(async (req) => {
   const { data: featRow } = await admin.from("platform_settings").select("value").eq("key", "features").maybeSingle();
   if (!featureEnabled(featRow?.value, "assistant", house.owner_id)) {
     return json(403, { error: "recurso_desativado", message: "A assistente está temporariamente indisponível." });
+  }
+
+  // Cobrança da plataforma: casa em suspensão parcial ou total não usa a assistente (custo de IA). Falha na leitura NÃO derruba a assistente (domínios independentes).
+  const { data: billingLevel, error: billingErr } = await admin.rpc("house_billing_level", { h: house.id });
+  if (billingErr) console.error("house_billing_level", billingErr.message);
+  else if (billingLevel && billingLevel !== "ok") {
+    return json(403, { error: "casa_indisponivel", message: MESSAGES.casa_indisponivel });
   }
 
   // Matriz central de planos (limites da assistente por plano). O banco devolve sempre uma matriz válida; se a leitura falhar, valem os valores iniciais.
