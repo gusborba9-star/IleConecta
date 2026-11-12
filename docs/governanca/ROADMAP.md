@@ -109,8 +109,16 @@ Critério de saída:
 
 **Situação (2026-11-11): concluída na parte que depende só de engenharia.** Matriz e provas em `MATRIZ_JORNADAS_FASE3.md`.
 - Testadas: jornadas 1 a 10 e 12 (banco real local, concorrência, repetição, permissão negada, mutações detectadas). Entregas da etapa: aceite único dos Termos e página "Termos e normas" (0076, passos 40–42); expiração automática das retenções com aviso à fila de espera (0077, passo 43, rotina a cada minuto); assistente com regra de assunto e acolhimento no luto; serviços agrupados por situação.
-- Pendentes de decisão ou de fase: 11 (CRM, Fase 5), 13 (planos, depende de preços e limites), 14 (divulgação, depende de preços e posições) e o canal de suporte da jornada 10 (assistente de suporte + pedidos ao painel administrativo, em desenho com o proprietário).
+- Pendentes de decisão ou de fase: 11 (CRM, Fase 5), 13 (planos, depende de preços e limites), 14 (divulgação, depende de preços e posições) e o canal de suporte da jornada 10, que passou a ser a etapa Suporte (abaixo).
 - Layout e navegação seguem para a etapa própria (Fase 6).
+
+**Etapa Suporte (2026-11-11): em produção (banco, site e migrações 0078–0082, passos 44–59).**
+- Entrada única "Relatar ocorrência" (clientes e casas): o chamado chega ao painel com fatos reais da plataforma; documentos e fotos só se a pessoa optar. Prioridade e prazo por tipo (risco de vida imediato; golpe, fraude, abuso, pagamento e reserva em 24 h; LGPD em 15 dias; dúvida e sugestão em 3 dias úteis). Limite de 5 chamados abertos por pessoa (risco de vida isento). Retenção: 12 meses, 24 com prova ou conflito.
+- Painel admin "Suporte": fila, decisão registrada, mensagens reais de conversa em disputa mesmo se apagadas (acesso registrado), identidade retida de contas excluídas (5 anos).
+- Conta: exportar dados, excluir conta (7 dias de reflexão e anonimização; registros de pagamento, reembolso e aceite mantidos), suspensão reversível, recuperação de senha, e-mail de suporte editável pelo painel (criado vazio).
+- Assistente Conecta: só propõe chamado, a pessoa confirma; abre sozinha apenas em risco de vida; limite de 20 por hora e 80 por dia.
+- Ao publicar: funções de borda `support-admin` e `conecta` (Action manual) e Redirect URL `/redefinir-senha` no Supabase Auth. Avaliação da Conecta com modelo real (`supabase/verify/eval_conecta.mjs`) ainda pendente de chave.
+- Decisão do proprietário: Termos inalterados por ora. Texto de ciência (administrador vê mensagens apagadas durante um caso; identidade retida por 5 anos) exige nova versão dos Termos e novo aceite, e fica para depois.
 
 ### Fase 4 — Modelo comercial, financeiro e jurídico operacional
 
