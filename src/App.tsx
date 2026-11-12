@@ -16,6 +16,8 @@ import Highlights from "@/pages/Highlights";
 import Plans from "@/pages/Plans";
 import Activity from "@/pages/Activity";
 import Support from "@/pages/Support";
+import MyCases from "@/pages/MyCases";
+import { ForgotPassword, ResetPassword } from "@/pages/Recover";
 import Terms from "@/pages/Terms";
 import HouseMembers from "@/pages/HouseMembers";
 import Divulgacao from "@/pages/Divulgacao";
@@ -66,6 +68,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/recuperar-senha" element={<ForgotPassword />} />
+      <Route path="/redefinir-senha" element={<ResetPassword />} />
       <Route element={<PublicLayout />}>
         <Route path="/sobre/:slug" element={<Info />} />
         <Route path="/c/:slug" element={<PublicHousePage />} />
@@ -91,6 +95,8 @@ export default function App() {
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />
+        <Route path="/suporte/chamados" element={<MyCases />} />
+        <Route path="/suporte/chamados/:id" element={<MyCases />} />
         <Route path="/termos" element={<Terms />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
         <Route path="/divulgacao" element={<Divulgacao />} />

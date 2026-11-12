@@ -1,16 +1,23 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/base";
 import { INFO_PAGES } from "@/content/institutional";
+import { FAQ } from "@/content/faq";
 import { LifeBuoy } from "lucide-react";
+import { Button } from "@/components/base";
+import ConectaChat from "@/components/support/ConectaChat";
+import AccountTools from "@/components/support/AccountTools";
+import ReportOccurrence from "@/components/support/ReportOccurrence";
+import { useApp } from "@/contexts/AppContext";
+import { supportEmail } from "@/lib/support";
 
-const FAQ = [
-  { q: "Como mudo o plano da minha casa?", a: "Veja os planos em Planos. Por enquanto a troca de plano é feita com a equipe da plataforma." },
-  { q: "Quando a casa recebe o valor de um evento?", a: "O pagamento do cliente vai direto para a conta de pagamento da casa, sem retenção pela plataforma. A tarifa do Stripe é cobrada da casa." },
-  { q: "Qual é a taxa da plataforma?", a: "15% sobre vagas de rituais e 4% sobre serviços contratados pela plataforma. Atendimentos combinados direto com a casa não têm taxa." },
-  { q: "A assistente virtual pode errar?", a: "Ela usa apenas os serviços, valores e horários cadastrados pela casa e avisa quando precisa confirmar algo. Em caso de dúvida, fale direto com a casa." },
-];
 
 export default function Support() {
+  const { currentUser, isRemoteAuth } = useApp();
+  const [email, setEmail] = useState<string | null>(null);
+  const [report, setReport] = useState(false);
+  useEffect(() => { void supportEmail().then(setEmail); }, []);
+  const live = Boolean(currentUser) && isRemoteAuth;
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       <Card className="page-hero p-6">
@@ -19,8 +26,19 @@ export default function Support() {
           <h1 className="font-display font-bold text-2xl">Suporte</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Em breve, o atendimento do suporte será feito primeiro por uma assistente virtual que conhece a plataforma e as regras. Enquanto isso, veja as respostas abaixo.
+          Aconteceu algo? Relate a ocorrência e a equipe analisa com os fatos reais da plataforma. Dúvidas comuns estão respondidas abaixo.
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {live ? (
+            <>
+              <Button onClick={() => setReport(true)}>Relatar ocorrência</Button>
+              <Link to="/suporte/chamados" className="text-sm font-semibold text-primary hover:underline">Meus chamados</Link>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">{currentUser ? "Os chamados funcionam na versão com contas reais." : "Entre na sua conta para relatar uma ocorrência."}</p>
+          )}
+          {email && <span className="text-sm">Ou escreva para <a className="text-primary font-semibold hover:underline" href={`mailto:${email}`}>{email}</a></span>}
+        </div>
       </Card>
       <Card className="p-6 space-y-4">
         <h2 className="font-display font-bold text-lg">Perguntas frequentes</h2>
@@ -31,6 +49,9 @@ export default function Support() {
           </div>
         ))}
       </Card>
+      {live && <ConectaChat />}
+      {live && <AccountTools />}
+      <ReportOccurrence open={report} onClose={() => setReport(false)} />
       <Card className="p-6">
         <h2 className="font-display font-bold text-lg mb-2">Regras e informações</h2>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

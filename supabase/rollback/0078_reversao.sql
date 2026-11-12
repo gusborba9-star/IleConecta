@@ -1,0 +1,35 @@
+-- Reversão da 0078 (chamados e casos): remove tudo do suporte. APAGA os chamados, as provas registradas e o registro de ações.
+-- Os arquivos em report-evidence NÃO são apagados por aqui (apague pelo painel do Storage se necessário). Reverta 0081, 0080 e 0079 antes.
+do $$ begin perform cron.unschedule('purge-support-cases'); exception when others then null; end $$;
+do $$ begin perform cron.unschedule('purge-deleted-identities'); exception when others then null; end $$;
+drop trigger if exists trg_hold_archive on public.message_archive;
+drop policy if exists "evidence: admin lê provas de chamado" on storage.objects;
+drop function if exists public.hold_archive_for_open_case();
+drop function if exists public.purge_support_cases();
+drop function if exists public.purge_deleted_identities();
+drop function if exists public.admin_deleted_identity(uuid, text, uuid);
+drop function if exists public.admin_support_decide(uuid, text, text, boolean);
+drop function if exists public.admin_support_set_status(uuid, text, text);
+drop function if exists public.admin_support_request_version(uuid, text);
+drop function if exists public.admin_support_reply(uuid, text, text);
+drop function if exists public.admin_support_refresh_facts(uuid, text);
+drop function if exists public.admin_support_dossier(uuid, text);
+drop function if exists public.admin_support_queue(text);
+drop function if exists public.submit_support_evidence(uuid, text, text, boolean);
+drop function if exists public.add_support_case_message(uuid, text);
+drop function if exists public.my_support_case(uuid);
+drop function if exists public.my_support_cases();
+drop function if exists public.open_support_case(text, text, text, text, uuid, uuid, text);
+drop function if exists public.support_collect_facts(text, uuid);
+drop function if exists public.support_conversation_of(text, uuid);
+drop function if exists public.support_context_parties(text, uuid);
+drop table if exists public.support_case_log;
+drop table if exists public.support_case_snapshots;
+drop table if exists public.support_case_evidence;
+drop table if exists public.support_case_messages;
+drop table if exists public.support_case_parties;
+drop table if exists public.support_cases;
+drop table if exists public.deleted_account_identity;
+drop function if exists public.support_log_immutable();
+drop function if exists public.support_kind_meta(text);
+drop function if exists public.add_business_days(timestamptz, integer);

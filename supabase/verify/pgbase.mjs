@@ -11,7 +11,7 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname='service_role') then create role service_role; end if;
   if not exists (select 1 from pg_roles where rolname='supabase_admin') then create role supabase_admin; end if;
 end $$;
-create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}', created_at timestamptz default now(), last_sign_in_at timestamptz);
+create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}', created_at timestamptz default now(), last_sign_in_at timestamptz, email_confirmed_at timestamptz);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true),'')::uuid $$;
 create function auth.role() returns text language sql stable as $$ select coalesce(nullif(current_setting('test.role', true),''),'anon') $$;
 create function auth.jwt() returns jsonb language sql stable as $$ select '{}'::jsonb $$;

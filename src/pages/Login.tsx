@@ -88,6 +88,7 @@ export default function Login() {
             <div>
               <Label htmlFor="login-password">Senha</Label>
               <PasswordInput id="login-password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              {isRemoteAuth && <Link to="/recuperar-senha" className="mt-1 inline-block text-xs text-primary font-semibold hover:underline">Esqueci a senha</Link>}
             </div>
             <Button className="w-full" size="lg" type="submit" disabled={loading}>{loading ? "Entrando…" : "Entrar"}</Button>
           </form>
