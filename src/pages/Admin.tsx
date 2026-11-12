@@ -21,6 +21,7 @@ import {
   type ScopeKey,
 } from "@/lib/platformConfig";
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
+import FeeRulesCard from "@/components/admin/FeeRulesCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
@@ -221,6 +222,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       <ReportedReviewsCard />
 
       <ChatReportsCard />
+
+      <FeeRulesCard />
 
       <PaymentLimitCard />
 

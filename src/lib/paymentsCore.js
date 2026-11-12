@@ -4,7 +4,9 @@
 // Comissão da plataforma (application fee do Stripe, cobrança direta): ritual 15%; serviço 4% (Pix ou cartão à vista).
 // 'servico_pix' é sinônimo de 'servico' (nome antigo). Mesma regra de fee_cents() no banco (migration 0019).
 export const FEE_RULE_VERSION = "v2-2026-10";
-export const FEE_BPS = { ritual: 1500, servico: 400, servico_pix: 400 };
+// VALORES INICIAIS (espelho da semente da migration 0084). A regra vigente de verdade fica em fee_rule_versions, editável no painel admin;
+// um teste (tests/fee-rules.test.mjs) garante que este espelho não diverge da semente.
+export const FEE_BPS = { ritual: 1500, servico: 400, servico_pix: 400, mensalidade: 400 };
 // Teto por pagamento pela plataforma (o Pix do Stripe tem limite por pagamento). Ajustável no banco (payment_limits).
 export const MAX_PAYMENT_CENTS = 1000000;
 // Um serviço de valor alto pode ser pago em até 4 etapas (cada uma é um pagamento dentro do teto).
