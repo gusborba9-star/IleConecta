@@ -77,7 +77,7 @@ r = await sv("select public.platform_charge_attach($1,'stripe','cs_9','pix','htt
 const st = (uid, h) => as("authenticated", uid, (c) => q(c, "select public.my_house_billing_status($1) s", [h]));
 r = await st(OWN_B, HB); ok("casa B com fatura de 10/11 em aberto e hoje depois dela: atraso", !r.err && r.rows[0].s.overdue === true && r.rows[0].s.charges.length === 1, j(r.rows?.[0]));
 const s0 = r.rows[0].s;
-ok("o card traz o fim da tolerância e a data do bloqueio total", !!s0.charges[0].tolerance_end && !!s0.charges[0].total_on && s0.charges[0].amount_cents === 8990, j(s0.charges[0]));
+ok("o card traz o fim da tolerância, a data do bloqueio total e os meios de pagamento do painel", !!s0.charges[0].tolerance_end && !!s0.charges[0].total_on && s0.charges[0].amount_cents === 8990 && Array.isArray(s0.charges[0].methods) && s0.charges[0].methods.includes("pix"), j(s0.charges[0]));
 r = await st(OWN_A, HB); ok("outra casa não lê o status da casa B", !!r.err && /not_allowed/.test(r.err), r.err);
 r = await st(ADM, HB); ok("administrador lê o status de qualquer casa", !r.err);
 r = await st(OWN_A, HA); ok("casa A (tudo pago): sem atraso → card não aparece", !r.err && r.rows[0].s.overdue === false && r.rows[0].s.charges.length === 0, j(r.rows?.[0]));

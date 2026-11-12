@@ -8,7 +8,10 @@ import { benefitsFor } from "@/lib/planMatrixCore";
 import { isFeatureOn, type FeatureKey } from "@/lib/platformConfigCore";
 import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import BillingAlertCard from "@/components/house/BillingAlertCard";
+import InvoicesCard from "@/components/house/InvoicesCard";
+import { syncCharge } from "@/lib/platformBilling";
 
 /** Quanto custaria pessoas para o mesmo atendimento. Calculado com os preços atuais dos planos. */
 function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label: string }[] }) {
@@ -45,6 +48,23 @@ export default function Plans() {
   const [mine, setMine] = useState<PlanId | null>(null);
   const isHouse = currentUser?.type === "commercial";
   const userId = currentUser?.id;
+  const [params, setParams] = useSearchParams();
+  const [billingTick, setBillingTick] = useState(0);
+
+  // Voltou da página de pagamento: confere a fatura agora (sem esperar o aviso do provedor) e atualiza os cards.
+  const returned = params.get("retorno") ? params.get("fatura") : null;
+  useEffect(() => {
+    if (!isRemoteAuth || !isHouse || !returned || !/^[0-9a-f-]{36}$/i.test(returned)) return;
+    let alive = true;
+    void syncCharge(returned).then(() => {
+      if (!alive) return;
+      setBillingTick((n) => n + 1);
+      setParams({}, { replace: true });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth, isHouse, returned, setParams]);
 
   useEffect(() => {
     if (!isRemoteAuth || !isHouse || !userId) return;
@@ -57,6 +77,7 @@ export default function Plans() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
+      {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>
         <h1 className="font-display font-bold text-3xl mt-1">Cresça no seu ritmo</h1>
@@ -109,6 +130,7 @@ export default function Plans() {
           );
         })}
       </div>
+      {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       <ComparisonCard
         rows={[
           { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },
