@@ -273,6 +273,21 @@ F5, F8 e F9 aplicados e verificados em produção (2026-11-10): F9 deixou 0 de 6
 Achados do teste, corrigidos e publicados: (a) PR #146 — o botão de contratar/reservar só libera depois de saber se a casa cobra pelo app (antes, um toque rápido criava pedido sem abrir o checkout e avisava a casa); (b) PR #147 — a confirmação de cancelamento informa o reembolso integral; (c) PR #148 — botão "Concluir pagamento" para o cliente (card do serviço, Minha atividade e vaga de ritual). Limite: a cobrança fica na conta de recebimento da casa e a conta da plataforma não a enxerga no Stripe; a prova do estorno vem do webhook assinado e do banco. Pendência de verificação em tela: confirmar no celular, após o deploy, que contratar abre o checkout no primeiro toque (a 3ª tentativa já abriu).
 
 
+### Registro: Fase 4 — andamento (atualizado em 2026-11-12)
+
+Autorizada pelo proprietário em 2026-11-12. Cada item abaixo só passa a "fechado" depois de aplicado em produção pelo proprietário (passos pequenos, um por vez, conferidos no banco) e do código ir ao ar no merge do PR da etapa (branch `etapa/fase4-financeiro`). Nenhuma cobrança real foi ligada.
+
+| # | Item | Estado | Evidência |
+|---|---|---|---|
+| 0 | Registro no Blueprint (§18.5, §19.4.1, §33.1) e preços 89,90 / 179,90 / 299,90 | fechado | migration 0083, passo 60 aplicado e conferido |
+| 1 | Tabela de taxas versionada (15% rituais, 4% serviços e mensalidades) com histórico; pagamento novo grava a versão e a comissão vigentes; pagamentos antigos não são recalculados | fechado no banco (passos 61–62); tela no merge | migration 0084; verify_0084 e verify_rollout_60_62 |
+| 2 | Matriz central de planos: limites, ferramentas e textos de cada plano num só lugar, editável no painel; banco, assistente e site leem dela; item ligado a ferramenta (vídeo de 30 s) aparece sozinho com "Novo" quando o interruptor é ligado | fechado no banco (passos 63–65); site e assistente no merge e na publicação da função `assistant-chat` | migration 0085; verify_0085 (equivalência antes/depois e ataques), verify_rollout_63; 370 testes |
+| 3 | Painel financeiro da administração (resumo do período e conferência pagamentos × livro-razão × regra da época, 14 verificações); só administrador, cada consulta registrada | fechado no banco (passos 66–69); tela no merge | migration 0086; verify_0086 e verify_rollout_66; leitura nos dados reais de produção: 0 anomalias |
+| 4 | Cobrança da plataforma às casas (Platform Billing): base (configuração, preços, dias úteis) | em andamento: migration 0087 pronta e testada localmente (103 verificações); passos 70–75 a aplicar | verify_0087, verify_rollout_70 |
+| 5 | Créditos de IA (pacotes 80/200/500) | pendente | depende do item 4 |
+
+Pedido do proprietário registrado nesta data: painéis das três visões enxutos e profissionais no celular — vai para a etapa de layout e navegação (Fase 6); os painéis novos já nascem recolhidos.
+
 ## 7. Declaração de governança
 
 O Roadmap é o plano mestre de evolução. Não é uma lista para implementar tudo em sequência sem auditoria. A primeira obrigação é descobrir e validar o que já existe. Só então se autorizam correções específicas. O Blueprint permanece estável; o Roadmap registra ordem e estado.
