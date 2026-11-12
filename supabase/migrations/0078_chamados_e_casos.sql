@@ -315,7 +315,7 @@ begin
   insert into public.support_case_log (case_id, actor, action, data) values (cid, me, 'aberto', jsonb_build_object('tipo', p_kind, 'prioridade', meta.priority, 'origem', p_source));
   -- aviso aos administradores
   insert into public.notifications (user_id, text, href)
-    select a.user_id, case meta.priority when 'urgente' then 'URGENTE: ' else 'Novo chamado: ' end || left(btrim(p_title), 80), '/admin?aba=chamados'
+    select a.user_id, case meta.priority when 'urgente' then 'URGENTE: ' else 'Novo chamado: ' end || left(btrim(p_title), 80), '/admin?s=suporte'
       from public.admins a
      where meta.priority in ('urgente','alta');
   return cid;
