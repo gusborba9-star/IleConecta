@@ -16,6 +16,7 @@ on:
           - payments
           - assistant-chat
           - support-admin
+          - conecta
 
 permissions:
   contents: read

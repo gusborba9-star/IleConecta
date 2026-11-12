@@ -10,6 +10,10 @@ interface Props {
   onClose: () => void;
   /** Tipo já escolhido (ex.: "abuso" vindo do chat). */
   defaultKind?: string;
+  /** Rascunho vindo da assistente Conecta; a pessoa revisa antes de enviar. */
+  defaultTitle?: string;
+  defaultDescription?: string;
+  source?: "pessoa" | "assistente";
   contextType?: OpenInput["contextType"];
   contextId?: string | null;
   /** Pessoa envolvida (contra quem). */
@@ -20,7 +24,7 @@ interface Props {
 const GROUPS = ["Segurança", "Dinheiro", "Conta e dados", "Outros"];
 
 /** "Relatar ocorrência": porta única para denúncia, conflito, fraude, pagamento, conta e dúvida. */
-export default function ReportOccurrence({ open, onClose, defaultKind, contextType = null, contextId = null, subject = null, subjectName }: Props) {
+export default function ReportOccurrence({ open, onClose, defaultKind, defaultTitle = "", defaultDescription = "", source = "pessoa", contextType = null, contextId = null, subject = null, subjectName }: Props) {
   const nav = useNavigate();
   const [kind, setKind] = useState(defaultKind ?? "");
   const [title, setTitle] = useState("");
@@ -29,8 +33,8 @@ export default function ReportOccurrence({ open, onClose, defaultKind, contextTy
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open) { setKind(defaultKind ?? ""); setTitle(""); setDescription(""); setConsent(false); }
-  }, [open, defaultKind]);
+    if (open) { setKind(defaultKind ?? ""); setTitle(defaultTitle); setDescription(defaultDescription); setConsent(false); }
+  }, [open, defaultKind, defaultTitle, defaultDescription]);
 
   const hasContext = Boolean(contextType && contextId);
   const picked = KINDS.find((k) => k.id === kind);
@@ -39,7 +43,7 @@ export default function ReportOccurrence({ open, onClose, defaultKind, contextTy
     const err = validateReport({ kind, title, description, consent });
     if (err) return void toast.error(err);
     setBusy(true);
-    const r = await openCase({ kind, title, description, contextType, contextId, subject });
+    const r = await openCase({ kind, title, description, contextType, contextId, subject, source });
     setBusy(false);
     if (!r.ok) return void toast.error(r.error);
     toast.success("Ocorrência enviada. Você acompanha em “Meus chamados”.");

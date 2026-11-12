@@ -228,3 +228,40 @@ test("Admin: seção Suporte mostra a fila por prioridade e o e-mail vazio", asy
   const titles = await page.getByRole("button", { name: /Golpe no pix|Como cancelo/ }).allTextContents();
   expect(titles[0]).toContain("Golpe no pix");
 });
+
+test("Conecta: responde, mostra ação de chamado só como proposta e abre o formulário já preenchido (origem assistente)", async ({ page }) => {
+  const s = await serve(page);
+  await page.route(`${API}/functions/v1/conecta`, async (route) => {
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
+    const body = route.request().postDataJSON();
+    s.calls.push({ name: "conecta", body });
+    return json(route, { reply: "Isso precisa da equipe. Posso preparar um chamado.", actions: [{ type: "propose_case", kind: "reembolso", title: "Reembolso do ritual", description: "A pessoa pagou um ritual cancelado." }, { type: "go_to", path: "/atividade" }] });
+  });
+  await page.goto("/suporte", { waitUntil: "domcontentloaded" });
+  await page.getByLabel("Pergunte à Conecta").fill("Quero meu dinheiro de volta");
+  await page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(page.getByText("Isso precisa da equipe. Posso preparar um chamado.")).toBeVisible();
+  expect(calls(s, "open_support_case")).toHaveLength(0);
+  expect(calls(s, "conecta")[0].body).toEqual({ message: "Quero meu dinheiro de volta", history: [] });
+  await expect(page.getByRole("link", { name: /Ir para Minha atividade/ })).toBeVisible();
+  await page.getByRole("button", { name: /Abrir chamado/ }).click();
+  const dlg = page.getByRole("dialog");
+  await expect(dlg.getByLabel("Título")).toHaveValue("Reembolso do ritual");
+  await dlg.getByRole("checkbox").check();
+  await dlg.getByRole("button", { name: "Enviar ocorrência" }).click();
+  await expect(page).toHaveURL(/\/suporte\/chamados$/);
+  expect(calls(s, "open_support_case")[0].body).toMatchObject({ p_kind: "reembolso", p_source: "assistente" });
+});
+
+test("Conecta: erro do servidor mostra mensagem amigável e a conversa continua", async ({ page }) => {
+  await serve(page);
+  await page.route(`${API}/functions/v1/conecta`, async (route) => {
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
+    return json(route, { error: "muitas_mensagens", message: "Você enviou muitas mensagens. Aguarde um pouco e tente de novo." }, 429);
+  });
+  await page.goto("/suporte", { waitUntil: "domcontentloaded" });
+  await page.getByLabel("Pergunte à Conecta").fill("Oi, tudo bem?");
+  await page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(page.getByText("Você enviou muitas mensagens. Aguarde um pouco e tente de novo.")).toBeVisible();
+  await expect(page.getByLabel("Pergunte à Conecta")).toBeEnabled();
+});
