@@ -1,4 +1,4 @@
-// Verificação LOCAL da Fase 3 — Suporte: chamados e casos (0078) num PostgreSQL 16: aplica 0001–0078 e ataca (tipos, prioridade, sigilo do denunciante, provas por escolha, dossiê, decisão, registro imutável, retenção).
+// Verificação LOCAL da Fase 3 — Suporte: chamados e casos (0078) num PostgreSQL 16: aplica 0001–0079 e ataca (tipos, prioridade, sigilo do denunciante, provas por escolha, dossiê, decisão, registro imutável, retenção).
 // Uso: node supabase/verify/verify_0078.mjs   (PG em 127.0.0.1:5544;)
 import { readdirSync, readFileSync } from "node:fs";
 import { STUBS, admin, connect } from "./pgbase.mjs";
@@ -15,9 +15,9 @@ await su.query(`alter role service_role bypassrls; grant usage on schema public,
   create or replace function net.http_post(url text, body jsonb default null, headers jsonb default null) returns bigint language sql as $$ insert into public.http_log values (url, body) returning 1::bigint $$;`);
 const load = (f) => readFileSync(MIG + f, "utf8").replace(/create extension[^;]*(pg_cron|pg_net|supabase_vault)[^;]*;/gi, "");
 const failed = [];
-for (const f of readdirSync(MIG).filter((f) => f.endsWith(".sql") && Number(f.slice(0, 4)) <= 78).sort()) { try { await su.query(load(f)); } catch (e) { failed.push(`${f}: ${e.message.slice(0, 100)}`); } }
+for (const f of readdirSync(MIG).filter((f) => f.endsWith(".sql") && Number(f.slice(0, 4)) <= 79).sort()) { try { await su.query(load(f)); } catch (e) { failed.push(`${f}: ${e.message.slice(0, 100)}`); } }
 let bad = 0; const ok = (n, c, d = "") => { console.log(`${c ? "PASS" : "FAIL"} ${n}${d ? " — " + String(d).slice(0, 220) : ""}`); if (!c) bad++; };
-ok("migrations 0001–0078 aplicadas sem erro", failed.length === 0, failed.join(" | "));
+ok("migrations 0001–0079 aplicadas sem erro", failed.length === 0, failed.join(" | "));
 const as = async (role, uid, fn) => { const c = await connect(DB); try { await c.query(`select set_config('test.uid',$1,false), set_config('test.role',$2,false)`, [uid ?? "", role]); await c.query(`set role ${role}`); return await fn(c); } finally { await c.end(); } };
 const q = (c, sql, p) => c.query(sql, p).then((r) => ({ rows: r.rows, n: r.rowCount }), (e) => ({ err: e.message, code: e.code }));
 const U = { H: "a0000000-0000-0000-0000-00000000000a", C: "c0000000-0000-0000-0000-00000000000c", C2: "c2000000-0000-0000-0000-0000000000c2", X: "e0000000-0000-0000-0000-00000000000e", H2: "b0000000-0000-0000-0000-00000000000b" };
