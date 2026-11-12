@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { DEFAULT_PLAN_MATRIX, type PlanCaps } from "@/lib/planMatrixCore";
 
 export type HousePlan = "base" | "intermediario" | "maximo";
 
@@ -17,8 +19,13 @@ export async function fetchOwnerPlan(ownerId: string): Promise<HousePlan | null>
   return plan;
 }
 
-/** Sem banco de dados (demonstração), tudo aparece liberado; com banco, vale o plano da casa. */
-export function useOwnerPlan(ownerId?: string | null): { plan: HousePlan | null; premium: boolean; loading: boolean } {
+/**
+ * Plano da casa e o que ele inclui (limites e ferramentas da matriz central de planos, editável no painel).
+ * Sem banco de dados (demonstração), tudo aparece liberado; com banco, vale o plano da casa. Enquanto carrega, caps é null.
+ * O banco confere de novo toda regra: isto só decide o que a tela mostra.
+ */
+export function useOwnerPlan(ownerId?: string | null): { plan: HousePlan | null; caps: PlanCaps | null; loading: boolean } {
+  const { config } = usePlatformConfig();
   const [state, setState] = useState<{ id: string | null; plan: HousePlan | null; done: boolean }>({ id: null, plan: null, done: false });
   useEffect(() => {
     if (!ownerId || !supabase) return;
@@ -28,7 +35,8 @@ export function useOwnerPlan(ownerId?: string | null): { plan: HousePlan | null;
       alive = false;
     };
   }, [ownerId]);
-  if (!supabase) return { plan: "maximo", premium: true, loading: false };
+  if (!supabase) return { plan: "maximo", caps: DEFAULT_PLAN_MATRIX.caps.maximo, loading: false };
   const ready = state.done && state.id === ownerId;
-  return { plan: ready ? state.plan : null, premium: ready && state.plan === "maximo", loading: Boolean(ownerId) && !ready };
+  const plan = ready ? state.plan : null;
+  return { plan, caps: plan ? config.plan_matrix.caps[plan] : null, loading: Boolean(ownerId) && !ready };
 }

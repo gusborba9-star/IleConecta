@@ -22,8 +22,8 @@ export default function CalendarTab({ items, isOwn, onChanged }: { items: Calend
   const [busy, setBusy] = useState(false);
   const today = useMemo(() => todayLocal(), []);
   const { currentUser } = useApp();
-  const { premium, loading: planLoading } = useOwnerPlan(isOwn ? currentUser?.id : null);
-  const locked = isOwn && !planLoading && !premium;
+  const { caps, loading: planLoading } = useOwnerPlan(isOwn ? currentUser?.id : null);
+  const locked = isOwn && !planLoading && !caps?.calendar_full;
 
 
   const list = upcoming(items, today);

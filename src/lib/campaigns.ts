@@ -16,13 +16,6 @@ export interface Campaign { id: string; code: string; label: string; source: Sou
 export interface DayCount { day: string; visits: number; contacts: number }
 export interface QuickReply { id: string; title: string; body: string }
 
-/** Limites por plano (o banco também confere). */
-export const LIMITS = {
-  base: { links: 0, replies: 0, cards: 0 },
-  intermediario: { links: 2, replies: 3, cards: 1 },
-  maximo: { links: 30, replies: 50, cards: 3 },
-} as const;
-
 export const campaignUrl = (slug: string, code: string) => `${publicHouseUrl(slug)}?o=${code}`;
 
 const friendly = (m?: string) => (m && /plano|permite|Link não/i.test(m) ? m : "Não foi possível concluir. Tente novamente.");

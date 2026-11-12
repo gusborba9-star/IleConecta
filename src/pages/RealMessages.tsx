@@ -183,7 +183,8 @@ export default function RealMessages() {
   }, [iAmHouse]);
 
   const houseOwnerId = peer?.isHouse ? otherId : me;
-  const { premium: mediaOk } = useOwnerPlan(houseOwnerId);
+  const { caps: ownerCaps } = useOwnerPlan(houseOwnerId);
+  const mediaOk = ownerCaps?.chat_media === true;
 
   const attach = async (file: File | undefined) => {
     if (!file || !convId || !me || busy) return;

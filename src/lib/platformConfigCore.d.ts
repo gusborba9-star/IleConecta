@@ -1,3 +1,4 @@
+import type { PlanMatrix } from "@/lib/planMatrixCore";
 export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews" | "calendar";
 export type ScopeKey = "cidade" | "estado" | "pais" | "exterior";
 export type PlanId = "base" | "intermediario" | "maximo";
@@ -18,6 +19,7 @@ export interface PlatformConfig {
   };
   scopes: { boost: Record<ScopeKey, boolean>; highlight: Record<ScopeKey, boolean> };
   referral: { reward_days: number; referred_days: number; monthly_cap: number };
+  plan_matrix: PlanMatrix;
 }
 
 export declare const FEATURE_KEYS: FeatureKey[];

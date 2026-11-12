@@ -22,6 +22,7 @@ import {
 } from "@/lib/platformConfig";
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import FeeRulesCard from "@/components/admin/FeeRulesCard";
+import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
@@ -215,6 +216,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
       </Card>
+
+      <PlanMatrixCard />
 
       <HousePlansCard />
       <StaffAuditCard />

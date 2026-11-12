@@ -54,7 +54,7 @@ export default function Equipe() {
   const { config } = usePlatformConfig();
   const confirm = useConfirm();
   const uid = currentUser?.id;
-  const { plan, loading } = useOwnerPlan(uid);
+  const { plan, caps, loading } = useOwnerPlan(uid);
   const [houseId, setHouseId] = useState<string | null>(null);
   const [allowance, setAllowance] = useState<number | null>(null);
   const [members, setMembers] = useState<StaffMember[]>([]);
@@ -142,7 +142,7 @@ export default function Equipe() {
                 }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
-            <PermList perms={m.perms} premium={plan === "maximo"} onChange={(p) => void change(m, { perms: p })} />
+            <PermList perms={m.perms} premium={caps?.members_area === true} onChange={(p) => void change(m, { perms: p })} />
           </div>
         ))}
 
@@ -166,7 +166,7 @@ export default function Equipe() {
         {free > 0 ? (
           <div className="space-y-3">
             <div><Label htmlFor="eq-name">Nome de quem vai atender</Label><Input id="eq-name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="é o nome que o cliente vê" /></div>
-            <PermList perms={newPerms} premium={plan === "maximo"} onChange={setNewPerms} />
+            <PermList perms={newPerms} premium={caps?.members_area === true} onChange={setNewPerms} />
             <Button onClick={() => void invite()}><Plus className="h-4 w-4" /> Criar convite</Button>
           </div>
         ) : (

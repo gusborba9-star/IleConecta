@@ -28,8 +28,17 @@ export function modelParams(model) {
     : { max_tokens: 600, temperature: 0.5 };
 }
 
-export function planLimits(plan) {
-  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.base;
+/**
+ * Limites do plano. A fonte é a matriz central de planos (platform_settings.plan_matrix, já validada pelo banco em plan_matrix());
+ * se ela não vier (ou vier fora do formato), valem as constantes acima, que são os valores iniciais da matriz.
+ */
+export function planLimits(plan, matrix = null) {
+  const fallback = PLAN_LIMITS[plan] ?? PLAN_LIMITS.base;
+  const caps = matrix?.caps?.[plan];
+  if (!caps || typeof caps !== "object") return fallback;
+  const { assistant_replies: r, assistant_sells: sells, assistant_discount: disc } = caps;
+  if (!Number.isInteger(r) || r < 0 || typeof sells !== "boolean" || typeof disc !== "boolean") return fallback;
+  return { monthlyReplies: r, canSell: sells, canDiscount: disc };
 }
 
 /**
@@ -217,8 +226,8 @@ export function cleanReply(raw) {
 }
 
 /** Retorna null se pode responder, ou o código do bloqueio. */
-export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow }) {
-  const limits = planLimits(plan);
+export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null }) {
+  const limits = planLimits(plan, matrix);
   if (limits.monthlyReplies === 0) return "plano_sem_assistente";
   if (!assistant || !assistant.enabled) return "assistente_desativada";
   if (usedThisMonth >= limits.monthlyReplies) return "cota_mensal";
@@ -227,15 +236,15 @@ export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow }
 }
 
 /** Desconto máximo que a assistente pode oferecer: só plano máximo, só se a casa liberou. */
-export function allowedDiscountPercent(plan, assistant) {
-  const limits = planLimits(plan);
+export function allowedDiscountPercent(plan, assistant, matrix = null) {
+  const limits = planLimits(plan, matrix);
   if (!limits.canDiscount || !assistant?.can_discount) return 0;
   const n = Number(assistant.max_discount_percent);
   return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.floor(n))) : 0;
 }
 
-export function canSell(plan, assistant) {
-  return planLimits(plan).canSell && Boolean(assistant?.can_sell);
+export function canSell(plan, assistant, matrix = null) {
+  return planLimits(plan, matrix).canSell && Boolean(assistant?.can_sell);
 }
 
 export function formatCents(cents) {
@@ -378,9 +387,9 @@ export function serviceHowTo(s, payments = false) {
   return "combinado direto com a casa por esta conversa (não há botão para este serviço)";
 }
 
-export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], agenda = null, payments = false, pending = null, now = new Date() }) {
-  const discount = allowedDiscountPercent(plan, assistant);
-  const selling = canSell(plan, assistant);
+export function buildSystemPrompt({ house, assistant, services, events, plan, catalog = [], agenda = null, payments = false, pending = null, now = new Date(), matrix = null }) {
+  const discount = allowedDiscountPercent(plan, assistant, matrix);
+  const selling = canSell(plan, assistant, matrix);
   const profile = normalizeProfile(assistant.profile);
   const offerings = oneLine(house.offerings, 800);
   const items = normalizeCatalog(catalog);

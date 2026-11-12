@@ -60,8 +60,9 @@ export default function AssistantSettings() {
   const patchProfile = (p: Partial<HouseProfile>) => setCfg({ ...cfg, profile: { ...cfg.profile, ...p } });
   const setFaq = (i: number, field: "q" | "a", value: string) =>
     patchProfile({ faq: cfg.profile.faq.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)) });
-  const available = cfg.plan !== "base";
-  const fullPlan = cfg.plan === "maximo";
+  const planCaps = config.plan_matrix.caps[cfg.plan];
+  const available = planCaps.assistant_replies > 0;
+  const fullPlan = planCaps.assistant_discount;
 
   const save = async () => {
     setSaving(true);
@@ -88,7 +89,7 @@ export default function AssistantSettings() {
       )}
       {cfg.plan === "intermediario" && (
         <p className="text-sm text-muted-foreground">
-          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até 300 respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
+          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até {planCaps.assistant_replies} respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
         </p>
       )}
 

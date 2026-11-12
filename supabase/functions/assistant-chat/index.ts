@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
     return json(403, { error: "recurso_desativado", message: "A assistente está temporariamente indisponível." });
   }
 
+  // Matriz central de planos (limites da assistente por plano). O banco devolve sempre uma matriz válida; se a leitura falhar, valem os valores iniciais.
+  const { data: planMatrix } = await admin.rpc("plan_matrix");
+
   const { data: assistant } = await admin
     .from("assistants")
     .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
@@ -135,6 +138,7 @@ Deno.serve(async (req) => {
     assistant,
     usedThisMonth: usedMonth ?? 0,
     usedByUserInWindow: usedWindow ?? 0,
+    matrix: planMatrix,
   });
   if (blocked) return json(blocked === "cota_mensal" || blocked === "muitas_mensagens" ? 429 : 403, {
     error: blocked,
@@ -227,7 +231,7 @@ Deno.serve(async (req) => {
 
   const system = buildSystemPrompt({
     house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
-    payments: payOn === true, pending,
+    payments: payOn === true, pending, matrix: planMatrix,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 
@@ -305,7 +309,7 @@ Deno.serve(async (req) => {
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
   // Botão de pagamento no chat: o modelo só indica o título; quem decide o alvo (e se existe) é o servidor.
   const action = handoff.checkout && payOn
-    ? resolveCheckout(handoff.checkout, { events: eventsWithSeats, services: servicesWithSlots, selling: canSell(house.plan, assistant) })
+    ? resolveCheckout(handoff.checkout, { events: eventsWithSeats, services: servicesWithSlots, selling: canSell(house.plan, assistant, planMatrix) })
     : null;
   const baseMsg = { conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true };
   if (action) {
@@ -346,7 +350,7 @@ Deno.serve(async (req) => {
     prompt_tokens: promptTokens, completion_tokens: completionTokens,
   });
 
-  const limit = planLimits(house.plan).monthlyReplies;
+  const limit = planLimits(house.plan, planMatrix).monthlyReplies;
   return json(200, {
     conversation_id: conversationId,
     reply,
