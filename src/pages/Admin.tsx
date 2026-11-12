@@ -22,6 +22,7 @@ import {
 } from "@/lib/platformConfig";
 import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
 import FeeRulesCard from "@/components/admin/FeeRulesCard";
+import FinancePanelCard from "@/components/admin/FinancePanelCard";
 import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
@@ -225,6 +226,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       <ReportedReviewsCard />
 
       <ChatReportsCard />
+
+      <FinancePanelCard />
 
       <FeeRulesCard />
 
