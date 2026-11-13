@@ -1,22 +1,22 @@
--- PASSO 177: 0101_cancelamento_e_tela_unica — parte 3 de 13
+-- PASSO 177: 0101_cancelamento_e_tela_unica — parte 3 de 6
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
--- por que a casa não pode cancelar agora (null = pode)
-create or replace function public.platform_cancel_block_reason(p_house uuid, p_today date)
-returns text language plpgsql stable security definer set search_path = public as $$
-declare st public.house_billing_state;
+create or replace function public.my_cancel_undo() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); h uuid; d date := (now() at time zone 'America/Sao_Paulo')::date; st public.house_billing_state; c public.platform_charges; n int := 0;
 begin
-if coalesce((public.platform_billing_config() ->> 'enabled')::boolean, false) is not true then return 'A cobrança da plataforma ainda não está ativa.'; end if;
-if not exists (select 1 from public.house_billing_plan where house_id = p_house and active) then return 'A casa não tem assinatura ativa.'; end if;
-select * into st from public.house_billing_state where house_id = p_house;
-if found and st.cancelled_at is not null then return 'A assinatura já está cancelada.'; end if;
-if exists (select 1 from public.platform_charges c where c.house_id = p_house and c.kind in ('plan', 'extra_seat') and (c.status = 'vencida' or (c.status = 'aberta' and c.due_date < p_today))) then
-return 'Há uma fatura em atraso. Regularize o pagamento antes de cancelar ou fale com a administração.';
-end if;
-if exists (select 1 from public.platform_charges c where c.house_id = p_house and c.kind in ('plan', 'extra_seat') and c.status = 'em_processamento') then
-return 'Há um pagamento em processamento. Aguarde a confirmação para cancelar.';
-end if;
-if exists (select 1 from public.platform_plan_refunds r where r.house_id = p_house and r.status = 'pendente') then
-return 'Há um reembolso do plano em andamento.';
-end if;
-return null;
+if me is null then raise exception 'Entre na sua conta.'; end if;
+select id into h from public.houses where owner_id = me limit 1;
+if h is null then raise exception 'Só a casa pode desfazer o cancelamento.'; end if;
+select * into st from public.house_billing_state where house_id = h for update;
+if not found or st.cancel_at is null or st.cancelled_at is not null then raise exception 'Não há cancelamento agendado.'; end if;
+if st.cancel_at <= d then raise exception 'O cancelamento vale a partir de hoje e não pode mais ser desfeito.'; end if;
+-- a fatura do próximo ciclo foi cancelada ao agendar e o sistema não reabre fatura cancelada: reemite uma cópia (mesmo valor e vencimento)
+for c in select * from public.platform_charges where id = any (st.cancel_charges) and status = 'cancelada' order by created_at loop
+perform public.platform_charge_issue(c.house_id, c.kind, c.item_key, c.amount_cents, c.due_date, c.period_start, c.description, left(c.idempotency_key, 100) || ':' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 12));
+n := n + 1;
+end loop;
+update public.house_billing_state set cancel_at = null, cancel_requested_at = null, cancel_charges = '{}', updated_at = now() where house_id = h;
+insert into public.platform_billing_events (provider, event_id, kind, outcome, reason) values ('sistema', gen_random_uuid()::text, 'cancelamento_desfeito', 'processado', h::text);
+insert into public.notifications (user_id, text, href) values (me, 'Cancelamento desfeito: a sua assinatura continua normalmente.', '/planos');
+return jsonb_build_object('reissued', n);
 end $$;
