@@ -1,8 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import { LEGAL_VERSION, type ConsentDocKey, type ConsentRow } from "@/lib/legalCore";
 
+/** Registro de cada compra (sem caixa nova): a frase "Ao finalizar o pagamento, você concorda com os Termos de Uso" fica gravada com a versão, a data, o IP e o ritual ou serviço. */
+export type CheckoutDocKey = "checkout_ritual" | "checkout_servico";
+
 /** Grava os aceites na ordem. Devolve null em caso de sucesso, ou a mensagem de erro. */
-export async function recordConsents(docs: ConsentDocKey[], contextId?: string): Promise<string | null> {
+export async function recordConsents(docs: (ConsentDocKey | CheckoutDocKey)[], contextId?: string): Promise<string | null> {
   if (!supabase) return null;
   for (const doc of docs) {
     const { error } = await supabase.rpc("record_consent", { p_doc: doc, p_version: LEGAL_VERSION, p_context: contextId ?? null });

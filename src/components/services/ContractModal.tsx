@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { Button, Label, Modal, Textarea } from "@/components/base";
 import ConsentBox from "@/components/legal/ConsentBox";
-import { fetchConsentRows, paymentsEnabledFor, recordConsents } from "@/lib/consents";
+import { fetchConsentRows, paymentsEnabledFor, recordConsents, type CheckoutDocKey } from "@/lib/consents";
 import { LEGAL_VERSION, consentStatus, type ConsentDocKey } from "@/lib/legalCore";
 import { useApp } from "@/contexts/AppContext";
 import { Link } from "react-router-dom";
@@ -87,7 +87,8 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
     if (service.bookable && !slot) return void toast.error("Escolha o dia e o horário.");
     if (service.delivery === "hibrido" && !modality) return void toast.error("Escolha como quer receber: presencial ou à distância.");
     setSaving(true);
-    const toRecord: ConsentDocKey[] = [...(payOn && !termsDone ? (["termos_cliente"] as ConsentDocKey[]) : []), ...(sensitiveDone ? [] : (["dados_sensiveis"] as ConsentDocKey[]))];
+    // Cada compra deixa o seu registro (versão, data, IP e o serviço); se não gravar, o pedido não segue.
+    const toRecord: (ConsentDocKey | CheckoutDocKey)[] = [...(payOn && !termsDone ? (["termos_cliente"] as ConsentDocKey[]) : []), ...(sensitiveDone ? [] : (["dados_sensiveis"] as ConsentDocKey[])), ...(payOn && service.priceCents > 0 ? (["checkout_servico"] as CheckoutDocKey[]) : [])];
     const consentError = toRecord.length ? await recordConsents(toRecord, service.id) : null;
     if (consentError) {
       setSaving(false);
@@ -180,6 +181,12 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
         {payOn && <PlatformBenefits />}
         {payOn && !termsDone && <ConsentBox doc="termos_cliente" checked={okCheckout} onChange={setOkCheckout} />}
         {!sensitiveDone && <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />}
+        {payOn && service.priceCents > 0 && (
+          <p className="text-xs text-muted-foreground text-right">
+            Ao finalizar o pagamento, você concorda com os{" "}
+            <Link to="/sobre/termos-do-cliente" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</Link>.
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={saving || !payReady}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
