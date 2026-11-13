@@ -116,3 +116,12 @@ export async function removeCard(): Promise<string | null> {
   const r = await call({ action: "card_remove" });
   return r.error ?? null;
 }
+
+/** Casa cancelada por reembolso: emite a fatura de reativação e abre o pagamento. Ao pagar, a casa volta sozinha. Devolve o erro, ou null se já redirecionou. */
+export async function startReactivation(method: "pix" | "card" | null): Promise<string | null> {
+  const r = await call({ action: "reactivate", method });
+  if (r.error) return r.error;
+  if (!r.url) return "Não foi possível abrir o pagamento.";
+  window.location.assign(r.url);
+  return null;
+}

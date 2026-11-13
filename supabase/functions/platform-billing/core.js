@@ -209,6 +209,22 @@ export async function settleRefunds({ registry, store, log = console }) {
   return out;
 }
 
+// ---------- reativação da casa cancelada por reembolso (a casa paga e volta sozinha) ----------
+const REACTIVATE_OK = /não está cancelada|não tem mensalidade/;
+/** Emite (ou reaproveita) a fatura de reativação do plano atual e abre o pagamento. Ao pagar, o banco reativa a casa. */
+export async function reactivate({ registry, store, userId, method = null, email, appUrl, log = console }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa pode reativar.", "forbidden");
+  let chargeId;
+  try {
+    chargeId = await store.reactivationIssue(houseId);
+  } catch (e) {
+    throw REACTIVATE_OK.test(msg(e)) ? new ChargeStateError(msg(e), "reactivation_denied") : e;
+  }
+  if (typeof chargeId !== "string") throw new ChargeStateError("Não foi possível preparar a reativação agora. Tente de novo.", "reactivation_denied");
+  return openPayment({ registry, store, chargeId, userId, method, email, appUrl, log });
+}
+
 // ---------- cartão salvo da casa ----------
 const CARD_ERRORS = [
   [/Cadastre um cartão/, "Cadastre um cartão antes de ligar a cobrança automática."],
