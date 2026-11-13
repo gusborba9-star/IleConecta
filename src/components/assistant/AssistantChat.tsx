@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { askAssistant, fetchConversationLines, type ChatLine } from "@/lib/assistant";
+import { askAssistant, fetchAssistantAvatar, fetchConversationLines, type ChatLine } from "@/lib/assistant";
+import AssistantAvatar from "@/components/assistant/AssistantAvatar";
 import { cn, timeAgo } from "@/lib/utils";
 
 const key = (userId: string, houseId: string) => `assistant-conv:${userId}:${houseId}`;
@@ -32,6 +33,7 @@ export default function AssistantChat({ houseId, houseName }: { houseId: string;
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState("Assistente");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +43,14 @@ export default function AssistantChat({ houseId, houseName }: { houseId: string;
     setConv(saved);
     fetchConversationLines(saved, userId).then(setLines);
   }, [userId, houseId]);
+
+  useEffect(() => {
+    let alive = true;
+    void fetchAssistantAvatar(houseId).then((u) => alive && setAvatarUrl(u));
+    return () => {
+      alive = false;
+    };
+  }, [houseId]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -76,7 +86,7 @@ export default function AssistantChat({ houseId, houseName }: { houseId: string;
   return (
     <Card className="overflow-hidden flex flex-col h-[28rem]">
       <header className="p-3 border-b border-border flex items-center gap-2">
-        <Bot className="h-5 w-5 text-primary" />
+        <AssistantAvatar url={avatarUrl} size={28} />
         <div className="min-w-0">
           <div className="font-semibold text-sm truncate">{assistantName} · {houseName}</div>
           <div className="text-xs text-muted-foreground">Assistente virtual. Valores e datas seguem o cadastro da casa.</div>

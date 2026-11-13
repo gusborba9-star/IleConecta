@@ -8,11 +8,12 @@ import ChatAttachment from "@/components/chat/ChatAttachment";
 import ChatCheckoutButton from "@/components/chat/ChatCheckoutButton";
 import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
-import { askAssistant } from "@/lib/assistant";
+import { askAssistant, fetchAssistantAvatar } from "@/lib/assistant";
 import HandoffBar from "@/components/chat/HandoffBar";
 import { fetchHandoff } from "@/lib/handoff";
 import { shouldCallAssistant, type Handoff } from "@/lib/handoffCore";
 import { fetchAssistantName } from "@/lib/catalog";
+import AssistantAvatar from "@/components/assistant/AssistantAvatar";
 import { fetchQuickReplies, type QuickReply } from "@/lib/campaigns";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useOwnerPlan } from "@/lib/housePlan";
@@ -39,6 +40,7 @@ export default function RealMessages() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState<string | null>(null);
+  const [assistantAvatar, setAssistantAvatar] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [iBlocked, setIBlocked] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -98,10 +100,12 @@ export default function RealMessages() {
   useEffect(() => {
     if (!otherId || !peerIsHouse) {
       setAssistantName(null);
+      setAssistantAvatar(null);
       return;
     }
     let alive = true;
     void fetchAssistantName(otherId).then((n) => alive && setAssistantName(n));
+    void fetchAssistantAvatar(otherId).then((u) => alive && setAssistantAvatar(u));
     return () => {
       alive = false;
     };
@@ -285,7 +289,7 @@ export default function RealMessages() {
                       className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-forest text-forest-foreground rounded-br-md cursor-pointer shadow-card" : "bg-card border border-border rounded-bl-md shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]", deleted && "italic opacity-70")}
                     >
                       {m.staffName && !m.fromAssistant && <div className="text-[10px] font-semibold text-gold-ink mb-0.5">Atendido por {m.staffName}</div>}
-                      {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><Bot className="h-3 w-3" /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
+                      {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><AssistantAvatar url={assistantAvatar} size={16} /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
                       {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : (
                         <>
                           {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}

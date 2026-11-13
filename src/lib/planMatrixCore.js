@@ -50,7 +50,7 @@ export const DEFAULT_PLAN_MATRIX = {
       tagline: "A casa atendendo a qualquer hora.",
       benefits: [
         { text: "Tudo do Essencial", feature: null },
-        { text: "Lara, a assistente da casa, atende 24h (até {assistant_replies} respostas por mês) e informa as datas da agenda", feature: null },
+        { text: "A assistente da casa atende 24h (até {assistant_replies} respostas por mês) e informa as datas da agenda", feature: null },
         { text: "Ela conhece a sua casa: serviços, rituais, horários e perguntas frequentes", feature: null },
         { text: "Passa para você os assuntos delicados, com aviso no sino", feature: null },
         { text: "Catálogo interno e relatório do atendimento", feature: null },
@@ -62,7 +62,7 @@ export const DEFAULT_PLAN_MATRIX = {
       tagline: "A casa completa, com a comunidade por perto.",
       benefits: [
         { text: "Tudo do Profissional", feature: null },
-        { text: "Lara com até {assistant_replies} respostas por mês e descontos definidos pela casa", feature: null },
+        { text: "A assistente com até {assistant_replies} respostas por mês e descontos definidos pela casa", feature: null },
         { text: "Área de membros e mensalidades, sem planilha", feature: null },
         { text: "Calendário completo: cada data para o público certo e repetição anual", feature: null },
         { text: "Fotos e vídeos curtos no chat com os clientes", feature: null },

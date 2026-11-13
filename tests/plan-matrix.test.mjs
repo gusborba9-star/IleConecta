@@ -29,7 +29,7 @@ test("os valores iniciais batem com o que já valia antes da matriz", () => {
 });
 
 test("anti-divergência: o padrão do código é idêntico ao plan_matrix_default() do banco", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0085_matriz_de_planos.sql", import.meta.url), "utf8");
+  const sql = readFileSync(new URL("../supabase/migrations/0092_planos_e_foto_da_assistente.sql", import.meta.url), "utf8"); // definição vigente (a 0092 reescreveu o texto da 0085)
   const m = sql.match(/select '(\{"caps".*?\})'::jsonb;/s);
   assert.ok(m, "semente não encontrada");
   assert.deepEqual(JSON.parse(m[1]), DEFAULT_PLAN_MATRIX);
