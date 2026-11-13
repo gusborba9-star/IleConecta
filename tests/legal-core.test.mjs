@@ -80,19 +80,16 @@ test("aceite único: registros estranhos não derrubam a conta", () => {
   assert.deepEqual(gateDocs("personal", [null, undefined, {}, { doc_key: 5 }], LEGAL_VERSION).required, ["termos_cliente"]);
 });
 
-test("nova versão: casa reaceita uma vez; cliente que já aceitou não é bloqueado", () => {
+test("nova versão dos textos não trava ninguém: quem já aceitou continua entrando; quem nunca aceitou ainda vê a tela", () => {
   assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
-  assert.ok(LEGAL_VERSION_HISTORY.includes(DOC_MIN_VERSION.termos_cliente));
-  const prev = "2026-10-rascunho-2";
-  // cliente: aceite da versão anterior continua valendo
-  assert.deepEqual(gateDocs("personal", [row("termos_cliente", prev, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, []);
-  // cliente que aceitou a versão nova (compra) também
-  assert.deepEqual(gateDocs("personal", [row("termos_cliente", LEGAL_VERSION, "2026-11-14T10:00:00Z")], LEGAL_VERSION).required, []);
-  // cliente com versão desconhecida continua pedindo
-  assert.deepEqual(gateDocs("personal", [row("termos_cliente", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_cliente"]);
-  // casa: a versão anterior pede o novo aceite, a nova não
-  const old = gateDocs("commercial", [row("termos_casa", prev, "2026-11-01T10:00:00Z")], LEGAL_VERSION);
-  assert.deepEqual(old.required, ["termos_casa"]);
-  assert.equal(consentStatus([row("termos_casa", prev, "2026-11-01T10:00:00Z")], "termos_casa", LEGAL_VERSION).status, "old");
-  assert.deepEqual(gateDocs("commercial", [row("termos_casa", LEGAL_VERSION, "2026-11-14T10:00:00Z")], LEGAL_VERSION).required, []);
+  for (const d of ["termos_cliente", "termos_casa"]) assert.ok(LEGAL_VERSION_HISTORY.includes(DOC_MIN_VERSION[d]));
+  for (const v of LEGAL_VERSION_HISTORY) {
+    assert.deepEqual(gateDocs("personal", [row("termos_cliente", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `cliente ${v}`);
+    assert.deepEqual(gateDocs("commercial", [row("termos_casa", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `casa ${v}`);
+  }
+  assert.deepEqual(gateDocs("commercial", [], LEGAL_VERSION).required, ["termos_casa"]);
+  assert.deepEqual(gateDocs("personal", [], LEGAL_VERSION).required, ["termos_cliente"]);
+  // versão desconhecida (nunca esteve na lista) continua pedindo
+  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_casa"]);
+  assert.equal(consentStatus([row("termos_casa", "2026-10-rascunho-2", "2026-11-01T10:00:00Z")], "termos_casa", LEGAL_VERSION).status, "ok");
 });

@@ -6,12 +6,14 @@ export const LEGAL_VERSION = "2026-11-rascunho-3";
 export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3"];
 
 /**
- * Versão mínima que cada documento exige na tela de aceite (a que vale quando não há exigência própria é LEGAL_VERSION).
- * Termos do cliente: o aceite já feito continua valendo (regra do aceite único; o texto novo só é avisado). Termos da casa: a nova
- * versão exige um novo aceite, uma vez, por orientação jurídica (cobrança recorrente e isenção de responsabilidade).
+ * Versão mínima que cada documento exige na tela de aceite. Regra do aceite único (decisão do proprietário, validada pelo advogado em
+ * 2026-11-13): nova versão dos textos NÃO trava a tela de ninguém. Quem já aceitou continua entrando; todos recebem uma notificação
+ * com link para o texto novo (a leitura fica registrada). O aceite explícito, com registro do texto exato, data e IP, acontece onde há
+ * dinheiro: na autorização da cobrança automática da casa e em cada compra do cliente.
  */
 export const DOC_MIN_VERSION = {
-  termos_cliente: "2026-10-rascunho-2",
+  termos_cliente: "2026-10-rascunho-1",
+  termos_casa: "2026-10-rascunho-1",
 };
 
 export const CONSENT_DOCS = {
