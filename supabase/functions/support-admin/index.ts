@@ -17,6 +17,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 // deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = async (name: string, args: Record<string, unknown>): Promise<any> => {
   const { data, error } = await admin.rpc(name, args);
   if (error) throw new Error(error.message);

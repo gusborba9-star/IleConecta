@@ -27,6 +27,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const fail = (message: string, status = 400, code?: string) => json({ error: message, code }, status);
 
 // deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Obj = Record<string, any>;
 const CODE_STATUS: Record<string, number> = { not_found: 404, forbidden: 403, disabled: 503, provider_unavailable: 503, paid: 409, cancelled: 409, processing: 409 };
 
