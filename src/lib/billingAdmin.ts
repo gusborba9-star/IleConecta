@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { readAdminCharge, readConfig, type AdminCharge, type ConfigForm } from "@/lib/billingAdminCore";
 
-export interface Enrollment { houseId: string; day: number; active: boolean; level: string }
+export interface Enrollment { houseId: string; day: number; active: boolean; level: string; cancelled?: boolean }
 export interface DupEvent { id: number; chargeId: string | null; reason: string; at: string }
 
 export async function fetchBillingConfig(): Promise<ConfigForm | null> {
@@ -15,10 +15,11 @@ export async function fetchEnrollments(): Promise<Enrollment[]> {
   if (!supabase) return [];
   const [plans, states] = await Promise.all([
     supabase.from("house_billing_plan").select("house_id, billing_day, active"),
-    supabase.from("house_billing_state").select("house_id, suspended, total"),
+    supabase.from("house_billing_state").select("house_id, suspended, total, cancelled_at"),
   ]);
   const st = new Map((states.data ?? []).map((s) => [String(s.house_id), s.total ? "total" : s.suspended ? "parcial" : "ok"]));
-  return (plans.data ?? []).map((p) => ({ houseId: String(p.house_id), day: Number(p.billing_day), active: p.active === true, level: st.get(String(p.house_id)) ?? "ok" }));
+  const canc = new Set((states.data ?? []).filter((s) => s.cancelled_at).map((s) => String(s.house_id)));
+  return (plans.data ?? []).map((p) => ({ houseId: String(p.house_id), day: Number(p.billing_day), active: p.active === true, level: st.get(String(p.house_id)) ?? "ok", cancelled: canc.has(String(p.house_id)) }));
 }
 
 export async function fetchAdminCharges(limit = 60): Promise<AdminCharge[]> {
@@ -51,6 +52,12 @@ export async function unenrollHouse(house: string, reason: string): Promise<stri
   if (!supabase) return "Indisponível.";
   const { error } = await supabase.rpc("admin_billing_unenroll", { p_house: house, p_reason: reason });
   return error ? msg(error, "Não foi possível retirar a casa.") : null;
+}
+
+export async function reactivateHouse(house: string, reason: string): Promise<string | null> {
+  if (!supabase) return "Indisponível.";
+  const { error } = await supabase.rpc("admin_billing_reactivate", { p_house: house, p_reason: reason });
+  return error ? msg(error, "Não foi possível reativar a casa.") : null;
 }
 
 export async function cancelCharge(id: string, reason: string): Promise<string | null> {

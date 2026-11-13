@@ -1,7 +1,7 @@
 // Reembolso de créditos em 7 dias: pedido da casa, estorno no provedor, repetição segura e falhas (provedor e banco simulados).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { creditRefund, settleRefunds, sweep } from "../supabase/functions/platform-billing/core.js";
+import { creditRefund, planRefund, settleRefunds, sweep } from "../supabase/functions/platform-billing/core.js";
 import { createFakeProvider } from "../supabase/functions/platform-billing/fakeProvider.js";
 import { createRegistry } from "../supabase/functions/platform-billing/provider.js";
 import { interpretRefund } from "../supabase/functions/platform-billing/logic.js";
@@ -10,10 +10,10 @@ import { createStripeAdapter } from "../supabase/functions/platform-billing/stri
 const CH = "11111111-1111-1111-1111-111111111111", HOUSE = "22222222-2222-2222-2222-222222222222", RF = "33333333-3333-3333-3333-333333333333";
 const silent = { error() {}, log() {} };
 
-function setup({ begin = null, pending = [] } = {}) {
+function setup({ begin = null, pending = [], planPending = [] } = {}) {
   const fake = createFakeProvider({ id: "fake" });
   const registry = createRegistry([fake]);
-  const calls = { begin: [], done: [], fail: [] };
+  const calls = { begin: [], done: [], fail: [], pbegin: [], pdone: [], pfail: [] };
   const b = { refund_id: RF, provider: "fake", ref: "cs_pay_1", amount_cents: 4242, credits: 170, resume: false };
   const store = {
     config: async () => ({ enabled: true, provider: { plan: "fake" } }),
@@ -22,6 +22,10 @@ function setup({ begin = null, pending = [] } = {}) {
     refundDone: async (id, ref) => { calls.done.push([id, ref]); },
     refundFail: async (id, err) => { calls.fail.push([id, err]); },
     refundsPending: async () => pending,
+    planRefundBegin: async (h, c, by) => { calls.pbegin.push([h, c, by]); if (begin instanceof Error) throw begin; return begin ?? { ...b, credits: undefined }; },
+    planRefundDone: async (id, ref) => { calls.pdone.push([id, ref]); },
+    planRefundFail: async (id, err) => { calls.pfail.push([id, err]); },
+    planRefundsPending: async () => planPending,
     tick: async () => ({}), autoEnabled: async () => false, autoDue: async () => [], openWithRef: async () => [], paidWithoutFee: async () => [],
   };
   return { fake, registry, store, calls, b };
@@ -131,4 +135,41 @@ test("adaptador Stripe: acha o pagamento pela página, estorna o valor exato com
   const direct = []; const a2 = createStripeAdapter({ secret: "sk_test_x", webhookSecret: "w", fetchImpl: async (u, o) => { direct.push(u); return { ok: true, status: 200, json: async () => ({ id: "re_1", status: "pending" }) }; }, log: silent });
   assert.equal((await a2.refund({ ref: "pi_55", amountCents: 100, idempotencyKey: "k4" })).outcome, "done");
   assert.deepEqual(direct.length, 1, "pagamento já conhecido (pi_) não consulta a página");
+});
+
+test("reembolso do plano: estorno integral, conclui no banco com a função do plano (não a de créditos)", async () => {
+  const t = setup();
+  const r = await planRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent });
+  assert.deepEqual(r, { status: "done", amount_cents: 4242 });
+  assert.deepEqual(t.calls.pbegin[0], [HOUSE, CH, "u1"]);
+  assert.equal(t.calls.pdone.length, 1);
+  assert.equal(t.calls.done.length + t.calls.begin.length, 0);
+});
+
+test("reembolso do plano: recusas do banco viram mensagem; quem não tem casa não pede", async () => {
+  for (const m of ["O prazo de 7 dias para reembolso já passou.", "O reembolso de 7 dias vale só para o primeiro pagamento do plano.", "O reembolso de 7 dias do plano já foi usado por esta casa.", "Esta cobrança não pode ser reembolsada."]) {
+    const t = setup({ begin: new Error(m) });
+    await assert.rejects(() => planRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent }), (e) => e.code === "refund_denied" && e.message === m);
+    assert.equal(t.fake.refunds.size, 0);
+  }
+  const t = setup();
+  await assert.rejects(() => planRefund({ registry: t.registry, store: t.store, userId: "u9", chargeId: CH, log: silent }), /Somente a casa/);
+});
+
+test("reembolso do plano recusado pelo provedor: registra a falha e avisa que a assinatura foi mantida", async () => {
+  const t = setup();
+  t.fake.script = { refund: "falha" };
+  const orig = t.registry.byId("fake").refund;
+  t.registry.byId("fake").refund = async () => ({ outcome: "failed", code: "recusado" });
+  await assert.rejects(() => planRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent }), (e) => e.code === "refund_failed" && /assinatura foi mantida/.test(e.message));
+  assert.equal(t.calls.pfail.length, 1);
+  assert.equal(t.calls.pdone.length, 0);
+  t.registry.byId("fake").refund = orig;
+});
+
+test("a rotina também refaz os reembolsos de plano pendentes", async () => {
+  const t = setup({ planPending: [{ refund_id: RF, provider: "fake", ref: "cs_pay_1", amount_cents: 17990 }] });
+  const r = await settleRefunds({ registry: t.registry, store: t.store, log: silent });
+  assert.equal(r.pending, 1); assert.equal(r.done, 1);
+  assert.equal(t.calls.pdone.length, 1); assert.equal(t.calls.done.length, 0);
 });
