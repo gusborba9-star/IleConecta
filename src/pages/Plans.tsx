@@ -11,6 +11,7 @@ import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
 import InvoicesCard from "@/components/house/InvoicesCard";
+import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
 import { syncCharge } from "@/lib/platformBilling";
 
 /** Quanto custaria pessoas para o mesmo atendimento. Calculado com os preços atuais dos planos. */
@@ -130,6 +131,7 @@ export default function Plans() {
           );
         })}
       </div>
+      {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       <ComparisonCard
         rows={[

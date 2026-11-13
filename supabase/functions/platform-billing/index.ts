@@ -10,6 +10,7 @@ import { ChargeStateError, ProviderError, createRegistry } from "./provider.js";
 import { createStripeAdapter } from "./stripeAdapter.js";
 import { createStore } from "./store.js";
 import * as core from "./core.js";
+import { CREDIT_PACKS, creditPurchaseError } from "./logic.js";
 
 const SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("PLATFORM_STRIPE_WEBHOOK_SECRET") ?? "";
@@ -53,6 +54,21 @@ Deno.serve(async (req) => {
     const user = await userOf(req);
     if (!user) return fail("Entre na sua conta.", 401);
     const input = (await req.json().catch(() => ({}))) as Obj;
+    if (input.action === "buy_credits") {
+      // Compra de pacote de créditos: o banco valida (plano com assistente, casa em dia, preço do painel) e reaproveita a fatura aberta.
+      const pack = String(input.pack ?? "");
+      if (!CREDIT_PACKS.includes(pack)) return fail("Pacote inválido.");
+      const { data: h } = await admin.from("houses").select("id").eq("owner_id", user.id).maybeSingle();
+      if (!h) return fail("Somente a casa compra créditos.", 403);
+      const { data: cid, error: perr } = await admin.rpc("platform_credit_purchase", { p_house: h.id, p_pack: pack });
+      if (perr || typeof cid !== "string") {
+        console.error("platform_credit_purchase", perr?.message);
+        return fail(creditPurchaseError(perr?.message), 409);
+      }
+      const m = input.method === "pix" || input.method === "card" ? input.method : null;
+      const r = await core.openPayment({ registry, store, chargeId: cid, userId: user.id, method: m, email: user.email, appUrl: APP_URL });
+      return json({ url: r.url });
+    }
     const chargeId = String(input.charge_id ?? "");
     if (!/^[0-9a-f-]{36}$/i.test(chargeId)) return fail("Informe a fatura.");
     switch (input.action) {

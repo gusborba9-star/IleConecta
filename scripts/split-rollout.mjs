@@ -25,7 +25,9 @@ export function chunk(stmts, max = 110) {
     const size = lines(s);
     // abre um novo passo antes de um comentário de seção, se o atual já tem um bom tamanho
     const section = /^\s*(--[^\n]*\n\s*)*--\s*=====/.test(s);
-    if (cur.length && (n + size > max || (section && n > max * 0.5))) { groups.push(cur); cur = []; n = 0; }
+    // nunca separa um "drop ... if exists" da instrução seguinte: o passo precisa poder rodar de novo sozinho
+    const afterDrop = cur.length > 0 && /^\s*(--[^\n]*\n\s*)*drop\s/i.test(cur[cur.length - 1]);
+    if (cur.length && !afterDrop && (n + size > max || (section && n > max * 0.5))) { groups.push(cur); cur = []; n = 0; }
     cur.push(s); n += size;
   }
   if (cur.length) groups.push(cur);

@@ -226,11 +226,12 @@ export function cleanReply(raw) {
 }
 
 /** Retorna null se pode responder, ou o código do bloqueio. */
-export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null }) {
+/** creditBalance: respostas compradas ainda válidas. A franquia do mês vem primeiro; passada ela, a assistente segue enquanto houver crédito. */
+export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null, creditBalance = 0 }) {
   const limits = planLimits(plan, matrix);
   if (limits.monthlyReplies === 0) return "plano_sem_assistente";
   if (!assistant || !assistant.enabled) return "assistente_desativada";
-  if (usedThisMonth >= limits.monthlyReplies) return "cota_mensal";
+  if (usedThisMonth >= limits.monthlyReplies && !(Number(creditBalance) > 0)) return "cota_mensal";
   if (usedByUserInWindow >= USER_RATE.maxReplies) return "muitas_mensagens";
   return null;
 }

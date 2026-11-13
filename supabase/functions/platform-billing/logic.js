@@ -99,3 +99,19 @@ export function classifyEvent(type) {
   if (type === "checkout.session.async_payment_failed" || type === "checkout.session.expired") return "failed";
   return "ignore";
 }
+
+export const CREDIT_PACKS = ["p80", "p200", "p500"];
+
+const CREDIT_ERRORS = [
+  [/cobranca_desligada/, "A compra de créditos ainda não está disponível."],
+  [/Pacote inválido/, "Pacote inválido."],
+  [/não inclui a assistente/, "O plano da casa não inclui a assistente."],
+  [/Regularize a fatura em atraso/, "Regularize a fatura em atraso para comprar créditos."],
+];
+
+/** Mensagem do banco → texto para a casa. Só frases conhecidas passam; o resto vira mensagem genérica (nada técnico vaza). */
+export function creditPurchaseError(message) {
+  const m = String(message ?? "");
+  for (const [re, text] of CREDIT_ERRORS) if (re.test(m)) return text;
+  return "Não foi possível iniciar a compra agora. Tente de novo.";
+}

@@ -16,7 +16,7 @@ export async function fetchInvoices(houseId: string, limit = 24): Promise<Invoic
   if (!supabase) return [];
   const { data, error } = await supabase.from("platform_charges")
     .select("id, kind, description, amount_cents, due_date, status, paid_at")
-    .eq("house_id", houseId).order("due_date", { ascending: false }).limit(limit);
+    .eq("house_id", houseId).or("kind.neq.credit_pack,status.neq.cancelada").order("due_date", { ascending: false }).limit(limit);
   if (error || !data) return [];
   return data.map((r) => ({
     id: String(r.id), kind: String(r.kind), description: r.description ? String(r.description) : null,

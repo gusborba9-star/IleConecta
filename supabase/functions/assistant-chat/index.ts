@@ -135,18 +135,23 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   // 3) Plano, cota mensal e limite por usuário.
-  const [{ count: usedMonth }, { count: usedWindow }] = await Promise.all([
+  const [{ count: usedMonth }, { count: usedWindow }, { data: creditsRaw, error: creditsErr }] = await Promise.all([
     admin.from("assistant_usage").select("id", { count: "exact", head: true })
       .eq("house_id", house.id).gte("created_at", monthStartISO()),
     admin.from("assistant_usage").select("id", { count: "exact", head: true })
       .eq("house_id", house.id).eq("user_id", user.id).gte("created_at", windowStartISO()),
+    admin.rpc("ai_credit_balance", { p_house: house.id }),
   ]);
+  // Falha ao ler o saldo: vale só a franquia do mês (nunca libera resposta sem cobertura).
+  if (creditsErr) console.error("ai_credit_balance", creditsErr.message);
+  const creditBalance = creditsErr ? 0 : Number(creditsRaw ?? 0) || 0;
   const blocked = checkGate({
     plan: house.plan,
     assistant,
     usedThisMonth: usedMonth ?? 0,
     usedByUserInWindow: usedWindow ?? 0,
     matrix: planMatrix,
+    creditBalance,
   });
   if (blocked) return json(blocked === "cota_mensal" || blocked === "muitas_mensagens" ? 429 : 403, {
     error: blocked,
@@ -353,16 +358,26 @@ Deno.serve(async (req) => {
       if (nErr) await admin.from("notifications").insert(row); // coluna ainda não existe: segue sem ela
     }
   }
-  await admin.from("assistant_usage").insert({
-    house_id: house.id, user_id: user.id, model: usedModel,
-    prompt_tokens: promptTokens, completion_tokens: completionTokens,
+  // Registra a resposta e debita o crédito (se a franquia do mês já acabou) numa transação só, uma vez por resposta.
+  const { data: rec, error: recErr } = await admin.rpc("assistant_record_usage", {
+    p_house: house.id, p_user: user.id, p_model: usedModel, p_prompt: promptTokens, p_completion: completionTokens,
   });
+  if (recErr) {
+    console.error("assistant_record_usage", recErr.message);
+    // O banco não registrou: grava o uso simples para a cota mensal não ficar cega (sem débito de crédito).
+    await admin.from("assistant_usage").insert({
+      house_id: house.id, user_id: user.id, model: usedModel, prompt_tokens: promptTokens, completion_tokens: completionTokens,
+    });
+  }
 
   const limit = planLimits(house.plan, planMatrix).monthlyReplies;
+  const used = Number((rec as { used_month?: number } | null)?.used_month ?? (usedMonth ?? 0) + 1);
+  const left = Number((rec as { credits_left?: number } | null)?.credits_left ?? creditBalance);
   return json(200, {
     conversation_id: conversationId,
     reply,
     assistant_name: assistant?.display_name ?? "Assistente",
-    remaining_this_month: Math.max(0, limit - ((usedMonth ?? 0) + 1)),
+    remaining_this_month: Math.max(0, limit - used),
+    credits_left: left,
   });
 });

@@ -161,3 +161,16 @@ test("nenhum segredo no código da função nem no cartão do painel", () => {
     assert.ok(!/sk_(live|test)_[A-Za-z0-9]{8,}/.test(src) && !/whsec_[A-Za-z0-9]{8,}/.test(src), `${f} tem segredo`);
   }
 });
+
+import { CREDIT_PACKS, creditPurchaseError } from "../supabase/functions/platform-billing/logic.js";
+
+test("compra de créditos: só frases conhecidas chegam à casa; o resto vira mensagem genérica", () => {
+  assert.deepEqual(CREDIT_PACKS, ["p80", "p200", "p500"]);
+  assert.match(creditPurchaseError("cobranca_desligada"), /ainda não está disponível/);
+  assert.match(creditPurchaseError("Regularize a fatura em atraso para comprar créditos."), /Regularize/);
+  assert.match(creditPurchaseError("O plano da casa não inclui a assistente."), /não inclui a assistente/);
+  const leak = creditPurchaseError('duplicate key value violates unique constraint "x" at db.internal:5432');
+  assert.match(leak, /Tente de novo/);
+  assert.doesNotMatch(leak, /duplicate|constraint|5432/);
+  assert.match(creditPurchaseError(undefined), /Tente de novo/);
+});

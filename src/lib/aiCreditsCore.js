@@ -1,0 +1,56 @@
+// Créditos de IA da casa: franquia do mês, saldo dos pacotes e o que está à venda (a conta é feita no banco).
+
+export const PACK_ORDER = ["p80", "p200", "p500"];
+export const PACK_SIZE = { p80: 80, p200: 200, p500: 500 };
+
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+/** Resposta do banco → formato seguro para a tela. Sem casa ou resposta fora do formato: null. */
+export function readCredits(raw) {
+  if (!raw || typeof raw !== "object" || raw.has_house !== true) return null;
+  const prices = raw.prices && typeof raw.prices === "object" ? raw.prices : {};
+  return {
+    limit: Math.max(0, Math.trunc(num(raw.limit))),
+    used: Math.max(0, Math.trunc(num(raw.used_month))),
+    balance: Math.max(0, Math.trunc(num(raw.balance))),
+    forSale: raw.for_sale === true,
+    packs: (Array.isArray(raw.packs) ? raw.packs : [])
+      .filter((p) => p && typeof p.expires_at === "string")
+      .map((p) => ({ size: Math.trunc(num(p.size)), remaining: Math.max(0, Math.trunc(num(p.remaining))), expiresAt: p.expires_at })),
+    offers: PACK_ORDER.filter((k) => Number.isFinite(Number(prices[k])) && Number(prices[k]) > 0).map((k) => ({ key: k, size: PACK_SIZE[k], priceCents: Number(prices[k]) })),
+  };
+}
+
+/** Franquia do mês: restante, percentual e tom do aviso (80% amarelo, esgotada vermelho). */
+export function franchiseView(c) {
+  if (!c || c.limit <= 0) return null;
+  const used = Math.min(c.used, c.limit);
+  const pct = Math.floor((used * 100) / c.limit);
+  const over = Math.max(0, c.used - c.limit);
+  const exhausted = c.used >= c.limit;
+  return { used, limit: c.limit, left: Math.max(0, c.limit - c.used), pct, over, exhausted, tone: exhausted ? "danger" : used * 100 >= c.limit * 80 ? "gold" : "forest" };
+}
+
+/** Texto curto de situação: o que acontece agora com a assistente. */
+export function statusText(c) {
+  const f = franchiseView(c);
+  if (!f) return "O plano da casa não inclui a assistente.";
+  if (!f.exhausted) return `Restam ${f.left} respostas da franquia deste mês.`;
+  if (c.balance > 0) return `A franquia do mês acabou. A assistente segue com os seus créditos (${c.balance} respostas).`;
+  return "A franquia do mês acabou. A assistente pausa até o próximo mês, ou até você comprar créditos.";
+}
+
+export function expiryText(iso, now = Date.now()) {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const days = Math.ceil((t - now) / 86_400_000);
+  const d = new Date(t);
+  const date = `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+  if (days <= 0) return `venceu em ${date}`;
+  if (days <= 7) return `vence em ${days} ${days === 1 ? "dia" : "dias"} (${date})`;
+  return `vale até ${date}`;
+}
+
+export function offerLabel(o) {
+  return `${o.size} respostas`;
+}
