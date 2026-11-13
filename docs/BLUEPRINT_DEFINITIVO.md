@@ -459,6 +459,11 @@ Aprovado em 12/11/2026 (registro em §33.1). Vale para planos, vagas adicionais,
 - **Suspensão automática e parcial:** a casa só conclui o que já estava em andamento. Não pode fazer novas vendas ou reservas pela plataforma nem iniciar campanhas. Destaques e impulsionamentos ficam pausados. Mantém acesso aos próprios dados. Reverte automaticamente com o pagamento.
 - **Sem selo** de pontualidade ("Casa em dia").
 - **Preços** (plano, vaga adicional, destaque, impulsionamento, pacotes) ficam em tabela central editável no painel, com motivo e auditoria.
+- **Cobrança automática no cartão (aprovado em 13/11/2026):** a casa autoriza (caixa de autorização, registrada com texto, valor e data) e o cartão é cobrado no dia do vencimento, com até 3 tentativas em dias seguidos; depois segue o fluxo normal de tolerância, suspensão e bloqueio. Vale para mensalidade e vagas extras (nunca pacote de créditos). A casa liga, desliga, troca e remove o cartão quando quiser.
+- **Aceite dos Termos sem trava (aprovado em 13/11/2026, orientação do advogado):** mudança de Termos não bloqueia a tela. A pessoa é avisada por notificação, com registro de leitura. Aceite explícito só nos momentos de dinheiro (autorização do cartão e frase junto ao botão de pagar, com registro por compra). O caminho de reembolso fica em "Pedidos e validações", discreto e sem induzir o pedido.
+- **Reembolso do primeiro pagamento do plano (aprovado em 13/11/2026):** em até 7 dias do primeiro pagamento do plano da casa, uma única vez por casa, devolução integral pelo mesmo meio de pagamento (a plataforma absorve a tarifa). Ao concluir o estorno: cobrança mensal encerrada, faturas abertas de plano e vagas extras canceladas, cobrança automática do cartão desligada e a casa fica inativa pelo bloqueio total já existente (dados mantidos). Se o provedor recusar, nada muda. Créditos de IA têm reembolso próprio e não entram aqui.
+- **Reativação da casa inativa (aprovado em 13/11/2026):** dois caminhos. (1) A própria casa reativa pagando, em Planos, escolhendo o plano em que volta (qualquer plano com mensalidade na tabela); ao confirmar o pagamento a casa volta sozinha, é matriculada de novo com vencimento no dia do pagamento e a cobrança automática continua desligada até a casa ligar. Esse pagamento é recontratação: não dá novo reembolso de 7 dias. (2) O suporte reativa pelo painel (motivo obrigatório, registro de auditoria), o que também encerra qualquer fatura de reativação aberta.
+- **Atualização da tabela comercial / reajuste (aprovado em 13/11/2026, orientação do advogado):** sem índice. O administrador anuncia o novo valor de um plano; a vigência é no mínimo 30 dias depois do anúncio. Cada casa muda na sua primeira renovação (dia de cobrança dela) que cair na vigência ou depois; quem vence antes pula o reajuste. As casas matriculadas no plano recebem notificação (com push e registro de leitura) que diz a data da própria renovação. Na vigência a tabela de preços recebe o valor novo (rotina horária). Redução vale na hora; aumento direto na tabela é recusado com a cobrança ligada. Pendente de decisão do proprietário: o texto dos Termos fala em aviso por e-mail (não existe envio de e-mail hoje) e em cancelamento sem multa antes da renovação (não há botão de cancelar assinatura).
 - **Cobrança real** só é ligada por decisão expressa do proprietário.
 
 ---
@@ -805,6 +810,12 @@ Não criar nova versão documental para cada mudança de implementação. Decis�
 | **Preços dos planos** confirmados: Essencial R$ 89,90, Profissional R$ 179,90, Premium R$ 299,90 (§18.1). | O código e a produção ainda tinham R$ 139,90 e R$ 199,00. | Configuração de produção alinhada ao Blueprint. Sem cobrança real. |
 | **Inadimplência e cobrança da plataforma** (§18.5). | Definir calendário, avisos, tolerância e suspensão parcial. | Novo domínio de cobrança, com calendário no banco. |
 | **Créditos de IA** (§18.3): validade de 3 meses, reembolso proporcional em até 7 dias, ordem de consumo e avisos. | Fechar as regras exigidas antes da venda. | Pacotes só à venda após implementação e testes. Reembolso de 7 dias implementado e testado (migration 0095). |
+
+### 13/11/2026 (aprovação do proprietário, em conversa, com orientação do advogado)
+
+| Mudança | Motivo | Impacto |
+|---|---|---|
+| **Cobrança automática no cartão, aceite sem trava, reembolso do primeiro pagamento do plano, reativação (pela casa pagando ou pelo suporte) e atualização da tabela comercial com aviso de 30 dias** (§18.5). | Fechar as regras de renovação, desistência e reajuste antes da cobrança real. | Implementado em modo de teste (migrations 0094 a 0100). Cobrança real continua só com autorização expressa. Termos ainda em revisão do advogado. |
 
 ---
 
