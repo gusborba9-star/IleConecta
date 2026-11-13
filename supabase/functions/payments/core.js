@@ -189,7 +189,7 @@ export async function openCheckout({ registry, store, pay, providerId, houseAcco
   }
   const adapter = registry.forNew(providerId);
   const created = await adapter.createCheckout({
-    payment: pay, title, appUrl, clientEmail: email, account, expiresAt, idempotencyKey: `cs_${pay.id}_${pay.provider_ref ?? "0"}`,
+    payment: pay, title, appUrl, clientEmail: email, account, expiresAt, idempotencyKey: `cs_${pay.id}_${pay.provider_ref ?? "0"}_${expiresAt}`,
   });
   const attached = await store.attachCheckout(pay, { provider: adapter.id, ref: created.ref, account });
   if (attached === false) {

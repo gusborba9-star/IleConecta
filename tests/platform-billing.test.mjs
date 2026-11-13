@@ -174,3 +174,28 @@ test("compra de créditos: só frases conhecidas chegam à casa; o resto vira me
   assert.doesNotMatch(leak, /duplicate|constraint|5432/);
   assert.match(creditPurchaseError(undefined), /Tente de novo/);
 });
+
+test("abrir o pagamento de novo em outro segundo, sem página gravada, não bate na chave de idempotência do Stripe", async () => {
+  const { openPayment } = await import("../supabase/functions/platform-billing/core.js");
+  const fake = createFakeProvider({ id: "fake" });
+  const registry = createRegistry([fake]);
+  const c = { ...charge, status: "aberta", provider: null, provider_ref: null, provider_method: null };
+  let attached = 0;
+  const store = {
+    config: async () => ({ enabled: true, provider: { plan: "fake" }, methods: { plan: ["pix", "card"] } }),
+    chargeById: async () => c,
+    houseOwner: async () => "u1",
+    refCount: async () => 0,
+    attach: async () => { attached++; if (attached === 1) throw new Error("falha ao gravar"); },
+  };
+  const base = { registry, store, chargeId: c.id, userId: "u1", method: "card", email: "a@b.c", appUrl: "https://app.example" };
+  // 1ª tentativa: o provedor cria a página, mas a gravação no banco falha (a chave "pb:…:0:card" fica usada no provedor)
+  await assert.rejects(() => openPayment({ ...base, nowMs: 1_800_000_000_000 }), /Tente de novo/);
+  // 2ª tentativa, segundos depois, mesmo estado (nenhuma referência gravada): precisa funcionar
+  const r = await openPayment({ ...base, nowMs: 1_800_000_007_000 });
+  assert.match(r.url, /^https:\/\/pay\.example\//);
+  // clique repetido no mesmo instante continua idempotente (mesma página, sem criar outra)
+  const before = fake.sessions.size;
+  await openPayment({ ...base, nowMs: 1_800_000_007_000 });
+  assert.equal(fake.sessions.size, before);
+});
