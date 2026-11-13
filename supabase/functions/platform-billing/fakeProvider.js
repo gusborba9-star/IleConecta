@@ -11,6 +11,8 @@ export function createFakeProvider({ id = "fake", now = () => Date.now() } = {})
     detached: [],
     setups: new Map(),
     autoCharges: new Map(), // chave de idempotência -> resultado (como o Stripe: mesma chave, mesmo resultado, sem cobrar de novo)
+    refunds: new Map(), // chave -> resultado (o Stripe repete o mesmo resultado para a mesma chave)
+    refundScript: [], // "done" | "failed" | "erro" | "null"
     autoScript: [], // próximos desfechos: "aprovada" | "recusada" | "exige_acao" | "processando" | "erro"
 
     async createCheckout({ charge, methods, expiresAtSec, idempotencyKey }) {
@@ -52,6 +54,15 @@ export function createFakeProvider({ id = "fake", now = () => Date.now() } = {})
       if (next === "aprovada" || next === "processando") {
         sessions.set(ref, { ref, url: null, idem: null, chargeId: charge.id, amountCents: Number(charge.amount_cents), currency: "brl", methods: ["card"], method: "card", expiresAtSec: 0, state: "complete", paid: next === "aprovada", pending: next === "processando", feeCents: 400 });
       }
+      return r;
+    },
+    async refund({ ref, amountCents, idempotencyKey }) {
+      if (this.refunds.has(idempotencyKey)) return this.refunds.get(idempotencyKey);
+      const next = this.refundScript.shift() ?? "done";
+      if (next === "erro") throw new ProviderError("Falha de rede.", "stripe_error");
+      if (next === "null") return null;
+      const r = next === "failed" ? { outcome: "failed", code: "invalid_request" } : { outcome: "done", ref: `${id}_re_${this.refunds.size + 1}` };
+      this.refunds.set(idempotencyKey, { ...r, ref: r.ref, amountCents: Number(amountCents), paidRef: ref });
       return r;
     },
     async detachCard({ method }) { this.calls.detach++; this.detached.push(method); },

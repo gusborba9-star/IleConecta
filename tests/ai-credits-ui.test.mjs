@@ -41,3 +41,29 @@ test("validade: avisa quando está perto de vencer e quando venceu", () => {
   assert.equal(expiryText("lixo", now), "");
   assert.equal(offerLabel({ key: "p80", size: 80, priceCents: 1990 }), "80 respostas");
 });
+
+import { readRefunds, refundText } from "../src/lib/aiCreditsCore.js";
+
+const rf = (o = {}) => ({ charge_id: "11111111-1111-1111-1111-111111111111", size: 200, remaining: 170, paid_cents: 4990, refund_cents: 4242, deadline: "2026-11-20T12:00:00Z", ...o });
+
+test("reembolso: lê só itens válidos (id de fatura, valores positivos) e o histórico", () => {
+  const r = readRefunds({ window_days: 7, items: [rf(), rf({ charge_id: "x" }), rf({ refund_cents: 0 }), rf({ remaining: 0 }), null], history: [{ amount_cents: 4242, credits: 170, status: "concluido", at: "2026-11-13T12:00:00Z" }, { amount_cents: 0, credits: 1, status: "pendente" }, { amount_cents: 5, credits: 1, status: "qualquer" }] });
+  assert.equal(r.items.length, 1);
+  assert.equal(r.items[0].refundCents, 4242);
+  assert.deepEqual(r.history.map((h) => h.status), ["concluido", "pendente"], "estado desconhecido nunca vira 'concluído'");
+  assert.deepEqual(readRefunds(null), { items: [], history: [], windowDays: 7 });
+  assert.deepEqual(readRefunds("lixo").items, []);
+});
+
+test("reembolso: o texto diz o valor, quantas respostas voltam e o prazo", () => {
+  const now = Date.parse("2026-11-17T12:00:00Z");
+  const part = refundText(readRefunds({ items: [rf()] }).items[0], now);
+  assert.equal(part.money, "R$ 42,42");
+  assert.match(part.line, /30 de 200 respostas já usadas: devolvemos R\$ 42,42 pelas 170 não usadas/);
+  assert.match(part.line, /Faltam 3 dias/);
+  const full = refundText(readRefunds({ items: [rf({ remaining: 200, refund_cents: 4990 })] }).items[0], now);
+  assert.match(full.line, /Nada usado deste pacote: devolvemos R\$ 49,90 \(valor integral\)/);
+  const last = refundText(readRefunds({ items: [rf({ deadline: "2026-11-17T20:00:00Z" })] }).items[0], now);
+  assert.match(last.line, /Último dia/);
+  assert.doesNotMatch(refundText(readRefunds({ items: [rf({ deadline: "lixo" })] }).items[0], now).line, /Faltam|Último/);
+});

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { readCredits, type Credits, type PackKey } from "@/lib/aiCreditsCore";
+import { readCredits, readRefunds, type Credits, type PackKey, type Refunds } from "@/lib/aiCreditsCore";
 
 export async function fetchCredits(): Promise<Credits | null> {
   if (!supabase) return null;
@@ -24,4 +24,26 @@ export async function buyCredits(pack: PackKey): Promise<string | null> {
   if (!url) return "Não foi possível abrir o pagamento.";
   window.location.assign(url);
   return null;
+}
+
+export async function fetchRefunds(): Promise<Refunds> {
+  if (!supabase) return readRefunds(null);
+  const { data, error } = await supabase.rpc("my_credit_refunds");
+  return readRefunds(error ? null : data);
+}
+
+/** Pede o reembolso de um pacote pago há até 7 dias. Devolve { error } ou { pending } (o estorno está a caminho). */
+export async function requestRefund(chargeId: string): Promise<{ error: string | null; pending?: boolean }> {
+  if (!supabase) return { error: "Indisponível." };
+  const { data, error } = await supabase.functions.invoke("platform-billing", { body: { action: "credit_refund", charge_id: chargeId } });
+  if (error) {
+    try {
+      const ctx = (error as { context?: Response }).context;
+      const b = ctx ? ((await ctx.json()) as { error?: string }) : null;
+      return { error: b?.error ?? "Não foi possível pedir o reembolso agora. Tente de novo." };
+    } catch {
+      return { error: "Não foi possível pedir o reembolso agora. Tente de novo." };
+    }
+  }
+  return { error: null, pending: (data as { status?: string } | null)?.status === "pending" };
 }

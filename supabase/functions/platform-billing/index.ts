@@ -29,7 +29,7 @@ const fail = (message: string, status = 400, code?: string) => json({ error: mes
 // deno-lint-ignore no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Obj = Record<string, any>;
-const CODE_STATUS: Record<string, number> = { not_found: 404, forbidden: 403, card_state: 409, disabled: 503, provider_unavailable: 503, paid: 409, cancelled: 409, processing: 409 };
+const CODE_STATUS: Record<string, number> = { not_found: 404, forbidden: 403, card_state: 409, refund_denied: 409, refund_failed: 502, disabled: 503, provider_unavailable: 503, paid: 409, cancelled: 409, processing: 409 };
 
 async function userOf(req: Request) {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -78,6 +78,11 @@ Deno.serve(async (req) => {
     }
     if (input.action === "card_auto") return json(await core.cardSetAuto({ registry, store, userId: user.id, enabled: input.enabled === true }));
     if (input.action === "card_remove") return json(await core.cardRemove({ registry, store, userId: user.id }));
+    if (input.action === "credit_refund") {
+      const id = String(input.charge_id ?? "");
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("Informe a compra.");
+      return json(await core.creditRefund({ registry, store, userId: user.id, chargeId: id }));
+    }
     const chargeId = String(input.charge_id ?? "");
     if (!/^[0-9a-f-]{36}$/i.test(chargeId)) return fail("Informe a fatura.");
     switch (input.action) {

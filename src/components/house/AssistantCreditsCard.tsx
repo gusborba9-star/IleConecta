@@ -2,24 +2,38 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Progress } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { buyCredits, fetchCredits } from "@/lib/aiCredits";
-import { expiryText, franchiseView, offerLabel, statusText, type Credits, type PackKey } from "@/lib/aiCreditsCore";
+import { buyCredits, fetchCredits, fetchRefunds, requestRefund } from "@/lib/aiCredits";
+import { expiryText, franchiseView, offerLabel, refundText, statusText, type Credits, type PackKey, type Refunds } from "@/lib/aiCreditsCore";
 import { formatCents } from "@/lib/financePanelCore";
 
-/** Respostas da assistente: franquia do mês, créditos comprados (validade de 3 meses, sem devolução) e compra de pacotes. */
+/** Respostas da assistente: franquia do mês, créditos comprados (validade de 3 meses, com reembolso em até 7 dias) e compra de pacotes. */
 export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: number }) {
   const { isRemoteAuth } = useApp();
   const [c, setC] = useState<Credits | null>(null);
   const [busy, setBusy] = useState<PackKey | null>(null);
+  const [refunds, setRefunds] = useState<Refunds | null>(null);
+  const [refunding, setRefunding] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     if (!isRemoteAuth) return;
     let alive = true;
     void fetchCredits().then((r) => alive && setC(r));
+    void fetchRefunds().then((r) => alive && setRefunds(r));
     return () => {
       alive = false;
     };
-  }, [isRemoteAuth, refreshKey]);
+  }, [isRemoteAuth, refreshKey, version]);
+
+  const refund = async (chargeId: string, money: string) => {
+    if (!window.confirm(`Pedir o reembolso de ${money}? Os créditos não usados deste pacote serão retirados do seu saldo.`)) return;
+    setRefunding(chargeId);
+    const r = await requestRefund(chargeId);
+    setRefunding(null);
+    if (r.error) toast.error(r.error);
+    else toast.success(r.pending ? "Reembolso pedido. O estorno está a caminho e será confirmado em instantes." : "Reembolso aprovado. O dinheiro volta pelo mesmo meio de pagamento em alguns dias.");
+    setVersion((n) => n + 1);
+  };
 
   const f = franchiseView(c);
   if (!c || !f) return null; // plano sem assistente: nada a mostrar aqui
@@ -54,6 +68,28 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
           ))}
         </ul>
       )}
+      {refunds && refunds.items.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          <div className="text-sm font-semibold">Reembolso de pacote</div>
+          {refunds.items.map((i) => {
+            const t = refundText(i);
+            return (
+              <div key={i.chargeId} className="space-y-1.5">
+                <p className="text-sm">Pacote de {i.size}: {t.line}</p>
+                <Button size="sm" variant="outline" disabled={refunding !== null} onClick={() => void refund(i.chargeId, t.money)}>
+                  {refunding === i.chargeId ? "Pedindo…" : `Pedir reembolso de ${t.money}`}
+                </Button>
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground">Até {refunds.windowDays} dias depois do pagamento você pode desistir da compra. Devolvemos o valor proporcional às respostas ainda não usadas do pacote (a franquia do mês é usada primeiro), sem descontar tarifa.</p>
+        </div>
+      )}
+      {refunds && refunds.history.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {refunds.history.map((h) => `Reembolso de R$ ${(h.amountCents / 100).toFixed(2).replace(".", ",")} (${h.credits} respostas): ${h.status === "concluido" ? "concluído" : "a caminho"}`).join(" · ")}
+        </p>
+      )}
       {c.forSale && c.offers.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-semibold">Comprar créditos</div>
@@ -66,7 +102,7 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado e vale por 3 meses a partir da compra; depois disso o saldo restante zera. A compra é entregue na hora e não tem devolução.
+            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado e vale por 3 meses a partir da compra; depois disso o saldo restante zera. Você pode desistir em até 7 dias e receber de volta o valor das respostas não usadas.
           </p>
         </div>
       )}
