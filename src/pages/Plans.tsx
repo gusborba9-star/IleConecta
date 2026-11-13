@@ -14,6 +14,7 @@ import InvoicesCard from "@/components/house/InvoicesCard";
 import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
 import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
 import OrdersCard from "@/components/house/OrdersCard";
+import ReactivateCard from "@/components/house/ReactivateCard";
 import { finishCardSetup, syncCharge } from "@/lib/platformBilling";
 import { toast } from "sonner";
 
@@ -99,6 +100,7 @@ export default function Plans() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
+      {isRemoteAuth && isHouse && <ReactivateCard plan={mine} refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>

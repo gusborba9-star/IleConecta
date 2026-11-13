@@ -61,7 +61,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
         <div className="mt-3 space-y-3">
           <p className="text-xs text-muted-foreground">Suas compras recentes e as solicitações ligadas a elas.</p>
           {empty && <p className="text-sm text-muted-foreground">Nenhum pedido recente.</p>}
-          {plan?.cancelled && <p className="text-sm rounded-lg border border-border p-3">A assinatura desta casa foi cancelada com reembolso e a casa está inativa. Para voltar, fale com o suporte.</p>}
+          {plan?.cancelled && <p className="text-sm rounded-lg border border-border p-3">A assinatura desta casa foi cancelada com reembolso e a casa está inativa. Para voltar, reative o plano em Planos ou fale com o suporte.</p>}
           {planOffer && planOffer.chargeId && (
             <details className="rounded-lg border border-border p-3">
               <summary className="cursor-pointer text-sm font-semibold list-none">Assinatura do plano: primeiro pagamento</summary>
