@@ -65,3 +65,29 @@ export async function cancelCharge(id: string, reason: string): Promise<string |
   const { error } = await supabase.rpc("platform_charge_cancel", { p_charge: id, p_reason: reason });
   return error ? msg(error, "Não foi possível cancelar a fatura.") : null;
 }
+
+export interface PriceChange { id: string; plan: string; oldCents: number; newCents: number; announcedOn: string; effectiveOn: string; status: "anunciado" | "aplicado" | "cancelado"; notified: number }
+
+export async function fetchPriceChanges(limit = 20): Promise<PriceChange[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("platform_price_changes").select("id, plan, old_cents, new_cents, announced_on, effective_on, status, notified").order("created_at", { ascending: false }).limit(limit);
+  if (error) return [];
+  return (data ?? []).map((r) => ({
+    id: String(r.id), plan: String(r.plan), oldCents: Number(r.old_cents), newCents: Number(r.new_cents), announcedOn: String(r.announced_on), effectiveOn: String(r.effective_on),
+    status: r.status === "aplicado" ? "aplicado" : r.status === "cancelado" ? "cancelado" : "anunciado", notified: Number(r.notified) || 0,
+  }));
+}
+
+/** Anuncia o aumento de mensalidade de um plano (vigência a partir de 30 dias) e avisa as casas matriculadas. Devolve o erro, ou { notified }. */
+export async function announcePriceChange(plan: string, newMonthly: number, effectiveOn: string | null, reason: string): Promise<{ error: string | null; notified?: number }> {
+  if (!supabase) return { error: "Indisponível." };
+  const { data, error } = await supabase.rpc("admin_price_announce", { p_plan: plan, p_new_monthly: newMonthly, p_effective_on: effectiveOn, p_reason: reason || null });
+  if (error) return { error: msg(error, "Não foi possível anunciar o reajuste.") };
+  return { error: null, notified: Number((data as { notified?: number } | null)?.notified ?? 0) };
+}
+
+export async function cancelPriceChange(id: string, reason: string): Promise<string | null> {
+  if (!supabase) return "Indisponível.";
+  const { error } = await supabase.rpc("admin_price_cancel", { p_change: id, p_reason: reason });
+  return error ? msg(error, "Não foi possível cancelar o reajuste.") : null;
+}
