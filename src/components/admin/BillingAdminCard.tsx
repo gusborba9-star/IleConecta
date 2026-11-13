@@ -6,7 +6,7 @@ import { saveSetting } from "@/lib/platformConfig";
 import { formatCents } from "@/lib/financePanelCore";
 import { statusLabel, statusTone, shortDate } from "@/lib/platformBillingCore";
 import { KINDS, KIND_ADMIN_LABELS, METHODS, METHOD_LABELS, buildConfig, canCancel, needsEnableConfirm, toggleMethod, type AdminCharge, type ConfigForm } from "@/lib/billingAdminCore";
-import { cancelCharge, enrollHouse, fetchAdminCharges, fetchBillingConfig, fetchDuplicates, fetchEnrollments, unenrollHouse, type DupEvent, type Enrollment } from "@/lib/billingAdmin";
+import { cancelCharge, enrollHouse, fetchAdminCharges, fetchBillingConfig, fetchDuplicates, fetchEnrollments, reactivateHouse, unenrollHouse, type DupEvent, type Enrollment } from "@/lib/billingAdmin";
 
 interface HouseRow { house_id: string; name: string }
 const LEVEL_LABEL: Record<string, string> = { ok: "Em dia", parcial: "Suspensão parcial", total: "Bloqueio total" };
@@ -150,6 +150,13 @@ export default function BillingAdminCard() {
             <span className="text-muted-foreground">vence todo dia {x.day}</span>
             <Badge tone={x.level === "ok" ? "forest" : "danger"}>{LEVEL_LABEL[x.level] ?? x.level}</Badge>
             <Button variant="outline" disabled={busy === `u-${x.houseId}`} onClick={() => run(`u-${x.houseId}`, () => unenrollHouse(x.houseId, reason), "Casa retirada da cobrança.")}>Retirar</Button>
+          </div>
+        ))}
+        {enr.filter((x) => !x.active && x.cancelled).map((x) => (
+          <div key={`r-${x.houseId}`} className="flex flex-wrap items-center gap-2 text-sm border border-border rounded-xl p-2">
+            <span className="flex-1 min-w-[8rem] font-semibold">{nameOf(x.houseId)}</span>
+            <span className="text-muted-foreground">cancelada com reembolso (inativa)</span>
+            <Button variant="outline" disabled={busy === `r-${x.houseId}`} onClick={() => run(`r-${x.houseId}`, () => reactivateHouse(x.houseId, reason), "Casa reativada. Inscreva-a de novo na cobrança, se for o caso.")}>Reativar</Button>
           </div>
         ))}
         <div className="flex flex-wrap items-center gap-2 text-sm">

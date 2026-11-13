@@ -80,3 +80,28 @@ export function refundText(i, now = Date.now()) {
     line: used === 0 ? `Nada usado deste pacote: devolvemos ${money} (valor integral).${left}` : `${used} de ${i.size} respostas já usadas: devolvemos ${money} pelas ${i.remaining} não usadas.${left}`,
   };
 }
+
+/** Reembolso do primeiro pagamento do plano (my_plan_refund): leitura defensiva do que o banco devolve. */
+export function readPlanRefund(raw) {
+  const r = raw && typeof raw === "object" ? raw : null;
+  if (!r || r.has_house !== true) return null;
+  const cents = Number(r.amount_cents);
+  const history = Array.isArray(r.history) ? r.history : [];
+  return {
+    cancelled: r.cancelled === true,
+    eligible: r.eligible === true && typeof r.charge_id === "string" && Number.isFinite(cents) && cents > 0,
+    chargeId: typeof r.charge_id === "string" ? r.charge_id : null,
+    amountCents: Number.isFinite(cents) ? cents : 0,
+    deadline: typeof r.deadline === "string" ? r.deadline : "",
+    windowDays: Number(r.window_days) > 0 ? Number(r.window_days) : 7,
+    history: history.map((h) => ({ at: String(h?.at ?? ""), status: h?.status === "concluido" ? "concluido" : h?.status === "falhou" ? "falhou" : "pendente", amountCents: Number(h?.amount_cents) || 0 })),
+  };
+}
+
+export function planRefundText(p, now = Date.now()) {
+  const money = `R$ ${(p.amountCents / 100).toFixed(2).replace(".", ",")}`;
+  const ms = Date.parse(p.deadline) - now;
+  const days = Number.isFinite(ms) ? Math.max(0, Math.ceil(ms / 86400000)) : null;
+  const left = days === null ? "" : days <= 1 ? " Último dia para pedir." : ` Faltam ${days} dias para pedir.`;
+  return { money, line: `Primeiro pagamento do plano: devolvemos ${money} (valor integral).${left}` };
+}

@@ -15,3 +15,7 @@ export interface RefundHistory { amountCents: number; credits: number; status: "
 export interface Refunds { items: RefundItem[]; history: RefundHistory[]; windowDays: number }
 export function readRefunds(raw: unknown): Refunds;
 export function refundText(i: RefundItem, now?: number): { money: string; line: string };
+
+export interface PlanRefund { cancelled: boolean; eligible: boolean; chargeId: string | null; amountCents: number; deadline: string; windowDays: number; history: { at: string; status: "pendente" | "concluido" | "falhou"; amountCents: number }[] }
+export function readPlanRefund(raw: unknown): PlanRefund | null;
+export function planRefundText(p: PlanRefund, now?: number): { money: string; line: string };

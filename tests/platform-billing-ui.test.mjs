@@ -139,3 +139,19 @@ test("texto da autorização de cobrança automática: plano, valor, periodicida
     assert.ok(g.text.length >= 20 && g.text.length <= 1500);
   }
 });
+
+test("reembolso do plano: leitura defensiva e texto da oferta", async () => {
+  const { readPlanRefund, planRefundText } = await import("../src/lib/aiCreditsCore.js");
+  assert.equal(readPlanRefund(null), null);
+  assert.equal(readPlanRefund({ has_house: false }), null);
+  const p = readPlanRefund({ has_house: true, eligible: true, cancelled: false, charge_id: "c1", amount_cents: 17990, deadline: "2026-11-20T12:00:00Z", window_days: 7, history: [{ at: "x", status: "falhou", amount_cents: 17990 }, { at: "y", status: "?" }] });
+  assert.equal(p.eligible, true);
+  assert.equal(p.history[0].status, "falhou");
+  assert.equal(p.history[1].status, "pendente");
+  assert.equal(readPlanRefund({ has_house: true, eligible: true, charge_id: null, amount_cents: 100 }).eligible, false);
+  assert.equal(readPlanRefund({ has_house: true, eligible: true, charge_id: "c", amount_cents: 0 }).eligible, false);
+  const t = planRefundText(p, Date.parse("2026-11-17T12:00:00Z"));
+  assert.equal(t.money, "R$ 179,90");
+  assert.match(t.line, /integral/);
+  assert.match(t.line, /Faltam 3 dias/);
+});
