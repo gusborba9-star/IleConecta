@@ -438,7 +438,7 @@ Regras aprovadas em 12/11/2026 (registro em §33.1):
 - **Franquia mensal:** 300 respostas no Profissional e 3.000 no Premium. Não acumula de um mês para o outro.
 - **Validade do pacote:** 3 meses a partir da compra; depois, o saldo restante zera.
 - **Ordem de consumo:** primeiro a franquia mensal; depois os créditos comprados, do pacote mais antigo para o mais novo.
-- **Sem devolução nem ressarcimento:** a venda é concluída e entregue na compra. A cláusula de arrependimento do CDC (7 dias) será verificada com advogado antes da cobrança real.
+- **Reembolso em até 7 dias (decisão do proprietário, 2026-11-13, orientação do advogado):** a casa pode desistir da compra em até 7 dias após o pagamento. Pacote sem uso: devolução integral. Pacote com uso parcial: devolve o valor proporcional às respostas ainda não usadas (valor pago × restantes ÷ total, em centavos, meio centavo para cima); a franquia do mês é gasta primeiro. A plataforma absorve a tarifa do provedor (não é descontada da casa). O estorno volta pelo mesmo meio de pagamento; o saldo do pacote é retirado ao pedir e devolvido se o provedor recusar. Depois de 7 dias, sem devolução.
 - **Débito único por resposta**, mesmo com retries técnicos.
 - **Avisos** ao atingir 80% e 100% da franquia mensal.
 - **Compra instantânea** pela cobrança da plataforma (§18.5). Só entra à venda depois destas regras implementadas e testadas.
@@ -804,7 +804,7 @@ Não criar nova versão documental para cada mudança de implementação. Decis�
 | **Provedor da cobrança da plataforma:** Stripe como adaptador inicial, no lugar da Efí citada em §19.4.1. Outros provedores entram depois por adaptador, escolhidos no painel admin. | O Stripe já está integrado e cobre cartão, cartão recorrente e Pix avulso. A Efí e outros ficam como opções futuras. | Platform Billing nasce com o Stripe. Chaves ficam nos segredos do Supabase, nunca no painel. O painel escolhe provedor por tipo de cobrança, meios habilitados e prazos. |
 | **Preços dos planos** confirmados: Essencial R$ 89,90, Profissional R$ 179,90, Premium R$ 299,90 (§18.1). | O código e a produção ainda tinham R$ 139,90 e R$ 199,00. | Configuração de produção alinhada ao Blueprint. Sem cobrança real. |
 | **Inadimplência e cobrança da plataforma** (§18.5). | Definir calendário, avisos, tolerância e suspensão parcial. | Novo domínio de cobrança, com calendário no banco. |
-| **Créditos de IA** (§18.3): validade de 3 meses, sem devolução, ordem de consumo e avisos. | Fechar as regras exigidas antes da venda. | Pacotes só à venda após implementação e testes. Verificação jurídica do CDC pendente. |
+| **Créditos de IA** (§18.3): validade de 3 meses, reembolso proporcional em até 7 dias, ordem de consumo e avisos. | Fechar as regras exigidas antes da venda. | Pacotes só à venda após implementação e testes. Reembolso de 7 dias implementado e testado (migration 0095). |
 
 ---
 
