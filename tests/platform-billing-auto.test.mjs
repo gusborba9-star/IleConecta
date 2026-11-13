@@ -5,7 +5,7 @@ import { autoCharge, cardRemove, cardSetAuto, cardSetup, cardSync, sweep } from 
 import { createFakeProvider } from "../supabase/functions/platform-billing/fakeProvider.js";
 import { createRegistry } from "../supabase/functions/platform-billing/provider.js";
 import { buildAutoChargeParams, buildCardSetupParams, classifyEvent, interpretAutoCharge } from "../supabase/functions/platform-billing/logic.js";
-import { createStripeAdapter } from "../supabase/functions/platform-billing/stripeAdapter.js";
+import { createStripeAdapter, fingerprint } from "../supabase/functions/platform-billing/stripeAdapter.js";
 
 const CH = "11111111-1111-1111-1111-111111111111", HOUSE = "22222222-2222-2222-2222-222222222222";
 const silent = { error() {}, log() {} };
@@ -215,7 +215,7 @@ test("adaptador Stripe: cobrança automática com chave, 402 vira recusa, requir
   const a = createStripeAdapter({ secret: "sk_test_x", webhookSecret: "w", fetchImpl, log: silent });
   const args = { charge: { id: CH, house_id: HOUSE, kind: "plan", amount_cents: "17990" }, customer: "cus_1", method: "pm_1", attempt: 1, idempotencyKey: "k1" };
   assert.deepEqual(await a.chargeSaved(args), { outcome: "recusada", ref: "pi_x", code: "generic_decline" });
-  assert.equal(reqs[0].o.headers["Idempotency-Key"], "k1");
+  assert.match(reqs[0].o.headers["Idempotency-Key"], /^k1:[0-9a-f]{8}$/);
   assert.match(reqs[0].o.body, /off_session=true/); assert.match(reqs[0].o.body, /confirm=true/); assert.match(reqs[0].o.body, /amount=17990/);
   assert.equal((await a.chargeSaved(args)).outcome, "exige_acao");
   assert.match(reqs[2].url, /payment_intents\/pi_y\/cancel/);
@@ -223,4 +223,17 @@ test("adaptador Stripe: cobrança automática com chave, 402 vira recusa, requir
   const g = await a.getCheckout({ ref: "pi_z" });
   assert.deepEqual([g.paid, g.amountCents, g.currency, g.feeCents], [true, 17990, "brl", 740]);
   assert.match(reqs[4].url, /\/v1\/payment_intents\/pi_z/);
+});
+
+test("a chave da cobrança automática: mesmo pedido = mesma chave; pedido diferente (outro cartão ou valor) = chave nova", async () => {
+  const keys = [];
+  const fetchImpl = async (url, o) => { keys.push(o.headers["Idempotency-Key"]); return { ok: false, status: 500, json: async () => ({}) }; };
+  const a = createStripeAdapter({ secret: "sk_test_x", webhookSecret: "w", fetchImpl, log: silent });
+  const base = { charge: { id: CH, house_id: HOUSE, kind: "plan", amount_cents: "17990" }, customer: "cus_1", method: "pm_1", attempt: 1, idempotencyKey: "k1" };
+  await a.chargeSaved(base); await a.chargeSaved(base);
+  await a.chargeSaved({ ...base, method: "pm_2" });
+  await a.chargeSaved({ ...base, charge: { ...base.charge, amount_cents: "100" } });
+  assert.equal(keys[0], keys[1]);
+  assert.equal(new Set(keys).size, 3);
+  assert.equal(fingerprint("abc"), fingerprint("abc"));
 });
