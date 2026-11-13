@@ -9,6 +9,11 @@ import { fetchConsentRows } from "@/lib/consents";
 import { LEGAL_VERSION, consentStatus, gateDocs, type ConsentDocKey } from "@/lib/legalCore";
 import TermsGate from "@/components/legal/TermsGate";
 import InstallPrompt from "./InstallPrompt";
+import LockedLayout from "./LockedLayout";
+import { fetchAccountGate } from "@/lib/accountGate";
+import { fetchMyAssistant } from "@/lib/assistant";
+import type { AccountGate } from "@/lib/accountGateCore";
+import type { PlanId } from "@/lib/pricing";
 import Footer from "./Footer";
 
 export default function AppShell() {
@@ -32,6 +37,36 @@ export default function AppShell() {
     };
   }, [isRemoteAuth, userId, accountType]);
 
+  // Estado da conta da casa: bloqueio total ou assinatura encerrada leva à tela única (LockedLayout). O servidor também trava as gravações.
+  // Se não for possível consultar, a pessoa não fica presa. Confere ao entrar, ao voltar para a aba e de tempos em tempos (a cada 15 s enquanto bloqueada).
+  const [lock, setLock] = useState<AccountGate | null>(null);
+  const [lockPlan, setLockPlan] = useState<PlanId | null>(null);
+  const locked = lock !== null;
+  useEffect(() => {
+    if (!isRemoteAuth || !userId) return;
+    let alive = true;
+    const check = async () => {
+      const g = await fetchAccountGate();
+      if (alive && g) setLock(g.state === "ok" ? null : g);
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), locked ? 15_000 : 300_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isRemoteAuth, userId, locked]);
+  const lockRole = lock?.role;
+  useEffect(() => {
+    if (!userId || lockRole !== "dono") return;
+    let alive = true;
+    void fetchMyAssistant(userId).then((c) => alive && setLockPlan(c?.plan ?? null));
+    return () => { alive = false; };
+  }, [userId, lockRole]);
+
   // Presença: avisa que a pessoa está online (a assistente da casa só atende quando a casa está offline).
   useEffect(() => {
     if (!isRemoteAuth || !userId) return;
@@ -49,6 +84,8 @@ export default function AppShell() {
       document.removeEventListener("visibilitychange", beat);
     };
   }, [isRemoteAuth, userId]);
+
+  if (lock) return <LockedLayout gate={lock} plan={lockPlan}><Outlet /></LockedLayout>;
 
   return (
     <div className="min-h-screen flex flex-col">
