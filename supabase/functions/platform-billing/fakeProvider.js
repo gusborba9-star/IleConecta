@@ -11,7 +11,14 @@ export function createFakeProvider({ id = "fake", now = () => Date.now() } = {})
 
     async createCheckout({ charge, methods, expiresAtSec, idempotencyKey }) {
       this.calls.createCheckout++;
-      for (const s of sessions.values()) if (s.idem === idempotencyKey) return { ref: s.ref, url: s.url, method: s.method };
+      // Como o Stripe: a mesma chave só vale para o mesmo pedido (mesma validade e meios).
+      for (const s of sessions.values()) {
+        if (s.idem !== idempotencyKey) continue;
+        if (s.expiresAtSec !== expiresAtSec || JSON.stringify(s.methods) !== JSON.stringify(methods)) {
+          throw new ProviderError("Keys for idempotent requests can only be used with the same parameters they were first used with.", "idempotency_error");
+        }
+        return { ref: s.ref, url: s.url, method: s.method };
+      }
       n++;
       const ref = `${id}_cs_${n}`;
       const s = { ref, url: `https://pay.example/${ref}`, idem: idempotencyKey, chargeId: charge.id, amountCents: Number(charge.amount_cents), currency: "brl", methods, method: (methods ?? []).length === 1 ? methods[0] : null, expiresAtSec, state: "open", paid: false, pending: false, feeCents: null };

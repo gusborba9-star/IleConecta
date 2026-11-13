@@ -38,9 +38,13 @@ export async function openPayment({ registry, store, chargeId, userId, method = 
   }
 
   const attempt = await store.refCount(charge.id);
+  // A validade (expires_at) faz parte do pedido e muda a cada segundo. O Stripe recusa a mesma chave com parâmetros
+  // diferentes, então a validade entra na chave: repetir o mesmo pedido (mesma validade) continua idempotente,
+  // e uma nova tentativa depois de uma falha antes de gravar a página nunca bate no erro "chave já usada".
+  const expiresAtSec = checkoutExpiry(nowMs);
   const session = await adapter.createCheckout({
-    charge, methods, appUrl, email, expiresAtSec: checkoutExpiry(nowMs),
-    idempotencyKey: `pb:${charge.id}:${attempt}:${methods.join("+")}`,
+    charge, methods, appUrl, email, expiresAtSec,
+    idempotencyKey: `pb:${charge.id}:${attempt}:${methods.join("+")}:${expiresAtSec}`,
   });
   try {
     await store.attach(charge.id, adapter.id, session.ref, session.method ?? (methods.length === 1 ? methods[0] : null), session.url);
