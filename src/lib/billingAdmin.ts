@@ -79,7 +79,7 @@ export async function fetchPriceChanges(limit = 20): Promise<PriceChange[]> {
 }
 
 /** Anuncia o aumento de mensalidade de um plano (vigência a partir de 30 dias) e avisa as casas matriculadas. Devolve o erro, ou { notified }. */
-export async function announcePriceChange(plan: string, newMonthly: number, effectiveOn: string, reason: string): Promise<{ error: string | null; notified?: number }> {
+export async function announcePriceChange(plan: string, newMonthly: number, effectiveOn: string | null, reason: string): Promise<{ error: string | null; notified?: number }> {
   if (!supabase) return { error: "Indisponível." };
   const { data, error } = await supabase.rpc("admin_price_announce", { p_plan: plan, p_new_monthly: newMonthly, p_effective_on: effectiveOn, p_reason: reason || null });
   if (error) return { error: msg(error, "Não foi possível anunciar o reajuste.") };

@@ -64,6 +64,9 @@ const today = (await sv("select (now() at time zone 'America/Sao_Paulo')::date::
 const plus = async (n) => (await sv("select ($1::date + $2::int)::text d", [today, n])).rows[0].d;
 const centsNow = async (plan, on = today) => Number((await sv("select public.platform_plan_monthly_cents($1,$2::date) c", [plan, on])).rows[0].c);
 const annAs = (uid, plan, val, eff, why = "reajuste anual") => as("authenticated", uid, (cc) => q(cc, "select public.admin_price_announce($1,$2,$3::date,$4) r", [plan, val, eff, why]));
+await sv("update house_billing_plan set billing_day = 27 where house_id=$1", [HB]);
+const firstDue = async (eff, day) => (await sv("select (case when make_date(extract(year from $1::date)::int, extract(month from $1::date)::int, $2::int) >= $1::date then make_date(extract(year from $1::date)::int, extract(month from $1::date)::int, $2::int) else (make_date(extract(year from $1::date)::int, extract(month from $1::date)::int, $2::int) + interval '1 month')::date end)::text d", [eff, day])).rows[0].d;
+const brDate = (iso) => iso.split("-").reverse().join("/");
 const nNotes = async (u, like) => Number((await sv("select count(*) n from notifications where user_id=$1 and text like $2", [u, like])).rows[0].n);
 const OLD = await centsNow("intermediario");
 const NEWV = (OLD + 3000) / 100;
@@ -83,7 +86,10 @@ r = await annAs(ADM, "intermediario", 99999999, EFF); ok("valor absurdo é recus
 r = await annAs(ADM, "intermediario", NEWV, EFF, "reajuste anual de teste"); const A1 = r.rows?.[0]?.r;
 ok("anuncia o reajuste: avisa as 2 casas matriculadas no plano", !r.err && A1.notified === 2 && A1.old_cents === OLD && A1.new_cents === OLD + 3000, r.err || JSON.stringify(A1));
 const note = (await sv("select text, href from notifications where user_id=$1 and text like 'Atualização da tabela comercial:%'", [OWN_A])).rows[0];
-ok("o aviso traz a data, o valor antigo e o novo, e leva para Planos", !!note && note.text.includes(EFF.split("-").reverse().join("/")) && note.text.includes("para R$") && note.text.includes("fale com o suporte") && note.href === "/planos", JSON.stringify(note));
+const noteB = (await sv("select text from notifications where user_id=$1 and text like 'Atualização da tabela comercial:%'", [OWN_B])).rows[0];
+const dueA = await firstDue(EFF, 10), dueB = await firstDue(EFF, 27);
+ok("cada casa é avisada da SUA primeira renovação com o valor novo (dia 10 e dia 27 recebem datas diferentes)", dueA !== dueB && !!note && !!noteB && note.text.includes(brDate(dueA)) && noteB.text.includes(brDate(dueB)), `${dueA} ${dueB} | ${note?.text} | ${noteB?.text}`);
+ok("o aviso traz o valor antigo e o novo, diz que as renovações anteriores não mudam, e leva para Planos", note.text.includes("para R$") && note.text.includes("anteriores a essa data não mudam") && note.text.includes("fale com o suporte") && note.href === "/planos", JSON.stringify(note));
 ok("quem não está nesse plano não recebe (casa C é Premium)", (await nNotes(CLI, "Atualização da tabela comercial:%")) === 0);
 ok("o aviso nasce sem leitura registrada (a leitura é gravada quando a pessoa abre)", (await sv("select count(*) n from notifications where user_id=$1 and text like 'Atualização da tabela comercial:%' and read_at is null", [OWN_A])).rows[0].n === "1");
 ok("auditoria do anúncio registrada", Number((await sv("select count(*) n from admin_audit where key='price_announce'")).rows[0].n) === 1);
@@ -131,7 +137,7 @@ r = await sv("update platform_settings set value = jsonb_set(value, '{plans,maxi
 await sv("update platform_settings set value = jsonb_set(value, '{enabled}', 'true') where key='billing_config'");
 
 // ---------- 7) cancelar um reajuste anunciado ----------
-r = await annAs(ADM, "maximo", 600, await plus(35), "reajuste do premium"); const A2 = r.rows?.[0]?.r; ok("novo anúncio no Premium avisa a casa C", !r.err && A2.notified === 1, r.err);
+r = await annAs(ADM, "maximo", 600, null, "reajuste do premium"); const A2 = r.rows?.[0]?.r; ok("anúncio sem data: a vigência é automaticamente daqui a 30 dias, e avisa a casa C", !r.err && A2.notified === 1 && A2.effective_on === (await plus(30)), r.err || JSON.stringify(A2));
 r = await as("authenticated", OWN_A, (cc) => q(cc, "select public.admin_price_cancel($1,'motivo de teste ok')", [A2.id])); ok("a casa não cancela reajuste", !!r.err, r.err);
 r = await as("authenticated", ADM, (cc) => q(cc, "select public.admin_price_cancel($1,'curto')", [A2.id])); ok("cancelar exige motivo", !!r.err && /motivo/.test(r.err), r.err);
 r = await as("authenticated", ADM, (cc) => q(cc, "select public.admin_price_cancel($1,'Decidimos manter o preço do Premium') n", [A2.id])); ok("o administrador cancela e as casas são avisadas", !r.err && r.rows[0].n === 1 && (await nNotes(CLI, "Atualização da tabela comercial cancelada:%")) === 1, r.err);

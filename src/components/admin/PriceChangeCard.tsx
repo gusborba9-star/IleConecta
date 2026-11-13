@@ -24,7 +24,7 @@ export default function PriceChangeCard() {
   const [items, setItems] = useState<PriceChange[]>([]);
   const [plan, setPlan] = useState<string>(PLANS[0].id);
   const [value, setValue] = useState("");
-  const [eff, setEff] = useState(minEffective());
+  const [eff, setEff] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const load = useCallback(async () => setItems(await fetchPriceChanges()), []);
@@ -34,12 +34,12 @@ export default function PriceChangeCard() {
 
   const current = config.pricing.plans[plan as keyof typeof config.pricing.plans]?.monthly ?? null;
   const num = Number(value.replace(",", "."));
-  const valid = Number.isFinite(num) && num > 0 && (current === null || num > current) && eff >= minEffective();
+  const valid = Number.isFinite(num) && num > 0 && (current === null || num > current) && (eff === "" || eff >= minEffective());
 
   const announce = async () => {
-    if (!window.confirm(`Anunciar o reajuste do plano ${config.pricing.plans[plan as keyof typeof config.pricing.plans].name} para R$ ${num.toFixed(2).replace(".", ",")} a partir de ${shortDate(eff)}? As casas matriculadas neste plano serão avisadas agora.`)) return;
+    if (!window.confirm(`Anunciar o reajuste do plano ${config.pricing.plans[plan as keyof typeof config.pricing.plans].name} para R$ ${num.toFixed(2).replace(".", ",")} ${eff ? `a partir de ${shortDate(eff)}` : "com vigência daqui a 30 dias"}? Cada casa matriculada neste plano será avisada agora da data da sua primeira renovação com o valor novo.`)) return;
     setBusy("announce");
-    const r = await announcePriceChange(plan, num, eff, reason);
+    const r = await announcePriceChange(plan, num, eff || null, reason);
     setBusy(null);
     if (r.error) toast.error(r.error);
     else {
@@ -66,7 +66,7 @@ export default function PriceChangeCard() {
     <Card className="p-5 space-y-3">
       <div>
         <h2 className="font-display font-bold text-lg">Atualização da tabela comercial</h2>
-        <p className="text-xs text-muted-foreground">Aumento de mensalidade com aviso de 30 dias. Redução de preço vale na hora, direto na tabela de preços. Com a cobrança ligada, aumento direto na tabela é recusado.</p>
+        <p className="text-xs text-muted-foreground">Aumento de mensalidade com aviso de 30 dias. Sem data, a vigência é daqui a 30 dias; cada casa muda na sua primeira renovação a partir da vigência. Redução de preço vale na hora, direto na tabela de preços. Com a cobrança ligada, aumento direto na tabela é recusado.</p>
       </div>
       <div className="flex flex-wrap items-end gap-2 text-sm">
         <label className="grid gap-1">Plano
@@ -77,13 +77,13 @@ export default function PriceChangeCard() {
         <label className="grid gap-1">Novo valor mensal (R$)
           <Input aria-label="Novo valor mensal" className="w-32" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
         </label>
-        <label className="grid gap-1">Vale a partir de
+        <label className="grid gap-1">Vigência (opcional)
           <input aria-label="Data de vigência" type="date" min={minEffective()} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" value={eff} onChange={(e) => setEff(e.target.value)} />
         </label>
       </div>
       <Input aria-label="Motivo do reajuste" placeholder="Motivo (opcional; fica no registro de auditoria)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} />
       <Button disabled={!valid || busy !== null} onClick={() => void announce()}>{busy === "announce" ? "Anunciando…" : "Anunciar reajuste e avisar as casas"}</Button>
-      {value !== "" && !valid && <p className="text-xs text-[hsl(var(--danger))]">O novo valor precisa ser maior que o atual e a data, de pelo menos 30 dias à frente.</p>}
+      {value !== "" && !valid && <p className="text-xs text-[hsl(var(--danger))]">O novo valor precisa ser maior que o atual e, se informar a data, ela deve ter pelo menos 30 dias à frente.</p>}
       <ul className="space-y-2">
         {items.length === 0 && <li className="text-sm text-muted-foreground">Nenhum reajuste anunciado.</li>}
         {items.map((c) => (
