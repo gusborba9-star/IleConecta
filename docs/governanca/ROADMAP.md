@@ -286,6 +286,11 @@ Autorizada pelo proprietário em 2026-11-12. Cada item abaixo só passa a "fecha
 | 4 | Cobrança da plataforma às casas (Platform Billing): base (configuração, preços, dias úteis) | em andamento: migration 0087 pronta e testada localmente (103 verificações); passos 70–75 a aplicar | verify_0087, verify_rollout_70 |
 | 5 | Créditos de IA (pacotes 80/200/500) | pendente | depende do item 4 |
 
+Ideias futuras registradas (não fazem parte da Fase 4; só entram com decisão do proprietário):
+
+- **Plano anual por plano (proposta do proprietário, 2026-11-12):** 12 meses de uso pagando 10 (2 meses grátis). Fazer depois que a cobrança mensal estiver ligada e medida. Antes de fixar o preço: conferir o custo real de IA por casa no plano Max contra 83% da receita mensal. Decisões do proprietário pendentes: política de cancelamento e reembolso no meio do ano (recomendação: proporcional ao preço mensal cheio, depois dos 7 dias do CDC, com validação jurídica), valores finais, redação nos Termos (preço contratado vale até o fim dos 12 meses). Pontos técnicos: o motor hoje tem uma fatura por mês e precisa de período anual, aviso antes da renovação e a mesma tolerância e suspensão; upgrade cobra só a diferença proporcional e downgrade só vale na renovação; o Max anual (R$ 2.999,00) fica no limite do teto do Pix do Stripe (cerca de US$ 3.000), então cartão como padrão, e é preciso confirmar na documentação do Stripe o parcelamento em reais; preços anuais editáveis no painel.
+- **Compensação de fatura em atraso contra repasses:** o proprietário decidiu NÃO implementar (o dinheiro não passa pela plataforma: cobrança direta no Stripe Connect). Só reavaliar com validação do Stripe e jurídica.
+
 Pedido do proprietário registrado nesta data: painéis das três visões enxutos e profissionais no celular — vai para a etapa de layout e navegação (Fase 6); os painéis novos já nascem recolhidos.
 
 ## 7. Declaração de governança
