@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchBillingStatus, payCharge } from "@/lib/platformBilling";
-import { alertView, canPay, kindLabel, METHOD_LABELS, shortDate, type AlertView } from "@/lib/platformBillingCore";
+import { alertView, canPay, kindLabel, METHOD_LABELS, payMethods, shortDate, type AlertView } from "@/lib/platformBillingCore";
 import { formatCents } from "@/lib/financePanelCore";
 
 /** Confere de novo a cada meio minuto (e ao voltar para a aba) enquanto houver atraso, para o aviso sumir sozinho depois do pagamento. */
@@ -44,7 +44,7 @@ export default function BillingAlertCard({ refreshKey = 0 }: { refreshKey?: numb
 
   if (!view) return null;
 
-  const pay = async (id: string, method: "pix" | "card" | "card_recurring" | null) => {
+  const pay = async (id: string, method: "pix" | "card" | null) => {
     setBusy(`${id}:${method ?? "any"}`);
     const error = await payCharge(id, method);
     if (error) {
@@ -72,7 +72,7 @@ export default function BillingAlertCard({ refreshKey = 0 }: { refreshKey?: numb
                 </div>
                 {canPay(c) ? (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {(c.methods.length ? c.methods : [null]).map((m) => (
+                    {(payMethods(c.methods).length ? payMethods(c.methods) : [null]).map((m) => (
                       <Button key={m ?? "any"} size="sm" variant={m === "pix" || m === null ? "gold" : "outline"} disabled={busy !== null} onClick={() => void pay(c.id, m)}>
                         {busy === `${c.id}:${m ?? "any"}` ? "Abrindo…" : m ? `Pagar com ${METHOD_LABELS[m].split(" (")[0]}` : "Pagar fatura"}
                       </Button>

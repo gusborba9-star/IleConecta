@@ -18,6 +18,16 @@ export const KIND_LABELS = {
   boost: "Impulsionamento",
 };
 
+/** Botões de pagamento de uma fatura: "cartão recorrente" não é um botão (o cartão salvo é um cadastro à parte); vira cartão comum, sem repetir. */
+export function payMethods(list) {
+  const out = [];
+  for (const m of Array.isArray(list) ? list : []) {
+    const k = m === "card_recurring" ? "card" : m;
+    if ((k === "pix" || k === "card") && !out.includes(k)) out.push(k);
+  }
+  return out;
+}
+
 export const METHOD_LABELS = { pix: "Pix", card: "Cartão", card_recurring: "Cartão (guardar para as próximas)" };
 
 export function statusLabel(s) {
@@ -65,7 +75,7 @@ export function readStatus(raw) {
     status: String(c?.status ?? "aberta"),
     toleranceEnd: String(c?.tolerance_end ?? ""),
     totalOn: String(c?.total_on ?? ""),
-    methods: (Array.isArray(c?.methods) ? c.methods : []).filter((m) => Object.hasOwn(METHOD_LABELS, m)),
+    methods: payMethods(c?.methods),
   })).filter((c) => c.id);
   return { houseId: r.house_id ? String(r.house_id) : null, level, overdue: r.overdue === true && charges.length > 0, charges };
 }
@@ -105,4 +115,35 @@ export function alertView(status) {
 /** Pagar só faz sentido para fatura em aberto ou vencida. */
 export function canPay(charge) {
   return charge?.status === "aberta" || charge?.status === "vencida";
+}
+
+const BRANDS = { visa: "Visa", mastercard: "Mastercard", amex: "American Express", elo: "Elo", hipercard: "Hipercard", diners: "Diners", discover: "Discover", jcb: "JCB", unionpay: "UnionPay" };
+const OUTCOME_TEXT = {
+  aprovada: "cobrança aprovada",
+  processando: "pagamento em análise no banco",
+  recusada: "o banco recusou a cobrança",
+  exige_acao: "o banco pediu uma confirmação extra",
+};
+
+/** Texto do cartão salvo para a casa. O banco decide tudo; aqui só se descreve. */
+export function cardView(status, todayIso = new Date().toISOString().slice(0, 10)) {
+  if (!status || status.hasHouse === false || status.available !== true) return null;
+  const hasCard = status.hasCard === true && status.last4;
+  const brand = status.brand ? (Object.hasOwn(BRANDS, status.brand) ? BRANDS[status.brand] : "Cartão") : "Cartão";
+  const exp = status.expMonth && status.expYear ? `${String(status.expMonth).padStart(2, "0")}/${String(status.expYear).slice(-2)}` : null;
+  const expired = Boolean(exp) && `${status.expYear}-${String(status.expMonth).padStart(2, "0")}` < todayIso.slice(0, 7);
+  const last = status.lastAttempt && Object.hasOwn(OUTCOME_TEXT, status.lastAttempt.outcome) ? status.lastAttempt : null;
+  const problem = last && (last.outcome === "recusada" || last.outcome === "exige_acao") ? `Última tentativa (${last.attempt} de ${status.maxAttempts}): ${OUTCOME_TEXT[last.outcome]}. Pague a fatura ou troque o cartão.` : null;
+  return {
+    hasCard: Boolean(hasCard),
+    title: hasCard ? `${brand} final ${status.last4}` : "Nenhum cartão cadastrado",
+    expiry: exp ? `validade ${exp}` : null,
+    expired,
+    on: Boolean(hasCard) && status.autoEnabled === true,
+    summary: !hasCard
+      ? "Cadastre um cartão para a mensalidade e as vagas extras serem cobradas sozinhas no vencimento."
+      : status.autoEnabled ? `A mensalidade e as vagas extras são cobradas sozinhas no cartão, no dia do vencimento. Se o banco recusar, tentamos de novo nos 2 dias seguintes (até ${status.maxAttempts} tentativas).` : "Cobrança automática desligada. As faturas continuam podendo ser pagas por Pix ou cartão.",
+    problem,
+    lastText: last && !problem ? `Última cobrança automática: ${OUTCOME_TEXT[last.outcome]}.` : null,
+  };
 }
