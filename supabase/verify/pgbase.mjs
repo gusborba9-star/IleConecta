@@ -22,6 +22,7 @@ create table cron.job (jobid bigserial, jobname text, schedule text, command tex
 create function cron.schedule(a text, b text, c text) returns bigint language sql as $$ select 1::bigint $$;
 create function cron.schedule(a text, b text) returns bigint language sql as $$ select 1::bigint $$;
 create function cron.unschedule(a text) returns boolean language sql as $$ select true $$;
+create function cron.unschedule(a bigint) returns boolean language sql as $$ select true $$;
 create table vault.secrets (id uuid default gen_random_uuid(), name text, secret text);
 create view vault.decrypted_secrets as select id, name, secret as decrypted_secret from vault.secrets;
 create function vault.create_secret(s text, n text default null, d text default null) returns uuid language sql as $$ select gen_random_uuid() $$;
