@@ -12,6 +12,9 @@ A cobrança da plataforma usa a conta Stripe **da própria plataforma** (sem cab
 2. Decisão sobre CNPJ ou pessoa física na conta Stripe (pendência de lista).
 3. Confirmar o teto de Pix por pagamento da conta (cerca de US$ 3.000 por padrão) e, se houver plano anual no futuro, a disponibilidade de parcelamento em reais.
 
+## Andamento da ativação (modo teste, 2026-11-12)
+Feitos e conferidos: função `platform-billing` publicada; segredos `PLATFORM_STRIPE_SECRET_KEY` (chave **de teste**) e `PLATFORM_STRIPE_WEBHOOK_SECRET` cadastrados; aviso (webhook) criado no Stripe em modo teste; segredo `platform_billing_cron_secret` no Vault e agenda diária `platform-billing-sweep` às 09:35 UTC (migration 0093, passos 113 e 114), com chamada de teste respondendo 200; casa de teste inscrita e "Cobrança ligada" mantida só para testes; pagamento por cartão (mensalidade) e por Pix (pacote de créditos) conferidos de ponta a ponta, com livro-razão e tarifa. **Falta:** cobrança automática do cartão salvo; troca para as chaves reais (e aviso no modo real) só com autorização expressa; revisão jurídica dos Termos antes de cobrar de verdade.
+
 ## Passos de ativação (ordem)
 1. **Publicar a função.** Depois do merge do PR da etapa: Actions, "Deploy Edge Functions (manual)", função `platform-billing` (e `assistant-chat`, que ganhou o bloqueio por cobrança).
 2. **Segredos da função** (Supabase, Edge Functions, Secrets). Nunca no código nem em chat:
