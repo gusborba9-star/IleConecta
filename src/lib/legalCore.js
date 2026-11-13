@@ -1,6 +1,18 @@
 // Textos de aceite versionados. Rascunho: precisa de revisão jurídica antes de os pagamentos serem ligados.
 // Ao mudar qualquer texto, mude também LEGAL_VERSION: cada aceite do usuário guarda a versão que ele viu.
-export const LEGAL_VERSION = "2026-10-rascunho-2";
+export const LEGAL_VERSION = "2026-11-rascunho-3";
+
+/** Versões em ordem. Uma versão fora desta lista conta como antiga. */
+export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3"];
+
+/**
+ * Versão mínima que cada documento exige na tela de aceite (a que vale quando não há exigência própria é LEGAL_VERSION).
+ * Termos do cliente: o aceite já feito continua valendo (regra do aceite único; o texto novo só é avisado). Termos da casa: a nova
+ * versão exige um novo aceite, uma vez, por orientação jurídica (cobrança recorrente e isenção de responsabilidade).
+ */
+export const DOC_MIN_VERSION = {
+  termos_cliente: "2026-10-rascunho-2",
+};
 
 export const CONSENT_DOCS = {
   termos_cliente: {
@@ -15,7 +27,7 @@ export const CONSENT_DOCS = {
   },
   termos_casa: {
     text:
-      "Li e aceito os Termos de Uso da Casa Espiritual: cadastro como pessoa física ou jurídica, recebimento direto na minha conta de pagamento (a tarifa do processador de pagamento é cobrada de mim), comissão da plataforma de 15% sobre rituais e 4% sobre serviços, reembolso integral devolvido a partir da minha conta em caso de cancelamento antes do início ou falha na entrega, responsabilidade pelos meus tributos e proibição de prometer resultado garantido.",
+      "Li e aceito os Termos de Uso da Casa Espiritual: cadastro como pessoa física ou jurídica, recebimento direto na minha conta de pagamento (a tarifa do processador de pagamento é cobrada de mim), comissão da plataforma de 15% sobre rituais e 4% sobre serviços, reembolso integral devolvido a partir da minha conta em caso de cancelamento antes do início ou falha na entrega, responsabilidade pelos meus tributos, proibição de prometer resultado garantido, as regras de assinatura e cobrança recorrente dos planos (cobrança automática só com a minha autorização no cartão, tolerância e suspensão em caso de falha, reajuste com aviso de 30 dias e arrependimento de 7 dias no primeiro pagamento do plano), a isenção de responsabilidade da plataforma sobre a natureza religiosa e espiritual dos serviços e as regras de divulgação e ética dos anúncios.",
     links: ["termos-da-casa", "eventos-e-taxas"],
   },
 };
@@ -54,7 +66,10 @@ export function consentStatus(rows, doc, version) {
   const last = mine[0];
   if (!last) return { status: "never" };
   if (last.doc_key === "dados_sensiveis_retirada") return { status: "withdrawn", at: last.accepted_at };
-  return { status: last.doc_version === version ? "ok" : "old", version: last.doc_version, at: last.accepted_at };
+  const required = DOC_MIN_VERSION[doc] ?? version;
+  const rank = (v) => LEGAL_VERSION_HISTORY.indexOf(v);
+  const ok = last.doc_version === required || (rank(last.doc_version) >= 0 && rank(required) >= 0 && rank(last.doc_version) >= rank(required));
+  return { status: ok ? "ok" : "old", version: last.doc_version, at: last.accepted_at };
 }
 
 const pending = (rows, doc, version) => ["never", "old"].includes(consentStatus(rows, doc, version).status);

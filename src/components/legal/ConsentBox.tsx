@@ -13,7 +13,7 @@ interface Props {
 const SHORT: Record<ConsentDocKey, string> = {
   termos_cliente: "Li e concordo com os Termos de Uso do cliente e a Política de Privacidade.",
   dados_sensiveis: "Autorizo o uso dos dados que eu informar sobre minha convicção religiosa, só para contratar e conversar com a casa.",
-  termos_casa: "Li e aceito os Termos de Uso da Casa Espiritual (comissão de 15% em rituais e 4% em serviços).",
+  termos_casa: "Li e aceito os Termos de Uso da Casa Espiritual, com assinatura e cobrança recorrente, isenção de responsabilidade religiosa e regras de divulgação.",
 };
 
 /** Caixa de aceite nunca pré-marcada, com o texto versionado e os links dos documentos. */

@@ -152,7 +152,7 @@ export default function Plans() {
         })}
       </div>
       {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
+      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine ? config.pricing.plans[mine].name : null} monthly={mine ? config.pricing.plans[mine].monthly : null} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       <ComparisonCard
         rows={[

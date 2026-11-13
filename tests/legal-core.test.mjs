@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs } from "../src/lib/legalCore.js";
+import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, LEGAL_VERSION_HISTORY, DOC_MIN_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs } from "../src/lib/legalCore.js";
 
 test("todo documento de aceite tem texto e links", () => {
   for (const [key, doc] of Object.entries(CONSENT_DOCS)) {
@@ -78,4 +78,21 @@ test("aceite único: quem retirou dados sensíveis não é cobrado de novo na en
 
 test("aceite único: registros estranhos não derrubam a conta", () => {
   assert.deepEqual(gateDocs("personal", [null, undefined, {}, { doc_key: 5 }], LEGAL_VERSION).required, ["termos_cliente"]);
+});
+
+test("nova versão: casa reaceita uma vez; cliente que já aceitou não é bloqueado", () => {
+  assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
+  assert.ok(LEGAL_VERSION_HISTORY.includes(DOC_MIN_VERSION.termos_cliente));
+  const prev = "2026-10-rascunho-2";
+  // cliente: aceite da versão anterior continua valendo
+  assert.deepEqual(gateDocs("personal", [row("termos_cliente", prev, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, []);
+  // cliente que aceitou a versão nova (compra) também
+  assert.deepEqual(gateDocs("personal", [row("termos_cliente", LEGAL_VERSION, "2026-11-14T10:00:00Z")], LEGAL_VERSION).required, []);
+  // cliente com versão desconhecida continua pedindo
+  assert.deepEqual(gateDocs("personal", [row("termos_cliente", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_cliente"]);
+  // casa: a versão anterior pede o novo aceite, a nova não
+  const old = gateDocs("commercial", [row("termos_casa", prev, "2026-11-01T10:00:00Z")], LEGAL_VERSION);
+  assert.deepEqual(old.required, ["termos_casa"]);
+  assert.equal(consentStatus([row("termos_casa", prev, "2026-11-01T10:00:00Z")], "termos_casa", LEGAL_VERSION).status, "old");
+  assert.deepEqual(gateDocs("commercial", [row("termos_casa", LEGAL_VERSION, "2026-11-14T10:00:00Z")], LEGAL_VERSION).required, []);
 });

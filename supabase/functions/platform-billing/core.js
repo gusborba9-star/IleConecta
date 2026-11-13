@@ -211,10 +211,17 @@ async function cardContext({ registry, store, userId }) {
   return { houseId, adapter };
 }
 
+const AUTH_TEXT = "Marque a autorização de cobrança automática para continuar.";
+/** A casa precisa ter marcado a autorização (caixa desmarcada, com plano, valor e periodicidade) nos últimos 60 minutos. */
+async function requireAuthorization(store, houseId) {
+  if ((await store.cardAuthOk(houseId)) !== true) throw new ChargeStateError(AUTH_TEXT, "authorization_required");
+}
+
 /** Passo 1: abre a página segura do provedor para a casa cadastrar o cartão (nada é cobrado). */
 export async function cardSetup({ registry, store, userId, email, appUrl, nowMs = Date.now() }) {
   if ((await store.autoEnabled()) !== true) throw new ChargeStateError("A cobrança automática no cartão não está disponível.", "disabled");
   const { houseId, adapter } = await cardContext({ registry, store, userId });
+  await requireAuthorization(store, houseId);
   const current = await store.cardGet(houseId);
   let customer = current?.customer ?? null;
   if (!customer) customer = await adapter.ensureCustomer({ houseId, email, idempotencyKey: `pbcus:${houseId}` });
@@ -246,6 +253,7 @@ export async function cardSync({ registry, store, userId, sessionRef, log = cons
 
 export async function cardSetAuto({ registry, store, userId, enabled }) {
   const { houseId } = await cardContext({ registry, store, userId });
+  if (enabled === true) await requireAuthorization(store, houseId); // desligar nunca exige autorização
   try {
     return { auto_enabled: await store.cardSetAuto(houseId, enabled === true) };
   } catch (e) {

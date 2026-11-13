@@ -118,3 +118,24 @@ test("cartão salvo: cartão vencido é sinalizado; recusa mostra o aviso para p
   assert.equal(cardView({ ...base, lastAttempt: { attempt: 1, outcome: "estranho", at: "x" } }).problem, null);
   assert.equal(cardView({ ...base, brand: "<script>" }).title, "Cartão final 4242", "marca desconhecida nunca vai para a tela como veio");
 });
+
+test("texto da autorização de cobrança automática: plano, valor, periodicidade e cancelamento; sem plano usa texto genérico", async () => {
+  const { authorizationText } = await import("../src/lib/platformBillingCore.js");
+  const a = authorizationText({ planName: "Profissional", amountCents: 17990 });
+  assert.equal(a.period, "mensal");
+  assert.equal(a.amountCents, 17990);
+  assert.equal(a.planKey, "profissional");
+  assert.match(a.text, /Termos de Uso do Ilê Conecta/);
+  assert.match(a.text, /R\$\s?179,90/);
+  assert.match(a.text, /plano Profissional/);
+  assert.match(a.text, /a cada mês/);
+  assert.match(a.text, /até que eu solicite o cancelamento/);
+  assert.ok(a.text.length >= 20 && a.text.length <= 1500);
+  for (const bad of [{}, undefined, { planName: "", amountCents: 100 }, { planName: "X", amountCents: 0 }, { planName: "X", amountCents: 12.5 }, { planName: "X", amountCents: null }]) {
+    const g = authorizationText(bad);
+    assert.equal(g.amountCents, null);
+    assert.equal(g.planKey, null);
+    assert.match(g.text, /mensalidade do plano e das vagas extras/);
+    assert.ok(g.text.length >= 20 && g.text.length <= 1500);
+  }
+});
