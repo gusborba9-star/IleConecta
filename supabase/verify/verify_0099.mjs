@@ -90,6 +90,10 @@ ok("fica registrado que a casa pediu a reativação", Number((await sv("select c
 ok("a fatura de reativação não dispara lembrete de cobrança", (await nNotes(OWN_A, "%")) === notesBefore && Number((await sv("select count(*) n from platform_billing_notices where charge_id=$1", [R1])).rows[0].n) === 0);
 await sv("select public.platform_billing_tick($1::timestamptz)", [new Date(Date.now() + 2 * 864e5).toISOString()]);
 ok("a rotina diária também não manda lembrete dessa fatura", Number((await sv("select count(*) n from platform_billing_notices where charge_id=$1", [R1])).rows[0].n) === 0);
+await sv("update house_card_on_file set auto_enabled = true where house_id=$1", [HA]);
+ok("(controle) a cobrança automática de cartão está disponível neste teste", (await sv("select public.billing_auto_card_enabled() e")).rows[0].e === true);
+ok("(blindagem) com cartão automático ligado, a fatura de reativação aberta NÃO entra na cobrança automática", (await sv("select * from public.platform_autocharge_due(now() + interval '3 days')")).rows.every((x) => x.charge_id !== R1));
+await sv("update house_card_on_file set auto_enabled = false where house_id=$1", [HA]);
 ok("enquanto não paga, a casa continua inativa", (await level(HA)) === "total" && (await enroll(HA)).active === false);
 await sv("update platform_settings set value = jsonb_set(value, '{plans,intermediario,monthly}', 'null'::jsonb) where key='pricing'");
 r = await issueRe(HB); ok("(HB não cancelada) sem fatura", !!r.err);

@@ -1,4 +1,4 @@
-// Verifica que os passos de produção 159–163 (rodados 2x cada, em ordem) deixam o banco idêntico ao da migration 0099.
+// Verifica que os passos de produção 159–164 (rodados 2x cada, em ordem) deixam o banco idêntico ao da migration 0099.
 // Uso: node supabase/verify/verify_rollout_159.mjs   (PG em 127.0.0.1:5544)
 import { readFileSync } from "node:fs";
 import { freshDb } from "./pgbase.mjs";
@@ -7,7 +7,7 @@ const ROLL = new URL("../rollout/", import.meta.url).pathname;
 const A = await freshDb("vf_roll159_a", { with64: true, max: 98 });   // produção até a 0098
 const B = await freshDb("vf_roll159_b", { with64: true, max: 99 });   // referência: migrations 0001–0099
 ok("bases montadas", A.failed.length === 0 && B.failed.length === 0, [...A.failed, ...B.failed].join(" | "));
-for (let n = 159; n <= 163; n++) {
+for (let n = 159; n <= 164; n++) {
   const sql = readFileSync(`${ROLL}passo-${n}.sql`, "utf8");
   let e1 = null, e2 = null;
   try { await A.c.query(sql); } catch (e) { e1 = e.message; }

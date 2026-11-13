@@ -1,4 +1,4 @@
--- PASSO 159: 0099_reativacao_por_pagamento — parte 1 de 5
+-- PASSO 159: 0099_reativacao_por_pagamento — parte 1 de 6
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 -- 0099 — Reativação da casa cancelada por reembolso: a própria casa reativa pagando (o suporte segue podendo reativar no painel).
 -- Decisão do proprietário (2026-11-13). Reativar é uma nova contratação: a casa paga a mensalidade do plano atual; ao pagar, volta sozinha e é matriculada de novo.
