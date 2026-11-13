@@ -10,7 +10,7 @@ import { startReactivation } from "@/lib/platformBilling";
 import { PLANS, formatMoney, type PlanId } from "@/lib/pricing";
 
 /**
- * Casa inativa por reembolso do plano: a própria casa volta pagando a mensalidade do plano atual.
+ * Casa inativa (reembolso ou cancelamento): a própria casa volta escolhendo um plano e pagando a mensalidade.
  * Pagou, a casa é reativada e matriculada de novo na cobrança (sem novo reembolso de 7 dias). O suporte segue podendo reativar no painel.
  */
 export default function ReactivateCard({ plan, refreshKey = 0 }: { plan: PlanId | null; refreshKey?: number }) {
@@ -48,7 +48,7 @@ export default function ReactivateCard({ plan, refreshKey = 0 }: { plan: PlanId 
         <Power className="h-5 w-5 mt-0.5 shrink-0 text-gold-ink" aria-hidden />
         <div className="min-w-0 flex-1">
           <h2 className="font-display font-bold text-lg">Sua casa está inativa</h2>
-          <p className="text-sm mt-1">A assinatura foi cancelada com reembolso. Seus dados estão guardados. Para voltar, escolha o plano e pague: ao confirmar o pagamento, a casa volta na hora e a cobrança mensal recomeça.</p>
+          <p className="text-sm mt-1">A assinatura foi encerrada. Seus dados estão guardados. Para voltar, escolha o plano e pague: ao confirmar o pagamento, a casa volta na hora e a cobrança mensal recomeça.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Plano para reativar">
             {PLANS.filter((p) => config.pricing.plans[p.id].monthly !== null).map((p) => {
               const i = config.pricing.plans[p.id];

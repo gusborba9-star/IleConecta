@@ -96,7 +96,7 @@ export function alertView(status) {
   if (s.level === "total") {
     tone = "danger";
     title = "Bloqueio total da casa";
-    text = "Sua casa saiu da vitrine e o painel está só para consulta. Pague a fatura para reativar tudo na hora.";
+    text = "Sua casa está bloqueada e fora da vitrine. Pague a fatura para reativar tudo na hora.";
   } else if (s.level === "parcial") {
     const lastDay = dayBefore(min(s.charges.map((c) => c.totalOn)));
     tone = "danger";

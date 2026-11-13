@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
-import { accountStatus, cancelDeletion, exportMyData, requestDeletion, type AccountStatus } from "@/lib/support";
+import { accountStatus, cancelDeletion, requestDeletion, type AccountStatus } from "@/lib/support";
+import { downloadMyData } from "@/lib/accountGate";
 
 /** Ferramentas da própria conta: exportar dados e pedir/cancelar a exclusão (7 dias de reflexão). */
 export default function AccountTools() {
@@ -15,13 +16,9 @@ export default function AccountTools() {
 
   const download = async () => {
     setBusy(true);
-    const r = await exportMyData();
+    const err = await downloadMyData();
     setBusy(false);
-    if (!r.ok) return void toast.error(r.error);
-    const url = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url; a.download = "meus-dados-ile-conecta.json"; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (err) toast.error(err);
   };
 
   const ask = async () => {

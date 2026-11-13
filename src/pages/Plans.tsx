@@ -10,6 +10,7 @@ import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
+import CancelSubscriptionCard from "@/components/house/CancelSubscriptionCard";
 import InvoicesCard from "@/components/house/InvoicesCard";
 import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
 import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
@@ -158,6 +159,7 @@ export default function Plans() {
       {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine ? config.pricing.plans[mine].name : null} monthly={mine ? config.pricing.plans[mine].monthly : null} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <OrdersCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
+      {isRemoteAuth && isHouse && <CancelSubscriptionCard onChanged={() => setBillingTick((n) => n + 1)} />}
       <ComparisonCard
         rows={[
           { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },
