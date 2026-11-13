@@ -32,7 +32,7 @@ test("pedido da página de pagamento: valor e moeda vêm da fatura; Pix com vali
   assert.equal(p.customer_email, "a@b.c");
   const rec = buildCheckoutParams({ charge, methods: ["card_recurring"], appUrl: "https://app.example", expiresAtSec: exp });
   assert.deepEqual(rec.allowed_payment_method_types, ["card"]);
-  assert.equal(rec.payment_intent_data.setup_future_usage, "off_session");
+  assert.equal(rec.payment_intent_data.setup_future_usage, undefined, "card_recurring é só cartão: guardar o cartão é feito pelo cadastro próprio");
   assert.equal(rec.payment_method_options, undefined);
   assert.equal(rec.customer_email, undefined);
   assert.throws(() => buildCheckoutParams({ charge, methods: [], appUrl: "x", expiresAtSec: exp }));
