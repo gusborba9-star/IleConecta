@@ -141,6 +141,57 @@ export async function processWebhook({ registry, store, providerId, rawBody, hea
   }
 }
 
+// ---------- reembolso de créditos em 7 dias ----------
+const REFUND_OK = /prazo de 7 dias|já foram usados|já foi reembolsada|não pode ser reembolsada|Nada a reembolsar|Pacote não encontrado|Pagamento sem referência/;
+const refundError = (e) => (REFUND_OK.test(msg(e)) ? new ChargeStateError(msg(e), "refund_denied") : e);
+
+/** Pede o estorno ao provedor (mesma chave sempre) e conclui no banco. Sem resposta do provedor: fica pendente e a rotina repete. */
+async function runRefund({ registry, store, b, log = console }) {
+  const adapter = registry.byId(b.provider);
+  if (!adapter || typeof adapter.refund !== "function") throw new ChargeStateError("O meio de pagamento está indisponível no momento. Tente de novo mais tarde.", "provider_unavailable");
+  let r = null;
+  try {
+    r = await adapter.refund({ ref: b.ref, amountCents: Number(b.amount_cents), idempotencyKey: `pbrefund:${b.refund_id}` });
+  } catch (e) {
+    log.error("refund_failed_call", b.refund_id, msg(e));
+  }
+  if (!r) return { status: "pending", amount_cents: Number(b.amount_cents) };
+  if (r.outcome === "failed") {
+    await store.refundFail(b.refund_id, r.code ?? "recusado");
+    throw new ChargeStateError("Não foi possível concluir o reembolso agora. Seus créditos foram mantidos. Tente de novo em instantes ou fale com o suporte.", "refund_failed");
+  }
+  await store.refundDone(b.refund_id, r.ref ?? null);
+  return { status: "done", amount_cents: Number(b.amount_cents) };
+}
+
+/** A casa pede o reembolso de um pacote pago há até 7 dias: devolve o valor proporcional às respostas não usadas. */
+export async function creditRefund({ registry, store, userId, chargeId, log = console }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa pede reembolso.", "forbidden");
+  let b;
+  try {
+    b = await store.refundBegin(houseId, chargeId, userId);
+  } catch (e) {
+    throw refundError(e);
+  }
+  return runRefund({ registry, store, b, log });
+}
+
+/** Rotina: refaz reembolsos que ficaram sem resposta do provedor. */
+export async function settleRefunds({ registry, store, log = console }) {
+  const out = { pending: 0, done: 0, errors: [] };
+  for (const p of (await store.refundsPending()) ?? []) {
+    out.pending++;
+    try {
+      const r = await runRefund({ registry, store, b: { refund_id: p.refund_id, provider: p.provider, ref: p.ref, amount_cents: p.amount_cents }, log });
+      if (r.status === "done") out.done++;
+    } catch (e) {
+      out.errors.push(`reembolso ${p.refund_id}: ${msg(e)}`);
+    }
+  }
+  return out;
+}
+
 // ---------- cartão salvo da casa ----------
 const CARD_ERRORS = [
   [/Cadastre um cartão/, "Cadastre um cartão antes de ligar a cobrança automática."],
@@ -250,11 +301,17 @@ export async function autoCharge({ registry, store, nowMs = Date.now(), limit = 
 // ---------- rotina diária ----------
 /** Emite/avisa/suspende (banco), confere no provedor o que ficou sem resposta e completa a tarifa dos pagamentos já feitos. */
 export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), log = console }) {
-  const out = { tick: null, auto: null, checked: 0, settled: 0, fees: 0, errors: [] };
+  const out = { tick: null, auto: null, refunds: null, checked: 0, settled: 0, fees: 0, errors: [] };
   try {
     out.tick = await store.tick();
   } catch (e) {
     out.errors.push(`tick: ${msg(e)}`);
+  }
+  try {
+    out.refunds = await settleRefunds({ registry, store, log });
+    for (const x of out.refunds.errors) out.errors.push(`refund: ${x}`);
+  } catch (e) {
+    out.errors.push(`refund: ${msg(e)}`);
   }
   try {
     out.auto = await autoCharge({ registry, store, nowMs, log });

@@ -54,3 +54,29 @@ export function expiryText(iso, now = Date.now()) {
 export function offerLabel(o) {
   return `${o.size} respostas`;
 }
+
+/** Leitura segura da tela de reembolso (my_credit_refunds): só números e datas, tudo validado. */
+export function readRefunds(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const n = (v) => (Number.isFinite(Number(v)) && v !== null ? Number(v) : null);
+  const items = (Array.isArray(r.items) ? r.items : [])
+    .map((i) => ({ chargeId: String(i?.charge_id ?? ""), size: n(i?.size), remaining: n(i?.remaining), paidCents: n(i?.paid_cents), refundCents: n(i?.refund_cents), deadline: String(i?.deadline ?? "") }))
+    .filter((i) => /^[0-9a-f-]{36}$/i.test(i.chargeId) && i.size && i.remaining && i.refundCents && i.refundCents > 0);
+  const history = (Array.isArray(r.history) ? r.history : [])
+    .map((h) => ({ amountCents: n(h?.amount_cents), credits: n(h?.credits), status: h?.status === "concluido" ? "concluido" : "pendente", at: String(h?.at ?? "") }))
+    .filter((h) => h.amountCents && h.credits);
+  return { items, history, windowDays: n(r.window_days) ?? 7 };
+}
+
+/** Texto do reembolso: diz o valor, quantas respostas voltam e até quando vale (pelo relógio de Brasília). */
+export function refundText(i, now = Date.now()) {
+  const money = `R$ ${(i.refundCents / 100).toFixed(2).replace(".", ",")}`;
+  const used = i.size - i.remaining;
+  const ms = Date.parse(i.deadline) - now;
+  const days = Number.isFinite(ms) ? Math.max(0, Math.ceil(ms / 86400000)) : null;
+  const left = days === null ? "" : days <= 1 ? " Último dia para pedir." : ` Faltam ${days} dias para pedir.`;
+  return {
+    money,
+    line: used === 0 ? `Nada usado deste pacote: devolvemos ${money} (valor integral).${left}` : `${used} de ${i.size} respostas já usadas: devolvemos ${money} pelas ${i.remaining} não usadas.${left}`,
+  };
+}

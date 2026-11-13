@@ -1,6 +1,6 @@
 // Adaptador do Stripe para a Cobrança da Plataforma: conta PRÓPRIA da plataforma (sem Stripe-Account, sem repasse).
 // É o único arquivo desta função que fala com a API do Stripe. Sem Deno: tudo entra pela fábrica, então roda em Node nos testes.
-import { buildAutoChargeParams, buildCardSetupParams, buildCheckoutParams, classifyEvent, interpretAutoCharge, feeFromBalanceTransaction, formBody, verifyStripeSignature } from "./logic.js";
+import { buildAutoChargeParams, buildCardSetupParams, buildCheckoutParams, classifyEvent, interpretAutoCharge, interpretRefund, feeFromBalanceTransaction, formBody, verifyStripeSignature } from "./logic.js";
 import { ProviderError } from "./provider.js";
 
 const BASE = "https://api.stripe.com";
@@ -126,6 +126,20 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
       }
       if (r.cancel) await call(`/v1/payment_intents/${encodeURIComponent(r.cancel)}/cancel`, { method: "POST", form: {} }).catch((e) => log.error("auto_cancel_failed", String(e?.message ?? e)));
       return { outcome: r.outcome, ref: r.ref, code: r.code };
+    },
+
+    /** Estorno parcial ou total de um pagamento. ref pode ser a página de pagamento (cs_) ou o pagamento (pi_). null = não sabemos (repete com a mesma chave). */
+    async refund({ ref, amountCents, idempotencyKey }) {
+      let pi = String(ref);
+      if (pi.startsWith("cs_")) {
+        const s = await call(`/v1/checkout/sessions/${encodeURIComponent(pi)}`);
+        pi = typeof s.payment_intent === "string" ? s.payment_intent : s.payment_intent?.id ?? "";
+      }
+      if (!pi.startsWith("pi_")) throw new ProviderError("Pagamento sem referência para estorno.", "stripe_error");
+      const raw = await callRaw("/v1/refunds", { form: { payment_intent: pi, amount: Number(amountCents), reason: "requested_by_customer", metadata: { source: "credit_refund" } }, idem: idempotencyKey });
+      const r = interpretRefund(raw);
+      if (!r) log.error("refund_unknown", JSON.stringify({ status: raw.status, type: raw.data?.error?.type, code: raw.data?.error?.code, message: String(raw.data?.error?.message ?? "").slice(0, 300) }));
+      return r;
     },
 
     async detachCard({ method }) {

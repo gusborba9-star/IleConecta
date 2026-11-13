@@ -169,3 +169,21 @@ export function creditPurchaseError(message) {
   for (const [re, text] of CREDIT_ERRORS) if (re.test(m)) return text;
   return "Não foi possível iniciar a compra agora. Tente de novo.";
 }
+
+/**
+ * Resposta do Stripe a um pedido de estorno. 'done' = o provedor aceitou (estorno de Pix pode ficar "pending" por um tempo: o dinheiro já está a caminho).
+ * 'failed' só para recusa definitiva e segura (pedido inválido). Qualquer outra coisa (rede, 5xx, 429, chave repetida, estorno já feito por fora) é NULL:
+ * o reembolso fica pendente e a rotina repete com a mesma chave, sem estornar duas vezes e sem devolver o saldo por engano.
+ */
+export function interpretRefund({ ok, status, data }) {
+  if (ok) {
+    if (data?.status === "succeeded" || data?.status === "pending" || data?.status === "requires_action") return { outcome: "done", ref: String(data.id) };
+    if (data?.status === "failed" || data?.status === "canceled") return { outcome: "failed", code: String(data.failure_reason || data.status).slice(0, 60) };
+    return null;
+  }
+  const err = data?.error;
+  if ((status === 400 || status === 404) && err?.type === "invalid_request_error" && err?.code !== "charge_already_refunded") {
+    return { outcome: "failed", code: String(err.code || err.param || "invalid_request").slice(0, 60) };
+  }
+  return null;
+}

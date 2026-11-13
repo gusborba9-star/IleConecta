@@ -10,3 +10,8 @@ export function franchiseView(c: Credits | null): FranchiseView | null;
 export function statusText(c: Credits | null): string;
 export function expiryText(iso: string, now?: number): string;
 export function offerLabel(o: CreditOffer): string;
+export interface RefundItem { chargeId: string; size: number; remaining: number; paidCents: number | null; refundCents: number; deadline: string }
+export interface RefundHistory { amountCents: number; credits: number; status: "concluido" | "pendente"; at: string }
+export interface Refunds { items: RefundItem[]; history: RefundHistory[]; windowDays: number }
+export function readRefunds(raw: unknown): Refunds;
+export function refundText(i: RefundItem, now?: number): { money: string; line: string };
