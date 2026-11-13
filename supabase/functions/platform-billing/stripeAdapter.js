@@ -6,6 +6,13 @@ import { ProviderError } from "./provider.js";
 const BASE = "https://api.stripe.com";
 export const STRIPE_API_VERSION = "2026-09-30.endive";
 
+/** Impressão curta e estável de um texto (FNV-1a de 32 bits): serve só para diferenciar pedidos, não para segurança. */
+export function fingerprint(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
+  return h.toString(16).padStart(8, "0");
+}
+
 export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE_API_VERSION, fetchImpl = fetch, log = console }) {
   async function call(path, opts = {}) {
     const headers = { Authorization: `Bearer ${secret}`, "Stripe-Version": apiVersion };
@@ -107,7 +114,10 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
 
     /** Cobra o cartão salvo sem a pessoa presente. null = não sabemos o resultado (repete depois com a mesma chave). */
     async chargeSaved({ charge, customer, method, attempt, idempotencyKey }) {
-      const raw = await callRaw("/v1/payment_intents", { form: buildAutoChargeParams({ charge, customer, method, attempt }), idem: idempotencyKey });
+      const form = buildAutoChargeParams({ charge, customer, method, attempt });
+      // O Stripe prende a chave aos parâmetros do 1º pedido: sem a impressão deles, qualquer ajuste depois de uma falha travaria a tentativa.
+      // Com ela, o MESMO pedido repete com a mesma chave (nunca cobra duas vezes) e um pedido diferente usa chave nova.
+      const raw = await callRaw("/v1/payment_intents", { form, idem: `${idempotencyKey}:${fingerprint(formBody(form))}` });
       const r = interpretAutoCharge(raw);
       if (!r) {
         // Resposta que não sabemos interpretar: registra só o tipo/código/campo (nunca chaves nem dados do cartão) para diagnóstico.
