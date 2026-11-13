@@ -2,6 +2,7 @@
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 -- 0099 — Reativação da casa cancelada por reembolso: a própria casa reativa pagando (o suporte segue podendo reativar no painel).
 -- Decisão do proprietário (2026-11-13). Reativar é uma nova contratação: a casa paga a mensalidade do plano atual; ao pagar, volta sozinha e é matriculada de novo.
+-- A casa escolhe o plano em que volta (qualquer plano com mensalidade na tabela); ao pagar, o plano da casa passa a ser o escolhido.
 -- Não existe segundo reembolso de 7 dias (o direito é único por casa e este pagamento não é o primeiro).
 -- Estado de produção antes desta migration: nenhuma fatura de reativação existe.
 

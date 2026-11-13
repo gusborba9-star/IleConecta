@@ -1,5 +1,11 @@
 -- PASSO 163: 0099_reativacao_por_pagamento — parte 5 de 6
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
+drop trigger if exists trg_platform_house_reactivated on public.platform_charges;
+
+create trigger trg_platform_house_reactivated after update of status on public.platform_charges
+for each row when (new.status = 'paga' and old.status is distinct from 'paga')
+execute function public.platform_house_reactivated_by_payment();
+
 -- ============ 4) reativação pelo suporte também encerra uma fatura de reativação que ficou aberta ============
 create or replace function public.admin_billing_reactivate(p_house uuid, p_reason text)
 returns void language plpgsql security definer set search_path = public as $$

@@ -1,13 +1,14 @@
 -- PASSO 161: 0099_reativacao_por_pagamento — parte 3 de 6
 -- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
 -- ============ 2) emitir a fatura de reativação (só o servidor; repetir reaproveita a fatura aberta) ============
-create or replace function public.platform_reactivation_issue(p_house uuid, p_now timestamptz default now())
+create or replace function public.platform_reactivation_issue(p_house uuid, p_plan text default null, p_now timestamptz default now())
 returns uuid language plpgsql security definer set search_path = public as $$
 declare v_plan text; v_amt bigint; v_day date := (p_now at time zone 'America/Sao_Paulo')::date; v_open uuid; v_n int; v_id uuid; v_pricing jsonb;
 begin
 perform 1 from public.house_billing_state where house_id = p_house and cancelled_at is not null for update;
 if not found then raise exception 'A casa não está cancelada por reembolso.'; end if;
-select plan::text into v_plan from public.houses where id = p_house;
+select coalesce(p_plan, plan::text) into v_plan from public.houses where id = p_house;
+if v_plan not in ('base', 'intermediario', 'maximo') then raise exception 'Plano inválido.'; end if;
 select value into v_pricing from public.platform_settings where key = 'pricing';
 v_amt := case when (v_pricing -> 'plans' -> v_plan ->> 'monthly') ~ '^[0-9]+(\.[0-9]+)?$' then round((v_pricing -> 'plans' -> v_plan ->> 'monthly')::numeric * 100)::bigint end;
 if v_amt is null or v_amt < 100 then raise exception 'Este plano não tem mensalidade para reativar. Fale com o suporte.'; end if;

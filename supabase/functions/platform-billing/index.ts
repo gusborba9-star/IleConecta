@@ -85,7 +85,9 @@ Deno.serve(async (req) => {
     }
     if (input.action === "reactivate") {
       const method = input.method === "pix" || input.method === "card" ? input.method : null;
-      const r = await core.reactivate({ registry, store, userId: user.id, method, email: user.email, appUrl: APP_URL });
+      const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" ? input.plan : null;
+      if (input.plan != null && plan === null) return fail("Escolha um plano válido.");
+      const r = await core.reactivate({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });
       return json({ url: r.url });
     }
     if (input.action === "plan_refund") {

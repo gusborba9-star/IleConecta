@@ -61,7 +61,7 @@ const state = async (h) => (await sv("select * from house_billing_state where ho
 const enroll = async (h) => (await sv("select * from house_billing_plan where house_id=$1", [h])).rows[0];
 const nNotes = async (u, like) => Number((await sv("select count(*) n from notifications where user_id=$1 and text like $2", [u, like])).rows[0].n);
 const hasFn = async (role, sig) => (await q(su, `select has_function_privilege('${role}', '${sig}', 'execute') ok`)).rows[0].ok;
-const issueRe = (h, now = null) => sv("select public.platform_reactivation_issue($1, coalesce($2::timestamptz, now())) id", [h, now]);
+const issueRe = (h, plan = null, now = null) => sv("select public.platform_reactivation_issue($1, $2, coalesce($3::timestamptz, now())) id", [h, plan, now]);
 
 const MONTHLY = (await sv("select value->'plans'->'intermediario'->>'monthly' v from platform_settings where key='pricing'")).rows[0].v;
 const PRICE = Math.round(Number(MONTHLY) * 100);
@@ -82,10 +82,22 @@ ok("(base) a casa A está cancelada, inativa, sem cartão automático", (await l
 const notesBefore = await nNotes(OWN_A, "%");
 
 // ---------- 2) emitir a fatura de reativação ----------
-r = await issueRe(HA); const R1 = r.rows?.[0]?.id; ok("emite a fatura de reativação", !r.err && !!R1, r.err);
+r = await issueRe(HA); let R1 = r.rows?.[0]?.id; ok("emite a fatura de reativação", !r.err && !!R1, r.err);
 let ch = (await sv("select * from platform_charges where id=$1", [R1])).rows[0];
 ok("é fatura de plano, pelo plano atual da casa, com o valor da tabela (valor da tabela), vence hoje", ch.kind === "plan" && ch.item_key === "plan:intermediario" && Number(ch.amount_cents) === PRICE && ch.status === "aberta" && ch.description === "Reativação do plano", JSON.stringify(ch));
 r = await issueRe(HA); ok("pedir de novo reaproveita a fatura aberta (não duplica)", !r.err && r.rows[0].id === R1 && Number((await sv("select count(*) n from platform_charges where idempotency_key like 'reativacao:%' and house_id=$1", [HA])).rows[0].n) === 1, r.err);
+{
+  const PM = Math.round(Number((await sv("select value->'plans'->'maximo'->>'monthly' v from platform_settings where key='pricing'")).rows[0].v) * 100);
+  r = await issueRe(HA, "maximo"); const RM = r.rows?.[0]?.id; const cm = (await sv("select item_key, amount_cents, status from platform_charges where id=$1", [RM])).rows[0];
+  ok("a casa pode escolher outro plano: nova fatura com o preço do plano escolhido", !r.err && RM !== R1 && cm.item_key === "plan:maximo" && Number(cm.amount_cents) === PM && PM !== PRICE, JSON.stringify(cm) + r.err);
+  ok("a fatura do plano anterior (aberta) é cancelada: só uma aberta por vez", (await sv("select status from platform_charges where id=$1", [R1])).rows[0].status === "cancelada" && Number((await sv("select count(*) n from platform_charges where house_id=$1 and idempotency_key like 'reativacao:%' and status='aberta'", [HA])).rows[0].n) === 1);
+  r = await issueRe(HA, "premium"); ok("plano inexistente é recusado", !!r.err && /Plano inválido/.test(r.err), r.err);
+  r = await issueRe(HA, "base'; drop table houses;--"); ok("texto malicioso no plano é recusado", !!r.err && /Plano inválido|invalid input/.test(r.err), r.err);
+  r = await issueRe(HA, "intermediario"); R1 = r.rows?.[0]?.id; ok("voltar para o plano anterior emite nova fatura (sem reaproveitar a cancelada)", !r.err && !!R1 && R1 !== RM, r.err);
+  await sv("update platform_settings set value = jsonb_set(value, '{plans,base,monthly}', 'null'::jsonb) where key='pricing'");
+  r = await issueRe(HA, "base"); ok("plano sem mensalidade na tabela não é vendido por aqui", !!r.err && /não tem mensalidade/.test(r.err), r.err);
+  await sv("update platform_settings set value = jsonb_set(value, '{plans,base,monthly}', '89.9'::jsonb) where key='pricing'");
+}
 ok("fica registrado que a casa pediu a reativação", Number((await sv("select count(*) n from platform_billing_events where kind='reativacao_solicitada' and charge_id=$1", [R1])).rows[0].n) === 1);
 ok("a fatura de reativação não dispara lembrete de cobrança", (await nNotes(OWN_A, "%")) === notesBefore && Number((await sv("select count(*) n from platform_billing_notices where charge_id=$1", [R1])).rows[0].n) === 0);
 await sv("select public.platform_billing_tick($1::timestamptz)", [new Date(Date.now() + 2 * 864e5).toISOString()]);
@@ -118,6 +130,24 @@ ok("a rotina não gera mensalidade duplicada no mesmo período da reativação",
 await sv("select public.platform_billing_tick($1::timestamptz)", [new Date(Date.now() + 35 * 864e5).toISOString()]);
 ok("no mês seguinte a mensalidade volta a ser emitida normalmente", Number((await sv("select count(*) n from platform_charges where house_id=$1 and kind='plan' and idempotency_key like 'plan:%'", [HA])).rows[0].n) >= 1);
 
+// ---------- 3b) volta num plano diferente do que tinha ----------
+{
+  const HC = "d3000000-0000-0000-0000-0000000000d3";
+  await sv("insert into houses(id,owner_id,name,slug,plan) values ($1,$2,'Casa C','casa-c','base')", [HC, CLI]);
+  await sv("insert into house_billing_state(house_id,suspended,since,total,total_since,cancelled_at) values ($1,true,now(),true,now(),now())", [HC]);
+  const PM = Math.round(Number((await sv("select value->'plans'->'maximo'->>'monthly' v from platform_settings where key='pricing'")).rows[0].v) * 100);
+  const RC = (await issueRe(HC, "maximo")).rows[0].id;
+  ok("casa no plano Essencial volta escolhendo o Premium: a fatura é do Premium", Number((await sv("select amount_cents a from platform_charges where id=$1", [RC])).rows[0].a) === PM);
+  ok("antes de pagar, o plano da casa não muda", (await sv("select plan::text p from houses where id=$1", [HC])).rows[0].p === "base");
+  await sv("update houses set plan_revert_to='base', plan_revert_at=now()+interval '5 days' where id=$1", [HC]);
+  await payCharge(RC, PM);
+  const hc = (await sv("select plan::text p, plan_revert_to, plan_revert_at from houses where id=$1", [HC])).rows[0];
+  ok("pago: o plano da casa passa a ser o escolhido e uma degustação pendente é encerrada", hc.p === "maximo" && hc.plan_revert_to === null && hc.plan_revert_at === null, JSON.stringify(hc));
+  ok("pago: a casa volta ao normal e é matriculada de novo", (await level(HC)) === "ok" && (await enroll(HC)).active === true);
+  r = await as("authenticated", CLI, (cc) => q(cc, "update houses set plan='base' where id=$1", [HC]));
+  ok("a casa continua sem conseguir mudar o próprio plano por conta (a proteção segue ligada depois da reativação)", (await sv("select plan::text p from houses where id=$1", [HC])).rows[0].p === "maximo", r.err);
+}
+
 // ---------- 4) suporte reativa e encerra a fatura aberta ----------
 const P2 = await issue(HB, "2026-09-03", "primeiro-plano-casa-B-1", "plan", "plan:intermediario", PRICE);
 await payCharge(P2, PRICE);
@@ -132,10 +162,10 @@ await sv("select public.platform_charge_attach($1,'stripe','cs_late_RB','card',n
 ok("fatura cancelada não pode mais ser paga", !!(await sv("select public.platform_charge_attach($1,'stripe','cs_late_RB','card',null)", [RB])).err);
 
 // ---------- 5) permissões ----------
-for (const sig of ["platform_reactivation_issue(uuid,timestamptz)", "platform_house_reactivated_by_payment()"]) {
+for (const sig of ["platform_reactivation_issue(uuid,text,timestamptz)", "platform_house_reactivated_by_payment()"]) {
   ok(`${sig}: visitante e logado não executam`, !(await hasFn("anon", `public.${sig}`)) && !(await hasFn("authenticated", `public.${sig}`)));
 }
-ok("platform_reactivation_issue: o servidor executa", await hasFn("service_role", "public.platform_reactivation_issue(uuid,timestamptz)"));
+ok("platform_reactivation_issue: o servidor executa", await hasFn("service_role", "public.platform_reactivation_issue(uuid,text,timestamptz)"));
 r = await as("authenticated", OWN_A, (cc) => q(cc, "select public.platform_reactivation_issue($1)", [HA])); ok("a casa não emite a fatura direto pelo banco", !!r.err, r.err);
 ok("admin_billing_reactivate: visitante não executa; logado e servidor sim", !(await hasFn("anon", "public.admin_billing_reactivate(uuid,text)")) && (await hasFn("authenticated", "public.admin_billing_reactivate(uuid,text)")) && (await hasFn("service_role", "public.admin_billing_reactivate(uuid,text)")));
 await su.end();

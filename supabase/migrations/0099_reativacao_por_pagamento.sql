@@ -1,5 +1,6 @@
 -- 0099 — Reativação da casa cancelada por reembolso: a própria casa reativa pagando (o suporte segue podendo reativar no painel).
 -- Decisão do proprietário (2026-11-13). Reativar é uma nova contratação: a casa paga a mensalidade do plano atual; ao pagar, volta sozinha e é matriculada de novo.
+-- A casa escolhe o plano em que volta (qualquer plano com mensalidade na tabela); ao pagar, o plano da casa passa a ser o escolhido.
 -- Não existe segundo reembolso de 7 dias (o direito é único por casa e este pagamento não é o primeiro).
 -- Estado de produção antes desta migration: nenhuma fatura de reativação existe.
 
@@ -67,13 +68,14 @@ end loop;
 end $$;
 
 -- ============ 2) emitir a fatura de reativação (só o servidor; repetir reaproveita a fatura aberta) ============
-create or replace function public.platform_reactivation_issue(p_house uuid, p_now timestamptz default now())
+create or replace function public.platform_reactivation_issue(p_house uuid, p_plan text default null, p_now timestamptz default now())
 returns uuid language plpgsql security definer set search_path = public as $$
 declare v_plan text; v_amt bigint; v_day date := (p_now at time zone 'America/Sao_Paulo')::date; v_open uuid; v_n int; v_id uuid; v_pricing jsonb;
 begin
 perform 1 from public.house_billing_state where house_id = p_house and cancelled_at is not null for update;
 if not found then raise exception 'A casa não está cancelada por reembolso.'; end if;
-select plan::text into v_plan from public.houses where id = p_house;
+select coalesce(p_plan, plan::text) into v_plan from public.houses where id = p_house;
+if v_plan not in ('base', 'intermediario', 'maximo') then raise exception 'Plano inválido.'; end if;
 select value into v_pricing from public.platform_settings where key = 'pricing';
 v_amt := case when (v_pricing -> 'plans' -> v_plan ->> 'monthly') ~ '^[0-9]+(\.[0-9]+)?$' then round((v_pricing -> 'plans' -> v_plan ->> 'monthly')::numeric * 100)::bigint end;
 if v_amt is null or v_amt < 100 then raise exception 'Este plano não tem mensalidade para reativar. Fale com o suporte.'; end if;
@@ -89,11 +91,16 @@ end $$;
 -- ============ 3) fatura de reativação paga: a casa volta e é matriculada de novo (uma vez; repetir não duplica) ============
 create or replace function public.platform_house_reactivated_by_payment() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare v_day date := (coalesce(new.paid_at, now()) at time zone 'America/Sao_Paulo')::date; v_owner uuid;
+declare v_day date := (coalesce(new.paid_at, now()) at time zone 'America/Sao_Paulo')::date; v_owner uuid; v_plan text := substring(new.item_key from 6);
 begin
 if new.status <> 'paga' or old.status = 'paga' or new.idempotency_key not like 'reativacao:%' then return new; end if;
 update public.house_billing_state set cancelled_at = null, updated_at = now() where house_id = new.house_id and cancelled_at is not null;
 if not found then return new; end if;
+if v_plan in ('base', 'intermediario', 'maximo') then
+perform set_config('app.admin_plan', 'on', true);
+update public.houses set plan = v_plan::public.house_plan, plan_revert_to = null, plan_revert_at = null where id = new.house_id and plan::text is distinct from v_plan;
+perform set_config('app.admin_plan', 'off', true);
+end if;
 insert into public.house_billing_plan (house_id, billing_day, started_on, active) values (new.house_id, least(extract(day from v_day)::int, 28), v_day, true)
 on conflict (house_id) do update set active = true, billing_day = excluded.billing_day, started_on = excluded.started_on, updated_at = now();
 perform public.platform_house_billing_recompute(new.house_id);
@@ -125,9 +132,9 @@ perform public.platform_house_billing_recompute(p_house);
 end $$;
 
 -- ============ 5) permissões ============
-revoke all on function public.platform_reactivation_issue(uuid, timestamptz), public.platform_house_reactivated_by_payment() from public, anon, authenticated;
+revoke all on function public.platform_reactivation_issue(uuid, text, timestamptz), public.platform_house_reactivated_by_payment() from public, anon, authenticated;
 
-grant execute on function public.platform_reactivation_issue(uuid, timestamptz) to service_role;
+grant execute on function public.platform_reactivation_issue(uuid, text, timestamptz) to service_role;
 
 revoke all on function public.admin_billing_reactivate(uuid, text) from public, anon, authenticated;
 

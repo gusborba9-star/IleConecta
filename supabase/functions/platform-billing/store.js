@@ -35,7 +35,7 @@ export function createStore(admin) {
     refundDone: (refundId, ref) => rpc("platform_credit_refund_done", { p_refund: refundId, p_refund_ref: ref }),
     refundFail: (refundId, error) => rpc("platform_credit_refund_fail", { p_refund: refundId, p_error: error }),
     refundsPending: () => rpc("platform_credit_refunds_pending", {}),
-    reactivationIssue: (houseId) => rpc("platform_reactivation_issue", { p_house: houseId }),
+    reactivationIssue: (houseId, plan = null) => rpc("platform_reactivation_issue", { p_house: houseId, p_plan: plan }),
     planRefundBegin: (houseId, chargeId, by) => rpc("platform_plan_refund_begin", { p_house: houseId, p_charge: chargeId, p_by: by }),
     planRefundDone: (refundId, ref) => rpc("platform_plan_refund_done", { p_refund: refundId, p_refund_ref: ref }),
     planRefundFail: (refundId, error) => rpc("platform_plan_refund_fail", { p_refund: refundId, p_error: error }),
