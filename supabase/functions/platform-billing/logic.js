@@ -36,7 +36,7 @@ export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtS
   const params = {
     mode: "payment",
     locale: "pt-BR",
-    payment_method_types: types,
+    allowed_payment_method_types: types, // a versão nova da API não aceita mais payment_method_types: o filtro é este
     client_reference_id: charge.id,
     metadata: { charge_id: charge.id, house_id: charge.house_id, kind: charge.kind },
     line_items: [{ quantity: 1, price_data: { currency: "brl", unit_amount: Number(charge.amount_cents), product_data: { name: String(charge.description || "Ilê Conecta").slice(0, 120) } } }],

@@ -25,12 +25,13 @@ test("pedido da página de pagamento: valor e moeda vêm da fatura; Pix com vali
   assert.equal(p.line_items[0].price_data.unit_amount, 8990);
   assert.equal(p.client_reference_id, charge.id);
   assert.equal(p.metadata.charge_id, charge.id);
-  assert.deepEqual(p.payment_method_types, ["card", "pix"]);
+  assert.deepEqual(p.allowed_payment_method_types, ["card", "pix"]);
+  assert.equal(p.payment_method_types, undefined); // não pode mais ir no pedido (a API da conta rejeita)
   assert.ok(p.payment_method_options.pix.expires_after_seconds >= 60 && p.payment_method_options.pix.expires_after_seconds <= 86400);
   assert.equal(p.payment_intent_data.setup_future_usage, undefined);
   assert.equal(p.customer_email, "a@b.c");
   const rec = buildCheckoutParams({ charge, methods: ["card_recurring"], appUrl: "https://app.example", expiresAtSec: exp });
-  assert.deepEqual(rec.payment_method_types, ["card"]);
+  assert.deepEqual(rec.allowed_payment_method_types, ["card"]);
   assert.equal(rec.payment_intent_data.setup_future_usage, "off_session");
   assert.equal(rec.payment_method_options, undefined);
   assert.equal(rec.customer_email, undefined);
