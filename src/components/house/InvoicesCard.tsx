@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { Badge, Card } from "@/components/base";
+import { toast } from "sonner";
+import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
-import { fetchBillingStatus, fetchInvoices, type InvoiceRow } from "@/lib/platformBilling";
-import { kindLabel, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
+import { fetchBillingStatus, fetchInvoices, payCharge, type InvoiceRow } from "@/lib/platformBilling";
+import { canPay, kindLabel, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
 import { formatCents } from "@/lib/financePanelCore";
 
 /** Faturas da plataforma para a casa (planos, vagas, destaque...). Só aparece quando a casa já tem alguma. */
 export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }) {
   const { isRemoteAuth } = useApp();
   const [rows, setRows] = useState<InvoiceRow[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isRemoteAuth) return;
@@ -24,6 +26,15 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
     };
   }, [isRemoteAuth, refreshKey]);
 
+  const pay = async (id: string, method: "pix" | "card") => {
+    setBusy(`${id}:${method}`);
+    const error = await payCharge(id, method);
+    if (error) {
+      setBusy(null);
+      toast.error(error);
+    }
+  };
+
   if (rows.length === 0) return null;
   return (
     <Card className="p-5">
@@ -35,6 +46,12 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
             <span className="text-xs text-muted-foreground">vence {shortDate(r.dueDate)}</span>
             <span className="font-semibold">{formatCents(r.amountCents)}</span>
             <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge>
+            {canPay({ status: r.status }) && (
+              <span className="w-full flex flex-wrap gap-2 pt-1">
+                <Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void pay(r.id, "pix")}>{busy === `${r.id}:pix` ? "Abrindo…" : "Pagar com Pix"}</Button>
+                <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void pay(r.id, "card")}>{busy === `${r.id}:card` ? "Abrindo…" : "Pagar com cartão"}</Button>
+              </span>
+            )}
           </li>
         ))}
       </ul>
