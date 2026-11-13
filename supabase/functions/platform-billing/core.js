@@ -141,14 +141,126 @@ export async function processWebhook({ registry, store, providerId, rawBody, hea
   }
 }
 
+// ---------- cartão salvo da casa ----------
+const CARD_ERRORS = [
+  [/Cadastre um cartão/, "Cadastre um cartão antes de ligar a cobrança automática."],
+  [/não confere|desconhecido|outra casa/, "Não foi possível confirmar o cartão. Tente cadastrar de novo."],
+];
+const cardError = (e) => {
+  for (const [re, text] of CARD_ERRORS) if (re.test(msg(e))) return new ChargeStateError(text, "card_state");
+  return e;
+};
+
+async function cardContext({ registry, store, userId }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa cadastra cartão.", "forbidden");
+  const cfg = await store.config();
+  const adapter = cfg?.provider?.plan ? registry.byId(cfg.provider.plan) : null;
+  if (!adapter || typeof adapter.createCardSetup !== "function") throw new ChargeStateError("O meio de pagamento está indisponível no momento. Tente de novo mais tarde.", "provider_unavailable");
+  return { houseId, adapter };
+}
+
+/** Passo 1: abre a página segura do provedor para a casa cadastrar o cartão (nada é cobrado). */
+export async function cardSetup({ registry, store, userId, email, appUrl, nowMs = Date.now() }) {
+  if ((await store.autoEnabled()) !== true) throw new ChargeStateError("A cobrança automática no cartão não está disponível.", "disabled");
+  const { houseId, adapter } = await cardContext({ registry, store, userId });
+  const current = await store.cardGet(houseId);
+  let customer = current?.customer ?? null;
+  if (!customer) customer = await adapter.ensureCustomer({ houseId, email, idempotencyKey: `pbcus:${houseId}` });
+  try {
+    customer = await store.cardCustomer(houseId, adapter.id, customer); // o banco guarda o primeiro e devolve sempre o mesmo
+  } catch (e) {
+    throw cardError(e);
+  }
+  const s = await adapter.createCardSetup({ customer, houseId, appUrl, expiresAtSec: checkoutExpiry(nowMs) });
+  await store.cardSetupOpen(houseId, adapter.id, s.ref);
+  return { url: s.url };
+}
+
+/** Passo 2: a casa voltou da página do provedor; confere lá (não confia no endereço de retorno) e guarda o cartão. */
+export async function cardSync({ registry, store, userId, sessionRef, log = console }) {
+  const { houseId, adapter } = await cardContext({ registry, store, userId });
+  const s = await adapter.getCardSetup({ ref: sessionRef });
+  if (!s.complete || !s.method || !s.customer) throw new ChargeStateError("O cadastro do cartão não foi concluído.", "card_state");
+  if (s.houseId !== houseId) throw new ChargeStateError("Este cadastro não é da sua casa.", "forbidden");
+  let saved;
+  try {
+    saved = await store.cardSave(houseId, adapter.id, sessionRef, s.customer, s.method);
+  } catch (e) {
+    throw cardError(e);
+  }
+  if (saved?.previous_method && saved.previous_method !== s.method.id) await adapter.detachCard({ method: saved.previous_method }).catch((e) => log.error("detach_failed", msg(e)));
+  return { ok: true };
+}
+
+export async function cardSetAuto({ registry, store, userId, enabled }) {
+  const { houseId } = await cardContext({ registry, store, userId });
+  try {
+    return { auto_enabled: await store.cardSetAuto(houseId, enabled === true) };
+  } catch (e) {
+    throw cardError(e);
+  }
+}
+
+export async function cardRemove({ registry, store, userId, log = console }) {
+  const { houseId, adapter } = await cardContext({ registry, store, userId });
+  const method = await store.cardRemove(houseId); // o banco limpa primeiro: mesmo que o provedor falhe, nada mais é cobrado
+  if (method) await adapter.detachCard({ method }).catch((e) => log.error("detach_failed", msg(e)));
+  return { ok: true };
+}
+
+// ---------- cobrança automática (cartão salvo) ----------
+/** Uma tentativa por fatura por dia, no máximo 3. Falha de rede deixa a tentativa aberta e repete com a MESMA chave (nunca cobra duas vezes). */
+export async function autoCharge({ registry, store, nowMs = Date.now(), limit = 50, log = console }) {
+  const out = { due: 0, approved: 0, declined: 0, pending: 0, errors: [] };
+  const nowIso = new Date(nowMs).toISOString();
+  const list = (await store.autoDue(nowIso)) ?? [];
+  for (const d of list.slice(0, limit)) {
+    out.due++;
+    const adapter = registry.byId(d.provider);
+    if (!adapter || typeof adapter.chargeSaved !== "function") continue;
+    try {
+      if ((await store.autoBegin(d.charge_id, d.attempt, nowIso)) !== true) continue;
+      const charge = await store.chargeById(d.charge_id);
+      if (!charge || Number(charge.amount_cents) !== Number(d.amount_cents)) throw new Error("valor_divergente");
+      const r = await adapter.chargeSaved({ charge, customer: d.customer_ref, method: d.method_ref, attempt: d.attempt, idempotencyKey: `pbauto:${charge.id}:${d.attempt}` });
+      if (!r) { out.errors.push(`fatura ${d.charge_id}: sem resposta do provedor`); continue; }
+      if ((r.outcome === "aprovada" || r.outcome === "processando") && r.ref) {
+        try {
+          await store.attach(charge.id, adapter.id, r.ref, "card_recurring", null);
+          await settleRef({ store, adapter, ref: r.ref, log });
+        } catch (e) {
+          // O dinheiro foi cobrado, mas a fatura não pôde ser baixada (ex.: foi paga por outro meio no meio da tentativa).
+          log.error("auto_settle_failed", charge.id, msg(e));
+          await store.logEvent({ provider: adapter.id, event_id: `auto:${r.ref}:dup`, kind: "pagamento_duplicado", charge_id: charge.id, outcome: "rejeitado", reason: msg(e) }).catch(() => {});
+          out.errors.push(`fatura ${d.charge_id}: cobrança sem baixa (${msg(e)})`);
+        }
+      }
+      await store.autoResult(charge.id, d.attempt, r.outcome, r.ref ?? null, r.code ?? null);
+      if (r.outcome === "aprovada") out.approved++;
+      else if (r.outcome === "processando") out.pending++;
+      else out.declined++;
+    } catch (e) {
+      out.errors.push(`fatura ${d.charge_id}: ${msg(e)}`);
+    }
+  }
+  return out;
+}
+
 // ---------- rotina diária ----------
 /** Emite/avisa/suspende (banco), confere no provedor o que ficou sem resposta e completa a tarifa dos pagamentos já feitos. */
-export async function sweep({ registry, store, limit = 50, log = console }) {
-  const out = { tick: null, checked: 0, settled: 0, fees: 0, errors: [] };
+export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), log = console }) {
+  const out = { tick: null, auto: null, checked: 0, settled: 0, fees: 0, errors: [] };
   try {
     out.tick = await store.tick();
   } catch (e) {
     out.errors.push(`tick: ${msg(e)}`);
+  }
+  try {
+    out.auto = await autoCharge({ registry, store, nowMs, log });
+    for (const x of out.auto.errors) out.errors.push(`auto: ${x}`);
+  } catch (e) {
+    out.errors.push(`auto: ${msg(e)}`);
   }
   try {
     for (const c of await store.openWithRef(limit)) {

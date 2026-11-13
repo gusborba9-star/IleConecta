@@ -32,7 +32,6 @@ export function checkoutExpiry(nowMs = Date.now(), hours = 23) {
 export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtSec }) {
   const types = stripeMethodTypes(methods);
   if (!types.length) throw new Error("Nenhum meio de pagamento disponível.");
-  const keepCard = (methods ?? []).includes("card_recurring") && types.includes("card");
   const params = {
     mode: "payment",
     locale: "pt-BR",
@@ -47,7 +46,6 @@ export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtS
   };
   if (email) params.customer_email = email;
   if (types.includes("pix")) params.payment_method_options = { pix: { expires_after_seconds: Math.max(60, Math.min(86400, expiresAtSec - Math.floor(Date.now() / 1000))) } };
-  if (keepCard) params.payment_intent_data.setup_future_usage = "off_session";
   return params;
 }
 
@@ -94,10 +92,66 @@ export async function verifyStripeSignature(rawBody, header, secret, nowMs = Dat
   return v1.some((sig) => sig.length === mac.length && timingSafeEqual(sig, mac));
 }
 
-export function classifyEvent(type) {
+/** Avisos de cobrança automática (payment_intent) só valem quando o pagamento foi criado por nós (metadata.auto = "1"). */
+export function classifyEvent(type, object = null) {
   if (type === "checkout.session.completed" || type === "checkout.session.async_payment_succeeded") return "paid_candidate";
   if (type === "checkout.session.async_payment_failed" || type === "checkout.session.expired") return "failed";
+  // Recusa de cobrança automática é tratada na hora pela rotina (a tentativa fica registrada); só o "pago" chega por aviso (ex.: Pix/cartão em análise).
+  if (type === "payment_intent.succeeded") return object?.metadata?.auto === "1" ? "paid_candidate" : "ignore";
   return "ignore";
+}
+
+/** Cadastro do cartão (sem cobrar): Checkout em modo "setup", só cartão, vinculado ao cliente da casa. */
+export function buildCardSetupParams({ customer, houseId, appUrl, expiresAtSec }) {
+  return {
+    mode: "setup",
+    locale: "pt-BR",
+    customer,
+    currency: "brl",
+    allowed_payment_method_types: ["card"],
+    client_reference_id: houseId,
+    metadata: { house_id: houseId, purpose: "card_on_file" },
+    success_url: `${appUrl}/planos?cartao=ok&sessao={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl}/planos?cartao=cancelado`,
+    expires_at: expiresAtSec,
+  };
+}
+
+/** Cobrança sem a pessoa presente (cartão salvo). O valor vem da fatura, nunca de fora. */
+export function buildAutoChargeParams({ charge, customer, method, attempt }) {
+  return {
+    amount: Number(charge.amount_cents),
+    currency: "brl",
+    customer,
+    payment_method: method,
+    payment_method_types: ["card"],
+    off_session: "true",
+    confirm: "true",
+    description: `Ilê Conecta — ${charge.description || charge.kind} (cobrança automática)`.slice(0, 300),
+    metadata: { charge_id: charge.id, house_id: charge.house_id, auto: "1", attempt: String(attempt) },
+  };
+}
+
+/**
+ * Resultado de uma cobrança automática a partir da resposta do Stripe.
+ * Só 'aprovada' | 'processando' | 'recusada' | 'exige_acao' são desfechos; qualquer outra coisa (erro de rede, 5xx, 429,
+ * parâmetro inválido) é NULL = "não sabemos": a tentativa fica aberta e repete com a mesma chave (sem cobrar duas vezes).
+ */
+export function interpretAutoCharge({ ok, status, data }) {
+  if (ok) {
+    if (data?.status === "succeeded") return { outcome: "aprovada", ref: String(data.id), code: null };
+    if (data?.status === "processing") return { outcome: "processando", ref: String(data.id), code: null };
+    if (data?.status === "requires_action" || data?.status === "requires_confirmation") return { outcome: "exige_acao", ref: String(data.id), code: "authentication_required", cancel: String(data.id) };
+    if (data?.status === "requires_payment_method") return { outcome: "recusada", ref: String(data.id), code: "payment_failed" };
+    return null;
+  }
+  const err = data?.error;
+  if (status === 402 && err?.type === "card_error") {
+    const pi = err.payment_intent?.id ? String(err.payment_intent.id) : null;
+    if (err.code === "authentication_required") return { outcome: "exige_acao", ref: pi, code: "authentication_required", cancel: pi };
+    return { outcome: "recusada", ref: pi, code: String(err.decline_code || err.code || "card_declined").slice(0, 60) };
+  }
+  return null;
 }
 
 export const CREDIT_PACKS = ["p80", "p200", "p500"];

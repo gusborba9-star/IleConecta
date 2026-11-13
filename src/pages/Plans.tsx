@@ -12,7 +12,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
 import InvoicesCard from "@/components/house/InvoicesCard";
 import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
-import { syncCharge } from "@/lib/platformBilling";
+import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
+import { finishCardSetup, syncCharge } from "@/lib/platformBilling";
+import { toast } from "sonner";
 
 /** Quanto custaria pessoas para o mesmo atendimento. Calculado com os preços atuais dos planos. */
 function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label: string }[] }) {
@@ -66,6 +68,24 @@ export default function Plans() {
       alive = false;
     };
   }, [isRemoteAuth, isHouse, returned, setParams]);
+
+  // Voltou do cadastro do cartão: o provedor confirma (não confiamos no endereço) e o cartão é guardado.
+  const cardSession = params.get("cartao") === "ok" ? params.get("sessao") : null;
+  useEffect(() => {
+    if (params.get("cartao") === "cancelado") setParams({}, { replace: true });
+    if (!isRemoteAuth || !isHouse || !cardSession || !/^cs_[A-Za-z0-9_]{8,200}$/.test(cardSession)) return;
+    let alive = true;
+    void finishCardSetup(cardSession).then((error) => {
+      if (!alive) return;
+      if (error) toast.error(error);
+      else toast.success("Cartão cadastrado. A cobrança automática está ligada.");
+      setBillingTick((n) => n + 1);
+      setParams({}, { replace: true });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth, isHouse, cardSession, params, setParams]);
 
   useEffect(() => {
     if (!isRemoteAuth || !isHouse || !userId) return;
@@ -132,6 +152,7 @@ export default function Plans() {
         })}
       </div>
       {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       <ComparisonCard
         rows={[

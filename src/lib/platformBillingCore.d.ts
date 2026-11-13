@@ -15,4 +15,11 @@ export function shortDate(iso: string): string;
 export function dayBefore(iso: string): string;
 export function readStatus(raw: unknown): BillingStatus;
 export function alertView(status: unknown): AlertView | null;
+export function payMethods(list: unknown): ("pix" | "card")[];
 export function canPay(charge: { status?: string } | null | undefined): boolean;
+export interface CardInput {
+  hasHouse?: boolean; available?: boolean; hasCard?: boolean; brand?: string | null; last4?: string | null; expMonth?: number | null; expYear?: number | null;
+  autoEnabled?: boolean; maxAttempts?: number; lastAttempt?: { attempt: number; outcome: string; at: string } | null;
+}
+export interface CardView { hasCard: boolean; title: string; expiry: string | null; expired: boolean; on: boolean; summary: string; problem: string | null; lastText: string | null }
+export function cardView(status: CardInput | null | undefined, todayIso?: string): CardView | null;

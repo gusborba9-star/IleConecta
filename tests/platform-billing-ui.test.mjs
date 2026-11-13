@@ -83,3 +83,38 @@ test("datas e rótulos", () => {
   assert.equal(canPay({ status: "aberta" }) && canPay({ status: "vencida" }), true);
   assert.equal(canPay({ status: "paga" }) || canPay(null) || canPay({ status: "cancelada" }), false);
 });
+
+import { cardView, payMethods } from "../src/lib/platformBillingCore.js";
+
+test("botões de pagamento: cartão recorrente vira cartão comum, sem repetir, e desconhecidos somem", () => {
+  assert.deepEqual(payMethods(["pix", "card", "card_recurring"]), ["pix", "card"]);
+  assert.deepEqual(payMethods(["card_recurring"]), ["card"]);
+  assert.deepEqual(payMethods(["boleto", 3, null]), []);
+  assert.deepEqual(payMethods(undefined), []);
+  assert.deepEqual(readStatus({ house_id: "h", level: "ok", overdue: true, charges: [{ id: "c", methods: ["card", "card_recurring", "pix"] }] }).charges[0].methods, ["card", "pix"]);
+});
+
+test("cartão salvo: indisponível não mostra nada; sem cartão convida a cadastrar; ligado explica as 3 tentativas", () => {
+  assert.equal(cardView(null), null);
+  assert.equal(cardView({ hasHouse: false }), null);
+  assert.equal(cardView({ hasHouse: true, available: false }), null);
+  const none = cardView({ hasHouse: true, available: true, hasCard: false });
+  assert.equal(none.hasCard, false); assert.equal(none.on, false); assert.match(none.title, /Nenhum cartão/);
+  const on = cardView({ hasHouse: true, available: true, hasCard: true, brand: "visa", last4: "4242", expMonth: 12, expYear: 2031, autoEnabled: true, maxAttempts: 3 }, "2026-11-13");
+  assert.equal(on.title, "Visa final 4242"); assert.equal(on.expiry, "validade 12/31"); assert.equal(on.on, true); assert.equal(on.expired, false);
+  assert.match(on.summary, /até 3 tentativas/);
+  const off = cardView({ hasHouse: true, available: true, hasCard: true, brand: "mastercard", last4: "1111", autoEnabled: false, maxAttempts: 3 });
+  assert.equal(off.on, false); assert.match(off.summary, /desligada/);
+});
+
+test("cartão salvo: cartão vencido é sinalizado; recusa mostra o aviso para pagar ou trocar; aprovada é só informação", () => {
+  const base = { hasHouse: true, available: true, hasCard: true, brand: "visa", last4: "4242", autoEnabled: true, maxAttempts: 3 };
+  assert.equal(cardView({ ...base, expMonth: 10, expYear: 2026 }, "2026-11-13").expired, true);
+  assert.equal(cardView({ ...base, expMonth: 11, expYear: 2026 }, "2026-11-13").expired, false, "vale até o fim do mês de validade");
+  const bad = cardView({ ...base, lastAttempt: { attempt: 2, outcome: "recusada", at: "x" } });
+  assert.match(bad.problem, /2 de 3.*recusou.*troque o cartão/);
+  const ok = cardView({ ...base, lastAttempt: { attempt: 1, outcome: "aprovada", at: "x" } });
+  assert.equal(ok.problem, null); assert.match(ok.lastText, /aprovada/);
+  assert.equal(cardView({ ...base, lastAttempt: { attempt: 1, outcome: "estranho", at: "x" } }).problem, null);
+  assert.equal(cardView({ ...base, brand: "<script>" }).title, "Cartão final 4242", "marca desconhecida nunca vai para a tela como veio");
+});

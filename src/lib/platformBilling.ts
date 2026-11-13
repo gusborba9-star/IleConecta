@@ -56,3 +56,55 @@ export async function syncCharge(chargeId: string): Promise<string | null> {
   const r = await call({ action: "sync", charge_id: chargeId });
   return r.error ? null : (r.status ?? null);
 }
+
+// ---------- cartão salvo para a cobrança automática ----------
+export interface CardStatus {
+  available: boolean; hasHouse: boolean; hasCard: boolean; brand: string | null; last4: string | null;
+  expMonth: number | null; expYear: number | null; autoEnabled: boolean; maxAttempts: number;
+  lastAttempt: { attempt: number; outcome: string; at: string } | null;
+}
+
+export function readCardStatus(raw: unknown): CardStatus {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const la = r.last_attempt && typeof r.last_attempt === "object" ? (r.last_attempt as Record<string, unknown>) : null;
+  const num = (v: unknown) => (Number.isFinite(Number(v)) && v !== null ? Number(v) : null);
+  return {
+    available: r.available === true, hasHouse: r.has_house === true, hasCard: r.has_card === true,
+    brand: r.brand ? String(r.brand) : null, last4: r.last4 ? String(r.last4) : null,
+    expMonth: num(r.exp_month), expYear: num(r.exp_year), autoEnabled: r.auto_enabled === true,
+    maxAttempts: num(r.max_attempts) ?? 3,
+    lastAttempt: la ? { attempt: Number(la.attempt), outcome: String(la.outcome), at: String(la.at ?? "") } : null,
+  };
+}
+
+export async function fetchCardStatus(): Promise<CardStatus | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("my_card_status");
+  if (error) return null;
+  return readCardStatus(data);
+}
+
+/** Abre a página segura do provedor para cadastrar o cartão (nada é cobrado). Devolve o erro, ou null se já redirecionou. */
+export async function startCardSetup(): Promise<string | null> {
+  const r = await call({ action: "card_setup" });
+  if (r.error) return r.error;
+  if (!r.url) return "Não foi possível abrir o cadastro do cartão.";
+  window.location.assign(r.url);
+  return null;
+}
+
+/** Volta do cadastro: confere no provedor e guarda o cartão. Devolve o erro, ou null se deu certo. */
+export async function finishCardSetup(session: string): Promise<string | null> {
+  const r = await call({ action: "card_sync", session });
+  return r.error ?? null;
+}
+
+export async function setCardAuto(enabled: boolean): Promise<string | null> {
+  const r = await call({ action: "card_auto", enabled });
+  return r.error ?? null;
+}
+
+export async function removeCard(): Promise<string | null> {
+  const r = await call({ action: "card_remove" });
+  return r.error ?? null;
+}

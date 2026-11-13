@@ -31,6 +31,21 @@ export function createStore(admin) {
     confirm: (provider, ref, paidCents, feeCents) => rpc("platform_charge_confirm", { p_provider: provider, p_ref: ref, p_paid_cents: paidCents, p_fee_cents: feeCents }),
     recordFee: (provider, ref, fee) => rpc("platform_charge_record_fee", { p_provider: provider, p_ref: ref, p_fee_cents: fee }),
     tick: () => rpc("platform_billing_tick", {}),
+    autoEnabled: () => rpc("billing_auto_card_enabled", {}),
+    autoDue: (nowIso) => rpc("platform_autocharge_due", { p_now: nowIso }),
+    autoBegin: (chargeId, attempt, nowIso) => rpc("platform_auto_attempt_begin", { p_charge: chargeId, p_attempt: attempt, p_now: nowIso }),
+    autoResult: (chargeId, attempt, outcome, ref, code) => rpc("platform_auto_attempt_result", { p_charge: chargeId, p_attempt: attempt, p_outcome: outcome, p_ref: ref, p_code: code }),
+    cardCustomer: (houseId, provider, customer) => rpc("platform_card_customer", { p_house: houseId, p_provider: provider, p_customer: customer }),
+    cardSetupOpen: (houseId, provider, ref) => rpc("platform_card_setup_open", { p_house: houseId, p_provider: provider, p_ref: ref }),
+    cardSave: (houseId, provider, setupRef, customer, m) => rpc("platform_card_save", { p_house: houseId, p_provider: provider, p_setup_ref: setupRef, p_customer: customer, p_method: m.id, p_brand: m.brand, p_last4: m.last4, p_month: m.expMonth, p_year: m.expYear }),
+    cardSetAuto: (houseId, enabled) => rpc("platform_card_set_auto", { p_house: houseId, p_enabled: enabled }),
+    cardRemove: (houseId) => rpc("platform_card_remove", { p_house: houseId }),
+    cardGet: (houseId) => rpc("platform_card_get", { p_house: houseId }),
+    async houseOfOwner(userId) {
+      const { data, error } = await admin.from("houses").select("id").eq("owner_id", userId).maybeSingle();
+      if (error) throw new Error(error.message);
+      return data?.id ?? null;
+    },
     async eventSeen(provider, eventId) {
       const { data, error } = await admin.from("platform_billing_events").select("id").eq("provider", provider).eq("event_id", eventId).maybeSingle();
       if (error) throw new Error(error.message);
