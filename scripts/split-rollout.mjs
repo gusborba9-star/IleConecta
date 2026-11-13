@@ -25,7 +25,9 @@ export function chunk(stmts, max = 110) {
     const size = lines(s);
     // abre um novo passo antes de um comentário de seção, se o atual já tem um bom tamanho
     const section = /^\s*(--[^\n]*\n\s*)*--\s*=====/.test(s);
-    if (cur.length && (n + size > max || (section && n > max * 0.5))) { groups.push(cur); cur = []; n = 0; }
+    // nunca separa um "drop ... if exists" da instrução seguinte: o passo precisa poder rodar de novo sozinho
+    const afterDrop = cur.length > 0 && /^\s*(--[^\n]*\n\s*)*drop\s/i.test(cur[cur.length - 1]);
+    if (cur.length && !afterDrop && (n + size > max || (section && n > max * 0.5))) { groups.push(cur); cur = []; n = 0; }
     cur.push(s); n += size;
   }
   if (cur.length) groups.push(cur);
@@ -36,7 +38,7 @@ if (process.argv[1].endsWith("split-rollout.mjs")) {
   let num = Number(process.argv[2]); const files = process.argv.slice(3);
   for (const f of files) {
     const sql = readFileSync(`supabase/migrations/${f}`, "utf8");
-    const groups = chunk(statements(sql));
+    const groups = chunk(statements(sql), Number(process.env.MAX_LINES) || 110);
     groups.forEach((g, k) => {
       const body = g.map((s) => s.replace(/^\n+/, "")).join("\n\n");
       const head = `-- PASSO ${num}: ${f.replace(/\.sql$/, "")} — parte ${k + 1} de ${groups.length}\n-- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.\n`;

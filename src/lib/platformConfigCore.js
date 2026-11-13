@@ -1,5 +1,6 @@
 // Regras puras da configuração da plataforma (sem rede), testáveis em Node.
 // O painel admin grava estes dados no banco; qualquer valor inválido volta ao padrão aqui.
+import { cloneDefaultMatrix, sanitizePlanMatrix } from "./planMatrixCore.js";
 
 export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
@@ -27,8 +28,8 @@ export const DEFAULT_CONFIG = {
   pricing: {
     plans: {
       base: { name: "Essencial", monthly: 89.9 },
-      intermediario: { name: "Profissional", monthly: 139.9 },
-      maximo: { name: "Premium", monthly: 199 },
+      intermediario: { name: "Profissional", monthly: 179.9 },
+      maximo: { name: "Premium", monthly: 299.9 },
     },
     // Acesso extra da equipe da casa, por mês e conforme o plano da casa (sobe sozinho quando a casa muda de plano).
     extra_seat: { base: 29.9, intermediario: 39.9, maximo: 39.9 },
@@ -39,6 +40,8 @@ export const DEFAULT_CONFIG = {
     boost: { cidade: true, estado: true, pais: false, exterior: false },
     highlight: { cidade: true, estado: true, pais: false, exterior: false },
   },
+  // Matriz central de planos (limites, ferramentas e textos). Valores iniciais = os que já valiam antes da matriz.
+  plan_matrix: cloneDefaultMatrix(),
 };
 
 const isRecord = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -97,7 +100,7 @@ export function sanitizeConfig(raw) {
     monthly_cap: whole(rf.monthly_cap, 1, 100, d.referral.monthly_cap),
   };
 
-  return { features, pricing: { plans, extra_seat, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral };
+  return { features, pricing: { plans, extra_seat, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral, plan_matrix: sanitizePlanMatrix(r.plan_matrix) };
 }
 
 /** Recurso ligado? "beta" liga só para as casas listadas (ids dos donos). */

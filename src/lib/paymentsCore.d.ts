@@ -1,5 +1,5 @@
 export declare const FEE_RULE_VERSION: string;
-export declare const FEE_BPS: { ritual: number; servico: number; servico_pix: number };
+export declare const FEE_BPS: { ritual: number; servico: number; servico_pix: number; mensalidade: number };
 export declare const MAX_PAYMENT_CENTS: number;
 export declare const MAX_STAGES: number;
 export declare const HOLD_HOURS: number;

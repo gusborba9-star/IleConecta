@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, Camera, Check, Megaphone, TrendingUp, Users } from "lucide-react";
 import type { ReactNode } from "react";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { renderBenefit } from "@/lib/planMatrixCore";
 
 export type ShowcaseKind = "members" | "calendar" | "chat" | "outreach" | "growth";
 
@@ -41,9 +43,9 @@ const COPY: Record<ShowcaseKind, { eyebrow: string; title: string; points: strin
     eyebrow: "Divulgação completa",
     title: "Veja o que cada divulgação trouxe, dia a dia",
     points: [
-      "Até 30 links, com visitas e pedidos de conversa por dia",
-      "Três estilos de cartão para combinar com a sua casa",
-      "Até 50 respostas rápidas para atender mais depressa",
+      "Até {campaign_links} links, com visitas e pedidos de conversa por dia",
+      "{campaign_card_styles} estilos de cartão para combinar com a sua casa",
+      "Até {quick_replies} respostas rápidas para atender mais depressa",
     ],
     icon: TrendingUp,
   },
@@ -103,7 +105,10 @@ function Sample({ kind }: { kind: ShowcaseKind }): ReactNode {
 
 /** Vitrine do Premium: mostra o resultado que a casa ganha, em vez de explicar como usar. */
 export default function PremiumShowcase({ kind, compact = false }: { kind: ShowcaseKind; compact?: boolean }) {
-  const c = COPY[kind];
+  const { config } = usePlatformConfig();
+  const base = COPY[kind];
+  // Os números vêm da matriz de planos (o que o Premium inclui hoje), nunca fixos no texto.
+  const c = { ...base, points: base.points.map((t) => renderBenefit(t, config.plan_matrix.caps.maximo)) };
   const Icon = c.icon;
   return (
     <section aria-label={`${c.eyebrow}: disponível no plano ${c.badge ?? "Premium"}`} className="relative overflow-hidden rounded-[24px] text-white shadow-altar ring-1 ring-[#E3BF5A]/50" style={{ background: "linear-gradient(135deg,#14543F 0%,#0F3B2D 100%)" }}>

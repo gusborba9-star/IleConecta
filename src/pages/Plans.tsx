@@ -4,9 +4,15 @@ import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchMyAssistant } from "@/lib/assistant";
 import { PLANS, formatMoney, type PlanId } from "@/lib/pricing";
+import { benefitsFor } from "@/lib/planMatrixCore";
+import { isFeatureOn, type FeatureKey } from "@/lib/platformConfigCore";
 import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import BillingAlertCard from "@/components/house/BillingAlertCard";
+import InvoicesCard from "@/components/house/InvoicesCard";
+import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
+import { syncCharge } from "@/lib/platformBilling";
 
 /** Quanto custaria pessoas para o mesmo atendimento. Calculado com os preços atuais dos planos. */
 function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label: string }[] }) {
@@ -43,6 +49,23 @@ export default function Plans() {
   const [mine, setMine] = useState<PlanId | null>(null);
   const isHouse = currentUser?.type === "commercial";
   const userId = currentUser?.id;
+  const [params, setParams] = useSearchParams();
+  const [billingTick, setBillingTick] = useState(0);
+
+  // Voltou da página de pagamento: confere a fatura agora (sem esperar o aviso do provedor) e atualiza os cards.
+  const returned = params.get("retorno") ? params.get("fatura") : null;
+  useEffect(() => {
+    if (!isRemoteAuth || !isHouse || !returned || !/^[0-9a-f-]{36}$/i.test(returned)) return;
+    let alive = true;
+    void syncCharge(returned).then(() => {
+      if (!alive) return;
+      setBillingTick((n) => n + 1);
+      setParams({}, { replace: true });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isRemoteAuth, isHouse, returned, setParams]);
 
   useEffect(() => {
     if (!isRemoteAuth || !isHouse || !userId) return;
@@ -55,6 +78,7 @@ export default function Plans() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
+      {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>
         <h1 className="font-display font-bold text-3xl mt-1">Cresça no seu ritmo</h1>
@@ -78,6 +102,9 @@ export default function Plans() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {PLANS.map((p) => {
           const info = config.pricing.plans[p.id];
+          // Textos e números vêm da matriz de planos (painel admin). Item ligado a uma ferramenta só aparece com o interruptor ligado.
+          const copy = config.plan_matrix.copy[p.id];
+          const benefits = benefitsFor(config.plan_matrix, p.id, (f) => isFeatureOn(config, f as FeatureKey, userId));
           return (
           <Card key={p.id} className={`lift p-5 flex flex-col ${mine === p.id ? "border-primary" : ""} ${p.id === "maximo" ? "!border-gold !bg-gradient-to-br from-[#14543F] to-[#0F3B2D] !text-white shadow-altar ring-1 ring-gold/60" : p.id === "intermediario" ? "!bg-[#E8F1EA] dark:!bg-forest/10" : ""}`}>
             {p.id === "maximo" && <span className="sheen -mt-1 mb-2 w-fit rounded-full bg-gold px-3 py-1 text-xs font-bold text-gold-foreground">Mais completo</span>}
@@ -85,14 +112,14 @@ export default function Plans() {
               <h2 className="font-display font-bold text-xl flex-1">{info.name}</h2>
               {mine === p.id && <Badge tone="primary">Seu plano</Badge>}
             </div>
-            <p className={`text-sm ${p.id === "maximo" ? "text-white/75" : "text-muted-foreground"}`}>{p.tagline}</p>
+            <p className={`text-sm ${p.id === "maximo" ? "text-white/75" : "text-muted-foreground"}`}>{copy.tagline}</p>
             <div className="mt-3">
               <span className={`font-display font-bold text-3xl ${p.id === "maximo" ? "text-white" : "text-primary"}`}>{formatMoney(info.monthly)}</span>
               {info.monthly !== null && <span className={`text-sm ${p.id === "maximo" ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
             </div>
             <ul className="mt-4 space-y-2 text-sm flex-1">
-              {p.benefits.map((b) => (
-                <li key={b} className="flex gap-2"><Check className={`h-4 w-4 shrink-0 mt-0.5 ${p.id === "maximo" ? "text-gold" : "text-forest"}`} />{b}</li>
+              {benefits.map((b) => (
+                <li key={b.text} className="flex gap-2"><Check className={`h-4 w-4 shrink-0 mt-0.5 ${p.id === "maximo" ? "text-gold" : "text-forest"}`} /><span>{b.text}{b.isNew && <span className="ml-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-gold-foreground">Novo</span>}</span></li>
               ))}
             </ul>
             {isHouse ? (
@@ -104,6 +131,8 @@ export default function Plans() {
           );
         })}
       </div>
+      {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       <ComparisonCard
         rows={[
           { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },

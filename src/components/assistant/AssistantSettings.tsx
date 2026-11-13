@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bot } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Label, Modal, Textarea } from "@/components/base";
@@ -7,7 +7,9 @@ import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 import type { HouseUser, User } from "@/types";
 import InternalCatalog from "@/components/assistant/InternalCatalog";
-import { DAYS, PROFILE_MAX, TONE_LABEL, fetchMyAssistant, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
+import { DAYS, PROFILE_MAX, TONE_LABEL, assistantAvatarUrl, fetchMyAssistant, removeAssistantPhotoFile, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
+import AssistantAvatar from "@/components/assistant/AssistantAvatar";
+import { uploadProfileImage, validateImageFile } from "@/lib/imageUpload";
 
 /** O que a casa perde ao desligar a venda pela assistente (só o que a plataforma faz de verdade). */
 const STOP_SELLING_LOSSES = [
@@ -32,6 +34,9 @@ export default function AssistantSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [askStopSelling, setAskStopSelling] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const savedPhoto = useRef<string | null>(null); // foto que está salva no banco
+  const uploadedPhotos = useRef<string[]>([]); // arquivos enviados nesta tela (os não usados são apagados ao salvar)
 
   const show = isRemoteAuth && currentUser?.type === "commercial";
   const userId = currentUser?.id;
@@ -42,6 +47,7 @@ export default function AssistantSettings() {
     fetchMyAssistant(userId).then((c) => {
       if (!alive) return;
       setCfg(c);
+      savedPhoto.current = c?.avatarPath ?? null;
       setLoading(false);
     });
     return () => {
@@ -60,14 +66,25 @@ export default function AssistantSettings() {
   const patchProfile = (p: Partial<HouseProfile>) => setCfg({ ...cfg, profile: { ...cfg.profile, ...p } });
   const setFaq = (i: number, field: "q" | "a", value: string) =>
     patchProfile({ faq: cfg.profile.faq.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)) });
-  const available = cfg.plan !== "base";
-  const fullPlan = cfg.plan === "maximo";
+  const planCaps = config.plan_matrix.caps[cfg.plan];
+  const available = planCaps.assistant_replies > 0;
+  const fullPlan = planCaps.assistant_discount;
 
   const save = async () => {
     setSaving(true);
     // "O que a casa faz" é o mesmo texto da página da casa (houses.offerings).
     const okOffer = offeringsValue.trim() === currentOfferings.trim() ? true : await updateUser({ offerings: offeringsValue.trim() } as Partial<User>);
-    const ok = (await saveMyAssistant(cfg)) && okOffer;
+    const savedOk = await saveMyAssistant(cfg);
+    const ok = savedOk && okOffer;
+    if (savedOk) {
+      // Foto trocada ou removida: apaga os arquivos que deixaram de valer (melhor esforço).
+      const stale = new Set([savedPhoto.current, ...uploadedPhotos.current]);
+      stale.delete(cfg.avatarPath);
+      stale.delete(null);
+      await Promise.all([...stale].map((f) => removeAssistantPhotoFile(f)));
+      savedPhoto.current = cfg.avatarPath;
+      uploadedPhotos.current = [];
+    }
     setSaving(false);
     if (ok) toast.success("Assistente salva.");
     else toast.error("Não foi possível salvar. Tente novamente.");
@@ -88,7 +105,7 @@ export default function AssistantSettings() {
       )}
       {cfg.plan === "intermediario" && (
         <p className="text-sm text-muted-foreground">
-          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até 300 respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
+          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até {planCaps.assistant_replies} respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
         </p>
       )}
 
@@ -96,6 +113,40 @@ export default function AssistantSettings() {
         <input type="checkbox" checked={cfg.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />
         Assistente ativada para clientes
       </label>
+
+      {available && userId && (
+        <div className="flex items-center gap-3">
+          <AssistantAvatar url={assistantAvatarUrl(cfg.avatarPath)} size={56} />
+          <div className="space-y-1">
+            <Label htmlFor="as-photo">Foto da assistente (opcional)</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                id="as-photo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={photoBusy}
+                className="text-xs max-w-[14rem]"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  const invalid = validateImageFile(file);
+                  if (invalid) return void toast.error(invalid);
+                  setPhotoBusy(true);
+                  const r = await uploadProfileImage(userId, "assistant", file);
+                  setPhotoBusy(false);
+                  if (r.error || !r.path) return void toast.error(r.error ?? "Não foi possível enviar a foto.");
+                  uploadedPhotos.current.push(r.path);
+                  patch({ avatarPath: r.path });
+                  toast.success("Foto escolhida. Toque em salvar para confirmar.");
+                }}
+              />
+              {cfg.avatarPath && <Button variant="outline" onClick={() => patch({ avatarPath: null })}>Remover foto</Button>}
+            </div>
+            <p className="text-xs text-muted-foreground">Aparece para o cliente nas respostas da assistente. A foto fica disponível só em planos que incluem a assistente.</p>
+          </div>
+        </div>
+      )}
 
       <div>
         <Label htmlFor="as-name">Nome da assistente</Label>

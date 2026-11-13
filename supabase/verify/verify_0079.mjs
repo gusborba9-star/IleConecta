@@ -184,7 +184,7 @@ const refs = (await su.query(`select c.conrelid::regclass::text t, a.attname col
   where c.contype='f' and c.confrelid in ('public.profiles'::regclass,'auth.users'::regclass) and c.connamespace='public'::regnamespace`)).rows;
 const ALLOWED = new Set(["service_orders.client_id", "reservations.user_id", "refund_requests.client_id", "legal_consents.user_id", "messages.sender_id", "conversation_members.user_id", "chat_reports.reporter_id", "chat_reports.reported_id",
   "support_cases.opened_by", "support_cases.subject_user", "support_case_parties.user_id", "support_case_evidence.submitted_by", "support_case_messages.author_id", "support_case_snapshots.taken_by", "support_cases.decided_by", "account_deletion_requests.user_id", "account_deletion_requests.decided_by",
-  "houses.owner_id", "house_payment_accounts.owner_id", "profiles.id", "admins.user_id", "admin_audit.admin_id", "admin_docs.updated_by", "platform_settings.updated_by", "support_contact.updated_by", "refund_requests.decided_by", "account_suspensions.user_id", "account_suspensions.suspended_by"]);
+  "houses.owner_id", "house_payment_accounts.owner_id", "profiles.id", "admins.user_id", "admin_audit.admin_id", "fee_rule_versions.created_by", "admin_docs.updated_by", "platform_settings.updated_by", "support_contact.updated_by", "refund_requests.decided_by", "account_suspensions.user_id", "account_suspensions.suspended_by"]);
 const leaks = [];
 for (const { t, col } of refs) {
   const key = `${t.replace("public.", "")}.${col}`;

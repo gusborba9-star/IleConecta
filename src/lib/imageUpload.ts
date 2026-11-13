@@ -1,10 +1,10 @@
 import { supabase } from "@/lib/supabase";
 
-export type ImageKind = "avatar" | "cover";
+export type ImageKind = "avatar" | "cover" | "assistant";
 
-const BUCKET: Record<ImageKind, string> = { avatar: "avatars", cover: "covers" };
+const BUCKET: Record<ImageKind, string> = { avatar: "avatars", cover: "covers", assistant: "avatars" };
 // Lado maior depois da redução: mantém o site rápido e o armazenamento barato.
-const MAX_SIDE: Record<ImageKind, number> = { avatar: 512, cover: 1600 };
+const MAX_SIDE: Record<ImageKind, number> = { avatar: 512, cover: 1600, assistant: 512 };
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -36,6 +36,7 @@ async function shrink(file: File, maxSide: number): Promise<Blob> {
 
 export interface UploadResult {
   url?: string;
+  path?: string;
   error?: string;
 }
 
@@ -62,5 +63,5 @@ export async function uploadProfileImage(userId: string, kind: ImageKind, file: 
   });
   if (error) return { error: "Não foi possível enviar a imagem agora. Tente novamente." };
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return { url: data.publicUrl };
+  return { url: data.publicUrl, path };
 }

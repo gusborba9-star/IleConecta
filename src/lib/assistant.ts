@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { isAssistantPhotoPath } from "@/lib/assistantPhotoCore";
 
 export type Plan = "base" | "intermediario" | "maximo";
 
@@ -48,6 +49,8 @@ export interface AssistantConfig {
   canDiscount: boolean;
   maxDiscountPercent: number;
   profile: HouseProfile;
+  /** Caminho da foto da assistente no bucket avatars (só planos com assistente). */
+  avatarPath: string | null;
 }
 
 export const DAYS: { key: string; label: string }[] = [
@@ -67,7 +70,7 @@ export async function fetchMyAssistant(ownerId: string): Promise<AssistantConfig
   if (error || !house) return null;
   const { data: a } = await supabase
     .from("assistants")
-    .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, profile")
+    .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, profile, avatar_path")
     .eq("house_id", house.id)
     .maybeSingle();
   return {
@@ -82,6 +85,7 @@ export async function fetchMyAssistant(ownerId: string): Promise<AssistantConfig
     canDiscount: a?.can_discount ?? false,
     maxDiscountPercent: a?.max_discount_percent ?? 0,
     profile: cleanProfile(a?.profile),
+    avatarPath: isAssistantPhotoPath(a?.avatar_path) ? (a!.avatar_path as string) : null,
   };
 }
 
@@ -102,6 +106,7 @@ export async function saveMyAssistant(cfg: AssistantConfig): Promise<boolean> {
     can_discount: cfg.canDiscount,
     max_discount_percent: Math.max(0, Math.min(100, Math.floor(cfg.maxDiscountPercent || 0))),
     profile: cleanProfile(cfg.profile),
+    avatar_path: isAssistantPhotoPath(cfg.avatarPath) ? cfg.avatarPath : null,
   });
   return !error;
 }
@@ -171,4 +176,23 @@ export async function fetchConversationLines(conversationId: string, myId: strin
     text: m.text as string,
     createdAt: m.created_at as string,
   }));
+}
+
+/** Endereço público da foto (o arquivo fica no bucket público avatars). Caminho fora do formato não vira endereço. */
+export function assistantAvatarUrl(path: string | null | undefined): string | null {
+  if (!supabase || !isAssistantPhotoPath(path)) return null;
+  return supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+}
+
+/** Foto da assistente de uma casa, como o cliente enxerga (só com a assistente ativa e o plano ainda incluindo a assistente). */
+export async function fetchAssistantAvatar(ownerId: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("assistant_avatar_path", { p_owner: ownerId });
+  return error ? null : assistantAvatarUrl(typeof data === "string" ? data : null);
+}
+
+/** Apaga o arquivo antigo depois de trocar ou remover a foto (melhor esforço: falhar aqui não atrapalha a casa). */
+export async function removeAssistantPhotoFile(path: string | null | undefined): Promise<void> {
+  if (!supabase || !isAssistantPhotoPath(path)) return;
+  await supabase.storage.from("avatars").remove([path]).catch(() => undefined);
 }

@@ -39,6 +39,7 @@ const MESSAGES: Record<string, string> = {
   assistente_desativada: "Esta casa ainda não ativou a assistente. Fale diretamente com a casa.",
   atendimento_humano: "A casa está atendendo esta conversa e responde por aqui.",
   cota_mensal: "A assistente desta casa atingiu o limite de atendimentos do mês. Fale diretamente com a casa.",
+  casa_indisponivel: "A assistente desta casa está indisponível no momento. Fale diretamente com a casa.",
   muitas_mensagens: "Você enviou muitas mensagens seguidas. Aguarde alguns minutos e tente de novo.",
 };
 
@@ -117,6 +118,16 @@ Deno.serve(async (req) => {
     return json(403, { error: "recurso_desativado", message: "A assistente está temporariamente indisponível." });
   }
 
+  // Cobrança da plataforma: casa em suspensão parcial ou total não usa a assistente (custo de IA). Falha na leitura NÃO derruba a assistente (domínios independentes).
+  const { data: billingLevel, error: billingErr } = await admin.rpc("house_billing_level", { h: house.id });
+  if (billingErr) console.error("house_billing_level", billingErr.message);
+  else if (billingLevel && billingLevel !== "ok") {
+    return json(403, { error: "casa_indisponivel", message: MESSAGES.casa_indisponivel });
+  }
+
+  // Matriz central de planos (limites da assistente por plano). O banco devolve sempre uma matriz válida; se a leitura falhar, valem os valores iniciais.
+  const { data: planMatrix } = await admin.rpc("plan_matrix");
+
   const { data: assistant } = await admin
     .from("assistants")
     .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
@@ -124,17 +135,23 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   // 3) Plano, cota mensal e limite por usuário.
-  const [{ count: usedMonth }, { count: usedWindow }] = await Promise.all([
+  const [{ count: usedMonth }, { count: usedWindow }, { data: creditsRaw, error: creditsErr }] = await Promise.all([
     admin.from("assistant_usage").select("id", { count: "exact", head: true })
       .eq("house_id", house.id).gte("created_at", monthStartISO()),
     admin.from("assistant_usage").select("id", { count: "exact", head: true })
       .eq("house_id", house.id).eq("user_id", user.id).gte("created_at", windowStartISO()),
+    admin.rpc("ai_credit_balance", { p_house: house.id }),
   ]);
+  // Falha ao ler o saldo: vale só a franquia do mês (nunca libera resposta sem cobertura).
+  if (creditsErr) console.error("ai_credit_balance", creditsErr.message);
+  const creditBalance = creditsErr ? 0 : Number(creditsRaw ?? 0) || 0;
   const blocked = checkGate({
     plan: house.plan,
     assistant,
     usedThisMonth: usedMonth ?? 0,
     usedByUserInWindow: usedWindow ?? 0,
+    matrix: planMatrix,
+    creditBalance,
   });
   if (blocked) return json(blocked === "cota_mensal" || blocked === "muitas_mensagens" ? 429 : 403, {
     error: blocked,
@@ -227,7 +244,7 @@ Deno.serve(async (req) => {
 
   const system = buildSystemPrompt({
     house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
-    payments: payOn === true, pending,
+    payments: payOn === true, pending, matrix: planMatrix,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 
@@ -305,7 +322,7 @@ Deno.serve(async (req) => {
   // 7) Grava a resposta (remetente = dono da casa, marcada como da assistente) e o consumo.
   // Botão de pagamento no chat: o modelo só indica o título; quem decide o alvo (e se existe) é o servidor.
   const action = handoff.checkout && payOn
-    ? resolveCheckout(handoff.checkout, { events: eventsWithSeats, services: servicesWithSlots, selling: canSell(house.plan, assistant) })
+    ? resolveCheckout(handoff.checkout, { events: eventsWithSeats, services: servicesWithSlots, selling: canSell(house.plan, assistant, planMatrix) })
     : null;
   const baseMsg = { conversation_id: conversationId, sender_id: house.owner_id, text: reply, from_assistant: true };
   if (action) {
@@ -341,16 +358,26 @@ Deno.serve(async (req) => {
       if (nErr) await admin.from("notifications").insert(row); // coluna ainda não existe: segue sem ela
     }
   }
-  await admin.from("assistant_usage").insert({
-    house_id: house.id, user_id: user.id, model: usedModel,
-    prompt_tokens: promptTokens, completion_tokens: completionTokens,
+  // Registra a resposta e debita o crédito (se a franquia do mês já acabou) numa transação só, uma vez por resposta.
+  const { data: rec, error: recErr } = await admin.rpc("assistant_record_usage", {
+    p_house: house.id, p_user: user.id, p_model: usedModel, p_prompt: promptTokens, p_completion: completionTokens,
   });
+  if (recErr) {
+    console.error("assistant_record_usage", recErr.message);
+    // O banco não registrou: grava o uso simples para a cota mensal não ficar cega (sem débito de crédito).
+    await admin.from("assistant_usage").insert({
+      house_id: house.id, user_id: user.id, model: usedModel, prompt_tokens: promptTokens, completion_tokens: completionTokens,
+    });
+  }
 
-  const limit = planLimits(house.plan).monthlyReplies;
+  const limit = planLimits(house.plan, planMatrix).monthlyReplies;
+  const used = Number((rec as { used_month?: number } | null)?.used_month ?? (usedMonth ?? 0) + 1);
+  const left = Number((rec as { credits_left?: number } | null)?.credits_left ?? creditBalance);
   return json(200, {
     conversation_id: conversationId,
     reply,
     assistant_name: assistant?.display_name ?? "Assistente",
-    remaining_this_month: Math.max(0, limit - ((usedMonth ?? 0) + 1)),
+    remaining_this_month: Math.max(0, limit - used),
+    credits_left: left,
   });
 });

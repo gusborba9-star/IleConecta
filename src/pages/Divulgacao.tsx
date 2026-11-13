@@ -8,7 +8,7 @@ import ShareLinkButtons from "@/components/house/ShareLinkButtons";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 import { useApp } from "@/contexts/AppContext";
 import {
-  LIMITS, SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, REPLY_TEMPLATES, fetchTopics, fetchTopServices, houseIdOf, removeCampaign, removeQuickReply,
+  SOURCES, addQuickReply, campaignUrl, createCampaign, fetchCampaignDays, fetchCampaigns, fetchQuickReplies, REPLY_TEMPLATES, fetchTopics, fetchTopServices, houseIdOf, removeCampaign, removeQuickReply,
   type Campaign, type Count, type DayCount, type QuickReply, type SourceId,
 } from "@/lib/campaigns";
 import { useOwnerPlan } from "@/lib/housePlan";
@@ -22,7 +22,8 @@ export default function Divulgacao() {
   const { currentUser, isRemoteAuth } = useApp();
   const confirm = useConfirm();
   const uid = currentUser?.id;
-  const { plan, premium, loading } = useOwnerPlan(uid);
+  const { caps, loading } = useOwnerPlan(uid);
+  const dailyOk = caps?.campaign_daily_count === true, insightsOk = caps?.campaign_insights_full === true;
   const [slug, setSlug] = useState<string | null>(null);
   const [houseId, setHouseId] = useState<string | null>(null);
   const [camps, setCamps] = useState<Campaign[]>([]);
@@ -42,7 +43,7 @@ export default function Divulgacao() {
   const [topServices, setTopServices] = useState<Count[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const lim = LIMITS[plan ?? "base"];
+  const lim = { links: caps?.campaign_links ?? 0, replies: caps?.quick_replies ?? 0, cards: caps?.campaign_card_styles ?? 0 };
   const reload = useCallback(async () => {
     const [c, r] = await Promise.all([fetchCampaigns(), fetchQuickReplies()]);
     setCamps(c);
@@ -97,7 +98,7 @@ export default function Divulgacao() {
     return <Card className="p-6"><h1 className="font-display font-bold text-2xl">Divulgação</h1><p className="text-sm text-muted-foreground mt-1">Esta área é da conta de uma casa.</p></Card>;
   }
   if (loading) return <div className="h-40" aria-busy />;
-  if (plan === "base") return <div className="space-y-4 pb-16 lg:pb-4"><PremiumShowcase kind="outreach" /></div>;
+  if (caps && caps.campaign_links === 0) return <div className="space-y-4 pb-16 lg:pb-4"><PremiumShowcase kind="outreach" /></div>;
 
   const copy = async (text: string) => {
     try {
@@ -170,7 +171,7 @@ export default function Divulgacao() {
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => slug && void copy(campaignUrl(slug, c.code))}><Copy className="h-4 w-4" /> Copiar link</Button>
                 <Button size="sm" variant="outline" onClick={() => setCardId(c.id)}>Cartão deste link</Button>
-                <Button size="sm" variant="ghost" onClick={() => void showDays(c)}>{premium ? "Ver dia a dia" : "Dia a dia · Premium"}</Button>
+                <Button size="sm" variant="ghost" onClick={() => void showDays(c)}>{dailyOk ? "Ver dia a dia" : "Dia a dia · Premium"}</Button>
                 <Button size="sm" variant="ghost" aria-label={`Apagar ${c.label}`} onClick={() => void drop(c)}><Trash2 className="h-4 w-4" /></Button>
               </div>
               {days?.id === c.id && (
@@ -245,7 +246,7 @@ export default function Divulgacao() {
         <p className="text-sm text-muted-foreground">Os assuntos que mais aparecem nas mensagens dos últimos 30 dias e os serviços mais pedidos. Use para criar as respostas que você mais precisa.</p>
         {topics.length === 0 ? <p className="text-sm text-muted-foreground">Quando as pessoas começarem a conversar com a casa, os assuntos mais procurados aparecem aqui.</p> : (
           <ul className="space-y-2">
-            {(premium ? topics : topics.slice(0, 3)).map((t) => (
+            {(insightsOk ? topics : topics.slice(0, 3)).map((t) => (
               <li key={t.label} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex justify-between text-sm"><span className="font-semibold">{t.label}</span><span className="text-muted-foreground">{t.total} {t.total === 1 ? "mensagem" : "mensagens"}</span></div>
@@ -256,13 +257,13 @@ export default function Divulgacao() {
             ))}
           </ul>
         )}
-        {premium && topServices.length > 0 && (
+        {insightsOk && topServices.length > 0 && (
           <div className="pillow rounded-2xl bg-muted/30 p-3">
             <div className="text-xs font-bold uppercase tracking-[0.12em] text-gold-ink">Serviços mais pedidos · 90 dias</div>
             <ul className="mt-2 space-y-1 text-sm">{topServices.map((t) => <li key={t.label} className="flex justify-between gap-2"><span className="truncate">{t.label}</span><strong>{t.total}</strong></li>)}</ul>
           </div>
         )}
-        {!premium && topics.length > 3 && <p className="text-xs text-muted-foreground">No Premium você vê todos os assuntos e os serviços mais pedidos.</p>}
+        {!insightsOk && topics.length > 3 && <p className="text-xs text-muted-foreground">No Premium você vê todos os assuntos e os serviços mais pedidos.</p>}
       </Card>
 
       <Card className="p-5 space-y-3">
@@ -288,7 +289,7 @@ export default function Divulgacao() {
         )}
       </Card>
 
-      {!premium && (
+      {!insightsOk && (
         <PremiumShowcase kind="growth" />
       )}
       <p className="text-xs text-muted-foreground text-center">Os números não identificam ninguém. <Link to="/planos" className="text-primary font-semibold">Ver planos</Link></p>

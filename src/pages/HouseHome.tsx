@@ -10,6 +10,7 @@ import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
 import HouseKpis from "@/components/house/HouseKpis";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
+import BillingAlertCard from "@/components/house/BillingAlertCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
@@ -67,6 +68,7 @@ export default function HouseHome() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
+      {isRemoteAuth && <BillingAlertCard />}
       <Card className="relative overflow-hidden p-6 border-0 text-white shadow-altar" style={{ background: "linear-gradient(135deg, #14543F 0%, #0F3B2D 100%)" }}>
         <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "26px 26px" }} />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />

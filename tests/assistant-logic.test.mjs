@@ -255,3 +255,16 @@ test("retomada: as mensagens da casa entram marcadas e o histórico é maior (20
   assert.equal(chat[1].content, "[Atendimento da casa] Fica R$ 300, combinado para sexta");
   assert.equal(chat[1].role, "assistant");
 });
+
+test("créditos de IA: a franquia do mês vem primeiro; passada ela, só segue com saldo", () => {
+  const base = { plan: "intermediario", assistant: { enabled: true }, usedByUserInWindow: 0 };
+  assert.equal(checkGate({ ...base, usedThisMonth: 299, creditBalance: 0 }), null, "dentro da franquia");
+  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 0 }), "cota_mensal", "franquia acabou, sem crédito");
+  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 5 }), null, "franquia acabou, com crédito");
+  assert.equal(checkGate({ ...base, usedThisMonth: 5000, creditBalance: 1 }), null);
+  assert.equal(checkGate({ ...base, usedThisMonth: 300 }), "cota_mensal", "sem informar saldo vale zero");
+  for (const bad of [-3, NaN, "x", null, undefined]) assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: bad }), "cota_mensal", `saldo inválido ${String(bad)} não libera`);
+  assert.equal(checkGate({ ...base, plan: "base", usedThisMonth: 0, creditBalance: 999 }), "plano_sem_assistente", "crédito não vale em plano sem assistente");
+  assert.equal(checkGate({ ...base, assistant: { enabled: false }, usedThisMonth: 300, creditBalance: 9 }), "assistente_desativada", "assistente desligada continua barrando");
+  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 9, usedByUserInWindow: 999 }), "muitas_mensagens", "limite por usuário continua valendo");
+});
