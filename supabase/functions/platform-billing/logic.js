@@ -124,7 +124,7 @@ export function buildAutoChargeParams({ charge, customer, method, attempt }) {
     currency: "brl",
     customer,
     payment_method: method,
-    payment_method_types: ["card"],
+    allowed_payment_method_types: ["card"], // nesta versão do Stripe o campo se chama allowed_payment_method_types
     off_session: "true",
     confirm: "true",
     description: `Ilê Conecta — ${charge.description || charge.kind} (cobrança automática)`.slice(0, 300),

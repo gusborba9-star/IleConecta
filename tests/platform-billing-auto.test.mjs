@@ -174,7 +174,7 @@ test("cadastro indisponível quando o painel desliga o recurso", async () => {
 test("pedido da cobrança automática: valor da fatura, fora de sessão, só cartão, marcada como automática", () => {
   const p = buildAutoChargeParams({ charge: { id: CH, house_id: HOUSE, kind: "plan", amount_cents: "17990", description: "Mensalidade" }, customer: "cus_1", method: "pm_1", attempt: 2 });
   assert.equal(p.amount, 17990); assert.equal(p.currency, "brl"); assert.equal(p.off_session, "true"); assert.equal(p.confirm, "true");
-  assert.deepEqual(p.payment_method_types, ["card"]); assert.equal(p.metadata.auto, "1"); assert.equal(p.metadata.attempt, "2");
+  assert.deepEqual(p.allowed_payment_method_types, ["card"]); assert.equal(p.payment_method_types, undefined); assert.equal(p.metadata.auto, "1"); assert.equal(p.metadata.attempt, "2");
 });
 
 test("pedido do cadastro do cartão: modo setup, só cartão, volta com o id da sessão", () => {
