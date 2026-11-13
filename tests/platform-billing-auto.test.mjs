@@ -15,7 +15,7 @@ function setup({ due = null, cfg = {}, owners = { u1: HOUSE } } = {}) {
   const registry = createRegistry([fake]);
   const charge = { id: CH, house_id: HOUSE, kind: "plan", amount_cents: "17990", description: "Mensalidade", status: "aberta", provider: null, provider_ref: null };
   const calls = { begin: [], result: [], attach: [], events: [], save: [], remove: 0, auto: [] };
-  let cardRow = null;
+  let cardRow = null, authorized = true;
   const store = {
     config: async () => ({ enabled: true, provider: { plan: "fake" }, methods: { plan: ["card", "card_recurring"] }, ...cfg }),
     autoEnabled: async () => true,
@@ -31,6 +31,7 @@ function setup({ due = null, cfg = {}, owners = { u1: HOUSE } } = {}) {
     progress: async () => {},
     logEvent: async (e) => { calls.events.push(e); },
     houseOfOwner: async (u) => owners[u] ?? null,
+    cardAuthOk: async () => authorized,
     cardGet: async () => cardRow,
     cardCustomer: async (h, p, c) => (cardRow?.customer ?? c),
     cardSetupOpen: async () => {},
@@ -39,7 +40,7 @@ function setup({ due = null, cfg = {}, owners = { u1: HOUSE } } = {}) {
     cardRemove: async () => { calls.remove++; const m = cardRow?.method ?? null; cardRow = cardRow ? { customer: cardRow.customer, method: null } : null; return m; },
   };
   const d = { charge_id: CH, house_id: HOUSE, attempt: 1, amount_cents: "17990", due_date: "2026-11-13", provider: "fake", customer_ref: "cus_1", method_ref: "pm_1", last4: "4242" };
-  return { fake, registry, store, charge, calls, d, setCard: (r) => { cardRow = r; } };
+  return { fake, registry, store, charge, calls, d, setCard: (r) => { cardRow = r; }, setAuthorized: (v) => { authorized = v; } };
 }
 
 test("aprovada: cobra o valor da fatura, baixa a fatura pelo mesmo caminho do pagamento e registra o desfecho", async () => {
@@ -236,4 +237,16 @@ test("a chave da cobrança automática: mesmo pedido = mesma chave; pedido difer
   assert.equal(keys[0], keys[1]);
   assert.equal(new Set(keys).size, 3);
   assert.equal(fingerprint("abc"), fingerprint("abc"));
+});
+
+test("autorização de cobrança automática: sem ela, não abre o cadastro do cartão nem liga a cobrança; desligar nunca exige", async () => {
+  const t = setup(); t.setAuthorized(false);
+  await assert.rejects(() => cardSetup({ registry: t.registry, store: t.store, userId: "u1", email: "a@b.c", appUrl: "https://app" }), (e) => e.code === "authorization_required" && /autorização/.test(e.message));
+  assert.equal(t.fake.calls.createCardSetup ?? 0, 0);
+  t.setCard({ customer: "cus_A", method: "pm_A", auto_enabled: false });
+  await assert.rejects(() => cardSetAuto({ registry: t.registry, store: t.store, userId: "u1", enabled: true }), (e) => e.code === "authorization_required");
+  assert.deepEqual(await cardSetAuto({ registry: t.registry, store: t.store, userId: "u1", enabled: false }), { auto_enabled: false });
+  t.setAuthorized(true);
+  await cardSetup({ registry: t.registry, store: t.store, userId: "u1", email: "a@b.c", appUrl: "https://app" });
+  assert.deepEqual(await cardSetAuto({ registry: t.registry, store: t.store, userId: "u1", enabled: true }), { auto_enabled: true });
 });

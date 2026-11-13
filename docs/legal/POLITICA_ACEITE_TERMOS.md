@@ -69,9 +69,12 @@ O desenho físico deve reutilizar estruturas existentes após auditoria. Não cr
 
 ## 5. Atualização dos Termos
 
-A regra padrão é não solicitar novo aceite após o primeiro registro.
+Decisão do proprietário, validada pelo advogado em 2026-11-13: uma nova versão dos textos **não trava a tela de ninguém** e não pede novo aceite no login.
 
-Uma versão posterior não deve automaticamente reabrir a tela. Alteração material deve ser analisada juridicamente. Somente quando a legislação, contrato ou parecer jurídico exigir novo consentimento/aceite, e após aprovação expressa do proprietário, poderá ser criada uma nova exigência. Essa exceção deve ser documentada e limitada ao necessário; nunca usar mudança editorial para forçar aceite recorrente.
+- Quem já aceitou continua entrando. O texto novo é publicado e todos (casas e clientes) recebem uma notificação no aplicativo, com push, com link para ler o que mudou. A notificação registra quando foi lida (`notifications.read_at`). Continuar usando vale como ciência.
+- O **aceite explícito** (caixa desmarcada, com registro do texto exato, versão, data e IP) acontece onde há dinheiro: na autorização da cobrança automática da casa (`house_auto_authorizations` e `legal_consents`, tipo `cobranca_automatica`) e em cada compra do cliente (checkbox ligado à versão vigente).
+- A versão vigente (`LEGAL_VERSION`) muda a cada alteração de texto e é a que fica gravada nesses aceites. A exigência mínima de cada documento na tela de aceite do primeiro acesso (`DOC_MIN_VERSION`) só sobe com orientação jurídica e aprovação expressa do proprietário. Mudança editorial nunca força aceite recorrente.
+- O aviso geral é enviado pelo servidor (`platform_announce`), nunca pelo usuário.
 
 ## 6. Falhas e segurança
 

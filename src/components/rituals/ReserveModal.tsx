@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { Button, Input, Label, Modal } from "@/components/base";
 import ConsentBox from "@/components/legal/ConsentBox";
-import { fetchConsentRows, paymentsEnabledFor, recordConsents } from "@/lib/consents";
+import { fetchConsentRows, paymentsEnabledFor, recordConsents, type CheckoutDocKey } from "@/lib/consents";
 import { LEGAL_VERSION, consentStatus, type ConsentDocKey } from "@/lib/legalCore";
 import { useApp } from "@/contexts/AppContext";
 import { Link } from "react-router-dom";
@@ -64,7 +64,8 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
     if (!v.ok) return setErrors(v.errors);
     if ((!sensitiveDone && !okSensitive) || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
     setSaving(true);
-    const toRecord: ConsentDocKey[] = [...(payOn && !termsDone ? (["termos_cliente"] as ConsentDocKey[]) : []), ...(sensitiveDone ? [] : (["dados_sensiveis"] as ConsentDocKey[]))];
+    // Cada compra deixa o seu registro (versão, data, IP e o ritual); se não gravar, a reserva não segue.
+    const toRecord: (ConsentDocKey | CheckoutDocKey)[] = [...(payOn && !termsDone ? (["termos_cliente"] as ConsentDocKey[]) : []), ...(sensitiveDone ? [] : (["dados_sensiveis"] as ConsentDocKey[])), ...(payOn && ritual.priceCents > 0 ? (["checkout_ritual"] as CheckoutDocKey[]) : [])];
     const consentError = toRecord.length ? await recordConsents(toRecord, ritual.id) : null;
     if (consentError) {
       setSaving(false);
@@ -113,6 +114,12 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
         {payOn && <PlatformBenefits />}
         {payOn && !termsDone && <ConsentBox doc="termos_cliente" checked={okCheckout} onChange={setOkCheckout} />}
         {!sensitiveDone && <ConsentBox doc="dados_sensiveis" checked={okSensitive} onChange={setOkSensitive} />}
+        {payOn && ritual.priceCents > 0 && (
+          <p className="text-xs text-muted-foreground text-right">
+            Ao finalizar o pagamento, você concorda com os{" "}
+            <Link to="/sobre/termos-do-cliente" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</Link>.
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={saving || !payReady}>{saving ? "Reservando…" : "Confirmar reserva"}</Button>

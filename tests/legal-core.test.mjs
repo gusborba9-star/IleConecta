@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs } from "../src/lib/legalCore.js";
+import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, LEGAL_VERSION_HISTORY, DOC_MIN_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs } from "../src/lib/legalCore.js";
 
 test("todo documento de aceite tem texto e links", () => {
   for (const [key, doc] of Object.entries(CONSENT_DOCS)) {
@@ -78,4 +78,18 @@ test("aceite único: quem retirou dados sensíveis não é cobrado de novo na en
 
 test("aceite único: registros estranhos não derrubam a conta", () => {
   assert.deepEqual(gateDocs("personal", [null, undefined, {}, { doc_key: 5 }], LEGAL_VERSION).required, ["termos_cliente"]);
+});
+
+test("nova versão dos textos não trava ninguém: quem já aceitou continua entrando; quem nunca aceitou ainda vê a tela", () => {
+  assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
+  for (const d of ["termos_cliente", "termos_casa"]) assert.ok(LEGAL_VERSION_HISTORY.includes(DOC_MIN_VERSION[d]));
+  for (const v of LEGAL_VERSION_HISTORY) {
+    assert.deepEqual(gateDocs("personal", [row("termos_cliente", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `cliente ${v}`);
+    assert.deepEqual(gateDocs("commercial", [row("termos_casa", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `casa ${v}`);
+  }
+  assert.deepEqual(gateDocs("commercial", [], LEGAL_VERSION).required, ["termos_casa"]);
+  assert.deepEqual(gateDocs("personal", [], LEGAL_VERSION).required, ["termos_cliente"]);
+  // versão desconhecida (nunca esteve na lista) continua pedindo
+  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_casa"]);
+  assert.equal(consentStatus([row("termos_casa", "2026-10-rascunho-2", "2026-11-01T10:00:00Z")], "termos_casa", LEGAL_VERSION).status, "ok");
 });

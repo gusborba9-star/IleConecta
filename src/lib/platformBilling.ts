@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { LEGAL_VERSION } from "@/lib/legalCore";
 import { readStatus, type BillingMethod, type BillingStatus } from "@/lib/platformBillingCore";
 
 export interface InvoiceRow { id: string; kind: string; description: string | null; amountCents: number; dueDate: string; status: string; paidAt: string | null }
@@ -97,6 +98,13 @@ export async function startCardSetup(): Promise<string | null> {
 export async function finishCardSetup(session: string): Promise<string | null> {
   const r = await call({ action: "card_sync", session });
   return r.error ?? null;
+}
+
+/** A casa marcou a autorização: o banco grava o aceite e o texto exato que ela viu. Sem isso, o servidor não abre o cadastro do cartão nem liga a cobrança. */
+export async function authorizeAutoCharge(a: { planKey: string | null; amountCents: number | null; period: "mensal"; text: string }): Promise<string | null> {
+  if (!supabase) return "Sem conexão com o servidor.";
+  const { error } = await supabase.rpc("platform_card_authorize", { p_version: LEGAL_VERSION, p_plan: a.planKey, p_amount: a.amountCents, p_period: a.period, p_text: a.text });
+  return error ? error.message : null;
 }
 
 export async function setCardAuto(enabled: boolean): Promise<string | null> {

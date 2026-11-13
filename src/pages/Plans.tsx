@@ -13,6 +13,7 @@ import BillingAlertCard from "@/components/house/BillingAlertCard";
 import InvoicesCard from "@/components/house/InvoicesCard";
 import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
 import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
+import OrdersCard from "@/components/house/OrdersCard";
 import { finishCardSetup, syncCharge } from "@/lib/platformBilling";
 import { toast } from "sonner";
 
@@ -152,8 +153,9 @@ export default function Plans() {
         })}
       </div>
       {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
+      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine ? config.pricing.plans[mine].name : null} monthly={mine ? config.pricing.plans[mine].monthly : null} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <OrdersCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
       <ComparisonCard
         rows={[
           { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },

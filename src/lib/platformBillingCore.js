@@ -147,3 +147,22 @@ export function cardView(status, todayIso = new Date().toISOString().slice(0, 10
     lastText: last && !problem ? `Última cobrança automática: ${OUTCOME_TEXT[last.outcome]}.` : null,
   };
 }
+
+const BRL = (cents) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/**
+ * Texto da caixa de autorização de cobrança automática (nunca pré-marcada). É este texto exato que fica gravado como prova.
+ * planName/amountCents vazios = a casa ainda não tem plano pago: a autorização vale para o plano e as vagas extras que ela contratar.
+ */
+export function authorizationText({ planName, amountCents } = {}) {
+  const ok = typeof planName === "string" && planName.trim() !== "" && Number.isInteger(amountCents) && amountCents > 0;
+  const what = ok
+    ? `no valor de ${BRL(amountCents)} a cada mês no cartão de crédito informado, referente ao plano ${planName.trim()} (e às vagas extras de equipe que eu contratar nele)`
+    : "no valor da mensalidade do plano e das vagas extras de equipe que eu contratar, a cada mês, no cartão de crédito informado";
+  return {
+    period: "mensal",
+    planKey: ok ? planName.trim().toLowerCase().slice(0, 40) : null,
+    amountCents: ok ? amountCents : null,
+    text: `Li e concordo com os Termos de Uso do Ilê Conecta e autorizo a cobrança automática recorrente ${what}, até que eu solicite o cancelamento. Posso desligar a cobrança automática ou remover o cartão quando quiser.`,
+  };
+}
