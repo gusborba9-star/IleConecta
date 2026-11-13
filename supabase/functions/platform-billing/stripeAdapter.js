@@ -107,8 +107,13 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
 
     /** Cobra o cartão salvo sem a pessoa presente. null = não sabemos o resultado (repete depois com a mesma chave). */
     async chargeSaved({ charge, customer, method, attempt, idempotencyKey }) {
-      const r = interpretAutoCharge(await callRaw("/v1/payment_intents", { form: buildAutoChargeParams({ charge, customer, method, attempt }), idem: idempotencyKey }));
-      if (!r) return null;
+      const raw = await callRaw("/v1/payment_intents", { form: buildAutoChargeParams({ charge, customer, method, attempt }), idem: idempotencyKey });
+      const r = interpretAutoCharge(raw);
+      if (!r) {
+        // Resposta que não sabemos interpretar: registra só o tipo/código/campo (nunca chaves nem dados do cartão) para diagnóstico.
+        log.error("auto_charge_unknown", JSON.stringify({ status: raw.status, type: raw.data?.error?.type, code: raw.data?.error?.code, param: raw.data?.error?.param, message: String(raw.data?.error?.message ?? "").slice(0, 300) }));
+        return null;
+      }
       if (r.cancel) await call(`/v1/payment_intents/${encodeURIComponent(r.cancel)}/cancel`, { method: "POST", form: {} }).catch((e) => log.error("auto_cancel_failed", String(e?.message ?? e)));
       return { outcome: r.outcome, ref: r.ref, code: r.code };
     },
