@@ -15,7 +15,7 @@ permissions:
 jobs:
   audit:
     name: npm install, build, lint, TypeScript and dependency audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout exact PR head SHA
