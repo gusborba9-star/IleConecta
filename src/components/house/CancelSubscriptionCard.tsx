@@ -38,7 +38,7 @@ export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () =
     };
     return (
       <Card role="status" className="p-4 border-gold/50 bg-gold/10">
-        <p className="text-sm"><strong>Cancelamento agendado para {brDate(st.cancelAt)}.</strong> Até lá você usa tudo normalmente. Nesse dia a casa fica inativa e não há nova cobrança.</p>
+        <p className="text-sm"><strong>Cancelamento agendado para {brDate(st.cancelAt)}.</strong> Até lá você usa tudo normalmente. Nesse dia a casa volta ao plano Grátis e não há nova cobrança.</p>
         <Button size="sm" variant="outline" className="mt-2" disabled={busy} onClick={() => void undo()}>Desfazer cancelamento</Button>
       </Card>
     );

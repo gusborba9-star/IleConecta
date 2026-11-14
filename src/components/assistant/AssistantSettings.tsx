@@ -10,18 +10,10 @@ import InternalCatalog from "@/components/assistant/InternalCatalog";
 import { DAYS, PROFILE_MAX, TONE_LABEL, assistantAvatarUrl, fetchMyAssistant, removeAssistantPhotoFile, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
 import AssistantAvatar from "@/components/assistant/AssistantAvatar";
 import { uploadProfileImage, validateImageFile } from "@/lib/imageUpload";
+import { fetchCredits } from "@/lib/aiCredits";
+import { FREE_PLAN_NAME } from "@/lib/platformConfigCore";
+import { STOP_SELLING_LOSSES } from "@/lib/platformAdvantages";
 
-/** O que a casa perde ao desligar a venda pela assistente (só o que a plataforma faz de verdade). */
-const STOP_SELLING_LOSSES = [
-  "Vendas ativas 24 horas por dia, 7 dias por semana: a assistente fecha o pedido a qualquer hora, sem você precisar responder.",
-  "Risco de perder a venda por estar offline: o cliente que não recebe resposta na hora costuma desistir ou procurar outra casa.",
-  "Fechamento em tempo real: o cliente não fica esperando um retorno no meio da conversa.",
-  "Comprovante e registro de cada venda na plataforma, com o pedido e o andamento do trabalho.",
-  "Histórico financeiro e histórico de atendimentos organizados na plataforma, para você e para o cliente.",
-  "Processo de reembolso feito pela plataforma: o cliente que cancela antes de a casa começar é reembolsado automaticamente, e isso o deixa mais seguro para fechar.",
-  "Avaliações na sua página: só compras feitas pela plataforma podem ser avaliadas pelos clientes.",
-  "Menos conversa para combinar valor e forma de pagamento, um a um.",
-];
 
 /** Configuração da assistente pela casa. Só aparece com conta real de casa. */
 export default function AssistantSettings() {
@@ -34,6 +26,7 @@ export default function AssistantSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [askStopSelling, setAskStopSelling] = useState(false);
+  const [balance, setBalance] = useState(0); // créditos comprados (no Grátis são o único jeito de a assistente responder)
   const [photoBusy, setPhotoBusy] = useState(false);
   const savedPhoto = useRef<string | null>(null); // foto que está salva no banco
   const uploadedPhotos = useRef<string[]>([]); // arquivos enviados nesta tela (os não usados são apagados ao salvar)
@@ -50,6 +43,7 @@ export default function AssistantSettings() {
       savedPhoto.current = c?.avatarPath ?? null;
       setLoading(false);
     });
+    void fetchCredits().then((cr) => alive && setBalance(cr?.balance ?? 0));
     return () => {
       alive = false;
     };
@@ -67,7 +61,8 @@ export default function AssistantSettings() {
   const setFaq = (i: number, field: "q" | "a", value: string) =>
     patchProfile({ faq: cfg.profile.faq.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)) });
   const planCaps = config.plan_matrix.caps[cfg.plan];
-  const available = planCaps.assistant_replies > 0;
+  const free = cfg.plan === "gratis";
+  const available = planCaps.assistant_replies > 0 || balance > 0;
   const fullPlan = planCaps.assistant_discount;
 
   const save = async () => {
@@ -95,17 +90,17 @@ export default function AssistantSettings() {
       <div className="flex items-center gap-2">
         <Bot className="h-5 w-5 text-primary" />
         <h2 className="font-display font-bold text-lg flex-1">Assistente virtual</h2>
-        <Badge tone={available ? "primary" : "muted"}>Plano {config.pricing.plans[cfg.plan].name}</Badge>
+        <Badge tone={available ? "primary" : "muted"}>Plano {free ? FREE_PLAN_NAME : config.pricing.plans[cfg.plan].name}</Badge>
       </div>
 
       {!available && (
         <p className="text-sm text-muted-foreground">
-          O plano {config.pricing.plans.base.name} não inclui a assistente. Você já pode deixar tudo configurado; ela passa a responder quando o plano for atualizado.
+          No plano {FREE_PLAN_NAME} a assistente só responde com um pacote de respostas comprado em Planos (sem assinar nada), ou quando você assinar o plano {config.pricing.plans.base.name} ou outro acima. Você já pode deixar tudo configurado.
         </p>
       )}
-      {cfg.plan === "intermediario" && (
+      {(cfg.plan === "base" || cfg.plan === "intermediario") && (
         <p className="text-sm text-muted-foreground">
-          No plano {config.pricing.plans.intermediario.name} a assistente atende, orienta e vende pela plataforma (até {planCaps.assistant_replies} respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
+          No plano {config.pricing.plans[cfg.plan].name} a assistente atende, orienta e vende pela plataforma (até {planCaps.assistant_replies.toLocaleString("pt-BR")} respostas por mês). Descontos são do plano {config.pricing.plans.maximo.name}.
         </p>
       )}
 
@@ -252,14 +247,16 @@ export default function AssistantSettings() {
           <input
             type="checkbox"
             className="mt-1"
-            disabled={!available}
-            checked={cfg.canSell}
+            disabled={!available || free}
+            checked={free ? true : cfg.canSell}
             onChange={(e) => (e.target.checked ? patch({ canSell: true }) : setAskStopSelling(true))}
           />
           <span>
             Vender serviços e trabalhos pela plataforma
             <span className="block text-xs text-muted-foreground">
-              A assistente leva o cliente até o pagamento, gerado pelo sistema. Rituais coletivos ela sempre vende, mesmo com esta opção desligada.
+              {free
+                ? `No plano ${FREE_PLAN_NAME} os serviços e rituais são sempre vendidos pela plataforma: a assistente leva o cliente até o pagamento. Quem assina um plano pago pode escolher combinar direto com o cliente.`
+                : "A assistente leva o cliente até o pagamento, gerado pelo sistema. Rituais coletivos ela sempre vende, mesmo com esta opção desligada."}
             </span>
           </span>
         </label>

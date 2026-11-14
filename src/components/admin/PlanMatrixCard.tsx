@@ -6,7 +6,7 @@ import { useConfirm } from "@/components/base/Confirm";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { supabase } from "@/lib/supabase";
 import { CAP_FLAGS, CAP_NUMBERS, type CapFlagKey, type CapNumberKey, type PlanMatrix } from "@/lib/planMatrixCore";
-import { PLAN_IDS, type PlanId } from "@/lib/platformConfigCore";
+import { FREE_PLAN_NAME, HOUSE_PLAN_IDS as PLAN_IDS, type HousePlanId as PlanId } from "@/lib/platformConfigCore";
 
 const FEATURE_LABEL: Record<string, string> = {
   ritual_video: "Vídeo de 30 s", assistant: "Assistente", boost: "Impulsionamento", highlight: "Destaque",
@@ -54,13 +54,13 @@ export default function PlanMatrixCard() {
         <h2 className="font-display font-bold text-lg">Planos: ferramentas, limites e textos</h2>
         <p className="text-sm text-muted-foreground">
           É daqui que o banco, a assistente e a página de planos leem o que cada plano inclui. Nos textos, escreva {"{assistant_replies}"}, {"{campaign_links}"},{" "}
-          {"{campaign_card_styles}"}, {"{quick_replies}"} ou {"{included_seats}"} para o número do plano aparecer sozinho. Um item ligado a uma ferramenta só aparece na
+          {"{campaign_card_styles}"}, {"{quick_replies}"}, {"{included_seats}"}, {"{limit_services}"}, {"{limit_rituals}"} ou {"{limit_posts_month}"} para o número do plano aparecer sozinho. Um item ligado a uma ferramenta só aparece na
           página de planos quando o interruptor dela está ligado (e entra com a marca "Novo"). Preços ficam em outro cartão.
         </p>
       </div>
       {PLAN_IDS.map((plan) => (
         <details key={plan} className="rounded-xl border p-3" open={plan === "maximo"}>
-          <summary className="cursor-pointer font-semibold">{config.pricing.plans[plan].name}</summary>
+          <summary className="cursor-pointer font-semibold">{plan === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[plan].name}</summary>
           <div className="mt-3 space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               {(Object.keys(CAP_NUMBERS) as CapNumberKey[]).map((k) => (

@@ -2,10 +2,12 @@
 // Princípio: preço, vaga, desconto e pagamento são decididos aqui/no servidor; a IA só escreve o texto.
 
 export const PLAN_LIMITS = {
-  base: { monthlyReplies: 0, canSell: false, canDiscount: false },
-  // Profissional e Premium vendem pela plataforma (a casa pode desligar); desconto só no Premium.
-  intermediario: { monthlyReplies: 300, canSell: true, canDiscount: false },
-  maximo: { monthlyReplies: 3000, canSell: true, canDiscount: true },
+  // Grátis: sem franquia mensal; só responde se a casa comprou pacote de mensagens. Vende sempre pela plataforma.
+  gratis: { monthlyReplies: 0, canSell: true, canDiscount: false },
+  // Essencial, Profissional e Premium vendem pela plataforma (a casa pode desligar); desconto só no Premium.
+  base: { monthlyReplies: 100, canSell: true, canDiscount: false },
+  intermediario: { monthlyReplies: 500, canSell: true, canDiscount: false },
+  maximo: { monthlyReplies: 1700, canSell: true, canDiscount: true },
 };
 
 export const USER_RATE = { windowMinutes: 10, maxReplies: 20 };
@@ -33,7 +35,7 @@ export function modelParams(model) {
  * se ela não vier (ou vier fora do formato), valem as constantes acima, que são os valores iniciais da matriz.
  */
 export function planLimits(plan, matrix = null) {
-  const fallback = PLAN_LIMITS[plan] ?? PLAN_LIMITS.base;
+  const fallback = PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis;
   const caps = matrix?.caps?.[plan];
   if (!caps || typeof caps !== "object") return fallback;
   const { assistant_replies: r, assistant_sells: sells, assistant_discount: disc } = caps;
@@ -229,7 +231,7 @@ export function cleanReply(raw) {
 /** creditBalance: respostas compradas ainda válidas. A franquia do mês vem primeiro; passada ela, a assistente segue enquanto houver crédito. */
 export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null, creditBalance = 0 }) {
   const limits = planLimits(plan, matrix);
-  if (limits.monthlyReplies === 0) return "plano_sem_assistente";
+  if (limits.monthlyReplies === 0 && !(Number(creditBalance) > 0)) return "plano_sem_assistente";
   if (!assistant || !assistant.enabled) return "assistente_desativada";
   if (usedThisMonth >= limits.monthlyReplies && !(Number(creditBalance) > 0)) return "cota_mensal";
   if (usedByUserInWindow >= USER_RATE.maxReplies) return "muitas_mensagens";
@@ -245,7 +247,8 @@ export function allowedDiscountPercent(plan, assistant, matrix = null) {
 }
 
 export function canSell(plan, assistant, matrix = null) {
-  return planLimits(plan, matrix).canSell && Boolean(assistant?.can_sell);
+  // No Grátis a venda é sempre pela plataforma (não há como desligar).
+  return planLimits(plan, matrix).canSell && (plan === "gratis" || Boolean(assistant?.can_sell));
 }
 
 export function formatCents(cents) {

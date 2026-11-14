@@ -34,7 +34,8 @@ export function franchiseView(c) {
 /** Texto curto de situação: o que acontece agora com a assistente. */
 export function statusText(c) {
   const f = franchiseView(c);
-  if (!f) return "O plano da casa não inclui a assistente.";
+  // Plano Grátis: sem franquia mensal; a assistente só responde com pacote comprado.
+  if (!f) return c && c.balance > 0 ? `A assistente responde com os seus créditos (${c.balance} respostas).` : "A assistente está desligada. Compre um pacote de respostas para ativá-la, ou assine um plano que a inclui.";
   if (!f.exhausted) return `Restam ${f.left} respostas da franquia deste mês.`;
   if (c.balance > 0) return `A franquia do mês acabou. A assistente segue com os seus créditos (${c.balance} respostas).`;
   return "A franquia do mês acabou. A assistente pausa até o próximo mês, ou até você comprar créditos.";

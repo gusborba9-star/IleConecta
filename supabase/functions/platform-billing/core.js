@@ -228,10 +228,13 @@ export async function reactivate({ registry, store, userId, plan = null, method 
 // ---------- contratação de plano dentro do app (primeira assinatura e upgrade) ----------
 // Só as recusas conhecidas do banco viram mensagem para a casa; qualquer outro erro segue como erro interno (não vaza detalhe).
 const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
-async function planChange({ registry, store, userId, plan, method, email, appUrl, log, issue }) {
+// Quem está no Grátis assina qualquer plano pago (Essencial = base); quem já assina só sobe para Profissional ou Premium.
+const SUBSCRIBE_PLANS = ["base", "intermediario", "maximo"];
+const UPGRADE_PLANS = ["intermediario", "maximo"];
+async function planChange({ registry, store, userId, plan, method, email, appUrl, log, issue, allowed }) {
   const houseId = await store.houseOfOwner(userId);
   if (!houseId) throw new ChargeStateError("Somente a casa contrata plano.", "forbidden");
-  if (plan !== "intermediario" && plan !== "maximo") throw new ChargeStateError("Escolha um plano com mensalidade.", "plan_change_denied");
+  if (!allowed.includes(plan)) throw new ChargeStateError("Escolha um plano com mensalidade.", "plan_change_denied");
   let chargeId;
   try {
     chargeId = await issue(houseId, plan);
@@ -243,11 +246,11 @@ async function planChange({ registry, store, userId, plan, method, email, appUrl
 }
 /** Casa sem assinatura ativa assina um plano: paga a mensalidade cheia; ao confirmar, o plano muda e o vencimento passa a ser o dia do pagamento. */
 export function subscribe({ store, ...rest }) {
-  return planChange({ store, ...rest, issue: (h, p) => store.subscribeIssue(h, p) });
+  return planChange({ store, ...rest, allowed: SUBSCRIBE_PLANS, issue: (h, p) => store.subscribeIssue(h, p) });
 }
 /** Casa assinante sobe de plano: paga só a diferença proporcional aos dias que faltam no ciclo; ao confirmar, o plano sobe na hora. */
 export function upgrade({ store, ...rest }) {
-  return planChange({ store, ...rest, issue: (h, p) => store.upgradeIssue(h, p) });
+  return planChange({ store, ...rest, allowed: UPGRADE_PLANS, issue: (h, p) => store.upgradeIssue(h, p) });
 }
 
 // ---------- cartão salvo da casa ----------

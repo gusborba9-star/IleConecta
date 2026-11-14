@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
-import { PLAN_IDS } from "@/lib/platformConfig";
+import { HOUSE_PLAN_IDS as PLAN_IDS, FREE_PLAN_NAME } from "@/lib/platformConfig";
 import { supabase } from "@/lib/supabase";
 
 type PlanId = (typeof PLAN_IDS)[number];
@@ -18,7 +18,7 @@ export default function HousePlansCard() {
   const [saving, setSaving] = useState<string | null>(null);
   const [seats, setSeats] = useState<Record<string, string>>({});
   const [seatNow, setSeatNow] = useState<Record<string, Seat>>({});
-  const planName = (id: PlanId) => config.pricing.plans[id]?.name ?? id;
+  const planName = (id: PlanId) => (id === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[id]?.name) ?? id;
 
   const load = useCallback(async () => {
     if (!supabase) return;

@@ -35,7 +35,7 @@ const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 const MESSAGES: Record<string, string> = {
-  plano_sem_assistente: "A assistente não está disponível no plano desta casa.",
+  plano_sem_assistente: "A assistente não está ativa nesta casa no momento. Você pode falar direto com a casa pelo chat.",
   assistente_desativada: "Esta casa ainda não ativou a assistente. Fale diretamente com a casa.",
   atendimento_humano: "A casa está atendendo esta conversa e responde por aqui.",
   cota_mensal: "A assistente desta casa atingiu o limite de atendimentos do mês. Fale diretamente com a casa.",

@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isAssistantPhotoPath } from "@/lib/assistantPhotoCore";
 
-export type Plan = "base" | "intermediario" | "maximo";
+export type Plan = "gratis" | "base" | "intermediario" | "maximo";
 
 export type Tone = "acolhedor" | "formal" | "descontraido";
 export interface FaqItem { q: string; a: string }
@@ -75,7 +75,7 @@ export async function fetchMyAssistant(ownerId: string): Promise<AssistantConfig
     .maybeSingle();
   return {
     houseId: house.id as string,
-    plan: (house.plan as Plan) ?? "base",
+    plan: (house.plan as Plan) ?? "gratis",
     enabled: a?.enabled ?? true,
     displayName: a?.display_name ?? "Assistente",
     instructions: a?.instructions ?? "",

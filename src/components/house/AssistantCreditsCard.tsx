@@ -21,8 +21,8 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
     };
   }, [isRemoteAuth, refreshKey]);
 
-  const f = franchiseView(c);
-  if (!c || !f) return null; // plano sem assistente: nada a mostrar aqui
+  if (!c) return null;
+  const f = franchiseView(c); // plano Grátis: sem franquia do mês; a assistente só responde com pacote
 
   const buy = async (k: PackKey) => {
     setBusy(k);
@@ -37,13 +37,19 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
     <Card className="p-5 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display font-bold text-lg flex-1">Respostas da assistente</h2>
-        <Badge tone={f.tone}>{f.exhausted ? "Franquia esgotada" : `${f.pct}% da franquia`}</Badge>
+        {f && <Badge tone={f.tone}>{f.exhausted ? "Franquia esgotada" : `${f.pct}% da franquia`}</Badge>}
       </div>
-      <Progress value={f.pct} tone={f.tone === "danger" ? "primary" : f.tone === "gold" ? "gold" : "forest"} />
+      {f && <Progress value={f.pct} tone={f.tone === "danger" ? "primary" : f.tone === "gold" ? "gold" : "forest"} />}
       <p className="text-sm">{statusText(c)}</p>
-      <p className="text-xs text-muted-foreground">
-        Franquia do mês: {f.used} de {f.limit} respostas (não acumula para o mês seguinte). Os créditos comprados só são usados depois que a franquia acaba, começando pelo pacote mais antigo.
-      </p>
+      {f ? (
+        <p className="text-xs text-muted-foreground">
+          Franquia do mês: {f.used} de {f.limit} respostas (não acumula para o mês seguinte). Os créditos comprados só são usados depois que a franquia acaba, começando pelo pacote mais antigo.
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No plano Grátis a assistente atende e vende pela plataforma usando só os pacotes de respostas que você compra, sem assinar nada. Cada resposta usa um crédito, começando pelo pacote mais antigo.
+        </p>
+      )}
       {c.packs.length > 0 && (
         <ul className="text-sm divide-y divide-border">
           {c.packs.map((p) => (

@@ -1,0 +1,47 @@
+-- PASSO 210: 0111_plano_gratis — parte 1 de 8
+-- Rode este arquivo inteiro, sozinho, no SQL Editor. Pode rodar de novo sem problema.
+-- 0111 — Plano Grátis (decisões do proprietário, 14/11/2026). Precisa da 0110 já aplicada (valor `gratis` do tipo house_plan).
+-- 1) Quatro planos: Grátis (gratis), Essencial (base, pago), Profissional (intermediario) e Premium (maximo). Toda casa nova nasce no Grátis.
+-- 2) Matriz com 4 planos e 3 limites novos (0 = sem limite): serviços ativos, rituais ativos e publicações por mês. Assistente: 100 / 500 / 1.700 respostas.
+-- 3) Cancelar a assinatura, concluir o reembolso dos 7 dias ou descer de plano na renovação devolve a casa ao Grátis (antes ela ficava inativa). Falta de pagamento continua bloqueando.
+-- 4) Contratar o Essencial; descer para Essencial ou Grátis na renovação.
+-- 5) Limites do Grátis valem no servidor, e o Grátis só publica serviço (ou ritual com preço) depois de conectar a conta de pagamento.
+-- 6) A assistente funciona no Grátis só com pacote de respostas; o pacote pode ser comprado por qualquer casa.
+-- Estado de produção antes desta migration: 3 casas; nenhuma com cancelamento ativo; nenhuma conta inativa.
+
+-- ============ 1) casa nova nasce no Grátis; casas sem assinatura que estavam em `base` passam para `gratis` ============
+alter table public.houses alter column plan set default 'gratis';
+
+create or replace function public.protect_house_privileged_columns() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.role() <> 'service_role' and coalesce(current_setting('app.admin_plan', true), '') <> 'on' then
+    if tg_op = 'INSERT' then
+      new.verified := false; new.plan := 'gratis'; new.plan_revert_to := null; new.plan_revert_at := null;
+    else
+      new.verified := old.verified; new.plan := old.plan;
+      new.plan_revert_to := old.plan_revert_to; new.plan_revert_at := old.plan_revert_at;
+    end if;
+  end if;
+  return new;
+end $$;
+
+do $$
+begin
+  perform set_config('app.admin_plan', 'on', true);
+  update public.houses h set plan = 'gratis', plan_revert_to = null, plan_revert_at = null
+  where h.plan = 'base' and not exists (select 1 from public.house_billing_plan b where b.house_id = h.id and b.active);
+  update public.houses set plan_revert_to = 'gratis' where plan_revert_to = 'base';
+  perform set_config('app.admin_plan', 'off', true);
+end $$;
+
+-- ============ 2) ordem dos planos e matriz ============
+create or replace function public.platform_plan_rank(p text) returns int
+language sql immutable set search_path = public as $$
+select case p when 'gratis' then 0 when 'base' then 1 when 'intermediario' then 2 when 'maximo' then 3 end;
+$$;
+
+create or replace function public.plan_matrix_default() returns jsonb
+language sql immutable set search_path = public as $$
+  select '{"caps":{"gratis":{"assistant_replies":0,"campaign_links":0,"campaign_card_styles":0,"quick_replies":0,"included_seats":0,"limit_services":3,"limit_rituals":2,"limit_posts_month":8,"assistant_sells":true,"assistant_discount":false,"chat_media":false,"members_area":false,"calendar_full":false,"campaign_daily_count":false,"campaign_insights_full":false,"ritual_video":false},"base":{"assistant_replies":100,"campaign_links":0,"campaign_card_styles":0,"quick_replies":3,"included_seats":0,"limit_services":0,"limit_rituals":0,"limit_posts_month":0,"assistant_sells":true,"assistant_discount":false,"chat_media":false,"members_area":false,"calendar_full":false,"campaign_daily_count":false,"campaign_insights_full":false,"ritual_video":false},"intermediario":{"assistant_replies":500,"campaign_links":2,"campaign_card_styles":1,"quick_replies":10,"included_seats":0,"limit_services":0,"limit_rituals":0,"limit_posts_month":0,"assistant_sells":true,"assistant_discount":false,"chat_media":false,"members_area":false,"calendar_full":false,"campaign_daily_count":false,"campaign_insights_full":false,"ritual_video":false},"maximo":{"assistant_replies":1700,"campaign_links":30,"campaign_card_styles":3,"quick_replies":50,"included_seats":1,"limit_services":0,"limit_rituals":0,"limit_posts_month":0,"assistant_sells":true,"assistant_discount":true,"chat_media":true,"members_area":true,"calendar_full":true,"campaign_daily_count":true,"campaign_insights_full":true,"ritual_video":true}},"copy":{"gratis":{"tagline":"Comece a receber pessoas, sem mensalidade.","benefits":[{"text":"Página da casa, feed e avaliações dos clientes","feature":null},{"text":"Até {limit_services} serviços e {limit_rituals} rituais ativos, sempre com o pagamento da plataforma","feature":null},{"text":"Até {limit_posts_month} publicações por mês","feature":null},{"text":"Chat em texto","feature":null},{"text":"Assistente com pacote avulso de respostas, sem assinar nada","feature":null},{"text":"Impulsionamento e destaque quando quiser, pagando por dia","feature":null}]},"base":{"tagline":"Tudo para a sua casa receber pessoas.","benefits":[{"text":"Tudo do Grátis, sem limite de serviços, rituais e publicações","feature":null},{"text":"A assistente atende e vende (até {assistant_replies} respostas por mês)","feature":null},{"text":"Chat com texto e PDF","feature":null},{"text":"Até {quick_replies} respostas rápidas para o chat","feature":null},{"text":"Você escolhe vender pela plataforma ou combinar direto com o cliente","feature":null},{"text":"Datas públicas na agenda da casa","feature":null}]},"intermediario":{"tagline":"A casa atendendo a qualquer hora.","benefits":[{"text":"Tudo do Essencial","feature":null},{"text":"A assistente da casa atende 24h (até {assistant_replies} respostas por mês) e informa as datas da agenda","feature":null},{"text":"Ela conhece a sua casa: serviços, rituais, horários e perguntas frequentes","feature":null},{"text":"Passa para você os assuntos delicados, com aviso no sino","feature":null},{"text":"Catálogo interno e relatório do atendimento","feature":null},{"text":"Até {campaign_links} links de divulgação, com QR code e modo discreto","feature":null},{"text":"Até {quick_replies} respostas rápidas para o chat","feature":null}]},"maximo":{"tagline":"A casa completa, com a comunidade por perto.","benefits":[{"text":"Tudo do Profissional","feature":null},{"text":"A assistente com até {assistant_replies} respostas por mês e descontos definidos pela casa","feature":null},{"text":"Área de membros e mensalidades, sem planilha","feature":null},{"text":"Calendário completo: cada data para o público certo e repetição anual","feature":null},{"text":"Fotos e vídeos curtos no chat com os clientes","feature":null},{"text":"Até {campaign_links} links de divulgação, com contagem dia a dia","feature":null},{"text":"Até {quick_replies} respostas rápidas para o chat","feature":null},{"text":"{included_seats} acesso de equipe incluso, para quem ajuda a cuidar da casa","feature":null},{"text":"Vídeo de 30 segundos nos registros dos rituais","feature":"ritual_video"}]}}}'::jsonb;
+$$;

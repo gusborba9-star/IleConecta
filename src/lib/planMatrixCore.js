@@ -2,7 +2,7 @@
 // A fonte da verdade é platform_settings.plan_matrix (editável no painel admin). Aqui ficam os valores iniciais
 // (idênticos aos que já valiam antes da matriz), a validação e o texto com números calculados. Puro e testável.
 // Os mesmos valores iniciais existem em plan_matrix_default() no banco; tests/plan-matrix.test.mjs garante que não divergem.
-const PLAN_IDS = ["base", "intermediario", "maximo"];
+const PLAN_IDS = ["gratis", "base", "intermediario", "maximo"];
 const COPY_FEATURES = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
 
 /** Limites numéricos por plano: [mínimo, máximo, rótulo no painel]. */
@@ -12,6 +12,10 @@ export const CAP_NUMBERS = {
   campaign_card_styles: [0, 10, "Estilos de cartão para postar"],
   quick_replies: [0, 200, "Respostas rápidas"],
   included_seats: [0, 20, "Acessos de equipe inclusos"],
+  // 0 = sem limite
+  limit_services: [0, 1000, "Serviços ativos (0 = sem limite)"],
+  limit_rituals: [0, 1000, "Rituais ativos (0 = sem limite)"],
+  limit_posts_month: [0, 1000, "Publicações por mês (0 = sem limite)"],
 };
 /** Ferramentas liga/desliga por plano: rótulo no painel. */
 export const CAP_FLAGS = {
@@ -29,20 +33,33 @@ export const CAP_FLAG_KEYS = Object.keys(CAP_FLAGS);
 
 export const DEFAULT_PLAN_MATRIX = {
   caps: {
-    base: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, assistant_sells: false, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
-    intermediario: { assistant_replies: 300, campaign_links: 2, campaign_card_styles: 1, quick_replies: 3, included_seats: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
-    maximo: { assistant_replies: 3000, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true },
+    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
+    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
+    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
+    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true },
   },
-  // {assistant_replies}, {campaign_links}, {quick_replies} e {included_seats} viram o número do plano na hora de mostrar.
+  // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month} viram o número do plano na hora de mostrar.
   // "feature" esconde o item até o interruptor do painel ser ligado (aparece sozinho, como novidade).
   copy: {
+    gratis: {
+      tagline: "Comece a receber pessoas, sem mensalidade.",
+      benefits: [
+        { text: "Página da casa, feed e avaliações dos clientes", feature: null },
+        { text: "Até {limit_services} serviços e {limit_rituals} rituais ativos, sempre com o pagamento da plataforma", feature: null },
+        { text: "Até {limit_posts_month} publicações por mês", feature: null },
+        { text: "Chat em texto", feature: null },
+        { text: "Assistente com pacote avulso de respostas, sem assinar nada", feature: null },
+        { text: "Impulsionamento e destaque quando quiser, pagando por dia", feature: null },
+      ],
+    },
     base: {
       tagline: "Tudo para a sua casa receber pessoas.",
       benefits: [
-        { text: "Página completa da casa, com foto de perfil, capa e informações", feature: null },
-        { text: "Rituais, jogos e serviços com pagamento pela plataforma", feature: null },
-        { text: "Publicações no feed e avaliações dos clientes", feature: null },
+        { text: "Tudo do Grátis, sem limite de serviços, rituais e publicações", feature: null },
+        { text: "A assistente atende e vende (até {assistant_replies} respostas por mês)", feature: null },
         { text: "Chat com texto e PDF", feature: null },
+        { text: "Até {quick_replies} respostas rápidas para o chat", feature: null },
+        { text: "Você escolhe vender pela plataforma ou combinar direto com o cliente", feature: null },
         { text: "Datas públicas na agenda da casa", feature: null },
       ],
     },
@@ -106,11 +123,11 @@ export function sanitizePlanMatrix(raw) {
   return { caps, copy };
 }
 
-/** Valor de uma capacidade do plano. Plano ou chave desconhecidos valem como o plano Essencial (o mais restrito). */
+/** Valor de uma capacidade do plano. Plano ou chave desconhecidos valem como o plano Grátis (o mais restrito). */
 export function planCap(matrix, plan, key) {
   const m = matrix?.caps ?? DEFAULT_PLAN_MATRIX.caps;
-  const row = m[PLAN_IDS.includes(plan) ? plan : "base"] ?? DEFAULT_PLAN_MATRIX.caps.base;
-  return Object.hasOwn(row, key) ? row[key] : DEFAULT_PLAN_MATRIX.caps.base[key];
+  const row = m[PLAN_IDS.includes(plan) ? plan : "gratis"] ?? DEFAULT_PLAN_MATRIX.caps.gratis;
+  return Object.hasOwn(row, key) ? row[key] : DEFAULT_PLAN_MATRIX.caps.gratis[key];
 }
 
 /** Troca {chave} pelo número do plano. Chave desconhecida some (nunca aparece "{...}" na tela). */
@@ -120,8 +137,8 @@ export function renderBenefit(text, caps) {
 
 /** Itens de um plano prontos para a tela. Item ligado a uma ferramenta só aparece com o interruptor ligado ("isOn" decide). */
 export function benefitsFor(matrix, plan, isOn) {
-  const copy = matrix?.copy?.[plan] ?? DEFAULT_PLAN_MATRIX.copy[plan] ?? DEFAULT_PLAN_MATRIX.copy.base;
-  const caps = matrix?.caps?.[plan] ?? DEFAULT_PLAN_MATRIX.caps.base;
+  const copy = matrix?.copy?.[plan] ?? DEFAULT_PLAN_MATRIX.copy[plan] ?? DEFAULT_PLAN_MATRIX.copy.gratis;
+  const caps = matrix?.caps?.[plan] ?? DEFAULT_PLAN_MATRIX.caps.gratis;
   // Item que cita um número zerado no plano ("Até 0 links") não aparece: o plano simplesmente não tem aquilo.
   const zeroed = (text) => [...String(text).matchAll(/\{([a-z_]+)\}/g)].some(([, k]) => Object.hasOwn(CAP_NUMBERS, k) && Number(caps[k]) === 0);
   return copy.benefits

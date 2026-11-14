@@ -403,14 +403,20 @@ Toda promoção é identificada. Período contratado é respeitado; início e ex
 
 | Plano | Mensalidade |
 |---|---:|
+| Grátis | R$ 0 |
 | Essencial | R$ 89,90 |
 | Profissional | R$ 179,90 |
 | Premium | R$ 299,90 |
 
-Direcionamento:
-- **Essencial:** presença e operação básica; atendimento manual; sem assistente virtual.
-- **Profissional:** recursos ampliados; assistente limitada; vendas e automações nos limites contratados.
-- **Premium:** conjunto amplo; assistente completa; capacidades ampliadas de operação, gestão e divulgação.
+Direcionamento (matriz aprovada pelo proprietário em 14/11/2026; os números vivem em `platform_settings.plan_matrix` e são editáveis no painel):
+- **Grátis (plano de entrada, `houses.plan = 'gratis'`):** todo cadastro de casa começa aqui. Limites: 3 serviços ativos, 2 rituais ativos, 8 publicações por mês. Sem franquia de assistente (só responde com pacote de mensagens comprado), 0 respostas rápidas, 0 links de campanha, 0 vagas de equipe, chat só com texto. **Vende somente pela plataforma** (não pode desligar) e precisa conectar a conta de recebimento antes de publicar serviço ou ritual com valor (trava no banco). Pagamento ou combinação por fora é avaliado pela administração e pode levar à suspensão ou exclusão da conta; quem quer outros meios assina um plano pago. Pode comprar pacotes de mensagens (R$ 19,90 / 49,90 / 89,90), ativar a assistente e comprar destaque e impulsionamento (venda dessas duas ferramentas é a próxima etapa).
+- **Essencial (`base`):** assistente com 100 respostas por mês e venda pela assistente; 3 respostas rápidas; chat com texto e PDF; sem limite de serviços, rituais e publicações.
+- **Profissional (`intermediario`):** assistente com 500 respostas por mês; 10 respostas rápidas; 2 links de campanha (1 estilo de cartão).
+- **Premium (`maximo`):** assistente com 1.700 respostas por mês e desconto autorizado pela casa; 50 respostas rápidas; 30 links de campanha; 1 vaga de equipe inclusa; agenda completa, área de membros, vídeo no ritual e mídia no chat.
+- **Venda pela plataforma:** nos planos pagos a venda começa ligada e a casa pode desligá-la (aparece a lista do que ela perde); nos pagos a plataforma não cobra taxa de transação, vive da mensalidade. Rituais coletivos são sempre vendidos pela plataforma, em qualquer plano.
+- **Cancelamento e reembolso de 7 dias (decisão de 14/11/2026):** a casa que cancela (agora ou no vencimento) ou conclui o reembolso volta ao plano **Grátis**, e não a "Conta inativa". Falta de pagamento continua levando à suspensão e ao bloqueio.
+- **Vantagens de pagar pela plataforma** são mostradas ao cliente (reembolso antes de a casa começar, comprovante e histórico, só quem comprou avalia, relato de problema pelo Suporte, pagamento por fora sem suporte) e à casa (lista do que perde ao vender por fora).
+- **Destaque e impulsionamento (a construir):** começam na hora do pagamento; segunda compra do mesmo alcance soma dias ao final; sem reembolso depois de iniciado, salvo o texto do advogado (proporcional aos dias não usados em até 7 dias; integral se ainda não começou), com caixa "Autorizo o início imediato…".
 
 A matriz exata de recursos e limites deve ser central. Módulos não criam regras próprias de plano.
 

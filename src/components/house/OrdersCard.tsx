@@ -37,7 +37,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   };
 
   const cancelPlan = async (chargeId: string, money: string) => {
-    if (!window.confirm(`Cancelar a assinatura e pedir o reembolso de ${money}? A casa ficará inativa (os dados são mantidos) e a cobrança mensal será encerrada. Este pedido vale uma única vez por casa.`)) return;
+    if (!window.confirm(`Cancelar a assinatura e pedir o reembolso de ${money}? A casa volta ao plano Grátis (os dados são mantidos) e a cobrança mensal será encerrada. Este pedido vale uma única vez por casa.`)) return;
     setBusy(chargeId);
     const r = await requestPlanRefund(chargeId);
     setBusy(null);
@@ -62,7 +62,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
         <div className="mt-3 space-y-3">
           <p className="text-xs text-muted-foreground">Suas compras recentes e as solicitações ligadas a elas.</p>
           {empty && <p className="text-sm text-muted-foreground">Nenhum pedido recente.</p>}
-          {plan?.cancelled && <p className="text-sm rounded-lg border border-border p-3">A assinatura desta casa foi cancelada com reembolso e a casa está inativa. Para voltar, reative o plano em Planos ou fale com o suporte.</p>}
+          {plan?.cancelled && <p className="text-sm rounded-lg border border-border p-3">A assinatura desta casa foi cancelada com reembolso e a casa voltou ao plano Grátis. Para ter os recursos de um plano pago de novo, assine em Planos.</p>}
           {returningNote && (
             <details className="rounded-lg border border-border p-3">
               <summary className="cursor-pointer text-sm font-semibold list-none">Assinatura do plano: primeiro pagamento</summary>
@@ -77,7 +77,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
                 <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void cancelPlan(planOffer.chargeId as string, planRefundText(planOffer).money)}>
                   {busy === planOffer.chargeId ? "Enviando…" : "Cancelar assinatura e solicitar reembolso"}
                 </Button>
-                <p className="text-xs text-muted-foreground">Até {planOffer.windowDays} dias depois do primeiro pagamento, uma única vez por casa. Devolvemos o valor integral pelo mesmo meio de pagamento. A casa fica inativa e a cobrança mensal é encerrada; os créditos de IA têm reembolso próprio.</p>
+                <p className="text-xs text-muted-foreground">Até {planOffer.windowDays} dias depois do primeiro pagamento, uma única vez por casa. Devolvemos o valor integral pelo mesmo meio de pagamento. A casa volta ao plano Grátis e a cobrança mensal é encerrada; os créditos de IA têm reembolso próprio.</p>
               </div>
             </details>
           )}

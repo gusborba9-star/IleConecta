@@ -128,7 +128,7 @@ export async function startReactivation(plan: "base" | "intermediario" | "maximo
 }
 
 /** Casa sem assinatura ativa: paga o plano escolhido (mensalidade cheia). Ao confirmar, o plano muda e o vencimento passa a ser o dia do pagamento. */
-export async function startSubscribe(plan: "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+export async function startSubscribe(plan: "base" | "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
   const r = await call({ action: "subscribe", plan, method });
   if (r.error) return r.error;
   if (!r.url) return "Não foi possível abrir o pagamento.";

@@ -6,7 +6,7 @@ import { Button } from "@/components/base";
 import AccountLockScreen from "@/components/house/AccountLockScreen";
 import { useApp } from "@/contexts/AppContext";
 import { isLockedOpenPath, type AccountGate } from "@/lib/accountGateCore";
-import type { PlanId } from "@/lib/pricing";
+import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 
 /**
  * Casa em bloqueio total ou inativa: sem menu, sem navegação. A pessoa vê só a tela única (pagar/reativar),
@@ -29,7 +29,7 @@ export default function LockedLayout({ gate, plan, children }: { gate: AccountGa
             {children}
           </>
         ) : (
-          <AccountLockScreen gate={gate} plan={plan} />
+          <AccountLockScreen gate={gate} plan={plan === "gratis" ? null : plan} />
         )}
       </main>
     </div>
