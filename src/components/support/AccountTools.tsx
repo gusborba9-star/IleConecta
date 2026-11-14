@@ -59,7 +59,13 @@ export default function AccountTools() {
         ) : asking ? (
           <div className="space-y-2">
             <p className="text-sm">Seu perfil, mensagens e dados pessoais serão apagados ou anonimizados após 7 dias. Pagamentos, reembolsos e aceites dos Termos são guardados por até 5 anos por obrigação legal e proteção de todos, junto com a identificação de quem era o titular (visível só à administração).</p>
-            {st.impedimentos.length > 0 && <ul className="list-disc pl-5 text-sm text-destructive">{st.impedimentos.map((i) => <li key={i}>{i}</li>)}</ul>}
+            {st.impedimentos.length > 0 && (
+              <div className="text-sm text-destructive">
+                <p className="font-medium">Não é possível excluir a conta agora:</p>
+                <ul className="list-disc pl-5">{st.impedimentos.map((i) => <li key={i}>{i}</li>)}</ul>
+                <p className="mt-1 text-muted-foreground">Resolva o que está listado e volte aqui. Nenhuma cobrança nova é criada por causa deste pedido.</p>
+              </div>
+            )}
             <Input aria-label="Digite EXCLUIR" placeholder="Digite EXCLUIR" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
             <div className="flex gap-2"><Button variant="danger" onClick={() => void ask()} disabled={busy || st.impedimentos.length > 0}>Pedir exclusão</Button><Button variant="ghost" onClick={() => setAsking(false)}>Voltar</Button></div>
           </div>

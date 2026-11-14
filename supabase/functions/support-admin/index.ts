@@ -7,6 +7,7 @@ import { SupportError, runAdminAction, runDeletions } from "./core.js";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SB_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+const STRIPE_SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const admin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
 
 const CORS = {
@@ -23,6 +24,22 @@ const rpc = async (name: string, args: Record<string, unknown>): Promise<any> =>
   if (error) throw new Error(error.message);
   return data;
 };
+
+// Esquece o cartão / cliente no Stripe. "Já não existe" conta como feito; qualquer outra falha lança (fica na fila e repete).
+async function removeAtProvider(provider: string, kind: string, ref: string) {
+  if (provider !== "stripe") throw new Error("provedor_desconhecido");
+  if (!STRIPE_SECRET) throw new Error("chave_do_provedor_ausente");
+  const id = encodeURIComponent(ref);
+  const res = kind === "customer"
+    ? await fetch(`https://api.stripe.com/v1/customers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${STRIPE_SECRET}` } })
+    : await fetch(`https://api.stripe.com/v1/payment_methods/${id}/detach`, { method: "POST", headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" }, body: "" });
+  if (res.ok) return;
+  const body = await res.json().catch(() => ({}));
+  const code = String(body?.error?.code ?? "");
+  const msg = String(body?.error?.message ?? "");
+  if (res.status === 404 || code === "resource_missing" || /No such|not attached/i.test(msg)) return;
+  throw new Error(`stripe_${res.status}_${code || "erro"}`);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
@@ -42,6 +59,7 @@ Deno.serve(async (req) => {
         authAdmin: admin.auth.admin,
         storage: { remove: (bucket: string, paths: string[]) => admin.storage.from(bucket).remove(paths) },
         randomPassword: () => crypto.randomUUID() + crypto.randomUUID(),
+        provider: { remove: removeAtProvider },
       });
       return json(result);
     }
