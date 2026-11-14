@@ -161,7 +161,7 @@ test("falha ao apagar arquivos mantém na fila; sucesso limpa", async () => {
 test("sem nada vencido, a rotina não faz nada", async () => {
   const t = mkDel();
   const out = await runDeletions(t.deps);
-  assert.deepEqual(out, { anonimizadas: 0, acessos_fechados: 0, arquivos_apagados: 0, falhas: [] });
+  assert.deepEqual(out, { anonimizadas: 0, acessos_fechados: 0, arquivos_apagados: 0, cartoes_removidos: 0, falhas: [] });
   assert.equal(t.authCalls.length, 0);
 });
 
@@ -181,4 +181,41 @@ test("redirecionamento da recuperação: só a tela /redefinir-senha do app; des
   await runAdminAction(deps, act({ redirect_to: "https://evil.com/phish" }));
   await runAdminAction(deps, act({ redirect_to: "https://ile-conecta.vercel.app/redefinir-senha" }));
   assert.equal(captured[0], undefined); assert.deepEqual(captured[1], { redirectTo: "https://ile-conecta.vercel.app/redefinir-senha" });
+});
+
+// ---------- cartão no provedor de pagamento (fila vinda do banco)
+function mkProv(items, { failRefs = [] } = {}) {
+  const queue = items.map((x, i) => ({ id: "p" + i, provider: "stripe", ...x }));
+  const marks = []; const removed = [];
+  const rpc = async (name, args) => {
+    if (name === "account_deletions_due" || name === "auth_cleanup_pending_list" || name === "support_files_pending") return [];
+    if (name === "provider_cleanup_list") return queue.slice();
+    if (name === "provider_cleanup_mark") { marks.push(args); return null; }
+    throw new Error("rpc inesperada " + name);
+  };
+  const provider = { remove: async (p, kind, ref) => { removed.push([p, kind, ref]); if (failRefs.includes(ref)) throw new Error("stripe_500_erro"); } };
+  return { deps: { rpc, authAdmin: {}, storage: { remove: async () => ({ error: null }) }, randomPassword: () => "x", provider }, marks, removed };
+}
+
+test("cartão e cliente na fila são removidos no provedor e saem da fila", async () => {
+  const t = mkProv([{ kind: "payment_method", ref: "pm_1" }, { kind: "customer", ref: "cus_1" }]);
+  const out = await runDeletions(t.deps);
+  assert.equal(out.cartoes_removidos, 2); assert.equal(out.falhas.length, 0);
+  assert.deepEqual(t.removed.map((r) => r[1] + ":" + r[2]), ["payment_method:pm_1", "customer:cus_1"]);
+  assert.ok(t.marks.every((m) => m.p_done === true));
+});
+
+test("falha no provedor deixa o item na fila (com o erro) e não impede os outros", async () => {
+  const t = mkProv([{ kind: "payment_method", ref: "pm_x" }, { kind: "customer", ref: "cus_ok" }], { failRefs: ["pm_x"] });
+  const out = await runDeletions(t.deps);
+  assert.equal(out.cartoes_removidos, 1); assert.equal(out.falhas[0].etapa, "cartao");
+  assert.deepEqual(t.marks.map((m) => m.p_done), [false, true]);
+  assert.match(t.marks[0].p_error, /stripe_500/);
+});
+
+test("sem provedor configurado a rotina segue como antes", async () => {
+  const t = mkProv([{ kind: "customer", ref: "cus_1" }]);
+  delete t.deps.provider;
+  const out = await runDeletions(t.deps);
+  assert.equal(out.cartoes_removidos, 0); assert.equal(t.marks.length, 0);
 });

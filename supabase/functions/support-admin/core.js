@@ -72,11 +72,12 @@ const NOT_FOUND = /not.?found|no.?user/i;
 /**
  * Rotina das exclusões. Ordem importa: primeiro o banco (que confere prazo e impedimentos), depois o acesso (login) e, por fim, os arquivos.
  * Se o acesso ou os arquivos falharem, a pessoa já está anonimizada e a tentativa fica numa fila para repetir (nada se perde nem se repete a anonimização).
- * `deps`: { rpc(name, args) -> dados (lança erro se falhar), authAdmin, storage: { remove(bucket, paths) }, randomPassword() }
+ * `deps`: { rpc(name, args) -> dados (lança erro se falhar), authAdmin, storage: { remove(bucket, paths) }, randomPassword(), provider?: { remove(provider, kind, ref) } }
+ * `provider.remove` desvincula o cartão / apaga o cliente no provedor de pagamento (a fila vem do banco; falha deixa na fila para repetir).
  */
 export async function runDeletions(deps) {
   const { rpc, authAdmin, storage, randomPassword } = deps;
-  const out = { anonimizadas: 0, acessos_fechados: 0, arquivos_apagados: 0, falhas: [] };
+  const out = { anonimizadas: 0, acessos_fechados: 0, arquivos_apagados: 0, cartoes_removidos: 0, falhas: [] };
 
   const due = await rpc("account_deletions_due", {});
   for (const d of due ?? []) {
@@ -113,5 +114,20 @@ export async function runDeletions(deps) {
     else done.push(...list.map((i) => i.id));
   }
   if (done.length) { await rpc("support_files_done", { p_ids: done }); out.arquivos_apagados = done.length; }
+
+  // cartões e clientes no provedor de pagamento (o banco já apagou o cartão guardado; aqui o provedor esquece também)
+  if (deps.provider) {
+    const queue = (await rpc("provider_cleanup_list", { p_limit: 20 })) ?? [];
+    for (const it of queue) {
+      try { await deps.provider.remove(it.provider, it.kind, it.ref); }
+      catch (error) {
+        await rpc("provider_cleanup_mark", { p_id: it.id, p_done: false, p_error: String(error?.message ?? error) });
+        out.falhas.push({ etapa: "cartao", erro: String(error?.message ?? error).slice(0, 120) });
+        continue;
+      }
+      await rpc("provider_cleanup_mark", { p_id: it.id, p_done: true });
+      out.cartoes_removidos++;
+    }
+  }
   return out;
 }
