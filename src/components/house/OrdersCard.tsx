@@ -50,7 +50,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   if (!refunds) return null;
   const planOffer = plan?.eligible ? plan : null;
   const planHistory = plan?.history ?? [];
-  const returningNote = plan?.returning === true && plan.chargeId !== null && Date.parse(plan.deadline) > Date.now();
+  const returningNote = plan?.refundBlocked === true && plan.chargeId !== null && Date.parse(plan.deadline) > Date.now();
   const empty = refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
   return (
     <Card className="p-5">
