@@ -29,7 +29,7 @@ const fail = (message: string, status = 400, code?: string) => json({ error: mes
 // deno-lint-ignore no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Obj = Record<string, any>;
-const CODE_STATUS: Record<string, number> = { not_found: 404, forbidden: 403, card_state: 409, authorization_required: 409, refund_denied: 409, reactivation_denied: 409, refund_failed: 502, disabled: 503, provider_unavailable: 503, paid: 409, cancelled: 409, processing: 409 };
+const CODE_STATUS: Record<string, number> = { not_found: 404, forbidden: 403, card_state: 409, authorization_required: 409, refund_denied: 409, reactivation_denied: 409, plan_change_denied: 409, refund_failed: 502, disabled: 503, provider_unavailable: 503, paid: 409, cancelled: 409, processing: 409 };
 
 async function userOf(req: Request) {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -88,6 +88,14 @@ Deno.serve(async (req) => {
       const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" ? input.plan : null;
       if (input.plan != null && plan === null) return fail("Escolha um plano válido.");
       const r = await core.reactivate({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });
+      return json({ url: r.url });
+    }
+    if (input.action === "subscribe" || input.action === "upgrade") {
+      const method = input.method === "pix" || input.method === "card" ? input.method : null;
+      const plan = input.plan === "intermediario" || input.plan === "maximo" ? input.plan : null;
+      if (plan === null) return fail("Escolha um plano válido.");
+      const fn = input.action === "subscribe" ? core.subscribe : core.upgrade;
+      const r = await fn({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });
       return json({ url: r.url });
     }
     if (input.action === "plan_refund") {

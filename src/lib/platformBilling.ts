@@ -16,10 +16,11 @@ export async function fetchBillingStatus(): Promise<BillingStatus | null> {
 export async function fetchInvoices(houseId: string, limit = 24): Promise<InvoiceRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.from("platform_charges")
-    .select("id, kind, description, amount_cents, due_date, status, paid_at")
+    .select("id, kind, description, amount_cents, due_date, status, paid_at, idempotency_key")
     .eq("house_id", houseId).or("kind.neq.credit_pack,status.neq.cancelada").order("due_date", { ascending: false }).limit(limit);
   if (error || !data) return [];
-  return data.map((r) => ({
+  // pedidos de assinatura/upgrade que a casa abandonou (cancelados sozinhos depois de 2 dias) não poluem a lista de faturas
+  return data.filter((r) => !(r.status === "cancelada" && /^(assinatura|upgrade):/.test(String(r.idempotency_key ?? "")))).map((r) => ({
     id: String(r.id), kind: String(r.kind), description: r.description ? String(r.description) : null,
     amountCents: Number(r.amount_cents), dueDate: String(r.due_date), status: String(r.status), paidAt: r.paid_at ? String(r.paid_at) : null,
   }));
@@ -120,6 +121,24 @@ export async function removeCard(): Promise<string | null> {
 /** Casa cancelada por reembolso: emite a fatura de reativação e abre o pagamento. Ao pagar, a casa volta sozinha. Devolve o erro, ou null se já redirecionou. */
 export async function startReactivation(plan: "base" | "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
   const r = await call({ action: "reactivate", plan, method });
+  if (r.error) return r.error;
+  if (!r.url) return "Não foi possível abrir o pagamento.";
+  window.location.assign(r.url);
+  return null;
+}
+
+/** Casa sem assinatura ativa: paga o plano escolhido (mensalidade cheia). Ao confirmar, o plano muda e o vencimento passa a ser o dia do pagamento. */
+export async function startSubscribe(plan: "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+  const r = await call({ action: "subscribe", plan, method });
+  if (r.error) return r.error;
+  if (!r.url) return "Não foi possível abrir o pagamento.";
+  window.location.assign(r.url);
+  return null;
+}
+
+/** Casa assinante: sobe de plano pagando só a diferença proporcional aos dias que faltam no ciclo. */
+export async function startUpgrade(plan: "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+  const r = await call({ action: "upgrade", plan, method });
   if (r.error) return r.error;
   if (!r.url) return "Não foi possível abrir o pagamento.";
   window.location.assign(r.url);

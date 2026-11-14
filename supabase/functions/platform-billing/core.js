@@ -225,6 +225,31 @@ export async function reactivate({ registry, store, userId, plan = null, method 
   return openPayment({ registry, store, chargeId, userId, method, email, appUrl, log });
 }
 
+// ---------- contratação de plano dentro do app (primeira assinatura e upgrade) ----------
+// Só as recusas conhecidas do banco viram mensagem para a casa; qualquer outro erro segue como erro interno (não vaza detalhe).
+const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
+async function planChange({ registry, store, userId, plan, method, email, appUrl, log, issue }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa contrata plano.", "forbidden");
+  if (plan !== "intermediario" && plan !== "maximo") throw new ChargeStateError("Escolha um plano com mensalidade.", "plan_change_denied");
+  let chargeId;
+  try {
+    chargeId = await issue(houseId, plan);
+  } catch (e) {
+    throw PLAN_CHANGE_OK.test(msg(e)) ? new ChargeStateError(msg(e), "plan_change_denied") : e;
+  }
+  if (typeof chargeId !== "string") throw new ChargeStateError("Não foi possível preparar a troca de plano agora. Tente de novo.", "plan_change_denied");
+  return openPayment({ registry, store, chargeId, userId, method, email, appUrl, log });
+}
+/** Casa sem assinatura ativa assina um plano: paga a mensalidade cheia; ao confirmar, o plano muda e o vencimento passa a ser o dia do pagamento. */
+export function subscribe({ store, ...rest }) {
+  return planChange({ store, ...rest, issue: (h, p) => store.subscribeIssue(h, p) });
+}
+/** Casa assinante sobe de plano: paga só a diferença proporcional aos dias que faltam no ciclo; ao confirmar, o plano sobe na hora. */
+export function upgrade({ store, ...rest }) {
+  return planChange({ store, ...rest, issue: (h, p) => store.upgradeIssue(h, p) });
+}
+
 // ---------- cartão salvo da casa ----------
 const CARD_ERRORS = [
   [/Cadastre um cartão/, "Cadastre um cartão antes de ligar a cobrança automática."],
