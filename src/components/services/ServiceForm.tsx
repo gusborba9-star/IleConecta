@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toastSaveError } from "@/lib/planGuard";
+import { useOwnerPlan } from "@/lib/housePlan";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
 import AgendaInline from "@/components/services/AgendaInline";
 import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
@@ -70,11 +71,15 @@ export default function ServiceForm({ open, onClose, initial, onSubmit, ownerId,
   const needed = priceCents ? stagesNeeded(priceCents, cap) : 1;
   const plan = priceCents && stages > 1 ? stagePlan(priceCents, stages) : null;
 
+  // Grátis: serviço presencial só se vende pela plataforma, então o agendamento não pode ser desligado (o banco confere também).
+  const { plan: housePlan } = useOwnerPlan(ownerId);
+  const lockBooking = housePlan === "gratis" && form.delivery === "presencial";
+
   const set = (patch: Partial<ServiceFormInput>) => setForm((f) => ({ ...f, ...patch }));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const result = validateService(form);
+    const result = validateService(lockBooking ? { ...form, bookable: true } : form);
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -182,20 +187,21 @@ export default function ServiceForm({ open, onClose, initial, onSubmit, ownerId,
         {(
           <div className="rounded-xl border border-border p-3 space-y-2 pillow">
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1" checked={Boolean(form.bookable)} onChange={(e) => set({ bookable: e.target.checked })} />
+              <input type="checkbox" className="mt-1" checked={lockBooking || Boolean(form.bookable)} disabled={lockBooking} onChange={(e) => set({ bookable: e.target.checked })} />
               <span>
                 <span className="block font-semibold">Agendar horário pela plataforma</span>
                 <span className="block text-muted-foreground">O cliente escolhe um dia e horário livres da sua agenda e paga na hora. Você é avisado de cada agendamento.</span>
+              {lockBooking && <span className="block text-xs mt-1">No plano Grátis, o serviço presencial é sempre agendado e pago pela plataforma. Para combinar direto com o cliente, escolha um plano pago.</span>}
               </span>
             </label>
-            {form.bookable && (
+            {(lockBooking || form.bookable) && (
               <div>
                 <Label htmlFor="sv-dur">Duração de cada atendimento (minutos)</Label>
                 <Input id="sv-dur" type="number" min={10} max={240} step={5} className="w-28" value={form.durationMin ?? 30} onChange={(e) => set({ durationMin: e.target.value })} />
                 {errors.durationMin && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors.durationMin}</p>}
               </div>
             )}
-            {form.bookable && ownerId && <AgendaInline ownerId={ownerId} onChange={onAgendaChange} />}
+            {(lockBooking || form.bookable) && ownerId && <AgendaInline ownerId={ownerId} onChange={onAgendaChange} />}
             {errors.bookable && <p className="text-sm text-[hsl(var(--danger))]">{errors.bookable}</p>}
           </div>
         )}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Input, Label } from "@/components/base";
+import TimeSelect from "@/components/services/TimeSelect";
 import { addBlock, addWindow, fetchBlocks, fetchWindows, removeBlock, removeWindow, type Block, type Window } from "@/lib/agenda";
 import { WEEKDAYS, brasiliaToIso, formatSlot, validateWindow } from "@/lib/agendaCore";
 
@@ -85,8 +86,8 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
             {WEEKDAYS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
         </div>
-        <div><Label htmlFor="ag-s">Das</Label><Input id="ag-s" type="time" className="w-28" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-        <div><Label htmlFor="ag-e">Até</Label><Input id="ag-e" type="time" className="w-28" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+        <div><Label htmlFor="ag-s">Das</Label><TimeSelect id="ag-s" value={start} onChange={setStart} /></div>
+        <div><Label htmlFor="ag-e">Até</Label><TimeSelect id="ag-e" value={end} onChange={setEnd} /></div>
         <Button size="sm" variant="outline" onClick={() => void add()}>Adicionar horário</Button>
       </div>
 
@@ -101,8 +102,8 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
         ))}
         <div className="flex flex-wrap items-end gap-2">
           <div><Label htmlFor="bk-d">Dia</Label><Input id="bk-d" type="date" className="w-40" value={bDay} onChange={(e) => setBDay(e.target.value)} /></div>
-          <div><Label htmlFor="bk-s">Das</Label><Input id="bk-s" type="time" className="w-28" value={bStart} onChange={(e) => setBStart(e.target.value)} /></div>
-          <div><Label htmlFor="bk-e">Até</Label><Input id="bk-e" type="time" className="w-28" value={bEnd} onChange={(e) => setBEnd(e.target.value)} /></div>
+          <div><Label htmlFor="bk-s">Das</Label><TimeSelect id="bk-s" value={bStart} onChange={setBStart} /></div>
+          <div><Label htmlFor="bk-e">Até</Label><TimeSelect id="bk-e" value={bEnd} onChange={setBEnd} /></div>
           <div className="flex-1 min-w-[140px]"><Label htmlFor="bk-n">Motivo (opcional)</Label><Input id="bk-n" maxLength={120} value={bNote} onChange={(e) => setBNote(e.target.value)} /></div>
           <Button size="sm" variant="outline" onClick={() => void block()}>Bloquear</Button>
         </div>
