@@ -14,7 +14,7 @@ const REFRESH_MS = 30_000;
  * Aviso da cobrança da plataforma na tela da casa. Só existe enquanto a casa tem fatura em atraso:
  * quando o pagamento é confirmado o card desaparece sozinho (sem recarregar a página).
  */
-export default function BillingAlertCard({ refreshKey = 0 }: { refreshKey?: number }) {
+export default function BillingAlertCard({ refreshKey = 0, inactive = false }: { refreshKey?: number; inactive?: boolean }) {
   const { isRemoteAuth } = useApp();
   const [view, setView] = useState<AlertView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -22,8 +22,8 @@ export default function BillingAlertCard({ refreshKey = 0 }: { refreshKey?: numb
   const load = useCallback(async () => {
     const s = await fetchBillingStatus();
     // Falha de leitura NÃO esconde um aviso que já está na tela: só uma resposta válida muda o card.
-    if (s) setView(alertView(s));
-  }, []);
+    if (s) setView(alertView(s, { inactive }));
+  }, [inactive]);
 
   useEffect(() => {
     if (!isRemoteAuth) return;

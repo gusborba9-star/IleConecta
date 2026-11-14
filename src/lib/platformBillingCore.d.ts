@@ -14,7 +14,7 @@ export function kindLabel(k: string): string;
 export function shortDate(iso: string): string;
 export function dayBefore(iso: string): string;
 export function readStatus(raw: unknown): BillingStatus;
-export function alertView(status: unknown): AlertView | null;
+export function alertView(status: unknown, opts?: { inactive?: boolean }): AlertView | null;
 export function payMethods(list: unknown): ("pix" | "card")[];
 export function canPay(charge: { status?: string } | null | undefined): boolean;
 export interface CardInput {
