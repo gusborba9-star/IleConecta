@@ -18,14 +18,14 @@ export async function fetchCancelStatus(): Promise<CancelStatus | null> {
 }
 
 export type CancelMode = "vencimento" | "agora";
-export interface CancelResult { ok: boolean; error: string; mode?: string; cancelAt?: string | null }
+export interface CancelResult { ok: boolean; error: string; mode?: string; cancelAt?: string | null; debtCents?: number }
 
 export async function cancelSubscription(mode: CancelMode): Promise<CancelResult> {
   if (!supabase) return { ok: false, error: "Indisponível neste modo de demonstração." };
   const { data, error } = await supabase.rpc("my_cancel_subscription", { p_mode: mode });
   if (error) return { ok: false, error: clean(error, "Não foi possível cancelar agora. Tente novamente.") };
-  const r = (data ?? {}) as { mode?: string; cancel_at?: string | null };
-  return { ok: true, error: "", mode: r.mode, cancelAt: r.cancel_at ?? null };
+  const r = (data ?? {}) as { mode?: string; cancel_at?: string | null; debt_cents?: number };
+  return { ok: true, error: "", mode: r.mode, cancelAt: r.cancel_at ?? null, debtCents: Number(r.debt_cents) > 0 ? Number(r.debt_cents) : 0 };
 }
 
 export async function undoCancel(): Promise<string | null> {

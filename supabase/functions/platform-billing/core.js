@@ -210,7 +210,7 @@ export async function settleRefunds({ registry, store, log = console }) {
 }
 
 // ---------- reativação da casa cancelada por reembolso (a casa paga e volta sozinha) ----------
-const REACTIVATE_OK = /não está cancelada|não tem mensalidade|Plano inválido/;
+const REACTIVATE_OK = /não está cancelada|não tem mensalidade|Plano inválido|fatura vencida/;
 /** Emite (ou reaproveita) a fatura de reativação do plano atual e abre o pagamento. Ao pagar, o banco reativa a casa. */
 export async function reactivate({ registry, store, userId, plan = null, method = null, email, appUrl, log = console }) {
   const houseId = await store.houseOfOwner(userId);
