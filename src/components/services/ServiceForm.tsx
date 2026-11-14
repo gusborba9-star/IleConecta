@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toastSaveError } from "@/lib/planGuard";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
 import AgendaInline from "@/components/services/AgendaInline";
 import { SERVICE_DELIVERIES, SERVICE_KINDS, formatCents, parsePriceToCents, validateService, type ServiceFormInput, type ServiceValue } from "@/lib/servicesCore";
@@ -83,7 +83,7 @@ export default function ServiceForm({ open, onClose, initial, onSubmit, ownerId,
     const ok = await onSubmit(result.value);
     setSaving(false);
     if (ok) onClose();
-    else toast.error("Não foi possível salvar. Tente novamente.");
+    else toastSaveError("Não foi possível salvar. Tente novamente.");
   };
 
   return (

@@ -1,4 +1,5 @@
 import type { HouseUser, PersonalUser, Post, User } from "@/types";
+import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
 import { fetchFollowSummary } from "@/lib/follows";
 import { fetchReviewSummary } from "@/lib/reviews";
@@ -138,6 +139,7 @@ export async function remoteCreatePost(
     .insert({ house_id: house.id, kind: input.kind, content: input.content, image_url: input.image ?? null })
     .select("id, created_at")
     .single();
+  if (error) rememberPlanGuard(error);
   if (error || !data) return null;
   return {
     id: String(data.id),

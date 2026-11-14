@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { DEFAULT_PLAN_MATRIX, CAP_NUMBER_KEYS, CAP_FLAG_KEYS, sanitizePlanMatrix, planCap, renderBenefit, benefitsFor, cloneDefaultMatrix } from "../src/lib/planMatrixCore.js";
+import { DEFAULT_PLAN_MATRIX, minPlanFor, CAP_NUMBER_KEYS, CAP_FLAG_KEYS, sanitizePlanMatrix, planCap, renderBenefit, benefitsFor, cloneDefaultMatrix } from "../src/lib/planMatrixCore.js";
 import { DEFAULT_CONFIG, sanitizeConfig } from "../src/lib/platformConfigCore.js";
 import { PLAN_LIMITS, planLimits, checkGate, canSell, allowedDiscountPercent } from "../supabase/functions/assistant-chat/logic.js";
 
@@ -33,7 +33,7 @@ test("os valores iniciais batem com a matriz aprovada pelo proprietário (14/11/
 });
 
 test("anti-divergência: o padrão do código é idêntico ao plan_matrix_default() do banco", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0111_plano_gratis.sql", import.meta.url), "utf8"); // definição vigente (a 0111 trouxe o plano Grátis e os novos números)
+  const sql = readFileSync(new URL("../supabase/migrations/0112_card_gratis_link_qr.sql", import.meta.url), "utf8"); // definição vigente (a 0112 acrescentou o link e o QR code ao card do Grátis)
   const m = sql.match(/select '(\{"caps".*?\})'::jsonb;/s);
   assert.ok(m, "semente não encontrada");
   assert.deepEqual(JSON.parse(m[1]), DEFAULT_PLAN_MATRIX);
@@ -156,4 +156,20 @@ test("assistente: mudar a matriz muda o bloqueio de cota, a venda e o desconto",
   // a casa continua mandando: sem a opção da casa, a matriz sozinha não libera
   assert.equal(allowedDiscountPercent("maximo", { ...assistant, can_discount: false }, DEFAULT_PLAN_MATRIX), 0);
   assert.equal(canSell("maximo", { ...assistant, can_sell: false }, DEFAULT_PLAN_MATRIX), false);
+});
+
+test("minPlanFor: o primeiro plano que inclui a ferramenta (para o selo da tela principal)", () => {
+  assert.equal(minPlanFor(DEFAULT_PLAN_MATRIX, "members_area"), "maximo");
+  assert.equal(minPlanFor(DEFAULT_PLAN_MATRIX, "campaign_links"), "intermediario");
+  assert.equal(minPlanFor(DEFAULT_PLAN_MATRIX, "included_seats"), "maximo");
+  assert.equal(minPlanFor(DEFAULT_PLAN_MATRIX, "assistant_sells"), "gratis");
+  const m = clone(); m.caps.base.campaign_links = 1;
+  assert.equal(minPlanFor(m, "campaign_links"), "base", "mudar a matriz muda o selo");
+  for (const k of CAP_FLAG_KEYS) m.caps.maximo[k] = false;
+  m.caps.maximo.members_area = false;
+  assert.equal(minPlanFor(m, "members_area"), null, "ninguém inclui");
+});
+
+test("o card do Grátis diz que o link e o QR code da casa estão incluídos", () => {
+  assert.ok(DEFAULT_PLAN_MATRIX.copy.gratis.benefits.some((b) => /QR code/.test(b.text)));
 });

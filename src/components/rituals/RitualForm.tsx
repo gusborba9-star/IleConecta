@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toastSaveError } from "@/lib/planGuard";
 import { Plus, X } from "lucide-react";
 import { Button, Input, Label, Modal, Textarea } from "@/components/base";
 import { FIELD_PRESETS, MAX_FIELDS, RITUAL_MODES, fromIsoToBrt, validateRitual, type RitualFormInput, type RitualValue } from "@/lib/ritualsCore";
@@ -71,7 +71,7 @@ export default function RitualForm({ open, onClose, initial, initialStreamUrl, o
     const ok = await onSubmit(result.value, publish);
     setSaving(false);
     if (ok) onClose();
-    else toast.error("Não foi possível salvar. Tente novamente.");
+    else toastSaveError("Não foi possível salvar. Tente novamente.");
   };
 
   const err = (k: string) => errors[k] && <p className="text-sm text-[hsl(var(--danger))] mt-1">{errors[k]}</p>;

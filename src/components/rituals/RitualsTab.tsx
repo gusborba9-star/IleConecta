@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { toastSaveError } from "@/lib/planGuard";
 import { Badge, Button, Card } from "@/components/base";
 import RitualForm from "@/components/rituals/RitualForm";
 import RitualCardReal from "@/components/rituals/RitualCardReal";
@@ -113,7 +114,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
     if (await fn()) {
       toast.success(okMsg);
       await load();
-    } else toast.error("Não foi possível concluir. Verifique se a migração dos rituais foi aplicada.");
+    } else toastSaveError("Não foi possível concluir. Tente novamente.");
   };
 
   const lifecycleAct = async (fn: () => Promise<LifecycleResult>, okMsg: (n: number) => string) => {

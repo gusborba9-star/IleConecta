@@ -3,6 +3,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button, Card, Textarea } from "@/components/base";
 import { Image, Sparkles, Radio } from "lucide-react";
 import { toast } from "sonner";
+import { toastSaveError } from "@/lib/planGuard";
 
 export default function PostComposer() {
   const { currentUser, createPost, isRemoteAuth } = useApp();
@@ -26,7 +27,7 @@ export default function PostComposer() {
       image: image || undefined,
     });
     setSending(false);
-    if (!saved) return toast.error("Não foi possível publicar agora. Tente novamente.");
+    if (!saved) return toastSaveError("Não foi possível publicar agora. Tente novamente.");
     setText("");
     setImage("");
     toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");

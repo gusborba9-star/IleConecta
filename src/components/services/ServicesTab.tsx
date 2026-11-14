@@ -3,6 +3,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, Dices, Flame, Layers, Leaf, Lock, MapPin, Plus, Video, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
+import { toastSaveError } from "@/lib/planGuard";
 import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
 import ContractModal from "@/components/services/ContractModal";
@@ -153,7 +154,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
 
   const toggle = async (s: Service) => {
     if (await updateService(s.id, { active: !s.active })) await load();
-    else toast.error("Não foi possível alterar.");
+    else toastSaveError("Não foi possível alterar.");
   };
 
   const remove = async (s: Service) => {

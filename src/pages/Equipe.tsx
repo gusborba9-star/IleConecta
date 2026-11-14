@@ -10,6 +10,8 @@ import { houseIdOf } from "@/lib/campaigns";
 import { actorLabel, describeStaffEvent, fetchStaffAudit, type StaffAuditEvent } from "@/lib/staffAudit";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { formatMoney } from "@/lib/pricing";
+import { minPlanFor } from "@/lib/planMatrixCore";
+import { HOUSE_PLAN_IDS, FREE_PLAN_NAME } from "@/lib/platformConfigCore";
 import { qrSvg } from "@/lib/qr";
 import {
   PERMS, cancelStaffInvite, createStaffInvite, fetchSeatAllowance, fetchTeam, removeStaff, staffInviteUrl, togglePerm, updateStaff,
@@ -55,6 +57,9 @@ export default function Equipe() {
   const confirm = useConfirm();
   const uid = currentUser?.id;
   const { plan, caps, loading } = useOwnerPlan(uid);
+  // Plano abaixo do que inclui acesso de equipe: explica e leva a Planos (em vez de mandar ao suporte).
+  const seatsFrom = minPlanFor(config.plan_matrix, "included_seats");
+  const upgradeFor = plan && seatsFrom && HOUSE_PLAN_IDS.indexOf(plan) < HOUSE_PLAN_IDS.indexOf(seatsFrom) ? (seatsFrom === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[seatsFrom].name) : null;
   const [houseId, setHouseId] = useState<string | null>(null);
   const [allowance, setAllowance] = useState<number | null>(null);
   const [members, setMembers] = useState<StaffMember[]>([]);
@@ -170,6 +175,13 @@ export default function Equipe() {
             <Button onClick={() => void invite()}><Plus className="h-4 w-4" /> Criar convite</Button>
           </div>
         ) : (
+          upgradeFor && allowance === 0 ? (
+          <div className="pillow rounded-2xl bg-muted/30 p-4 space-y-2">
+            <div className="font-semibold">Acesso de equipe a partir do plano {upgradeFor}</div>
+            <p className="text-sm text-muted-foreground">Seu plano atual não inclui acessos para a equipe. No plano {upgradeFor} a casa já tem acesso incluso, para quem ajuda a atender.</p>
+            <Link to="/planos" className="inline-block text-sm text-primary font-semibold">Ver os planos</Link>
+          </div>
+          ) : (
           <div className="pillow rounded-2xl bg-muted/30 p-4 space-y-2">
             <div className="font-semibold">{allowance === 0 ? "Adicione um acesso para quem ajuda a atender" : "Todos os acessos estão em uso"}</div>
             <p className="text-sm text-muted-foreground">
@@ -177,6 +189,7 @@ export default function Equipe() {
             </p>
             <p className="text-xs text-muted-foreground">A contratação dentro do app chega com o pagamento recorrente. Por enquanto, peça pelo <Link to="/suporte" className="text-primary font-semibold">Suporte</Link> e liberamos o acesso para a sua casa.</p>
           </div>
+          )
         )}
       </Card>
 
