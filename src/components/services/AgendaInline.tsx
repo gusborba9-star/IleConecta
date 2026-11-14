@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input, Label } from "@/components/base";
+import TimeSelect from "@/components/services/TimeSelect";
 import { addWindow, fetchBusyItems, fetchWindows, removeWindow, type Window } from "@/lib/agenda";
 import { WEEKDAYS, conflictsForWindow, overlapsExistingWindow, validateWindow } from "@/lib/agendaCore";
 import type { BusyItem } from "@/lib/agendaCore";
@@ -72,8 +73,8 @@ export default function AgendaInline({ ownerId, onChange }: { ownerId: string; o
             {WEEKDAYS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
         </div>
-        <div><Label htmlFor="ai-s">Das</Label><Input id="ai-s" type="time" className="w-28" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-        <div><Label htmlFor="ai-e">Até</Label><Input id="ai-e" type="time" className="w-28" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+        <div><Label htmlFor="ai-s">Das</Label><TimeSelect id="ai-s" value={start} onChange={setStart} /></div>
+        <div><Label htmlFor="ai-e">Até</Label><TimeSelect id="ai-e" value={end} onChange={setEnd} /></div>
         <Button type="button" size="sm" variant="outline" disabled={saving} onClick={() => void add()}>{saving ? "Salvando…" : "Adicionar horário"}</Button>
       </div>
       {warn.length > 0 && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
@@ -64,6 +64,13 @@ export default function Plans() {
   const [billingTick, setBillingTick] = useState(0);
   const [change, setChange] = useState<PlanChangeStatus | null>(null);
   const [target, setTarget] = useState<HousePlanId | null>(null);
+  // O painel de troca fica acima dos cards: ao escolher um plano, leva a tela até ele (no celular ele ficava fora da vista).
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pick, setPick] = useState(0);
+  const choose = (id: HousePlanId) => { setTarget(id); setPick((n) => n + 1); };
+  useEffect(() => {
+    if (pick > 0) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pick]);
 
   // Voltou da página de pagamento: confere a fatura agora (sem esperar o aviso do provedor) e atualiza os cards.
   const returned = params.get("retorno") ? params.get("fatura") : null;
@@ -135,9 +142,11 @@ export default function Plans() {
 
       {isRemoteAuth && isHouse && mine === "gratis" && <FreePlanNotice />}
       {isRemoteAuth && isHouse && mine && <SellOnPlatformCard paid={mine !== "gratis"} />}
-      {isRemoteAuth && isHouse && change && target && (
-        <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
-      )}
+      <div ref={panelRef} className="scroll-mt-20 empty:hidden">
+        {isRemoteAuth && isHouse && change && target && (
+          <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
+        )}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {HOUSE_PLAN_IDS.map((id) => {
           const p = { id };
@@ -164,7 +173,7 @@ export default function Plans() {
             </ul>
             {isHouse ? (
               isRemoteAuth && change && !change.cancelled ? (
-                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "gratis")} onClick={() => setTarget(p.id)}>
+                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "gratis")} onClick={() => choose(p.id)}>
                   {change.plan === p.id ? "Plano atual"
                     : p.id === "gratis" && !change.subscribed ? "Plano gratuito"
                     : !change.subscribed ? "Assinar este plano"
