@@ -37,7 +37,7 @@ export default function AccountLockScreen({ gate, plan }: { gate: AccountGate; p
         </div>
       </Card>
 
-      {copy.action === "desbloquear" && <BillingAlertCard />}
+      {(copy.action === "desbloquear" || copy.action === "quitar") && <BillingAlertCard />}
       {copy.action === "reativar" && <ReactivateCard plan={plan} />}
 
       <Card className="p-5 space-y-3">

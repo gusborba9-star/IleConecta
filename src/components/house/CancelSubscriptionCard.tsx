@@ -3,16 +3,16 @@ import { toast } from "sonner";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { cancelSubscription, fetchCancelStatus, undoCancel, type CancelMode } from "@/lib/accountGate";
-import { brDate, cancelChoices, cancelDoneText, type CancelStatus } from "@/lib/accountGateCore";
+import { brDate, cancelChoices, cancelDebtNote, cancelDoneText, CANCEL_NOW_CONFIRM, type CancelStatus } from "@/lib/accountGateCore";
 
 /**
  * Cancelar a assinatura (discreto, em Planos). Passo 1: "Quer mesmo cancelar?". Passo 2: usar até o vencimento ou cancelar agora.
- * Cancelamento agendado pode ser desfeito até o dia. Fatura em atraso não deixa cancelar (a dívida não some).
+ * Cancelamento agendado pode ser desfeito até o dia. Fatura vencida não impede cancelar, mas continua em aberto e precisa ser paga para reativar.
  */
 export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () => void }) {
   const { isRemoteAuth } = useApp();
   const [st, setSt] = useState<CancelStatus | null>(null);
-  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [mode, setMode] = useState<CancelMode>("vencimento");
   const [busy, setBusy] = useState(false);
 
@@ -49,7 +49,7 @@ export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () =
     const r = await cancelSubscription(mode);
     setBusy(false);
     if (!r.ok) return void toast.error(r.error);
-    toast.success(cancelDoneText({ mode: r.mode, cancelAt: r.cancelAt }));
+    toast.success(cancelDoneText({ mode: r.mode, cancelAt: r.cancelAt, debtCents: r.debtCents }));
     setStep(0);
     await load(); onChanged?.();
     // cancelar agora deixa a casa inativa: a tela única assume na próxima checagem
@@ -57,6 +57,7 @@ export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () =
   };
 
   const choices = cancelChoices(st);
+  const debtNote = cancelDebtNote(st);
   return (
     <Card className="p-4">
       {step === 0 && (
@@ -69,6 +70,7 @@ export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () =
         <div className="space-y-3">
           <h2 className="font-display font-bold text-base">Quer mesmo prosseguir com o cancelamento?</h2>
           <p className="text-sm text-muted-foreground">Seus dados ficam guardados e você pode voltar quando quiser, pagando um plano.</p>
+          {debtNote && <p role="alert" className="text-sm font-semibold text-[hsl(var(--danger))]">{debtNote}</p>}
           <div className="flex gap-2"><Button size="sm" variant="danger" onClick={() => setStep(2)}>Sim, continuar</Button><Button size="sm" variant="outline" onClick={() => setStep(0)}>Não, manter</Button></div>
         </div>
       )}
@@ -84,7 +86,15 @@ export default function CancelSubscriptionCard({ onChanged }: { onChanged?: () =
             ))}
           </div>
           <p className="text-xs text-muted-foreground">Dentro dos 7 dias do primeiro pagamento do plano, você pode pedir o reembolso integral em “Pedidos e validações”.</p>
-          <div className="flex gap-2"><Button size="sm" variant="danger" disabled={busy} onClick={() => void confirm()}>{busy ? "Cancelando…" : mode === "agora" ? "Cancelar agora" : "Agendar cancelamento"}</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => setStep(0)}>Voltar</Button></div>
+          <div className="flex gap-2"><Button size="sm" variant="danger" disabled={busy} onClick={() => (mode === "agora" ? setStep(3) : void confirm())}>{busy ? "Cancelando…" : mode === "agora" ? "Cancelar agora" : "Agendar cancelamento"}</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => setStep(0)}>Voltar</Button></div>
+        </div>
+      )}
+      {step === 3 && (
+        <div className="space-y-3" role="alertdialog" aria-label="Confirmar cancelamento imediato">
+          <h2 className="font-display font-bold text-base">Confirmar cancelamento imediato</h2>
+          <p className="text-sm">{CANCEL_NOW_CONFIRM}</p>
+          {debtNote && <p role="alert" className="text-sm font-semibold text-[hsl(var(--danger))]">{debtNote}</p>}
+          <div className="flex gap-2"><Button size="sm" variant="danger" disabled={busy} onClick={() => void confirm()}>{busy ? "Cancelando…" : "Confirmar cancelamento imediato"}</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => setStep(2)}>Voltar</Button></div>
         </div>
       )}
     </Card>
