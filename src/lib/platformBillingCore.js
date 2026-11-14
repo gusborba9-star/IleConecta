@@ -87,7 +87,7 @@ export function readStatus(raw) {
  *  - bloqueio total: vermelho, "pague para reativar".
  * Pagamento em análise: o card continua (a fatura ainda não foi baixada), mas pede só para aguardar.
  */
-export function alertView(status) {
+export function alertView(status, opts = {}) {
   const s = status && typeof status === "object" && "houseId" in status ? status : readStatus(status);
   if (!s.overdue) return null;
   const processing = s.charges.every((c) => c.status === "em_processamento");
@@ -107,6 +107,12 @@ export function alertView(status) {
     tone = "gold";
     title = "Fatura em atraso";
     text = until ? `Pague até ${shortDate(until)} para evitar a suspensão parcial da casa.` : "Pague para evitar a suspensão parcial da casa.";
+  }
+  // conta inativa (assinatura encerrada) com fatura vencida: pagar a dívida não reativa a casa, só libera a escolha do plano
+  if (opts?.inactive === true) {
+    tone = "gold";
+    title = "Fatura vencida";
+    text = "Pague a fatura. Depois de quitar, escolha um plano para reativar a conta.";
   }
   if (processing) text = "Recebemos o seu pagamento e ele está em análise. Assim que for confirmado, o aviso some sozinho.";
   return { tone, title, text, totalCents, processing, level: s.level, charges: s.charges };

@@ -155,3 +155,16 @@ test("reembolso do plano: leitura defensiva e texto da oferta", async () => {
   assert.match(t.line, /integral/);
   assert.match(t.line, /Faltam 3 dias/);
 });
+
+test("conta inativa com fatura vencida: o aviso não promete reativar tudo ao pagar", () => {
+  const st = raw({ overdue: true, level: "total", charges: [{ id: "c1", kind: "plan", description: "Teste", amount_cents: 500, due_date: "2026-11-08", status: "aberta", methods: ["pix"], tolerance_end: "2026-11-11", total_on: "2026-12-12" }] });
+  const normal = alertView(readStatus(st));
+  assert.equal(normal.title, "Bloqueio total da casa");
+  const inativa = alertView(readStatus(st), { inactive: true });
+  assert.equal(inativa.title, "Fatura vencida");
+  assert.match(inativa.text, /escolha um plano para reativar a conta/);
+  assert.doesNotMatch(inativa.text, /bloqueada|vitrine|na hora/);
+  assert.equal(inativa.charges.length, 1);
+  const proc = alertView(readStatus(raw({ overdue: true, level: "total", charges: [{ id: "c1", kind: "plan", amount_cents: 500, due_date: "2026-11-08", status: "em_processamento", methods: [], tolerance_end: "2026-11-11", total_on: "2026-12-12" }] })), { inactive: true });
+  assert.match(proc.text, /em análise/);
+});
