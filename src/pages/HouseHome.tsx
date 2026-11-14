@@ -14,6 +14,10 @@ import BillingAlertCard from "@/components/house/BillingAlertCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
 import { fetchHouseTermsAccepted } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { useOwnerPlan } from "@/lib/housePlan";
+import { minPlanFor, type CapFlagKey, type CapNumberKey } from "@/lib/planMatrixCore";
+import { FREE_PLAN_NAME, HOUSE_PLAN_IDS } from "@/lib/platformConfigCore";
 import type { HouseUser } from "@/types";
 
 /** Um tom por atalho (ouro, esmeralda, terracota, ameixa), como no restante do app. */
@@ -32,6 +36,8 @@ export default function HouseHome() {
   const [termsOk, setTermsOk] = useState(true);
   const [members, setMembers] = useState<{ total: number; vencidas: number; perto: number } | null>(null);
   const houseId = house?.id;
+  const { config } = usePlatformConfig();
+  const { plan } = useOwnerPlan(house?.id);
 
   useEffect(() => {
     if (!isRemoteAuth || !houseId) return;
@@ -55,16 +61,24 @@ export default function HouseHome() {
 
   const memberText = !members || members.total === 0 ? "Mensalidades e avisos de cobrança" : members.vencidas > 0 ? `${members.vencidas} em atraso` : members.perto > 0 ? `${members.perto} vencem em breve` : `${members.total} em dia`;
   const tiles = [
-    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, onClick: () => nav("/painel/membros") }] : []),
+    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, needs: "members_area" as CapFlagKey, onClick: () => nav("/painel/membros") }] : []),
     { icon: Plus, title: "Novo serviço", text: "Jogos, consultas, trabalhos e atendimentos", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
     { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
     { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
     { icon: TrendingUp, title: "Destacar e impulsionar", text: "Mais alcance para a casa e os rituais", onClick: () => nav("/impulsionar") },
-    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", onClick: () => nav("/divulgacao") }] : []),
-    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe da casa", text: "Convide quem ajuda a atender e defina o que vê", onClick: () => nav("/equipe") }] : []),
+    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", needs: "campaign_links" as CapNumberKey, onClick: () => nav("/divulgacao") }] : []),
+    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe da casa", text: "Convide quem ajuda a atender e defina o que vê", needs: "included_seats" as CapNumberKey, onClick: () => nav("/equipe") }] : []),
     { icon: Pencil, title: "Editar perfil", text: "Foto, capa e apresentação da casa", onClick: () => nav(`/casa/${house.id}?editar=1`) },
     { icon: Bot, title: "Assistente virtual", text: "Como ela atende seus clientes", onClick: () => nav("/perfil") },
   ];
+
+  // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; a página explica).
+  const planTag = (t: { needs?: CapFlagKey | CapNumberKey }): string | null => {
+    if (!t.needs || !plan) return null;
+    const min = minPlanFor(config.plan_matrix, t.needs);
+    if (!min || HOUSE_PLAN_IDS.indexOf(plan) >= HOUSE_PLAN_IDS.indexOf(min)) return null;
+    return min === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[min].name;
+  };
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
@@ -85,7 +99,7 @@ export default function HouseHome() {
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
 
-      {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} />}
+      {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} required={plan === "gratis"} />}
 
       <section aria-label="Atalhos" className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {tiles.map((t, i) => (
@@ -98,7 +112,7 @@ export default function HouseHome() {
             {"badge" in t && t.badge > 0 && (
               <span className="absolute right-3 top-3 min-w-5 h-5 px-1.5 rounded-full bg-[hsl(var(--danger))] text-white text-xs font-bold grid place-items-center" aria-label={`${t.badge} em atraso`}>{t.badge}</span>
             )}
-            <span className="flex items-center gap-2 font-semibold"><t.icon className={`h-4 w-4 ${TILE_TONES[i % TILE_TONES.length].icon}`} />{t.title}</span>
+            <span className="flex items-center gap-2 font-semibold"><t.icon className={`h-4 w-4 ${TILE_TONES[i % TILE_TONES.length].icon}`} />{t.title}{planTag(t) && <span className="ml-auto rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{planTag(t)}</span>}</span>
             <span className="block text-sm text-muted-foreground mt-1">{t.text}</span>
           </button>
         ))}

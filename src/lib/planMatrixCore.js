@@ -45,6 +45,7 @@ export const DEFAULT_PLAN_MATRIX = {
       tagline: "Comece a receber pessoas, sem mensalidade.",
       benefits: [
         { text: "Página da casa, feed e avaliações dos clientes", feature: null },
+        { text: "Link e QR code da sua casa, para compartilhar onde quiser", feature: null },
         { text: "Até {limit_services} serviços e {limit_rituals} rituais ativos, sempre com o pagamento da plataforma", feature: null },
         { text: "Até {limit_posts_month} publicações por mês", feature: null },
         { text: "Chat em texto", feature: null },
@@ -128,6 +129,15 @@ export function planCap(matrix, plan, key) {
   const m = matrix?.caps ?? DEFAULT_PLAN_MATRIX.caps;
   const row = m[PLAN_IDS.includes(plan) ? plan : "gratis"] ?? DEFAULT_PLAN_MATRIX.caps.gratis;
   return Object.hasOwn(row, key) ? row[key] : DEFAULT_PLAN_MATRIX.caps.gratis[key];
+}
+
+/** Primeiro plano (do Grátis ao Premium) que inclui a ferramenta (número maior que zero ou chave ligada). Nenhum: null. */
+export function minPlanFor(matrix, key) {
+  for (const plan of PLAN_IDS) {
+    const v = planCap(matrix, plan, key);
+    if (v === true || (typeof v === "number" && v > 0)) return plan;
+  }
+  return null;
 }
 
 /** Troca {chave} pelo número do plano. Chave desconhecida some (nunca aparece "{...}" na tela). */

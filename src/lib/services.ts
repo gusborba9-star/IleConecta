@@ -1,3 +1,4 @@
+import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
 import type { ServiceDelivery, ServiceKind, ServiceValue } from "@/lib/servicesCore";
 
@@ -68,12 +69,14 @@ export async function createService(ownerId: string, value: ServiceValue): Promi
   const houseId = await houseIdOf(ownerId);
   if (!houseId) return null;
   const { data, error } = await supabase.from("services").insert({ house_id: houseId, ...value }).select(COLS).single();
+  if (error) rememberPlanGuard(error);
   return error || !data ? null : toService(data);
 }
 
 export async function updateService(id: string, value: Partial<ServiceValue> & { active?: boolean }): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from("services").update(value).eq("id", id);
+  if (error) rememberPlanGuard(error);
   return !error;
 }
 

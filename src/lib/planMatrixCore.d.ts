@@ -11,6 +11,7 @@ export declare const CAP_NUMBER_KEYS: CapNumberKey[];
 export declare const CAP_FLAG_KEYS: CapFlagKey[];
 export declare const DEFAULT_PLAN_MATRIX: PlanMatrix;
 export declare function sanitizePlanMatrix(raw: unknown): PlanMatrix;
+export declare function minPlanFor(matrix: PlanMatrix | null | undefined, key: CapNumberKey | CapFlagKey): HousePlanId | null;
 export declare function planCap(matrix: PlanMatrix | null | undefined, plan: string | null | undefined, key: CapNumberKey): number;
 export declare function planCap(matrix: PlanMatrix | null | undefined, plan: string | null | undefined, key: CapFlagKey): boolean;
 export declare function renderBenefit(text: string, caps: Partial<PlanCaps> | null | undefined): string;

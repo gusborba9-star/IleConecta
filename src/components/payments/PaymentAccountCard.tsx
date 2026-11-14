@@ -5,10 +5,10 @@ import { Badge, Button, Card } from "@/components/base";
 import { paymentsEnabledFor } from "@/lib/consents";
 import { fetchAccountStatus, startOnboarding, type AccountStatus } from "@/lib/payments";
 
-interface Props { ownerId: string; termsOk: boolean }
+interface Props { ownerId: string; termsOk: boolean; /** Plano Grátis: sem a conta de recebimento a casa não publica serviço ou ritual com valor. */ required?: boolean }
 
 /** Cadastro de recebimento da casa no Stripe. Só aparece quando os pagamentos estão liberados para esta casa. */
-export default function PaymentAccountCard({ ownerId, termsOk }: Props) {
+export default function PaymentAccountCard({ ownerId, termsOk, required = false }: Props) {
   const [on, setOn] = useState(false);
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,6 +54,7 @@ export default function PaymentAccountCard({ ownerId, termsOk }: Props) {
           ? "Você já pode vender rituais e serviços pela plataforma. O valor pago cai direto na sua conta Stripe, já sem a comissão da plataforma."
           : "Para vender pela plataforma, cadastre a sua conta de recebimento no Stripe (dados e conta bancária). O dinheiro vai direto para você; a plataforma só retém a comissão."}
       </p>
+      {required && !ready && <p className="text-sm font-medium mt-2">No plano Grátis, ative a sua conta de pagamento antes de publicar serviços ou rituais com valor.</p>}
       {!termsOk && <p className="text-sm text-[hsl(var(--danger))] mt-2">Aceite antes os Termos de Uso da Casa, em <Link to="/termos" className="underline">Termos e normas</Link>.</p>}
       {!ready && <Button className="mt-3" disabled={busy || !termsOk} onClick={() => void go()}>{busy ? "Abrindo…" : status?.registered ? "Continuar cadastro" : "Cadastrar recebimento"}</Button>}
       {status?.registered && !ready && <Button className="mt-3 ml-2" variant="outline" onClick={() => void refresh()}>Atualizar situação</Button>}

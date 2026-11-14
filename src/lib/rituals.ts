@@ -1,3 +1,4 @@
+import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
 import { refundCancelled } from "@/lib/payments";
 import type { IntakeField, RitualMode, RitualValue } from "@/lib/ritualsCore";
@@ -87,6 +88,7 @@ export async function createRitual(ownerId: string, v: RitualValue, publish: boo
   if (!h) return false;
   const { stream_url, ...row } = v;
   const { data, error } = await supabase.from("events").insert({ house_id: h.id, ...row, status: publish ? "publicado" : "rascunho" }).select("id").single();
+  if (error) rememberPlanGuard(error);
   if (error || !data) return false;
   if (stream_url) await supabase.from("event_secrets").upsert({ event_id: data.id, stream_url });
   return true;
@@ -96,7 +98,7 @@ export async function updateRitual(id: string, v: RitualValue): Promise<boolean>
   if (!supabase) return false;
   const { stream_url, ...row } = v;
   const { error } = await supabase.from("events").update(row).eq("id", id);
-  if (error) return false;
+  if (error) { rememberPlanGuard(error); return false; }
   const { error: e2 } = stream_url
     ? await supabase.from("event_secrets").upsert({ event_id: id, stream_url })
     : await supabase.from("event_secrets").delete().eq("event_id", id);
@@ -106,6 +108,7 @@ export async function updateRitual(id: string, v: RitualValue): Promise<boolean>
 export async function setRitualStatus(id: string, status: EventStatus): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from("events").update({ status }).eq("id", id);
+  if (error) rememberPlanGuard(error);
   return !error;
 }
 
