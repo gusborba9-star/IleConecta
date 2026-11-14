@@ -112,11 +112,16 @@ test("cancelar agora: texto da escolha e confirmação extra deixam claro que n�
 });
 
 import { readPlanRefund, RETURNING_REFUND_TEXT } from "../src/lib/aiCreditsCore.js";
-test("reembolso do plano: conta reutilizada não é elegível e a mensagem é clara", () => {
-  const p = readPlanRefund({ has_house: true, returning: true, eligible: false, charge_id: "c1", amount_cents: 29990, deadline: "2099-01-01T00:00:00Z", window_days: 7, history: [] });
-  assert.equal(p.returning, true);
-  assert.equal(p.eligible, false);
+test("reembolso do plano: bloqueio só quando uma conta anterior já usou, com mensagem clara", () => {
+  const usado = readPlanRefund({ has_house: true, returning: true, refund_blocked: true, eligible: false, charge_id: "c1", amount_cents: 29990, deadline: "2099-01-01T00:00:00Z", window_days: 7, history: [] });
+  assert.equal(usado.returning, true);
+  assert.equal(usado.refundBlocked, true);
+  assert.equal(usado.eligible, false);
   assert.match(RETURNING_REFUND_TEXT, /Conta reutilizada/);
-  assert.match(RETURNING_REFUND_TEXT, /não está incluído/);
-  assert.equal(readPlanRefund({ has_house: true, eligible: false }).returning, false);
+  assert.match(RETURNING_REFUND_TEXT, /já foi utilizado/);
+  const volta = readPlanRefund({ has_house: true, returning: true, refund_blocked: false, eligible: true, charge_id: "c2", amount_cents: 29990, deadline: "2099-01-01T00:00:00Z", window_days: 7, history: [] });
+  assert.equal(volta.returning, true);
+  assert.equal(volta.refundBlocked, false);
+  assert.equal(volta.eligible, true);
+  assert.equal(readPlanRefund({ has_house: true, eligible: false }).refundBlocked, false);
 });

@@ -12,7 +12,7 @@ export default function ReturningAccountsCard() {
   const [open, setOpen] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [history, setHistory] = useState<ReturningHistory | null>(null);
-  const [template, setTemplate] = useState<NoticeKey>("reembolso_nao_incluso");
+  const [template, setTemplate] = useState<NoticeKey>("registros_anteriores");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -51,7 +51,7 @@ export default function ReturningAccountsCard() {
     <Card className="p-5 space-y-3">
       <h2 className="font-display font-bold text-lg">Contas que voltaram após exclusão</h2>
       <p className="text-xs text-muted-foreground">
-        O e-mail destas contas já pertenceu a uma conta excluída. Elas não são impedidas de usar a plataforma, mas o reembolso de 7 dias do plano não está incluído.
+        O e-mail destas contas já pertenceu a uma conta excluída. Elas não são impedidas de usar a plataforma; só o reembolso de 7 dias do plano não é concedido de novo quando uma conta anterior já o usou.
         Consultar o histórico exige motivo e fica registrado com o seu nome. Os avisos usam texto neutro: o e-mail pode ter sido reaproveitado por outra pessoa.
       </p>
       {rows === null && <p className="text-sm text-muted-foreground">Carregando…</p>}

@@ -22,8 +22,8 @@ export interface ReturningHistory {
 }
 
 export const NOTICE_TEMPLATES = [
-  { key: "reembolso_nao_incluso", label: "Reembolso de 7 dias não incluído", preview: "Conta reutilizada: este e-mail já esteve vinculado a uma conta excluída e, por isso, o reembolso de 7 dias do plano não está incluído. Se tiver dúvida, fale com o suporte." },
-  { key: "registros_anteriores", label: "Registros de conta anterior", preview: "Existem registros de uma conta anterior vinculada a este e-mail. Se você acha que isso é um engano, fale com o suporte." },
+  { key: "reembolso_ja_usado", label: "Reembolso de 7 dias já utilizado", preview: "Aviso do sistema: este endereço de e-mail possui histórico vinculado a uma conta encerrada anteriormente, na qual o reembolso de 7 dias do plano já foi utilizado; por isso ele não é concedido novamente. Se tiver dúvidas, consulte os Termos de Uso ou fale com o suporte." },
+  { key: "registros_anteriores", label: "Histórico de conta anterior", preview: "Aviso do sistema: este endereço de e-mail possui histórico vinculado a uma conta encerrada anteriormente na plataforma. Caso tenha dúvidas sobre as regras vigentes de contratação ou benefícios, consulte nossos Termos de Uso ou fale com o suporte." },
   { key: "livre", label: "Aviso livre (você escreve)", preview: "" },
 ] as const;
 export type NoticeKey = (typeof NOTICE_TEMPLATES)[number]["key"];

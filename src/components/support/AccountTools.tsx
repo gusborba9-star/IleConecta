@@ -58,7 +58,7 @@ export default function AccountTools() {
           </>
         ) : asking ? (
           <div className="space-y-2">
-            <p className="text-sm">Seu perfil, mensagens e dados pessoais serão apagados ou anonimizados após 7 dias. Pagamentos, reembolsos e aceites dos Termos são guardados por até 5 anos por obrigação legal e proteção de todos, junto com a identificação de quem era o titular (visível só à administração). Se você criar uma nova conta com o mesmo e-mail, ela é identificada como conta que voltou, e essa conta não inclui o reembolso de 7 dias do plano.</p>
+            <p className="text-sm">Seu perfil, mensagens e dados pessoais serão apagados ou anonimizados após 7 dias. Pagamentos, reembolsos e aceites dos Termos são guardados por até 5 anos por obrigação legal e proteção de todos, junto com a identificação de quem era o titular (visível só à administração). Se você criar uma nova conta com o mesmo e-mail, ela é identificada como conta que voltou, e o reembolso de 7 dias do plano não é concedido de novo se uma conta anterior já o tiver usado.</p>
             {st.impedimentos.length > 0 && (
               <div className="text-sm text-destructive">
                 <p className="font-medium">Não é possível excluir a conta agora:</p>
