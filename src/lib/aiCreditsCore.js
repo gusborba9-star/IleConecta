@@ -89,6 +89,7 @@ export function readPlanRefund(raw) {
   const history = Array.isArray(r.history) ? r.history : [];
   return {
     cancelled: r.cancelled === true,
+    returning: r.returning === true,
     eligible: r.eligible === true && typeof r.charge_id === "string" && Number.isFinite(cents) && cents > 0,
     chargeId: typeof r.charge_id === "string" ? r.charge_id : null,
     amountCents: Number.isFinite(cents) ? cents : 0,
@@ -105,3 +106,6 @@ export function planRefundText(p, now = Date.now()) {
   const left = days === null ? "" : days <= 1 ? " Último dia para pedir." : ` Faltam ${days} dias para pedir.`;
   return { money, line: `Primeiro pagamento do plano: devolvemos ${money} (valor integral).${left}` };
 }
+
+/** Texto mostrado quando a conta é reutilizada (e-mail de conta excluída): sem o benefício do reembolso de 7 dias. */
+export const RETURNING_REFUND_TEXT = "Conta reutilizada: o reembolso de 7 dias do plano não está incluído.";

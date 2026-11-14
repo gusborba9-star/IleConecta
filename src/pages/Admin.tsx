@@ -28,6 +28,7 @@ import PriceChangeCard from "@/components/admin/PriceChangeCard";
 import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
+import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
@@ -224,6 +225,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
       <HousePlansCard />
       <StaffAuditCard />
+
+      <ReturningAccountsCard />
 
       <ReportedReviewsCard />
 
