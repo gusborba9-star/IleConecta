@@ -5,6 +5,8 @@ import { cloneDefaultMatrix, sanitizePlanMatrix } from "./planMatrixCore.js";
 export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
 export const PLAN_IDS = ["base", "intermediario", "maximo"];
+export const HOUSE_PLAN_IDS = ["gratis", ...PLAN_IDS];
+export const FREE_PLAN_NAME = "Grátis";
 export const FEATURE_STATES = ["off", "beta", "on"];
 
 export const DEFAULT_CONFIG = {

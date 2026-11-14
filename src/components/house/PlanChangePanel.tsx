@@ -7,7 +7,8 @@ import { brDate } from "@/lib/accountGateCore";
 import { schedulePlanDowngrade, undoPlanDowngrade } from "@/lib/planChange";
 import { PLAN_RANK, type PlanChangeStatus } from "@/lib/planChangeCore";
 import { startSubscribe, startUpgrade } from "@/lib/platformBilling";
-import { formatMoney, type PlanId } from "@/lib/pricing";
+import { FREE_PLAN_NAME, type HousePlanId } from "@/lib/platformConfigCore";
+import { formatMoney } from "@/lib/pricing";
 
 const TERMS = <Link to="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</Link>;
 
@@ -15,20 +16,21 @@ const TERMS = <Link to="/termos" target="_blank" rel="noopener noreferrer" class
  * Painel de troca de plano dentro de Planos. Três caminhos, todos decididos pelo banco (a tela só mostra valores e motivos):
  * assinar (casa sem assinatura), subir de plano (paga a diferença proporcional) e descer (vale na renovação, sem devolução).
  */
-export default function PlanChangePanel({ status, target, onClose, onChanged }: { status: PlanChangeStatus; target: PlanId; onClose: () => void; onChanged: () => void }) {
+export default function PlanChangePanel({ status, target, onClose, onChanged }: { status: PlanChangeStatus; target: HousePlanId; onClose: () => void; onChanged: () => void }) {
   const { config } = usePlatformConfig();
   const [busy, setBusy] = useState<string | null>(null);
-  const name = (p: PlanId) => config.pricing.plans[p].name;
-  const monthly = config.pricing.plans[target].monthly;
+  const name = (p: HousePlanId) => (p === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[p].name);
+  const monthly = target === "gratis" ? 0 : config.pricing.plans[target].monthly;
   const up = status.subscribed && PLAN_RANK[target] > PLAN_RANK[status.plan];
   const down = status.subscribed && PLAN_RANK[target] < PLAN_RANK[status.plan];
-  const quote = up ? status.upgrades[target] : undefined;
-  const blockedUp = up ? status.upgradeBlocked[target] : undefined;
+  const quote = up && target !== "gratis" ? status.upgrades[target] : undefined;
+  const blockedUp = up && target !== "gratis" ? status.upgradeBlocked[target] : undefined;
 
   const pay = async (method: "pix" | "card") => {
-    if (target === "base") return;
+    if (target === "gratis") return;
+    if (up && target === "base") return;
     setBusy(method);
-    const error = await (up ? startUpgrade : startSubscribe)(target, method);
+    const error = await (up && target !== "base" ? startUpgrade(target, method) : startSubscribe(target, method));
     if (error) { setBusy(null); toast.error(error); }
   };
   const schedule = async () => {
@@ -58,7 +60,7 @@ export default function PlanChangePanel({ status, target, onClose, onChanged }: 
             {!status.subscribed ? `Assinar o plano ${name(target)}` : up ? `Subir para o plano ${name(target)}` : down ? `Passar para o plano ${name(target)}` : "Plano atual"}
           </h2>
 
-          {!status.subscribed && target !== "base" && (
+          {!status.subscribed && target !== "gratis" && (
             <>
               <p className="text-sm mt-1">Você paga <strong>{formatMoney(monthly)}</strong> agora. Ao confirmar o pagamento, o plano é liberado na hora e a mensalidade passa a vencer neste mesmo dia, todo mês. Você cancela quando quiser, em Planos.</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -90,8 +92,8 @@ export default function PlanChangePanel({ status, target, onClose, onChanged }: 
           {down && status.pendingPlan !== target && (
             status.downgradeBlocked ? <p className="text-sm mt-1">{status.downgradeBlocked}</p> : (
               <>
-                <p className="text-sm mt-1">{target === "base"
-                  ? "A casa volta ao plano Base na próxima renovação e a mensalidade deixa de ser cobrada."
+                <p className="text-sm mt-1">{target === "gratis"
+                  ? "A casa volta ao plano Grátis na próxima renovação e a mensalidade deixa de ser cobrada. No Grátis, os pagamentos continuam sendo feitos só pela plataforma, e há limite de serviços, rituais e publicações por mês."
                   : `A casa passa para o plano ${name(target)} (${formatMoney(monthly)} por mês) na próxima renovação.`} Até lá você continua com os recursos do plano {name(status.plan)}. Não há devolução de dias já pagos.</p>
                 <div className="mt-3"><Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void schedule()}>{busy === "agendar" ? "Agendando…" : "Agendar a troca"}</Button></div>
                 <p className="text-xs text-muted-foreground mt-2">Você pode desfazer enquanto a fatura da renovação ainda não tiver sido gerada. Equipe acima do limite do plano novo fica desativada, sem apagar nada.</p>

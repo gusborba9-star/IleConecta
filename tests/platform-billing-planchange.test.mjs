@@ -34,13 +34,21 @@ test("só a casa assina ou sobe de plano", async () => {
   }
 });
 
-test("plano sem mensalidade (base) ou inventado nunca chega ao banco", async () => {
-  for (const plan of ["base", "gratis", null, undefined, "MAXIMO"]) {
+test("plano inventado ou sem mensalidade (gratis) nunca chega ao banco", async () => {
+  for (const plan of ["gratis", null, undefined, "MAXIMO", "premium"]) {
     const t = setup();
     await assert.rejects(() => subscribe(args(t, { plan })), (e) => e.code === "plan_change_denied");
     await assert.rejects(() => upgrade(args(t, { plan })), (e) => e.code === "plan_change_denied");
     assert.equal(t.calls.sub.length + t.calls.up.length, 0);
   }
+});
+
+test("o Essencial (base) pode ser assinado, mas nunca é destino de upgrade", async () => {
+  const t = setup();
+  await subscribe(args(t, { plan: "base" })).catch(() => {});
+  assert.deepEqual(t.calls.sub, [[HOUSE, "base"]]);
+  await assert.rejects(() => upgrade(args(t, { plan: "base" })), (e) => e.code === "plan_change_denied");
+  assert.equal(t.calls.up.length, 0);
 });
 
 test("cada ação chama a emissão certa com a casa e o plano", async () => {
@@ -88,5 +96,5 @@ test("leitura do status para a tela", () => {
   assert.equal(s.upgrades.intermediario, undefined, "cotação abaixo do mínimo é ignorada");
   assert.equal(s.upgrades.lixo, undefined, "plano desconhecido é ignorado");
   assert.deepEqual(s.upgradeBlocked, { maximo: "x" });
-  assert.ok(PLAN_RANK.maximo > PLAN_RANK.intermediario && PLAN_RANK.intermediario > PLAN_RANK.base);
+  assert.ok(PLAN_RANK.maximo > PLAN_RANK.intermediario && PLAN_RANK.intermediario > PLAN_RANK.base && PLAN_RANK.base > PLAN_RANK.gratis);
 });

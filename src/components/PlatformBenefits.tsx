@@ -5,6 +5,8 @@ const PLATFORM_BENEFITS = [
   "Você é avisado quando a casa iniciar e quando terminar.",
   "Histórico do seu pedido e do que foi pago sempre à mão.",
   "Só quem comprou pela plataforma pode avaliar a casa.",
+  "Algo não saiu como combinado? Relate o problema pelo Suporte e a nossa equipe analisa o caso.",
+  "Combinar e pagar por fora não tem reembolso, comprovante nem suporte da plataforma.",
 ];
 
 export default function PlatformBenefits() {

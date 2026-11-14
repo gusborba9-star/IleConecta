@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { readPlanChange, type PlanChangeStatus } from "@/lib/planChangeCore";
-import type { PlanId } from "@/lib/pricing";
+import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 
 const clean = (e: { message?: string } | null, fallback: string) => (e?.message && !/^(fetch|network|TypeError|Failed)/i.test(e.message) ? e.message : fallback);
 

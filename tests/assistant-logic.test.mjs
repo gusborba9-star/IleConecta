@@ -30,14 +30,17 @@ const assistantOn = {
 const house = { name: "Ilê Axé", category: "Candomblé Ketu" };
 const base = { house, assistant: assistantOn, services: [], events: [] };
 
-test("plano base não tem assistente; cota e limite por usuário bloqueiam", () => {
+test("plano grátis não tem assistente (só com pacote); cota e limite por usuário bloqueiam", () => {
   const ok = { plan: "maximo", assistant: assistantOn, usedThisMonth: 0, usedByUserInWindow: 0 };
   assert.equal(checkGate(ok), null);
-  assert.equal(checkGate({ ...ok, plan: "base" }), "plano_sem_assistente");
+  assert.equal(checkGate({ ...ok, plan: "gratis" }), "plano_sem_assistente");
+  assert.equal(checkGate({ ...ok, plan: "gratis", creditBalance: 5 }), null, "grátis com pacote comprado atende");
+  assert.equal(checkGate({ ...ok, plan: "base", usedThisMonth: 100 }), "cota_mensal");
+  assert.equal(checkGate({ ...ok, plan: "base", usedThisMonth: 99 }), null);
   assert.equal(checkGate({ ...ok, plan: "desconhecido" }), "plano_sem_assistente");
   assert.equal(checkGate({ ...ok, assistant: { ...assistantOn, enabled: false } }), "assistente_desativada");
   assert.equal(checkGate({ ...ok, assistant: null }), "assistente_desativada");
-  assert.equal(checkGate({ ...ok, plan: "intermediario", usedThisMonth: 300 }), "cota_mensal");
+  assert.equal(checkGate({ ...ok, plan: "intermediario", usedThisMonth: 500 }), "cota_mensal");
   assert.equal(checkGate({ ...ok, plan: "intermediario", usedThisMonth: 299 }), null);
   assert.equal(checkGate({ ...ok, usedByUserInWindow: USER_RATE.maxReplies }), "muitas_mensagens");
 });
@@ -51,7 +54,9 @@ test("desconto e venda só no plano máximo e dentro do limite da casa", () => {
   assert.equal(allowedDiscountPercent("maximo", { ...assistantOn, max_discount_percent: "abc" }), 0);
   assert.equal(canSell("maximo", assistantOn), true);
   assert.equal(canSell("intermediario", assistantOn), true);
-  assert.equal(canSell("base", assistantOn), false);
+  assert.equal(canSell("base", assistantOn), true);
+  assert.equal(canSell("gratis", { ...assistantOn, can_sell: false }), true, "no Grátis a venda é sempre pela plataforma");
+  assert.equal(canSell("base", { ...assistantOn, can_sell: false }), false);
   assert.equal(canSell("maximo", { ...assistantOn, can_sell: false }), false);
 });
 
@@ -258,13 +263,14 @@ test("retomada: as mensagens da casa entram marcadas e o histórico é maior (20
 
 test("créditos de IA: a franquia do mês vem primeiro; passada ela, só segue com saldo", () => {
   const base = { plan: "intermediario", assistant: { enabled: true }, usedByUserInWindow: 0 };
-  assert.equal(checkGate({ ...base, usedThisMonth: 299, creditBalance: 0 }), null, "dentro da franquia");
-  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 0 }), "cota_mensal", "franquia acabou, sem crédito");
-  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 5 }), null, "franquia acabou, com crédito");
+  assert.equal(checkGate({ ...base, usedThisMonth: 499, creditBalance: 0 }), null, "dentro da franquia");
+  assert.equal(checkGate({ ...base, usedThisMonth: 500, creditBalance: 0 }), "cota_mensal", "franquia acabou, sem crédito");
+  assert.equal(checkGate({ ...base, usedThisMonth: 500, creditBalance: 5 }), null, "franquia acabou, com crédito");
   assert.equal(checkGate({ ...base, usedThisMonth: 5000, creditBalance: 1 }), null);
-  assert.equal(checkGate({ ...base, usedThisMonth: 300 }), "cota_mensal", "sem informar saldo vale zero");
-  for (const bad of [-3, NaN, "x", null, undefined]) assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: bad }), "cota_mensal", `saldo inválido ${String(bad)} não libera`);
-  assert.equal(checkGate({ ...base, plan: "base", usedThisMonth: 0, creditBalance: 999 }), "plano_sem_assistente", "crédito não vale em plano sem assistente");
-  assert.equal(checkGate({ ...base, assistant: { enabled: false }, usedThisMonth: 300, creditBalance: 9 }), "assistente_desativada", "assistente desligada continua barrando");
-  assert.equal(checkGate({ ...base, usedThisMonth: 300, creditBalance: 9, usedByUserInWindow: 999 }), "muitas_mensagens", "limite por usuário continua valendo");
+  assert.equal(checkGate({ ...base, usedThisMonth: 500 }), "cota_mensal", "sem informar saldo vale zero");
+  for (const bad of [-3, NaN, "x", null, undefined]) assert.equal(checkGate({ ...base, usedThisMonth: 500, creditBalance: bad }), "cota_mensal", `saldo inválido ${String(bad)} não libera`);
+  assert.equal(checkGate({ ...base, plan: "gratis", usedThisMonth: 0, creditBalance: 0 }), "plano_sem_assistente", "grátis sem pacote não atende");
+  assert.equal(checkGate({ ...base, plan: "gratis", usedThisMonth: 40, creditBalance: 999 }), null, "grátis com pacote atende");
+  assert.equal(checkGate({ ...base, assistant: { enabled: false }, usedThisMonth: 500, creditBalance: 9 }), "assistente_desativada", "assistente desligada continua barrando");
+  assert.equal(checkGate({ ...base, usedThisMonth: 500, creditBalance: 9, usedByUserInWindow: 999 }), "muitas_mensagens", "limite por usuário continua valendo");
 });

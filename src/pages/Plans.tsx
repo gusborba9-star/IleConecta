@@ -3,9 +3,9 @@ import { Check } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchMyAssistant } from "@/lib/assistant";
-import { PLANS, formatMoney, type PlanId } from "@/lib/pricing";
+import { formatMoney, type PlanId } from "@/lib/pricing";
 import { benefitsFor } from "@/lib/planMatrixCore";
-import { isFeatureOn, type FeatureKey } from "@/lib/platformConfigCore";
+import { FREE_PLAN_NAME, HOUSE_PLAN_IDS, isFeatureOn, type FeatureKey, type HousePlanId } from "@/lib/platformConfigCore";
 import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -17,6 +17,7 @@ import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
 import OrdersCard from "@/components/house/OrdersCard";
 import ReactivateCard from "@/components/house/ReactivateCard";
 import ReturningNoticeCard from "@/components/house/ReturningNoticeCard";
+import FreePlanNotice, { SellOnPlatformCard } from "@/components/house/FreePlanNotice";
 import PlanChangePanel from "@/components/house/PlanChangePanel";
 import { fetchPlanChange } from "@/lib/planChange";
 import { PLAN_RANK, type PlanChangeStatus } from "@/lib/planChangeCore";
@@ -56,13 +57,13 @@ export default function Plans() {
   const { currentUser, isRemoteAuth } = useApp();
   const nav = useNavigate();
   const { config } = usePlatformConfig();
-  const [mine, setMine] = useState<PlanId | null>(null);
+  const [mine, setMine] = useState<HousePlanId | null>(null);
   const isHouse = currentUser?.type === "commercial";
   const userId = currentUser?.id;
   const [params, setParams] = useSearchParams();
   const [billingTick, setBillingTick] = useState(0);
   const [change, setChange] = useState<PlanChangeStatus | null>(null);
-  const [target, setTarget] = useState<PlanId | null>(null);
+  const [target, setTarget] = useState<HousePlanId | null>(null);
 
   // Voltou da página de pagamento: confere a fatura agora (sem esperar o aviso do provedor) e atualiza os cards.
   const returned = params.get("retorno") ? params.get("fatura") : null;
@@ -109,7 +110,7 @@ export default function Plans() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
-      {isRemoteAuth && isHouse && <ReactivateCard plan={mine} refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <ReactivateCard plan={mine === "gratis" ? null : mine} refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <ReturningNoticeCard />}
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
@@ -132,12 +133,15 @@ export default function Plans() {
         </ol>
       </Card>
 
+      {isRemoteAuth && isHouse && mine === "gratis" && <FreePlanNotice />}
+      {isRemoteAuth && isHouse && mine && <SellOnPlatformCard paid={mine !== "gratis"} />}
       {isRemoteAuth && isHouse && change && target && (
         <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {PLANS.map((p) => {
-          const info = config.pricing.plans[p.id];
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {HOUSE_PLAN_IDS.map((id) => {
+          const p = { id };
+          const info = id === "gratis" ? { name: FREE_PLAN_NAME, monthly: 0 } : config.pricing.plans[id];
           // Textos e números vêm da matriz de planos (painel admin). Item ligado a uma ferramenta só aparece com o interruptor ligado.
           const copy = config.plan_matrix.copy[p.id];
           const benefits = benefitsFor(config.plan_matrix, p.id, (f) => isFeatureOn(config, f as FeatureKey, userId));
@@ -150,8 +154,8 @@ export default function Plans() {
             </div>
             <p className={`text-sm ${p.id === "maximo" ? "text-white/75" : "text-muted-foreground"}`}>{copy.tagline}</p>
             <div className="mt-3">
-              <span className={`font-display font-bold text-3xl ${p.id === "maximo" ? "text-white" : "text-primary"}`}>{formatMoney(info.monthly)}</span>
-              {info.monthly !== null && <span className={`text-sm ${p.id === "maximo" ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
+              <span className={`font-display font-bold text-3xl ${p.id === "maximo" ? "text-white" : "text-primary"}`}>{p.id === "gratis" ? "R$ 0" : formatMoney(info.monthly)}</span>
+              {info.monthly !== null && p.id !== "gratis" && <span className={`text-sm ${p.id === "maximo" ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
             </div>
             <ul className="mt-4 space-y-2 text-sm flex-1">
               {benefits.map((b) => (
@@ -160,9 +164,9 @@ export default function Plans() {
             </ul>
             {isHouse ? (
               isRemoteAuth && change && !change.cancelled ? (
-                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "base")} onClick={() => setTarget(p.id)}>
+                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "gratis")} onClick={() => setTarget(p.id)}>
                   {change.plan === p.id ? "Plano atual"
-                    : p.id === "base" && !change.subscribed ? "Plano gratuito"
+                    : p.id === "gratis" && !change.subscribed ? "Plano gratuito"
                     : !change.subscribed ? "Assinar este plano"
                     : change.pendingPlan === p.id ? `Agendado para ${brDate(change.pendingOn)}`
                     : PLAN_RANK[p.id] > PLAN_RANK[change.plan] ? "Fazer upgrade"
@@ -179,7 +183,7 @@ export default function Plans() {
         })}
       </div>
       {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine ? config.pricing.plans[mine].name : null} monthly={mine ? config.pricing.plans[mine].monthly : null} />}
+      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine && mine !== "gratis" ? config.pricing.plans[mine].name : null} monthly={mine && mine !== "gratis" ? config.pricing.plans[mine].monthly : null} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <OrdersCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
       {isRemoteAuth && isHouse && <CancelSubscriptionCard onChanged={() => setBillingTick((n) => n + 1)} />}

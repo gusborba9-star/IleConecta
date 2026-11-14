@@ -13,7 +13,7 @@ import LockedLayout from "./LockedLayout";
 import { fetchAccountGate } from "@/lib/accountGate";
 import { fetchMyAssistant } from "@/lib/assistant";
 import type { AccountGate } from "@/lib/accountGateCore";
-import type { PlanId } from "@/lib/pricing";
+import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 import Footer from "./Footer";
 
 export default function AppShell() {

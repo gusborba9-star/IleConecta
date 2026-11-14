@@ -1,4 +1,4 @@
-import type { PlanId } from "@/lib/pricing";
+import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 
 export interface UpgradeQuote { plan: PlanId; amountCents: number; oldCents: number; newCents: number; daysLeft: number; daysTotal: number; cycleEnd: string }
 export interface PlanChangeStatus {

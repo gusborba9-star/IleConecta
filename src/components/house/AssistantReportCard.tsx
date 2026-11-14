@@ -32,17 +32,17 @@ export default function AssistantReportCard() {
 
   if (!isRemoteAuth || !uid || !r || !isFeatureOn(config, "assistant", uid)) return null;
 
-  const withAssistant = r.plan !== "base";
+  const withAssistant = r.plan !== "gratis" || r.assistantReplies > 0;
   const plans = config.pricing.plans;
-  const upgradeName = r.plan === "base" ? plans.intermediario.name : plans.maximo.name;
+  const upgradeName = r.plan === "gratis" ? plans.base.name : r.plan === "base" ? plans.intermediario.name : plans.maximo.name;
   const night = r.nightContacts24h;
   const max = Math.max(1, ...r.repliesByHour);
 
   // Convite ao upgrade: apenas com contatos reais; no plano máximo não há o que oferecer.
   let upsell: string | null = null;
-  if (r.plan === "base" && night > 0) {
+  if (r.plan === "gratis" && night > 0) {
     upsell = `Ontem à noite ${night} ${night === 1 ? "cliente entrou" : "clientes entraram"} em contato com a casa. Com o plano ${upgradeName}, a assistente atende, explica e orienta enquanto você descansa.`;
-  } else if (r.plan === "base" && r.contacts24h > 0) {
+  } else if (r.plan === "gratis" && r.contacts24h > 0) {
     upsell = `Nas últimas 24 horas ${r.contacts24h} ${r.contacts24h === 1 ? "cliente falou" : "clientes falaram"} com a casa. Com o plano ${upgradeName}, a assistente responde por você quando estiver offline.`;
   } else if (r.plan === "intermediario" && r.nightContacts > 0 && r.ordersAfterChat + r.seatsAfterChat > 0) {
     upsell = `Nos últimos ${r.days} dias, ${r.ordersAfterChat + r.seatsAfterChat} pedidos ou vagas vieram de clientes que conversaram com a assistente. No plano ${upgradeName} ela atende até ${config.plan_matrix.caps.maximo.assistant_replies.toLocaleString("pt-BR")} respostas por mês e pode oferecer descontos dentro do limite que você definir.`;
@@ -77,12 +77,12 @@ export default function AssistantReportCard() {
           {r.assistantReplies === 0 && <p className="text-sm text-muted-foreground">Ainda não houve atendimentos da assistente neste período.</p>}
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">O plano {plans.base.name} não inclui a assistente. Os clientes continuam podendo falar com a casa pelo chat.</p>
+        <p className="text-sm text-muted-foreground">O plano Grátis não inclui a assistente. Para ativá-la, compre um pacote de respostas em Planos ou assine o plano {plans.base.name}. Os clientes continuam podendo falar com a casa pelo chat.</p>
       )}
 
       {upsell && (
         <div className="rounded-xl border border-gold/50 bg-gold/10 p-3 text-sm">
-          {upsell} <span className="font-semibold">Fale com a Ilê Conecta para fazer o upgrade.</span>
+          {upsell} <span className="font-semibold">Veja os planos em Planos.</span>
         </div>
       )}
     </Card>

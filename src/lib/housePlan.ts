@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { DEFAULT_PLAN_MATRIX, type PlanCaps } from "@/lib/planMatrixCore";
 
-export type HousePlan = "base" | "intermediario" | "maximo";
+export type HousePlan = "gratis" | "base" | "intermediario" | "maximo";
 
 const cache = new Map<string, { plan: HousePlan; exp: number }>();
 
@@ -14,7 +14,7 @@ export async function fetchOwnerPlan(ownerId: string): Promise<HousePlan | null>
   if (hit && hit.exp > Date.now()) return hit.plan;
   const { data, error } = await supabase.from("houses").select("plan").eq("owner_id", ownerId).maybeSingle();
   if (error || !data) return null;
-  const plan: HousePlan = data.plan === "maximo" || data.plan === "intermediario" ? data.plan : "base";
+  const plan: HousePlan = data.plan === "maximo" || data.plan === "intermediario" || data.plan === "base" ? data.plan : "gratis";
   cache.set(ownerId, { plan, exp: Date.now() + 60_000 });
   return plan;
 }

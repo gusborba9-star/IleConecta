@@ -29,7 +29,8 @@ test("o texto diz o que acontece com a assistente agora", () => {
   assert.match(t({ used_month: 100 }), /Restam 200 respostas/);
   assert.match(t({ used_month: 300, balance: 40 }), /segue com os seus créditos \(40 respostas\)/);
   assert.match(t({ used_month: 300, balance: 0 }), /pausa até o próximo mês/);
-  assert.match(t({ limit: 0 }), /não inclui a assistente/);
+  assert.match(t({ limit: 0 }), /está desligada\. Compre um pacote/);
+  assert.match(t({ limit: 0, balance: 25 }), /responde com os seus créditos \(25 respostas\)/);
 });
 
 test("validade: avisa quando está perto de vencer e quando venceu", () => {
