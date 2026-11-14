@@ -56,8 +56,8 @@ export default function PublicHousePage() {
   if (house === null)
     return (
       <Card className="p-8 text-center">
-        <div className="font-display text-2xl">Casa não encontrada</div>
-        <p className="text-sm text-muted-foreground mt-1">Confira o endereço do link ou procure a casa dentro do Ilê Conecta.</p>
+        <div className="font-display text-2xl">Casa indisponível</div>
+        <p className="text-sm text-muted-foreground mt-1">Esta casa não existe ou não está disponível no momento. Confira o endereço do link ou procure outra casa dentro do Ilê Conecta.</p>
         <Link to="/login" className="inline-block mt-4 text-primary font-semibold hover:underline">Entrar no Ilê Conecta</Link>
       </Card>
     );
