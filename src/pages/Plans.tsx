@@ -17,6 +17,10 @@ import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
 import OrdersCard from "@/components/house/OrdersCard";
 import ReactivateCard from "@/components/house/ReactivateCard";
 import ReturningNoticeCard from "@/components/house/ReturningNoticeCard";
+import PlanChangePanel from "@/components/house/PlanChangePanel";
+import { fetchPlanChange } from "@/lib/planChange";
+import { PLAN_RANK, type PlanChangeStatus } from "@/lib/planChangeCore";
+import { brDate } from "@/lib/accountGateCore";
 import { finishCardSetup, syncCharge } from "@/lib/platformBilling";
 import { toast } from "sonner";
 
@@ -57,6 +61,8 @@ export default function Plans() {
   const userId = currentUser?.id;
   const [params, setParams] = useSearchParams();
   const [billingTick, setBillingTick] = useState(0);
+  const [change, setChange] = useState<PlanChangeStatus | null>(null);
+  const [target, setTarget] = useState<PlanId | null>(null);
 
   // Voltou da página de pagamento: confere a fatura agora (sem esperar o aviso do provedor) e atualiza os cards.
   const returned = params.get("retorno") ? params.get("fatura") : null;
@@ -95,10 +101,11 @@ export default function Plans() {
     if (!isRemoteAuth || !isHouse || !userId) return;
     let alive = true;
     fetchMyAssistant(userId).then((c) => alive && setMine(c?.plan ?? null));
+    void fetchPlanChange().then((c) => alive && setChange(c));
     return () => {
       alive = false;
     };
-  }, [isRemoteAuth, isHouse, userId]);
+  }, [isRemoteAuth, isHouse, userId, billingTick]);
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
@@ -125,6 +132,9 @@ export default function Plans() {
         </ol>
       </Card>
 
+      {isRemoteAuth && isHouse && change && target && (
+        <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {PLANS.map((p) => {
           const info = config.pricing.plans[p.id];
@@ -149,9 +159,20 @@ export default function Plans() {
               ))}
             </ul>
             {isHouse ? (
-              <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={mine === p.id} onClick={() => nav("/suporte")}>
-                {mine === p.id ? "Plano atual" : "Fazer upgrade pelo suporte"}
-              </Button>
+              isRemoteAuth && change && !change.cancelled ? (
+                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "base")} onClick={() => setTarget(p.id)}>
+                  {change.plan === p.id ? "Plano atual"
+                    : p.id === "base" && !change.subscribed ? "Plano gratuito"
+                    : !change.subscribed ? "Assinar este plano"
+                    : change.pendingPlan === p.id ? `Agendado para ${brDate(change.pendingOn)}`
+                    : PLAN_RANK[p.id] > PLAN_RANK[change.plan] ? "Fazer upgrade"
+                    : "Passar para este plano na renovação"}
+                </Button>
+              ) : (
+                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={mine === p.id} onClick={() => nav("/suporte")}>
+                  {mine === p.id ? "Plano atual" : "Falar com o suporte"}
+                </Button>
+              )
             ) : null}
           </Card>
           );
@@ -168,7 +189,7 @@ export default function Plans() {
           { plan: "maximo", people: PEOPLE_FOR_24H, label: `Uma equipe de cerca de ${PEOPLE_FOR_24H} pessoas para cobrir 24 horas, 7 dias por semana` },
         ]}
       />
-      <p className="text-xs text-muted-foreground">A contratação de planos pela plataforma ainda não está disponível; por enquanto a troca é feita pelo suporte.</p>
+      <p className="text-xs text-muted-foreground">Assinar, subir de plano e voltar a um plano menor são feitos aqui mesmo. Dúvidas sobre a sua casa? Fale com o suporte.</p>
     </div>
   );
 }
