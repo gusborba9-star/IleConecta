@@ -74,7 +74,7 @@ export default function HousePage() {
   if (!house)
     return (
       <div className="p-8 text-center">
-        <div className="font-display text-2xl">Casa não encontrada</div>
+        <div className="font-display text-2xl">Casa indisponível</div>
         <Button className="mt-4" onClick={() => nav("/")}>Voltar ao feed</Button>
       </div>
     );
