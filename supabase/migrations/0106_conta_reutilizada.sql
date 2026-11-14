@@ -1,7 +1,7 @@
 -- 0106 — Conta reutilizada (decisão do proprietário, 13/11/2026, opção B): quem volta com o e-mail de uma conta excluída é MARCADO, sem ser impedido.
 --  (1) a marca usa o registro de identidade que já é retido por 5 anos (deleted_account_identity); não há dado novo guardado;
 --  (2) o e-mail é comparado em forma normalizada (minúsculas, sem "+apelido", sem pontos em gmail), para não ser driblado por variação simples;
---  (3) o reembolso integral de 7 dias do plano NÃO vale de novo se uma conta anterior do mesmo e-mail já o usou (no servidor);
+--  (3) conta reutilizada NÃO inclui o reembolso de 7 dias do plano (decisão do proprietário; no servidor), com a mensagem "Conta reutilizada: o reembolso de 7 dias não está incluído.";
 --  (4) o administrador vê a lista de contas reutilizadas, consulta o histórico retido (motivo obrigatório, fica registrado) e envia aviso
 --      pela plataforma com texto-modelo neutro (só fatos do registro; o e-mail pode ter sido reaproveitado por outra pessoa).
 
@@ -25,14 +25,10 @@ where di.user_id <> p_user and di.email is not null
   and public.email_key(di.email) = public.email_key((select u.email from auth.users u where u.id = p_user));
 $$;
 
--- a casa pertence a quem já usou o reembolso de 7 dias numa conta anterior com o mesmo e-mail?
-create or replace function public.house_owner_refund_used_before(p_house uuid) returns boolean
+-- a casa pertence a quem já teve uma conta excluída com o mesmo e-mail?
+create or replace function public.house_owner_is_returning(p_house uuid) returns boolean
 language sql stable security definer set search_path = public as $$
-select exists (
-  select 1 from public.houses h, lateral public.account_prior_deleted(h.owner_id) pd(uid)
-  join public.houses ph on ph.owner_id = pd.uid
-  join public.platform_plan_refunds r on r.house_id = ph.id and r.status in ('pendente', 'concluido')
-  where h.id = p_house);
+select exists (select 1 from public.houses h, lateral public.account_prior_deleted(h.owner_id) pd(uid) where h.id = p_house);
 $$;
 
 -- ============ 2) reembolso de 7 dias com a nova regra ============
@@ -42,7 +38,7 @@ declare c public.platform_charges; r public.platform_plan_refunds; v_first uuid;
 begin
 select * into c from public.platform_charges where id = p_charge for update;
 if not found or c.house_id <> p_house or c.kind <> 'plan' or c.status <> 'paga' then raise exception 'Esta cobrança não pode ser reembolsada.'; end if;
-if public.house_owner_refund_used_before(p_house) then raise exception 'O reembolso de 7 dias do plano já foi usado em uma conta anterior vinculada a este e-mail.'; end if;
+if public.house_owner_is_returning(p_house) then raise exception 'Conta reutilizada: o reembolso de 7 dias não está incluído.'; end if;
 select * into r from public.platform_plan_refunds where house_id = p_house and status in ('pendente', 'concluido');
 if found then
 if r.charge_id <> p_charge then raise exception 'O reembolso de 7 dias do plano já foi usado por esta casa.'; end if;
@@ -68,8 +64,8 @@ return jsonb_build_object('has_house', true, 'window_days', 7,
 'cancelled', coalesce((select s.cancelled_at is not null from public.house_billing_state s where s.house_id = h), false),
 'eligible', v_first.id is not null and v_first.status = 'paga' and v_first.paid_at + interval '7 days' >= now() and v_first.paid_amount_cents is not null and v_first.paid_ref is not null
 and not exists (select 1 from public.platform_plan_refunds r where r.house_id = h and r.status in ('pendente', 'concluido'))
-and not public.house_owner_refund_used_before(h),
-'used_before', public.house_owner_refund_used_before(h),
+and not public.house_owner_is_returning(h),
+'returning', public.house_owner_is_returning(h),
 'charge_id', case when v_first.status = 'paga' then v_first.id end, 'amount_cents', v_first.paid_amount_cents, 'deadline', v_first.paid_at + interval '7 days',
 'history', coalesce((select jsonb_agg(jsonb_build_object('amount_cents', r.amount_cents, 'status', r.status, 'at', r.created_at) order by r.created_at desc)
 from (select * from public.platform_plan_refunds where house_id = h and status in ('pendente', 'concluido') order by created_at desc limit 5) r), '[]'::jsonb));
@@ -124,8 +120,8 @@ begin
   if char_length(btrim(coalesce(p_reason, ''))) < 10 then raise exception 'Informe o motivo do aviso (mínimo de 10 caracteres).'; end if;
   if not exists (select 1 from public.account_prior_deleted(p_user)) then raise exception 'Esta conta não tem histórico de conta excluída.'; end if;
   if char_length(v_note) > 300 then raise exception 'A observação deve ter até 300 caracteres.'; end if;
-  if p_template = 'reembolso_usado' then
-    v_text := 'O reembolso integral de 7 dias do plano já foi utilizado em uma conta anterior vinculada a este e-mail e, por isso, não se aplica a esta conta. Se tiver dúvida, fale com o suporte.';
+  if p_template = 'reembolso_nao_incluso' then
+    v_text := 'Conta reutilizada: este e-mail já esteve vinculado a uma conta excluída e, por isso, o reembolso de 7 dias do plano não está incluído. Se tiver dúvida, fale com o suporte.';
   elsif p_template = 'registros_anteriores' then
     v_text := 'Existem registros de uma conta anterior vinculada a este e-mail. Se você acha que isso é um engano, fale com o suporte.';
   elsif p_template = 'livre' then
@@ -208,10 +204,10 @@ revoke all on function public.anonymize_account(uuid, uuid) from public, anon, a
 grant execute on function public.anonymize_account(uuid, uuid) to service_role;
 
 -- ============ 5) permissões ============
-revoke all on function public.email_key(text), public.account_prior_deleted(uuid), public.house_owner_refund_used_before(uuid),
+revoke all on function public.email_key(text), public.account_prior_deleted(uuid), public.house_owner_is_returning(uuid),
   public.platform_plan_refund_begin(uuid, uuid, uuid, timestamptz), public.my_plan_refund(),
   public.admin_returning_accounts(), public.admin_returning_history(uuid, text), public.admin_notify_returning(uuid, text, text, text) from public, anon, authenticated;
-grant execute on function public.email_key(text), public.account_prior_deleted(uuid), public.house_owner_refund_used_before(uuid),
+grant execute on function public.email_key(text), public.account_prior_deleted(uuid), public.house_owner_is_returning(uuid),
   public.platform_plan_refund_begin(uuid, uuid, uuid, timestamptz) to service_role;
 grant execute on function public.my_plan_refund() to authenticated, service_role;
 grant execute on function public.admin_returning_accounts(), public.admin_returning_history(uuid, text), public.admin_notify_returning(uuid, text, text, text) to authenticated, service_role;

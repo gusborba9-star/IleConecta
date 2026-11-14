@@ -74,10 +74,10 @@ const Y = await mk("y", "fulano@gmail.com");
 ok("B: a nova conta é reconhecida como reutilizada (e-mail em variação)", (await sv("select count(*)::int n from public.account_prior_deleted($1)", [Y.O])).rows[0].n === 1);
 const cY = await paidPlan(Y.H);
 let r = await sv("select public.platform_plan_refund_begin($1,$2,$3) r", [Y.H, cY, Y.O]);
-ok("B: o reembolso de 7 dias NÃO vale de novo, com o motivo", !!r.err && /conta anterior/.test(r.err), r.err);
+ok("B: o reembolso de 7 dias NÃO vale de novo, com o motivo", !!r.err && /Conta reutilizada: o reembolso de 7 dias não está incluído/.test(r.err), r.err);
 ok("B: nenhum reembolso foi criado para a nova casa", Number((await sv("select count(*) n from platform_plan_refunds where house_id=$1", [Y.H])).rows[0].n) === 0);
 r = await as(Y.O, (c) => q(c, "select public.my_plan_refund() r"));
-ok("B: a tela mostra que não é elegível e por quê", r.rows?.[0]?.r?.eligible === false && r.rows[0].r.used_before === true, JSON.stringify(r.rows?.[0]?.r ?? r.err));
+ok("B: a tela mostra que não é elegível e por quê", r.rows?.[0]?.r?.eligible === false && r.rows[0].r.returning === true, JSON.stringify(r.rows?.[0]?.r ?? r.err));
 
 // ---- C) controle: conta excluída que NUNCA usou o reembolso não impede o da nova
 const P = await mk("p", "pessoa@exemplo.com");
@@ -87,9 +87,9 @@ await deleteAcct(P.O);
 const Q = await mk("q", "pessoa@exemplo.com");
 const cQ = await paidPlan(Q.H);
 r = await sv("select public.platform_plan_refund_begin($1,$2,$3) r", [Q.H, cQ, Q.O]);
-ok("C: voltou, mas a anterior não usou o reembolso: ele vale", !r.err, r.err);
+ok("C: voltou, mesmo sem ter usado o reembolso antes: conta reutilizada não inclui o benefício", !!r.err && /Conta reutilizada/.test(r.err), r.err);
 r = await as(Q.O, (c) => q(c, "select public.my_plan_refund() r"));
-ok("C: a nova conta é reconhecida, mas sem reembolso usado antes", (await sv("select count(*)::int n from public.account_prior_deleted($1)", [Q.O])).rows[0].n === 1 && r.rows?.[0]?.r?.used_before === false, JSON.stringify(r.rows?.[0]?.r ?? r.err));
+ok("C: a nova conta é reconhecida como reutilizada e não elegível", (await sv("select count(*)::int n from public.account_prior_deleted($1)", [Q.O])).rows[0].n === 1 && r.rows?.[0]?.r?.returning === true && r.rows?.[0]?.r?.eligible === false, JSON.stringify(r.rows?.[0]?.r ?? r.err));
 
 // ---- D) conta nova de verdade e outra sem relação não são marcadas
 const N = await mk("n", "nova@exemplo.com");
@@ -121,10 +121,10 @@ ok("F: o histórico NÃO traz e-mail em claro", !JSON.stringify(hh).includes("gm
 ok("F: a consulta ficou registrada", Number((await sv("select count(*) n from support_case_log where action='historico_conta_reutilizada' and actor=$1", [ADM.O])).rows[0].n) === 1);
 
 // ---- G) avisos
-r = await as(ADM.O, (c) => q(c, "select public.admin_notify_returning($1,'reembolso_usado',null,'aviso de teste da administração')", [Y.O]));
+r = await as(ADM.O, (c) => q(c, "select public.admin_notify_returning($1,'reembolso_nao_incluso',null,'aviso de teste da administração')", [Y.O]));
 ok("G: aviso-modelo enviado", !r.err, r.err);
 const tx = (await sv("select text from notifications where user_id=$1 order by created_at desc limit 1", [Y.O])).rows[0]?.text ?? "";
-ok("G: texto neutro, sem acusação e sem valores", /já foi utilizado em uma conta anterior/.test(tx) && !/fraude|golpe|dívida|R\$/i.test(tx), tx);
+ok("G: texto neutro, sem acusação e sem valores", /Conta reutilizada: este e-mail já esteve vinculado a uma conta excluída/.test(tx) && !/fraude|golpe|dívida|R\$/i.test(tx), tx);
 r = await as(ADM.O, (c) => q(c, "select public.admin_notify_returning($1,'livre','curto','aviso de teste da administração')", [Y.O]));
 ok("G: aviso livre curto demais é recusado", !!r.err, r.err);
 r = await as(ADM.O, (c) => q(c, "select public.admin_notify_returning($1,'livre','Olá! Precisamos conversar sobre o histórico da sua conta anterior.','aviso de teste da administração')", [Y.O]));
@@ -141,7 +141,7 @@ ok("G: os avisos ficaram registrados", Number((await sv("select count(*) n from 
 await su.query(readFileSync(new URL("../migrations/0106_conta_reutilizada.sql", import.meta.url), "utf8").split("-- ============ 5) permissões ============")[1]);
 const acl = async (fn) => (await sv("select has_function_privilege('anon', $1, 'execute') a, has_function_privilege('authenticated', $1, 'execute') u, has_function_privilege('service_role', $1, 'execute') s", [fn])).rows[0];
 let allOk = true; const badF = [];
-for (const fn of ["public.email_key(text)", "public.account_prior_deleted(uuid)", "public.house_owner_refund_used_before(uuid)", "public.platform_plan_refund_begin(uuid,uuid,uuid,timestamptz)"]) { const a = await acl(fn); if (a.a || a.u || !a.s) { allOk = false; badF.push(fn); } }
+for (const fn of ["public.email_key(text)", "public.account_prior_deleted(uuid)", "public.house_owner_is_returning(uuid)", "public.platform_plan_refund_begin(uuid,uuid,uuid,timestamptz)"]) { const a = await acl(fn); if (a.a || a.u || !a.s) { allOk = false; badF.push(fn); } }
 for (const fn of ["public.my_plan_refund()", "public.admin_returning_accounts()", "public.admin_returning_history(uuid,text)", "public.admin_notify_returning(uuid,text,text,text)"]) { const a = await acl(fn); if (a.a || !a.u || !a.s) { allOk = false; badF.push(fn); } }
 ok("permissões: ajudantes só no servidor; telas só para logado (anon nunca)", allOk, badF.join(","));
 

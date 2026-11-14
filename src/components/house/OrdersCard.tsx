@@ -4,7 +4,7 @@ import { ClipboardList } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchPlanRefund, fetchRefunds, requestPlanRefund, requestRefund } from "@/lib/aiCredits";
-import { planRefundText, refundText, type PlanRefund, type Refunds } from "@/lib/aiCreditsCore";
+import { RETURNING_REFUND_TEXT, planRefundText, refundText, type PlanRefund, type Refunds } from "@/lib/aiCreditsCore";
 
 /**
  * Pedidos e validações: compras recentes da casa e as solicitações ligadas a elas (cancelar a compra e pedir o reembolso dentro de 7 dias).
@@ -50,7 +50,8 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   if (!refunds) return null;
   const planOffer = plan?.eligible ? plan : null;
   const planHistory = plan?.history ?? [];
-  const empty = refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled;
+  const returningNote = plan?.returning === true && plan.chargeId !== null && Date.parse(plan.deadline) > Date.now();
+  const empty = refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
   return (
     <Card className="p-5">
       <details>
@@ -62,6 +63,12 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
           <p className="text-xs text-muted-foreground">Suas compras recentes e as solicitações ligadas a elas.</p>
           {empty && <p className="text-sm text-muted-foreground">Nenhum pedido recente.</p>}
           {plan?.cancelled && <p className="text-sm rounded-lg border border-border p-3">A assinatura desta casa foi cancelada com reembolso e a casa está inativa. Para voltar, reative o plano em Planos ou fale com o suporte.</p>}
+          {returningNote && (
+            <details className="rounded-lg border border-border p-3">
+              <summary className="cursor-pointer text-sm font-semibold list-none">Assinatura do plano: primeiro pagamento</summary>
+              <p className="mt-2 text-sm">{RETURNING_REFUND_TEXT}</p>
+            </details>
+          )}
           {planOffer && planOffer.chargeId && (
             <details className="rounded-lg border border-border p-3">
               <summary className="cursor-pointer text-sm font-semibold list-none">Assinatura do plano: primeiro pagamento</summary>

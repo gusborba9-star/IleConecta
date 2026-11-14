@@ -22,7 +22,7 @@ export interface ReturningHistory {
 }
 
 export const NOTICE_TEMPLATES = [
-  { key: "reembolso_usado", label: "Reembolso de 7 dias já usado", preview: "O reembolso integral de 7 dias do plano já foi utilizado em uma conta anterior vinculada a este e-mail e, por isso, não se aplica a esta conta. Se tiver dúvida, fale com o suporte." },
+  { key: "reembolso_nao_incluso", label: "Reembolso de 7 dias não incluído", preview: "Conta reutilizada: este e-mail já esteve vinculado a uma conta excluída e, por isso, o reembolso de 7 dias do plano não está incluído. Se tiver dúvida, fale com o suporte." },
   { key: "registros_anteriores", label: "Registros de conta anterior", preview: "Existem registros de uma conta anterior vinculada a este e-mail. Se você acha que isso é um engano, fale com o suporte." },
   { key: "livre", label: "Aviso livre (você escreve)", preview: "" },
 ] as const;

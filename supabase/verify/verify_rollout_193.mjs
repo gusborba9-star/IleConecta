@@ -31,6 +31,6 @@ const snap = async (c) => {
 const [sa, sb] = [await snap(A.c), await snap(B.c)];
 ok("todas as funções do schema public existem nas duas bases", sa.fn.length === sb.fn.length && sa.fn.length > 100, `${sa.fn.length}/${sb.fn.length}`);
 for (const k of Object.keys(sa)) ok(`idêntico: ${k}`, JSON.stringify(sa[k]) === JSON.stringify(sb[k]), k === "fn" ? sa.fn.filter((x, i) => JSON.stringify(x) !== JSON.stringify(sb.fn[i])).map((x) => x.sig).join(",") : "");
-ok("as novas funções existem", ["email_key", "account_prior_deleted", "house_owner_refund_used_before", "admin_returning_accounts", "admin_returning_history", "admin_notify_returning"].every((n) => sa.fn.some((f) => f.sig.startsWith(n + "("))));
+ok("as novas funções existem", ["email_key", "account_prior_deleted", "house_owner_is_returning", "admin_returning_accounts", "admin_returning_history", "admin_notify_returning"].every((n) => sa.fn.some((f) => f.sig.startsWith(n + "("))));
 await A.c.end(); await B.c.end();
 console.log(bad ? `\n${bad} FALHA(S)` : "\nTUDO OK"); process.exit(bad ? 1 : 0);

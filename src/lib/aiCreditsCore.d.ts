@@ -16,6 +16,8 @@ export interface Refunds { items: RefundItem[]; history: RefundHistory[]; window
 export function readRefunds(raw: unknown): Refunds;
 export function refundText(i: RefundItem, now?: number): { money: string; line: string };
 
-export interface PlanRefund { cancelled: boolean; eligible: boolean; chargeId: string | null; amountCents: number; deadline: string; windowDays: number; history: { at: string; status: "pendente" | "concluido" | "falhou"; amountCents: number }[] }
+export interface PlanRefund { cancelled: boolean; returning: boolean; eligible: boolean; chargeId: string | null; amountCents: number; deadline: string; windowDays: number; history: { at: string; status: "pendente" | "concluido" | "falhou"; amountCents: number }[] }
 export function readPlanRefund(raw: unknown): PlanRefund | null;
 export function planRefundText(p: PlanRefund, now?: number): { money: string; line: string };
+
+export const RETURNING_REFUND_TEXT: string;

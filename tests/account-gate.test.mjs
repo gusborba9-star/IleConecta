@@ -110,3 +110,13 @@ test("cancelar agora: texto da escolha e confirmação extra deixam claro que n�
   assert.match(CANCEL_NOW_CONFIRM, /cancelar imediatamente/);
   assert.match(CANCEL_NOW_CONFIRM, /não haverá reembolso dos dias restantes do ciclo já pago/);
 });
+
+import { readPlanRefund, RETURNING_REFUND_TEXT } from "../src/lib/aiCreditsCore.js";
+test("reembolso do plano: conta reutilizada não é elegível e a mensagem é clara", () => {
+  const p = readPlanRefund({ has_house: true, returning: true, eligible: false, charge_id: "c1", amount_cents: 29990, deadline: "2099-01-01T00:00:00Z", window_days: 7, history: [] });
+  assert.equal(p.returning, true);
+  assert.equal(p.eligible, false);
+  assert.match(RETURNING_REFUND_TEXT, /Conta reutilizada/);
+  assert.match(RETURNING_REFUND_TEXT, /não está incluído/);
+  assert.equal(readPlanRefund({ has_house: true, eligible: false }).returning, false);
+});
