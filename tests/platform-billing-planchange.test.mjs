@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { subscribe, upgrade } from "../supabase/functions/platform-billing/core.js";
 import { createFakeProvider } from "../supabase/functions/platform-billing/fakeProvider.js";
 import { createRegistry } from "../supabase/functions/platform-billing/provider.js";
-import { readPlanChange, PLAN_RANK } from "../src/lib/planChangeCore.ts";
+import { readPlanChange, PLAN_RANK } from "../src/lib/planChangeCore.js";
 
 const HOUSE = "22222222-2222-2222-2222-222222222222", CH = "11111111-1111-1111-1111-111111111111";
 const silent = { error() {}, log() {} };
