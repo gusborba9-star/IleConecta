@@ -44,6 +44,16 @@ function toHouse(row: Row): HouseUser {
   };
 }
 
+/** Casas encerradas ou bloqueadas que esta pessoa consegue ler (administração, equipe, pedido em andamento): não entram na vitrine. */
+async function fetchHiddenHouseIds(): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  try {
+    const { data, error } = await supabase.rpc("vitrine_hidden_house_ids");
+    if (error || !Array.isArray(data)) return new Set();
+    return new Set(data.map(String));
+  } catch { return new Set(); }
+}
+
 export async function fetchRemoteHouses(): Promise<HouseUser[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -55,8 +65,8 @@ export async function fetchRemoteHouses(): Promise<HouseUser[]> {
     console.error("Ilê Conecta: não foi possível carregar as casas.", error?.message);
     return [];
   }
-  const [{ counts }, ratings] = await Promise.all([fetchFollowSummary(), fetchReviewSummary()]);
-  return (data as Row[]).map((r) => ({ ...toHouse(r), followers: counts[String(r.owner_id)] ?? 0, rating: ratings[String(r.owner_id)]?.avg ?? 0 }));
+  const [{ counts }, ratings, hidden] = await Promise.all([fetchFollowSummary(), fetchReviewSummary(), fetchHiddenHouseIds()]);
+  return (data as Row[]).filter((r) => !hidden.has(String(r.id))).map((r) => ({ ...toHouse(r), followers: counts[String(r.owner_id)] ?? 0, rating: ratings[String(r.owner_id)]?.avg ?? 0 }));
 }
 
 export interface RemoteFeed {
@@ -70,7 +80,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, kind, content, image_url, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, profiles(display_name, avatar_url, account_type, city, state))"
+      "id, house_id, kind, content, image_url, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, profiles(display_name, avatar_url, account_type, city, state))"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -84,11 +94,12 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
     for (const c of (cnt as Row[] | null) ?? []) counts.set(String(c.post_id), Number(c.n ?? 0));
   }
 
+  const hidden = await fetchHiddenHouseIds();
   const commenters = new Map<string, User>();
   const posts: Post[] = [];
   for (const row of data as Row[]) {
     const owner = one(row.houses)?.owner_id;
-    if (!owner) continue;
+    if (!owner || hidden.has(String(row.house_id))) continue;
     const comments = ((row.post_comments as Row[]) ?? [])
       .slice()
       .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
