@@ -7,10 +7,16 @@ import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
+import { useMemo } from "react";
+import { Star } from "lucide-react";
+import { usePromoRanking } from "@/lib/usePromoRanking";
+import { rankFeed } from "@/lib/promotionsCore";
+import PromoTrack from "@/components/promo/PromoTrack";
 import type { Post } from "@/types";
 
 export default function Feed() {
-  const { posts, refreshRemote } = useApp();
+  const { posts, refreshRemote, isRemoteAuth } = useApp();
+  const promo = usePromoRanking(isRemoteAuth);
 
   // Traz publicações novas de outras casas ao abrir o feed.
   useEffect(() => {
@@ -18,10 +24,11 @@ export default function Feed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Insert a promoted card between posts
-  const feedItems: ({ kind: "post"; data: Post } | { kind: "promo" })[] = [];
-  posts.forEach((p, i) => {
-    feedItems.push({ kind: "post", data: p });
+  // Casas em destaque nas primeiras posições (revezando a cada visita) e publicações impulsionadas intercaladas.
+  const ranked = useMemo(() => rankFeed(posts, { highlightOwners: promo.highlightOwners, boostedPostIds: promo.boostedPostIds }), [posts, promo.highlightOwners, promo.boostedPostIds]);
+  const feedItems: ({ kind: "post"; data: Post; tag: "destaque" | "promovido" | null } | { kind: "promo" })[] = [];
+  ranked.forEach((r, i) => {
+    feedItems.push({ kind: "post", data: r.post, tag: r.tag });
     if (i === 1) feedItems.push({ kind: "promo" });
   });
 
@@ -44,7 +51,16 @@ export default function Feed() {
       <PostComposer />
 
       {feedItems.map((item, idx) =>
-        item.kind === "post" ? <PostCard key={item.data.id} post={item.data} /> : <PromotedBanner key={idx} />
+        item.kind === "post" ? (
+          <PromoTrack key={item.data.id} promoId={item.tag === "destaque" ? promo.idByOwner.get(item.data.houseId) : item.tag === "promovido" ? promo.idByItem.get(item.data.id) : undefined}>
+            {item.tag && (
+              <div className="mb-1 flex items-center gap-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-gold-ink">
+                {item.tag === "destaque" ? <><Star className="h-3 w-3" aria-hidden /> Em destaque</> : "Promovido"}
+              </div>
+            )}
+            <PostCard post={item.data} />
+          </PromoTrack>
+        ) : <PromotedBanner key={idx} />
       )}
     </div>
   );

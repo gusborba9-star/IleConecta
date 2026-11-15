@@ -17,7 +17,7 @@ import { fetchServices, type Service } from "@/lib/services";
 import { fetchHouseRituals, type RealRitual } from "@/lib/rituals";
 
 export default function Boost() {
-  const { currentUser, applyBoost, isRemoteAuth } = useApp();
+  const { currentUser, applyBoost, isRemoteAuth, posts } = useApp();
   const { config } = usePlatformConfig();
   const nav = useNavigate();
   const [params] = useSearchParams();
@@ -46,7 +46,8 @@ export default function Boost() {
   const options = useMemo(() => [
     ...services.map((x) => ({ key: `service:${x.id}`, label: `Serviço · ${x.title}`, maxDays: 90 })),
     ...rituals.map((x) => ({ key: `event:${x.id}`, label: `Ritual · ${x.title}`, maxDays: Math.max(0, Math.floor((Date.parse(x.startsAt) - Date.now()) / 86400000)) })),
-  ], [services, rituals]);
+    ...posts.filter((x) => x.houseId === ownerId && x.kind !== "story").slice(0, 30).map((x) => ({ key: `post:${x.id}`, label: `Publicação · ${x.content.replace(/\s+/g, " ").slice(0, 50)}`, maxDays: 90 })),
+  ], [services, rituals, posts, ownerId]);
   const chosen = options.find((o) => o.key === item) ?? null;
 
   if (!currentUser || currentUser.type !== "commercial") {
@@ -75,7 +76,7 @@ export default function Boost() {
           <h1 className="font-display font-bold text-2xl">Impulsionar</h1>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Leve um serviço ou ritual da sua casa para mais gente. O valor é por dia: escolha o alcance e por quantos dias.
+          Leve um serviço, ritual ou publicação da sua casa para mais gente. O valor é por dia: escolha o alcance e por quantos dias.
         </p>
         {isPromotionActive(currentUser.boost?.expiresAt) && currentUser.boost && (
           <Badge tone="gold" className="mt-4">
@@ -90,9 +91,9 @@ export default function Boost() {
         <>
           <Card className="p-5">
             <h2 className="font-display font-bold text-lg">O que você quer impulsionar?</h2>
-            <p className="text-sm text-muted-foreground mt-1">Escolha um serviço ou ritual. Cada um tem o seu próprio impulso: novos dias do mesmo item e alcance entram ao final do atual.</p>
+            <p className="text-sm text-muted-foreground mt-1">Escolha um serviço, ritual ou publicação. Cada um tem o seu próprio impulso: novos dias do mesmo item e alcance entram ao final do atual.</p>
             {loaded && options.length === 0 ? (
-              <p className="mt-3 text-sm">Você ainda não tem serviço ativo ou ritual publicado. <Button variant="outline" size="sm" className="ml-2" onClick={() => nav("/painel")}>Ir ao painel</Button></p>
+              <p className="mt-3 text-sm">Você ainda não tem serviço ativo, ritual publicado ou publicação. <Button variant="outline" size="sm" className="ml-2" onClick={() => nav("/painel")}>Ir ao painel</Button></p>
             ) : (
               <select aria-label="Item a impulsionar" className="mt-3 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm" value={chosen?.key ?? ""} onChange={(e) => setItem(e.target.value)}>
                 <option value="">Escolha…</option>
@@ -115,7 +116,7 @@ export default function Boost() {
                   if (scope === "exterior") return;
                   const [t, id] = chosen.key.split(":");
                   setBusy(true);
-                  const r = await buyPromotion({ kind: "boost", scope: scope as PromoScopeKey, days, itemType: t as "service" | "event", itemId: id, authorized });
+                  const r = await buyPromotion({ kind: "boost", scope: scope as PromoScopeKey, days, itemType: t as "service" | "event" | "post", itemId: id, authorized });
                   setBusy(false);
                   if (r.error) toast.error(r.error);
                 },

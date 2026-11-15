@@ -177,7 +177,7 @@ export function creditPurchaseError(message) {
 
 export const PROMO_KINDS = ["boost", "highlight"];
 export const PROMO_SCOPES = ["cidade", "estado", "pais"];
-export const PROMO_ITEMS = ["service", "event"];
+export const PROMO_ITEMS = ["service", "event", "post"];
 
 const PROMO_ERRORS = [
   [/cobranca_desligada/, "A contratação ainda não está disponível."],
@@ -190,7 +190,8 @@ const PROMO_ERRORS = [
   [/Complete o estado/, "Complete o estado no perfil da casa para contratar por estado."],
   [/serviços ativos da sua casa/, "Só serviços ativos da sua casa podem ser impulsionados."],
   [/rituais publicados e que ainda vão acontecer/, "Só rituais publicados e que ainda vão acontecer podem ser impulsionados."],
-  [/Escolha o serviço ou ritual/, "Escolha o serviço ou ritual que será impulsionado."],
+  [/publicações da sua casa/, "Só publicações da sua casa podem ser impulsionadas."],
+  [/Escolha o serviço(, ritual ou publicação| ou ritual)/, "Escolha o serviço, ritual ou publicação que será impulsionado."],
   [/antes de um dia inteiro/, "Este ritual acontece antes de um dia inteiro de impulsionamento."],
   [/precisa terminar antes do ritual: no máximo (\d+) dia/, null],
   [/não está disponível no momento/, "Este alcance não está disponível no momento."],

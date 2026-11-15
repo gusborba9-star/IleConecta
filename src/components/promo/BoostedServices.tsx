@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react";
 import { Card } from "@/components/base";
 import { supabase } from "@/lib/supabase";
 import { formatCents } from "@/lib/servicesCore";
+import PromoTrack from "@/components/promo/PromoTrack";
 import type { VisiblePromo } from "@/lib/promotions";
 
 interface Row { id: string; title: string; priceCents: number; houseName: string; ownerId: string }
@@ -35,7 +36,8 @@ export default function BoostedServices({ boosted }: { boosted: VisiblePromo[] }
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {rows.map((r) => (
-          <Link key={r.id} to={`/casa/${r.ownerId}?aba=servicos`} className="block">
+          <PromoTrack key={r.id} promoId={boosted.find((p) => p.itemId === r.id)?.id}>
+          <Link to={`/casa/${r.ownerId}?aba=servicos`} className="block">
             <Card className="lift p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -46,6 +48,7 @@ export default function BoostedServices({ boosted }: { boosted: VisiblePromo[] }
               </div>
             </Card>
           </Link>
+          </PromoTrack>
         ))}
       </div>
     </section>

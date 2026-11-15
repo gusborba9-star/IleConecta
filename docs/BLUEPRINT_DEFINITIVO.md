@@ -388,10 +388,10 @@ A plataforma oferece denúncia, bloqueio, remoção, registro de ocorrência, re
 
 **Situação (15/11/2026):** em produção (migration 0114 aplicada pelos passos 221–233; rotina `promotions-tick` a cada 15 minutos; compra e reembolso pela função `platform-billing`). Validação ponta a ponta no modo teste do Stripe em andamento.
 
-São produtos distintos (decisão do proprietário, 14/11/2026; substitui a versão anterior, em que o impulsionamento era de publicações).
+São produtos distintos (decisão do proprietário, 14/11/2026). Em 15/11/2026 o impulsionamento passou a incluir também **publicações** da casa (mesmas regras de preço, tempo e reembolso).
 
-- **Destaque:** a casa inteira (página e descrição) aparece primeiro nas buscas, por **cidade, estado ou país**. Há número máximo de casas em destaque ao mesmo tempo em cada alcance (**3 por cidade, 6 por estado, 15 por país**, editável no admin com motivo e auditoria). Quando lota, a compra é bloqueada com aviso e a casa pode entrar na **lista de espera** (é avisada quando abre vaga). Os destaques ativos se revezam nas primeiras posições.
-- **Impulsionamento:** leva **um serviço ou ritual** da casa a mais gente na cidade, no estado ou no país. Cada item tem o seu próprio impulso. Sem limite de vagas na primeira versão. Só serviço ativo e listado, ou ritual publicado que ainda vai acontecer (o impulso termina antes do ritual). Publicações ficam para depois.
+- **Destaque:** a casa inteira (página e descrição) aparece primeiro nas buscas, por **cidade, estado ou país**. Há número máximo de casas em destaque ao mesmo tempo em cada alcance (**3 por cidade, 6 por estado, 15 por país**, editável no admin com motivo e auditoria). Quando lota, a compra é bloqueada com aviso e a casa pode entrar na **lista de espera** (é avisada quando abre vaga). Os destaques ativos se revezam nas primeiras posições (busca, rituais e **feed**: até 3 casas em destaque no topo do feed, a publicação mais recente de cada uma, sorteadas a cada visita).
+- **Impulsionamento:** leva **um serviço, ritual ou publicação** da casa a mais gente na cidade, no estado ou no país. Cada item tem o seu próprio impulso. Sem limite de vagas na primeira versão. Só serviço ativo e listado, ou ritual publicado que ainda vai acontecer (o impulso termina antes do ritual). Publicação: qualquer publicação da casa (exceto momentos/stories) que ainda exista; no feed, até 3 impulsionadas entram intercaladas, com o selo "Promovido".
 
 **Tempo e cobrança.** Valor por dia (tabela `pricing`, editável no admin; o servidor calcula, a tela só mostra). Seletor livre de 1 a 90 dias com atalhos 3, 7 e 20. O relógio começa na **entrega** (pagamento validado) e cada dia é um **bloco de 24 horas** contado dali; o 1º dia já conta como usado. Nova compra do **mesmo item e alcance** soma os dias ao final (entra quando a anterior termina); itens ou alcances diferentes são compras independentes. A compra exige a caixa **"Autorizo o início imediato…"** (carimbada no banco).
 
@@ -399,7 +399,7 @@ São produtos distintos (decisão do proprietário, 14/11/2026; substitui a vers
 
 **Suspensão.** Falta de pagamento pausa o relógio (e o destaque some); regularizar faz o tempo restante voltar a correr.
 
-**Comunicação.** Toda promoção é identificada ("Promovido" / "Em destaque"). Cada casa vê o fim exato ("termina em dd/mm às hh:mm"), os dias restantes e um contador na tela principal e nas telas de compra. Aviso 1 dia antes do fim, com renovação que soma dias. Botão "Impulsionar" em cada serviço e ritual. Resultados (aparições e cliques por compra) ainda a construir.
+**Comunicação.** Toda promoção é identificada ("Promovido" / "Em destaque"). Cada casa vê o fim exato ("termina em dd/mm às hh:mm"), os dias restantes e um contador na tela principal e nas telas de compra. Aviso 1 dia antes do fim, com renovação que soma dias. Botão "Impulsionar" em cada serviço, ritual e publicação. **Resultados por compra** (visível só à casa, em "Em andamento"): quantas pessoas viram (metade do item na tela) e quantas abriram; cada pessoa conta uma vez por dia por compra, a própria casa não conta, só vale o que está no ar para quem vê. O banco guarda apenas o total diário (`promo_stats`); o registro de quem viu (`promo_events`) serve só para não contar duas vezes e é apagado no dia seguinte. Nenhum outro usuário lê essas tabelas.
 
 ---
 
