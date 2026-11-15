@@ -18,7 +18,7 @@ test("cadastro cria conta local e mantém sessão após recarga", async ({ page 
   await fields.nth(1).fill("teste.persistencia@example.test");
   await fields.nth(2).fill("senha-demo-123");
   await fields.nth(3).fill("Recife");
-  await fields.nth(4).fill("PE");
+  await page.locator("#register-state").selectOption("PE");
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.reload({ waitUntil: "domcontentloaded" });
