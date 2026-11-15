@@ -4,6 +4,9 @@ import { ClipboardList } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchPlanRefund, fetchRefunds, requestPlanRefund, requestRefund } from "@/lib/aiCredits";
+import { fetchMyPromotions, requestPromoRefund } from "@/lib/promotions";
+import { promoName, promoRefundText, type MyPromo } from "@/lib/promotionsCore";
+import { formatMoney } from "@/lib/pricing";
 import { RETURNING_REFUND_TEXT, planRefundText, refundText, type PlanRefund, type Refunds } from "@/lib/aiCreditsCore";
 
 /**
@@ -14,6 +17,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   const { isRemoteAuth } = useApp();
   const [refunds, setRefunds] = useState<Refunds | null>(null);
   const [plan, setPlan] = useState<PlanRefund | null>(null);
+  const [promos, setPromos] = useState<MyPromo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +25,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
     let alive = true;
     void fetchRefunds().then((r) => alive && setRefunds(r));
     void fetchPlanRefund().then((r) => alive && setPlan(r));
+    void fetchMyPromotions().then((r) => alive && setPromos(r.items.filter((i) => i.refundCents !== null && i.chargeId)));
     return () => {
       alive = false;
     };
@@ -34,6 +39,18 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
     if (r.error) toast.error(r.error);
     else toast.success(r.pending ? "Pedido registrado. O estorno está a caminho e será confirmado em instantes." : "Pedido aprovado. O dinheiro volta pelo mesmo meio de pagamento em alguns dias.");
     onChanged?.();
+  };
+
+  const cancelPromo = async (i: MyPromo) => {
+    if (!i.chargeId || i.refundCents === null) return;
+    if (!window.confirm(`Cancelar os dias que ainda não começaram e pedir o reembolso de ${formatMoney(i.refundCents / 100)}? O dia que já está em andamento continua até o fim.`)) return;
+    setBusy(i.chargeId);
+    const r = await requestPromoRefund(i.chargeId);
+    setBusy(null);
+    if (r.error) toast.error(r.error);
+    else toast.success(r.pending ? "Pedido registrado. O estorno está a caminho e será confirmado em instantes." : "Pedido aprovado. O dinheiro volta pelo mesmo meio de pagamento em alguns dias.");
+    onChanged?.();
+    setPromos((await fetchMyPromotions()).items.filter((x) => x.refundCents !== null && x.chargeId));
   };
 
   const cancelPlan = async (chargeId: string, money: string) => {
@@ -51,7 +68,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   const planOffer = plan?.eligible ? plan : null;
   const planHistory = plan?.history ?? [];
   const returningNote = plan?.refundBlocked === true && plan.chargeId !== null && Date.parse(plan.deadline) > Date.now();
-  const empty = refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
+  const empty = promos.length === 0 && refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
   return (
     <Card className="p-5">
       <details>
@@ -81,6 +98,18 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
               </div>
             </details>
           )}
+          {promos.map((i) => (
+            <details key={i.id} className="rounded-lg border border-border p-3">
+              <summary className="cursor-pointer text-sm font-semibold list-none">{promoName(i)}</summary>
+              <div className="mt-2 space-y-2">
+                <p className="text-sm">{promoRefundText(i, (c) => formatMoney(c / 100))}</p>
+                <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void cancelPromo(i)}>
+                  {busy === i.chargeId ? "Enviando…" : "Cancelar dias não iniciados e solicitar reembolso"}
+                </Button>
+                <p className="text-xs text-muted-foreground">Até 7 dias depois do pagamento. Devolvemos o valor proporcional aos dias que ainda não começaram, sem descontar tarifa. Cada dia é um bloco de 24 horas contado a partir do início.</p>
+              </div>
+            </details>
+          ))}
           {refunds.items.map((i) => {
             const t = refundText(i);
             return (

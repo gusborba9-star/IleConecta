@@ -5,6 +5,7 @@ import RitualCard from "@/components/feed/RitualCard";
 import { Card, Input, Badge } from "@/components/base";
 import { Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePromoRanking } from "@/lib/usePromoRanking";
 import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
 import { modeLabel, seatsLeft } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
@@ -23,6 +24,7 @@ export default function Rituals() {
       alive = false;
     };
   }, [isRemoteAuth]);
+  const promo = usePromoRanking(isRemoteAuth);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todos");
   const [mode, setMode] = useState<typeof MODES[number]>("Todos");
@@ -33,8 +35,8 @@ export default function Rituals() {
       if (mode !== "Todos" && r.mode !== mode) return false;
       if (term && !`${r.title} ${r.description ?? ""} ${r.houseName}`.toLowerCase().includes(term)) return false;
       return true;
-    });
-  }, [real, mode, q]);
+    }).sort((a, b) => Number(promo.boostedIds.has(b.id)) - Number(promo.boostedIds.has(a.id)));
+  }, [real, mode, q, promo.boostedIds]);
 
   const filtered = useMemo(() => {
     return rituals.filter((r) => {
@@ -99,7 +101,7 @@ export default function Rituals() {
             <Card key={r.id} className="p-4">
               <div className="flex flex-wrap items-center gap-3 justify-between">
                 <div className="min-w-0">
-                  <div className="font-semibold">{r.title}</div>
+                  <div className="font-semibold">{r.title}{promo.boostedIds.has(r.id) && <span className="ml-2 rounded-full border border-current/30 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Promovido</span>}</div>
                   <div className="text-sm text-muted-foreground">
                     {r.houseName} · {modeLabel(r.mode)} · {new Date(r.startsAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })} · {seatsLeft(r.seatsTotal, r.taken)} vagas · {formatCents(r.priceCents)}
                   </div>

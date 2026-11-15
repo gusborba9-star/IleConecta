@@ -3,7 +3,7 @@ import type { Money, PlanId } from "@/lib/platformConfigCore";
 
 export type { Money, PlanId };
 
-export const DAY_PRESETS = [3, 7, 30] as const;
+export const DAY_PRESETS = [3, 7, 20] as const;
 export const MIN_DAYS = 1;
 export const MAX_DAYS = 90;
 

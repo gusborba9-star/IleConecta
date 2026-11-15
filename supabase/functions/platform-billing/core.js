@@ -142,11 +142,11 @@ export async function processWebhook({ registry, store, providerId, rawBody, hea
 }
 
 // ---------- reembolso de créditos em 7 dias ----------
-const REFUND_OK = /prazo de 7 dias|primeiro pagamento do plano|já foi usado por esta casa|já foram usados|já foi reembolsada|não pode ser reembolsada|Nada a reembolsar|Pacote não encontrado|Pagamento sem referência/;
+const REFUND_OK = /prazo de 7 dias|Esta compra não está ativa|Todos os dias desta compra|primeiro pagamento do plano|já foi usado por esta casa|já foram usados|já foi reembolsada|não pode ser reembolsada|Nada a reembolsar|Pacote não encontrado|Pagamento sem referência/;
 const refundError = (e) => (REFUND_OK.test(msg(e)) ? new ChargeStateError(msg(e), "refund_denied") : e);
 
 /** Pede o estorno ao provedor (mesma chave sempre) e conclui no banco. Sem resposta do provedor: fica pendente e a rotina repete. */
-async function runRefund({ registry, store, b, log = console, plan = false }) {
+async function runRefund({ registry, store, b, log = console, kind = "credit" }) {
   const adapter = registry.byId(b.provider);
   if (!adapter || typeof adapter.refund !== "function") throw new ChargeStateError("O meio de pagamento está indisponível no momento. Tente de novo mais tarde.", "provider_unavailable");
   let r = null;
@@ -157,10 +157,10 @@ async function runRefund({ registry, store, b, log = console, plan = false }) {
   }
   if (!r) return { status: "pending", amount_cents: Number(b.amount_cents) };
   if (r.outcome === "failed") {
-    await (plan ? store.planRefundFail : store.refundFail)(b.refund_id, r.code ?? "recusado");
-    throw new ChargeStateError(`Não foi possível concluir o reembolso agora. ${plan ? "Sua assinatura foi mantida." : "Seus créditos foram mantidos."} Tente de novo em instantes ou fale com o suporte.`, "refund_failed");
+    await (kind === "plan" ? store.planRefundFail : kind === "promo" ? store.promoRefundFail : store.refundFail)(b.refund_id, r.code ?? "recusado");
+    throw new ChargeStateError(`Não foi possível concluir o reembolso agora. ${kind === "plan" ? "Sua assinatura foi mantida." : kind === "promo" ? "Os seus dias foram mantidos." : "Seus créditos foram mantidos."} Tente de novo em instantes ou fale com o suporte.`, "refund_failed");
   }
-  await (plan ? store.planRefundDone : store.refundDone)(b.refund_id, r.ref ?? null);
+  await (kind === "plan" ? store.planRefundDone : kind === "promo" ? store.promoRefundDone : store.refundDone)(b.refund_id, r.ref ?? null);
   return { status: "done", amount_cents: Number(b.amount_cents) };
 }
 
@@ -187,20 +187,34 @@ export async function planRefund({ registry, store, userId, chargeId, log = cons
   } catch (e) {
     throw refundError(e);
   }
-  return runRefund({ registry, store, b, log, plan: true });
+  return runRefund({ registry, store, b, log, kind: "plan" });
 }
 
-/** Rotina: refaz reembolsos (de créditos e de plano) que ficaram sem resposta do provedor. */
+/** A casa pede o reembolso de um destaque ou impulsionamento pago há até 7 dias: devolve os dias que ainda não começaram. */
+export async function promoRefund({ registry, store, userId, chargeId, log = console }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa pede reembolso.", "forbidden");
+  let b;
+  try {
+    b = await store.promoRefundBegin(houseId, chargeId, userId);
+  } catch (e) {
+    throw refundError(e);
+  }
+  return runRefund({ registry, store, b, log, kind: "promo" });
+}
+
+/** Rotina: refaz reembolsos (de créditos, de plano e de destaque/impulsionamento) que ficaram sem resposta do provedor. */
 export async function settleRefunds({ registry, store, log = console }) {
   const out = { pending: 0, done: 0, errors: [] };
   const jobs = [
-    ...(((await store.refundsPending()) ?? []).map((p) => [p, false])),
-    ...(((await store.planRefundsPending()) ?? []).map((p) => [p, true])),
+    ...(((await store.refundsPending()) ?? []).map((p) => [p, "credit"])),
+    ...(((await store.planRefundsPending()) ?? []).map((p) => [p, "plan"])),
+    ...(((await store.promoRefundsPending?.()) ?? []).map((p) => [p, "promo"])),
   ];
-  for (const [p, plan] of jobs) {
+  for (const [p, kind] of jobs) {
     out.pending++;
     try {
-      const r = await runRefund({ registry, store, b: { refund_id: p.refund_id, provider: p.provider, ref: p.ref, amount_cents: p.amount_cents }, log, plan });
+      const r = await runRefund({ registry, store, b: { refund_id: p.refund_id, provider: p.provider, ref: p.ref, amount_cents: p.amount_cents }, log, kind });
       if (r.status === "done") out.done++;
     } catch (e) {
       out.errors.push(`reembolso ${p.refund_id}: ${msg(e)}`);
@@ -370,11 +384,16 @@ export async function autoCharge({ registry, store, nowMs = Date.now(), limit = 
 // ---------- rotina diária ----------
 /** Emite/avisa/suspende (banco), confere no provedor o que ficou sem resposta e completa a tarifa dos pagamentos já feitos. */
 export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), log = console }) {
-  const out = { tick: null, auto: null, refunds: null, checked: 0, settled: 0, fees: 0, errors: [] };
+  const out = { tick: null, promo: null, auto: null, refunds: null, checked: 0, settled: 0, fees: 0, errors: [] };
   try {
     out.tick = await store.tick();
   } catch (e) {
     out.errors.push(`tick: ${msg(e)}`);
+  }
+  try {
+    out.promo = (await store.promoTick?.()) ?? null;
+  } catch (e) {
+    out.errors.push(`promo: ${msg(e)}`);
   }
   try {
     out.refunds = await settleRefunds({ registry, store, log });

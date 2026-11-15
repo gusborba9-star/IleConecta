@@ -318,6 +318,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
                 {isOwn ? (
                   <>
                     <Button size="sm" variant="outline" onClick={() => { setEditing(s); setFormOpen(true); }}>Editar</Button>
+                    {s.active && s.listed && <Button size="sm" variant="outline" onClick={() => nav(`/impulsionar?item=service:${s.id}`)}>Impulsionar</Button>}
                     <Button size="sm" variant="outline" onClick={() => toggle(s)}>{s.active ? "Pausar" : "Ativar"}</Button>
                     <Button size="sm" variant="ghost" onClick={() => remove(s)}>Excluir</Button>
                   </>
