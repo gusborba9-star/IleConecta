@@ -77,3 +77,13 @@ export function promoName(i) {
   const where = SCOPE_NAME[i.scope] ?? i.scope;
   return i.kind === "highlight" ? `Destaque da casa · ${where}` : `Impulso de ${i.title ?? "item removido"} · ${where}`;
 }
+
+/** Edição livre do campo de dias (1 a 90): devolve o texto a mostrar e os dias válidos (null enquanto o campo está vazio ou zerado). */
+export function editDaysDraft(raw, cap = 90) {
+  const digits = String(raw ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 3);
+  if (digits === "") return { text: "", days: null };
+  const n = Number(digits);
+  if (n < 1) return { text: digits, days: null };
+  const limit = Math.max(1, Math.min(90, cap));
+  return n > limit ? { text: String(limit), days: limit } : { text: digits, days: n };
+}

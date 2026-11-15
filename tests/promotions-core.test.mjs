@@ -43,3 +43,15 @@ test("reembolso só como texto de pedidos e nome do item", () => {
   assert.equal(promoName(i), "Impulso de Amor · Estado");
   assert.equal(promoName({ kind: "boost", scope: "pais", title: null }), "Impulso de item removido · País");
 });
+
+test("editDaysDraft: campo de dias editável (apagar, digitar 20, limite 90)", async () => {
+  const { editDaysDraft } = await import("../src/lib/promotionsCore.js");
+  assert.deepEqual(editDaysDraft("", 90), { text: "", days: null });
+  assert.deepEqual(editDaysDraft("2", 90), { text: "2", days: 2 });
+  assert.deepEqual(editDaysDraft("20", 90), { text: "20", days: 20 });
+  assert.deepEqual(editDaysDraft("120", 90), { text: "90", days: 90 });
+  assert.deepEqual(editDaysDraft("0", 90), { text: "0", days: null });
+  assert.deepEqual(editDaysDraft("05", 90), { text: "5", days: 5 });
+  assert.deepEqual(editDaysDraft("a1b", 90), { text: "1", days: 1 });
+  assert.deepEqual(editDaysDraft("50", 30), { text: "30", days: 30 });
+});
