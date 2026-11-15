@@ -1,10 +1,11 @@
 import { toast } from "sonner";
 
 /**
- * Recusas do plano vindas do banco (limite de serviços, rituais, publicações; Grátis sem conta de recebimento).
+ * Recusas do plano e da agenda vindas do banco (limite de serviços, rituais, publicações; Grátis sem conta de recebimento;
+ * ritual sobre atendimento ou bloqueio da agenda).
  * O banco escreve a mensagem em português; só ela é mostrada, e só quando é uma dessas (nunca texto técnico).
  */
-const PLAN_GUARD = /^(Você chegou ao limite de |Para publicar (serviços|rituais com valor) no plano Grátis)/;
+const PLAN_GUARD = /^(Você chegou ao limite de |Para publicar (serviços|rituais com valor) no plano Grátis|Já existe um atendimento marcado neste horário|Este horário está bloqueado na sua agenda|Informe a duração do ritual)/;
 const NEEDS_PAYMENT = /conecte primeiro a sua conta de recebimento/;
 
 let last: { m: string; at: number } | null = null;
