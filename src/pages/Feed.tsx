@@ -12,6 +12,7 @@ import { Star } from "lucide-react";
 import { usePromoRanking } from "@/lib/usePromoRanking";
 import { rankFeed } from "@/lib/promotionsCore";
 import PromoTrack from "@/components/promo/PromoTrack";
+import FeedPromos from "@/components/promo/FeedPromos";
 import type { Post } from "@/types";
 
 export default function Feed() {
@@ -24,8 +25,8 @@ export default function Feed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Casas em destaque nas primeiras posições (revezando a cada visita) e publicações impulsionadas intercaladas.
-  const ranked = useMemo(() => rankFeed(posts, { highlightOwners: promo.highlightOwners, boostedPostIds: promo.boostedPostIds }), [posts, promo.highlightOwners, promo.boostedPostIds]);
+  // As casas em destaque ficam num bloco próprio (FeedPromos); aqui só as publicações impulsionadas entram intercaladas.
+  const ranked = useMemo(() => rankFeed(posts, { boostedPostIds: promo.boostedPostIds }), [posts, promo.boostedPostIds]);
   const feedItems: ({ kind: "post"; data: Post; tag: "destaque" | "promovido" | null } | { kind: "promo" })[] = [];
   ranked.forEach((r, i) => {
     feedItems.push({ kind: "post", data: r.post, tag: r.tag });
@@ -47,6 +48,8 @@ export default function Feed() {
         </div>
         <StoryRail />
       </div>
+
+      {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
 
       <PostComposer />
 
