@@ -120,6 +120,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
     onClose();
   };
 
+  const inPerson = service.delivery === "presencial" || (service.delivery === "hibrido" && modality === "presencial");
   return (
     <Modal open onClose={onClose} title={`Contratar — ${service.title}`} maxWidth="max-w-lg">
       <form onSubmit={submit} className="space-y-4">
@@ -169,8 +170,9 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
           <Textarea id="order-note" rows={4} maxLength={800} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Seu nome, a situação e o que deseja do trabalho. Só a casa vê." />
         </div>
         <p className="text-xs text-muted-foreground">
-          Valor: {formatCents(service.priceCents)}. A casa inicia e conclui o trabalho e você é avisado em cada etapa.{" "}
-          {payOn ? "O pagamento é feito pela plataforma, logo após o pedido. Você cancela com reembolso integral até a casa iniciar o trabalho." : "Por enquanto não há cobrança no app: o pagamento é combinado com a casa."}
+          Valor: {formatCents(service.priceCents)}.{" "}
+          {inPerson ? "Atendimento presencial: você comparece no horário combinado com a casa e é avisado da confirmação." : "A casa inicia e conclui o trabalho e você é avisado em cada etapa."}{" "}
+          {payOn ? `O pagamento é feito pela plataforma, logo após o pedido. Você cancela com reembolso integral até a casa iniciar ${inPerson ? "o atendimento" : "o trabalho"}.` : "Por enquanto não há cobrança no app: o pagamento é combinado com a casa."}
         </p>
         {payOn && service.stages > 1 && (
           <p className="text-sm rounded-xl border border-border p-3 pillow">

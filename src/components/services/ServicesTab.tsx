@@ -261,7 +261,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
             ? [{ icon: Clock, text: `Sessão de ${s.durationMin} minutos` }, delivery]
             : segment === "trabalho" && s.stages > 1
             ? [{ icon: Layers, text: `Em até ${s.stages} etapas de pagamento` }, { icon: Clock, text: "Aviso no início e no fim de cada etapa" }]
-            : [delivery, { icon: Clock, text: "A casa inicia e conclui; você é avisado" }];
+            : [delivery, { icon: Clock, text: s.delivery === "presencial" ? "Você comparece no horário combinado" : "A casa inicia e conclui; você é avisado" }];
           const chip = segment === "jogo" ? { text: "Com agenda" } : s.delivery === "sigilo" ? { text: "Sigilo", icon: Lock } : { text: deliveryLabel(s.delivery) };
           return (
             <OfferCard
