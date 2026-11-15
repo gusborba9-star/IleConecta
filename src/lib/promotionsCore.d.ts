@@ -6,7 +6,7 @@ export declare const KIND_NAME: Record<PromoKind, string>;
 export interface MyPromo {
   id: string; kind: PromoKind; scope: PromoScopeKey; itemType: string | null; itemId: string | null; title: string | null; days: number; status: string;
   chargeId: string | null; paidCents: number | null; startsAt: string | null; endsAt: string | null; running: boolean; queued: boolean; paused: boolean;
-  daysLeft: number | null; daysUsed: number | null; refundCents: number | null; refundDays: number | null; refundDeadline: string | null;
+  views: number; opens: number; daysLeft: number | null; daysUsed: number | null; refundCents: number | null; refundDays: number | null; refundDeadline: string | null;
 }
 export declare function readMyPromotions(raw: unknown): { hasHouse: boolean; items: MyPromo[] };
 export interface ScopeSlots { limit: number; taken: number; full: boolean; mine: boolean; waiting: boolean; located: boolean }
@@ -18,3 +18,7 @@ export declare function promoRefundText(i: MyPromo, money: (cents: number) => st
 export declare function promoName(i: MyPromo): string;
 
 export declare function editDaysDraft(raw: string, cap?: number): { text: string; days: number | null };
+
+export declare function resultsLine(i: { views?: number; opens?: number }): string;
+export interface FeedPostLike { id: string; houseId: string; kind?: string }
+export declare function rankFeed<T extends FeedPostLike>(posts: T[], promo?: { highlightOwners?: string[]; boostedPostIds?: string[] }): { post: T; tag: "destaque" | "promovido" | null }[];

@@ -16,7 +16,7 @@ export function readMyPromotions(raw) {
       id: String(i.id), kind: i.kind, scope: i.scope, itemType: str(i.item_type), itemId: str(i.item_id), title: str(i.title),
       days: num(i.days) ?? 0, status: String(i.status ?? ""), chargeId: str(i.charge_id), paidCents: num(i.paid_cents),
       startsAt: str(i.starts_at), endsAt: str(i.ends_at), running: i.running === true, queued: i.queued === true, paused: i.paused === true,
-      daysLeft: num(i.days_left), daysUsed: num(i.days_used), refundCents: num(i.refund_cents), refundDays: num(i.refund_days), refundDeadline: str(i.refund_deadline),
+      views: num(i.views) ?? 0, opens: num(i.opens) ?? 0, daysLeft: num(i.days_left), daysUsed: num(i.days_used), refundCents: num(i.refund_cents), refundDays: num(i.refund_days), refundDeadline: str(i.refund_deadline),
     }];
   });
   return { hasHouse: r.has_house === true, items };
@@ -75,7 +75,9 @@ export function promoRefundText(i, money) {
 /** Texto curto do que foi comprado. */
 export function promoName(i) {
   const where = SCOPE_NAME[i.scope] ?? i.scope;
-  return i.kind === "highlight" ? `Destaque da casa · ${where}` : `Impulso de ${i.title ?? "item removido"} · ${where}`;
+  if (i.kind === "highlight") return `Destaque da casa · ${where}`;
+  if (i.itemType === "post") return `Impulso da publicação "${i.title ?? "removida"}" · ${where}`;
+  return `Impulso de ${i.title ?? "item removido"} · ${where}`;
 }
 
 /** Edição livre do campo de dias (1 a 90): devolve o texto a mostrar e os dias válidos (null enquanto o campo está vazio ou zerado). */
@@ -86,4 +88,44 @@ export function editDaysDraft(raw, cap = 90) {
   if (n < 1) return { text: digits, days: null };
   const limit = Math.max(1, Math.min(90, cap));
   return n > limit ? { text: String(limit), days: limit } : { text: digits, days: n };
+}
+
+/** Resultado da compra: pessoas que viram e que abriram (cada pessoa conta uma vez por dia). */
+export function resultsLine(i) {
+  const v = Number(i?.views) || 0, o = Number(i?.opens) || 0;
+  if (v === 0 && o === 0) return "Ainda sem resultados: aparecem aqui assim que alguém vir.";
+  const pessoas = (n) => `${n} ${n === 1 ? "pessoa" : "pessoas"}`;
+  return `Apareceu para ${pessoas(v)} · ${o === 1 ? "1 abriu" : `${o} abriram`}`;
+}
+
+/**
+ * Ordem do feed (Blueprint §17): até 3 casas em destaque (a mais recente publicação de cada uma, na ordem já sorteada) nas primeiras posições;
+ * publicações impulsionadas intercaladas (uma a cada 3 do restante, no máximo 3); o resto na ordem original, sem repetir.
+ * Devolve [{ post, tag }] com tag "destaque" | "promovido" | null.
+ */
+export function rankFeed(posts, { highlightOwners = [], boostedPostIds = [] } = {}) {
+  const list = Array.isArray(posts) ? posts : [];
+  const used = new Set();
+  const out = [];
+  const pinned = [];
+  for (const owner of highlightOwners) {
+    if (pinned.length >= 3) break;
+    const p = list.find((x) => x.houseId === owner && x.kind !== "story" && !used.has(x.id));
+    if (p) { used.add(p.id); pinned.push({ post: p, tag: "destaque" }); }
+  }
+  const boosted = [];
+  for (const id of boostedPostIds) {
+    if (boosted.length >= 3) break;
+    const p = list.find((x) => x.id === id && !used.has(x.id));
+    if (p) { used.add(p.id); boosted.push({ post: p, tag: "promovido" }); }
+  }
+  const rest = list.filter((x) => !used.has(x.id)).map((post) => ({ post, tag: null }));
+  out.push(...pinned);
+  let b = 0;
+  rest.forEach((item, i) => {
+    if (b < boosted.length && i % 3 === 1) out.push(boosted[b++]);
+    out.push(item);
+  });
+  while (b < boosted.length) out.push(boosted[b++]);
+  return out;
 }

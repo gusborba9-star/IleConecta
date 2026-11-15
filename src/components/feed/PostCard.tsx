@@ -7,9 +7,12 @@ import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
 import RitualCard from "./RitualCard";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { isFeatureOn } from "@/lib/platformConfig";
 
 export default function PostCard({ post }: { post: Post }) {
-  const { users, currentUser, toggleLike, commentPost, rituals } = useApp();
+  const { users, currentUser, toggleLike, commentPost, rituals, isRemoteAuth } = useApp();
+  const { config } = usePlatformConfig();
   const [text, setText] = useState("");
   const [showComments, setShowComments] = useState(false);
 
@@ -18,6 +21,7 @@ export default function PostCard({ post }: { post: Post }) {
   const isHouse = houseAuthor !== null;
   const liked = currentUser ? post.likes.includes(currentUser.id) : false;
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
+  const canBoost = isRemoteAuth && !!currentUser && currentUser.type === "commercial" && post.houseId === currentUser.id && post.kind !== "story" && isFeatureOn(config, "boost", currentUser.id);
   const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
 
   return (
@@ -48,6 +52,9 @@ export default function PostCard({ post }: { post: Post }) {
             {isHouse ? `${houseAuthor!.city} · ${houseAuthor!.category}` : "Cliente"} · {timeAgo(post.createdAt)}
           </div>
         </div>
+        {canBoost && (
+          <Link to={`/impulsionar?item=post:${post.id}`} className="shrink-0 rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Impulsionar</Link>
+        )}
         <button disabled title="Mais opções ainda não estão implementadas" className="h-8 w-8 rounded-full grid place-items-center text-muted-foreground disabled:opacity-50">
           <MoreHorizontal className="h-4 w-4" />
         </button>

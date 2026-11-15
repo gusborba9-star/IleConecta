@@ -5,6 +5,7 @@ import RitualCard from "@/components/feed/RitualCard";
 import { Card, Input, Badge } from "@/components/base";
 import { Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PromoTrack from "@/components/promo/PromoTrack";
 import { usePromoRanking } from "@/lib/usePromoRanking";
 import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
 import { modeLabel, seatsLeft } from "@/lib/ritualsCore";
@@ -98,7 +99,8 @@ export default function Rituals() {
         <section aria-label="Rituais das casas" className="space-y-3">
           <h2 className="font-display font-bold text-lg">Próximos rituais das casas</h2>
           {realFiltered.map((r) => (
-            <Card key={r.id} className="p-4">
+            <PromoTrack key={r.id} promoId={promo.idByItem.get(r.id)}>
+            <Card className="p-4">
               <div className="flex flex-wrap items-center gap-3 justify-between">
                 <div className="min-w-0">
                   <div className="font-semibold">{r.title}{promo.boostedIds.has(r.id) && <span className="ml-2 rounded-full border border-current/30 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Promovido</span>}</div>
@@ -111,6 +113,7 @@ export default function Rituals() {
                 )}
               </div>
             </Card>
+            </PromoTrack>
           ))}
         </section>
       )}

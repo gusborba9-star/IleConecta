@@ -88,3 +88,11 @@ test("depois de pagar, a casa volta para a tela de onde saiu", () => {
   assert.equal(p.success_url, `https://app.test/destaques?fatura=${CH}&retorno=pago`);
   assert.equal(p.cancel_url, `https://app.test/destaques?fatura=${CH}&retorno=cancelado`);
 });
+
+test("publicação é item válido e as mensagens novas do banco chegam à casa", async () => {
+  const { PROMO_ITEMS, promoPurchaseError } = await import("../supabase/functions/platform-billing/logic.js");
+  assert.ok(PROMO_ITEMS.includes("post"));
+  assert.equal(promoPurchaseError("Só publicações da sua casa podem ser impulsionadas."), "Só publicações da sua casa podem ser impulsionadas.");
+  assert.match(promoPurchaseError("Escolha o serviço, ritual ou publicação que será impulsionado."), /serviço, ritual ou publicação/);
+  assert.match(promoPurchaseError("erro qualquer do banco"), /Não foi possível/);
+});

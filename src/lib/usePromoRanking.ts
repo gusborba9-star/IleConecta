@@ -20,6 +20,11 @@ export function usePromoRanking(enabled: boolean) {
   return useMemo(() => {
     const owners = shuffled([...new Set(list.filter((p) => p.kind === "highlight").map((p) => p.ownerId))], seed);
     const items = list.filter((p) => p.kind === "boost" && p.itemId);
-    return { highlightOwners: owners, boosted: shuffled(items, seed), boostedIds: new Set(items.map((p) => p.itemId as string)) };
+    const idByOwner = new Map<string, string>();
+    for (const p of list) if (p.kind === "highlight" && !idByOwner.has(p.ownerId)) idByOwner.set(p.ownerId, p.id);
+    const idByItem = new Map<string, string>();
+    for (const p of items) if (!idByItem.has(p.itemId as string)) idByItem.set(p.itemId as string, p.id);
+    const boostedPostIds = shuffled(items.filter((p) => p.itemType === "post").map((p) => p.itemId as string), seed);
+    return { highlightOwners: owners, boosted: shuffled(items, seed), boostedIds: new Set(items.map((p) => p.itemId as string)), idByOwner, idByItem, boostedPostIds };
   }, [list, seed]);
 }

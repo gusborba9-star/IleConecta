@@ -69,3 +69,36 @@ test("brStates: nome ou sigla em qualquer grafia vira a sigla; lista com 27 esta
   assert.equal(ufFromText("RI"), "");
   assert.equal(ufFromText(null), "");
 });
+
+test("rankFeed: destaque nas primeiras posições, impulsionadas intercaladas, sem repetir", async () => {
+  const { rankFeed } = await import("../src/lib/promotionsCore.js");
+  const posts = Array.from({ length: 10 }, (_, i) => ({ id: `p${i}`, houseId: `h${i % 4}`, kind: i === 5 ? "story" : "geral" }));
+  const out = rankFeed(posts, { highlightOwners: ["h3", "h1"], boostedPostIds: ["p9", "p7", "inexistente"] });
+  assert.equal(out.length, posts.length, "nenhuma publicação some nem se repete");
+  assert.equal(new Set(out.map((x) => x.post.id)).size, posts.length);
+  assert.deepEqual(out.slice(0, 2).map((x) => [x.post.id, x.tag]), [["p3", "destaque"], ["p1", "destaque"]], "mais recente de cada casa em destaque");
+  assert.equal(out.filter((x) => x.tag === "promovido").length, 2);
+  assert.ok(out.findIndex((x) => x.tag === "promovido") >= 3, "promovida entra depois do bloco de destaque");
+  // momento (story) nunca é fixado como destaque
+  const s = rankFeed([{ id: "s", houseId: "h9", kind: "story" }, { id: "x", houseId: "h9", kind: "geral" }], { highlightOwners: ["h9"] });
+  assert.equal(s[0].post.id, "x");
+  // no máximo 3 em destaque e 3 impulsionadas
+  const many = Array.from({ length: 20 }, (_, i) => ({ id: `m${i}`, houseId: `o${i}`, kind: "geral" }));
+  const m = rankFeed(many, { highlightOwners: many.map((x) => x.houseId).slice(0, 8), boostedPostIds: many.map((x) => x.id).slice(10, 18) });
+  assert.equal(m.filter((x) => x.tag === "destaque").length, 3);
+  assert.equal(m.filter((x) => x.tag === "promovido").length, 3);
+  // sem promoção: ordem original
+  assert.deepEqual(rankFeed(posts).map((x) => x.post.id), posts.map((x) => x.id));
+  assert.deepEqual(rankFeed(null), []);
+});
+
+test("resultados por compra e nome da publicação impulsionada", async () => {
+  const { resultsLine, promoName, readMyPromotions } = await import("../src/lib/promotionsCore.js");
+  assert.match(resultsLine({ views: 0, opens: 0 }), /Ainda sem resultados/);
+  assert.equal(resultsLine({ views: 1, opens: 1 }), "Apareceu para 1 pessoa · 1 abriu");
+  assert.equal(resultsLine({ views: 12, opens: 3 }), "Apareceu para 12 pessoas · 3 abriram");
+  assert.match(resultsLine({}), /Ainda sem resultados/);
+  assert.equal(promoName({ kind: "boost", scope: "cidade", itemType: "post", title: "Oi" }), 'Impulso da publicação "Oi" · Cidade');
+  const r = readMyPromotions({ has_house: true, items: [{ id: "a", kind: "boost", scope: "cidade", status: "ativa", views: "7", opens: 2 }, { id: "b", kind: "boost", scope: "cidade", status: "ativa" }] });
+  assert.deepEqual(r.items.map((i) => [i.views, i.opens]), [[7, 2], [0, 0]]);
+});

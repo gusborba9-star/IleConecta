@@ -9,6 +9,7 @@ import RitualCard from "@/components/feed/RitualCard";
 import { matchesDemoSearch } from "@/lib/demoState";
 import { fetchFeatured } from "@/lib/referral";
 import { usePromoRanking } from "@/lib/usePromoRanking";
+import PromoTrack from "@/components/promo/PromoTrack";
 import BoostedServices from "@/components/promo/BoostedServices";
 
 export default function Discover() {
@@ -96,7 +97,9 @@ export default function Discover() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {promoted.map((h) => (
-              <HouseTile key={h.id} h={h} featured={Boolean(featured[h.id]) || paidUp(h)} />
+              <PromoTrack key={h.id} promoId={promo.idByOwner.get(h.id)}>
+                <HouseTile h={h} featured={Boolean(featured[h.id]) || paidUp(h)} />
+              </PromoTrack>
             ))}
           </div>
         </section>
