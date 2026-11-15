@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Button, Card, Input, Label } from "@/components/base";
+import { editDaysDraft } from "@/lib/promotionsCore";
 import { DAY_PRESETS, MAX_DAYS, MIN_DAYS, clampDays, formatMoney, totalFor, type Money } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
@@ -37,10 +38,13 @@ export default function PromoPicker<K extends string>({
   const [scope, setScope] = useState<K>(scopes[0].key);
   const [days, setDays] = useState<number>(() => Math.max(MIN_DAYS, Math.min(7, maxDays)));
   const [agreed, setAgreed] = useState(false);
+  // Texto digitado no campo de dias: fica livre enquanto a pessoa edita (pode ficar vazio) e só é ajustado ao sair do campo.
+  const [draft, setDraft] = useState<string | null>(null);
   const current = scopes.find((s) => s.key === scope) ?? scopes[0];
   const cap = Math.max(MIN_DAYS, Math.min(MAX_DAYS, maxDays));
   const shownDays = Math.min(days, cap);
-  const total = totalFor(current.perDay, shownDays);
+  const draftInvalid = draft !== null && (draft === "" || Number(draft) < MIN_DAYS);
+  const total = draftInvalid ? null : totalFor(current.perDay, shownDays);
   const blockedReason = real?.blocked?.[scope];
 
   return (
@@ -72,7 +76,7 @@ export default function PromoPicker<K extends string>({
           <Label>Duração</Label>
           <div className="flex flex-wrap gap-2 mt-1">
             {DAY_PRESETS.filter((d) => d <= cap).map((d) => (
-              <Button key={d} type="button" size="sm" variant={shownDays === d ? "accent" : "outline"} onClick={() => setDays(d)}>
+              <Button key={d} type="button" size="sm" variant={shownDays === d ? "accent" : "outline"} onClick={() => { setDays(d); setDraft(null); }}>
                 {d} dias
               </Button>
             ))}
@@ -80,12 +84,18 @@ export default function PromoPicker<K extends string>({
               <span className="text-sm text-muted-foreground">ou</span>
               <Input
                 aria-label="Quantidade de dias"
-                type="number"
-                min={MIN_DAYS}
-                max={cap}
+                type="text"
+                maxLength={3}
                 className="w-24 h-9"
-                value={shownDays}
-                onChange={(e) => setDays(Math.min(cap, clampDays(Number(e.target.value))))}
+                inputMode="numeric"
+                value={draft ?? String(shownDays)}
+                onFocus={(e) => e.currentTarget.select()}
+                onChange={(e) => {
+                  const r = editDaysDraft(e.target.value, cap);
+                  setDraft(r.text);
+                  if (r.days !== null) setDays(r.days);
+                }}
+                onBlur={() => setDraft(null)}
               />
               <span className="text-sm text-muted-foreground">dias (máx. {cap})</span>
             </div>
@@ -114,7 +124,7 @@ export default function PromoPicker<K extends string>({
           </>
         ) : (
           <>
-            <Button variant="gold" className="w-full mt-4" style={canSimulate ? undefined : { background: "rgba(255,255,255,.12)", color: "rgba(255,255,255,.78)", border: "1px solid rgba(255,255,255,.22)" }} disabled={!canSimulate} onClick={() => onSimulate?.(current.key, shownDays)}>
+            <Button variant="gold" className="w-full mt-4" style={canSimulate ? undefined : { background: "rgba(255,255,255,.12)", color: "rgba(255,255,255,.78)", border: "1px solid rgba(255,255,255,.22)" }} disabled={!canSimulate || draftInvalid} onClick={() => onSimulate?.(current.key, shownDays)}>
               Simular
             </Button>
             {!canSimulate && <p className="mt-3 text-center text-xs text-gold">{disabledReason}</p>}

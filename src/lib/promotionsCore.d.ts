@@ -16,3 +16,5 @@ export declare function countdownText(iso: string | null | undefined, now?: numb
 export declare function promoLine(i: MyPromo, now?: number): string;
 export declare function promoRefundText(i: MyPromo, money: (cents: number) => string): string;
 export declare function promoName(i: MyPromo): string;
+
+export declare function editDaysDraft(raw: string, cap?: number): { text: string; days: number | null };
