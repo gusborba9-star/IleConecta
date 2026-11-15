@@ -26,6 +26,7 @@ import FinancePanelCard from "@/components/admin/FinancePanelCard";
 import BillingAdminCard from "@/components/admin/BillingAdminCard";
 import PriceChangeCard from "@/components/admin/PriceChangeCard";
 import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
+import PromoLimitsCard from "@/components/admin/PromoLimitsCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
@@ -222,6 +223,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </Card>
 
       <PlanMatrixCard />
+      <PromoLimitsCard />
 
       <HousePlansCard />
       <StaffAuditCard />

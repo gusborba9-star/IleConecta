@@ -8,6 +8,8 @@ import type { HouseUser } from "@/types";
 import RitualCard from "@/components/feed/RitualCard";
 import { matchesDemoSearch } from "@/lib/demoState";
 import { fetchFeatured } from "@/lib/referral";
+import { usePromoRanking } from "@/lib/usePromoRanking";
+import BoostedServices from "@/components/promo/BoostedServices";
 
 export default function Discover() {
   const { users, rituals, isRemoteAuth } = useApp();
@@ -21,6 +23,7 @@ export default function Discover() {
       alive = false;
     };
   }, [isRemoteAuth]);
+  const promo = usePromoRanking(isRemoteAuth);
   const [searchParams] = useSearchParams();
   const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
@@ -46,8 +49,10 @@ export default function Discover() {
       })
     : [];
 
-  const isUp = (h: HouseUser) => isPromotionActive(h.boost?.expiresAt) || Boolean(featured[h.id]);
-  const promoted = filtered.filter(isUp);
+  const paidUp = (h: HouseUser) => promo.highlightOwners.includes(h.id);
+  const isUp = (h: HouseUser) => isPromotionActive(h.boost?.expiresAt) || Boolean(featured[h.id]) || paidUp(h);
+  // Quem contratou destaque aparece primeiro, revezando a ordem a cada visita.
+  const promoted = filtered.filter(isUp).sort((a, b) => (promo.highlightOwners.indexOf(a.id) + 1 || 999) - (promo.highlightOwners.indexOf(b.id) + 1 || 999));
   const rest = filtered.filter((h) => !isUp(h));
 
   return (
@@ -81,6 +86,8 @@ export default function Discover() {
         </div>
       </Card>
 
+      {isRemoteAuth && <BoostedServices boosted={promo.boosted} />}
+
       {promoted.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-2">
@@ -89,7 +96,7 @@ export default function Discover() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {promoted.map((h) => (
-              <HouseTile key={h.id} h={h} featured={Boolean(featured[h.id])} />
+              <HouseTile key={h.id} h={h} featured={Boolean(featured[h.id]) || paidUp(h)} />
             ))}
           </div>
         </section>

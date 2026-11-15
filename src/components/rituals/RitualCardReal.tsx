@@ -1,6 +1,7 @@
 import { goToCheckout } from "@/lib/payments";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarClock, Clock, MapPin, Sparkles, Users, Video } from "lucide-react";
 import { Badge, Button, Card, Progress } from "@/components/base";
 import OfferCard from "@/components/OfferCard";
@@ -44,6 +45,7 @@ const when = (iso: string) =>
 const STATUS_LABEL = { rascunho: "Rascunho", publicado: "Publicado", encerrado: "Encerrado", cancelado: "Cancelado" } as const;
 
 export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, waiting, waitCount, onToggleWait, onCancelMine, refund, canRefund, onRefund, onWithdrawRefund, onChat, payOn = false, chatStatus = "", onEdit, onAttendees, onPublish, onUnpublish, onStart, onFinish, onCancelRitual }: Props) {
+  const nav = useNavigate();
   const left = seatsLeft(r.seatsTotal, r.taken);
   const state = seatsState(r.seatsTotal, r.taken);
   const pct = r.seatsTotal ? Math.round((r.taken / r.seatsTotal) * 100) : 0;
@@ -131,6 +133,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           <>
             <Button size="sm" variant="outline" onClick={onAttendees}>Participantes ({r.taken})</Button>
             <Button size="sm" variant="outline" onClick={onEdit}>Editar</Button>
+            {r.status === "publicado" && !live && <Button size="sm" variant="outline" onClick={() => nav(`/impulsionar?item=event:${r.id}`)}>Impulsionar</Button>}
             {r.status === "rascunho" && <Button size="sm" onClick={onPublish}>Publicar</Button>}
             {r.status === "publicado" && !live && <Button size="sm" onClick={onStart}>Iniciar ritual</Button>}
             {r.status === "publicado" && live && <Button size="sm" onClick={onFinish}>Concluir ritual</Button>}

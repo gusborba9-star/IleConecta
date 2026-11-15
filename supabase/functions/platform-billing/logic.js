@@ -29,6 +29,11 @@ export function checkoutExpiry(nowMs = Date.now(), hours = 23) {
 }
 
 /** Pedido da página de pagamento. O valor vem SEMPRE da fatura (banco), nunca da pessoa. */
+/** Volta para a tela de onde a casa saiu: destaque e impulsionamento têm tela própria; o resto volta para Planos. */
+export function returnPath(kind) {
+  return kind === "highlight" ? "/destaques" : kind === "boost" ? "/impulsionar" : "/planos";
+}
+
 export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtSec }) {
   const types = stripeMethodTypes(methods);
   if (!types.length) throw new Error("Nenhum meio de pagamento disponível.");
@@ -40,8 +45,8 @@ export function buildCheckoutParams({ charge, methods, appUrl, email, expiresAtS
     metadata: { charge_id: charge.id, house_id: charge.house_id, kind: charge.kind },
     line_items: [{ quantity: 1, price_data: { currency: "brl", unit_amount: Number(charge.amount_cents), product_data: { name: String(charge.description || "Ilê Conecta").slice(0, 120) } } }],
     payment_intent_data: { description: `Ilê Conecta — ${charge.description || charge.kind}`.slice(0, 300), metadata: { charge_id: charge.id } },
-    success_url: `${appUrl}/planos?fatura=${charge.id}&retorno=pago`,
-    cancel_url: `${appUrl}/planos?fatura=${charge.id}&retorno=cancelado`,
+    success_url: `${appUrl}${returnPath(charge.kind)}?fatura=${charge.id}&retorno=pago`,
+    cancel_url: `${appUrl}${returnPath(charge.kind)}?fatura=${charge.id}&retorno=cancelado`,
     expires_at: expiresAtSec,
   };
   if (email) params.customer_email = email;
@@ -168,6 +173,36 @@ export function creditPurchaseError(message) {
   const m = String(message ?? "");
   for (const [re, text] of CREDIT_ERRORS) if (re.test(m)) return text;
   return "Não foi possível iniciar a compra agora. Tente de novo.";
+}
+
+export const PROMO_KINDS = ["boost", "highlight"];
+export const PROMO_SCOPES = ["cidade", "estado", "pais"];
+export const PROMO_ITEMS = ["service", "event"];
+
+const PROMO_ERRORS = [
+  [/cobranca_desligada/, "A contratação ainda não está disponível."],
+  [/sem_vaga/, "As vagas de destaque deste alcance estão ocupadas no momento. Entre na lista de espera para ser avisada quando abrir uma."],
+  [/autorização de início imediato/, "Marque a autorização de início imediato para continuar."],
+  [/Escolha de 1 a 90 dias|1 a 90/, "Escolha de 1 a 90 dias."],
+  [/ainda não está disponível para a sua casa/, "Este recurso ainda não está disponível para a sua casa."],
+  [/Regularize a fatura em atraso/, "Regularize a fatura em atraso para contratar."],
+  [/Complete a cidade e o estado/, "Complete a cidade e o estado no perfil da casa para contratar por cidade."],
+  [/Complete o estado/, "Complete o estado no perfil da casa para contratar por estado."],
+  [/serviços ativos da sua casa/, "Só serviços ativos da sua casa podem ser impulsionados."],
+  [/rituais publicados e que ainda vão acontecer/, "Só rituais publicados e que ainda vão acontecer podem ser impulsionados."],
+  [/Escolha o serviço ou ritual/, "Escolha o serviço ou ritual que será impulsionado."],
+  [/antes de um dia inteiro/, "Este ritual acontece antes de um dia inteiro de impulsionamento."],
+  [/precisa terminar antes do ritual: no máximo (\d+) dia/, null],
+  [/não está disponível no momento/, "Este alcance não está disponível no momento."],
+];
+
+/** Mensagem do banco → texto para a casa. Só frases conhecidas passam; o resto vira mensagem genérica. */
+export function promoPurchaseError(message) {
+  const m = String(message ?? "");
+  const ritual = /precisa terminar antes do ritual: no máximo (\d+) dia/.exec(m);
+  if (ritual) return `O impulsionamento precisa terminar antes do ritual: no máximo ${ritual[1]} dia(s) para este ritual.`;
+  for (const [re, text] of PROMO_ERRORS) if (text && re.test(m)) return text;
+  return "Não foi possível iniciar a contratação agora. Tente de novo.";
 }
 
 /**

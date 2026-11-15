@@ -10,7 +10,7 @@ import { ChargeStateError, ProviderError, createRegistry } from "./provider.js";
 import { createStripeAdapter } from "./stripeAdapter.js";
 import { createStore } from "./store.js";
 import * as core from "./core.js";
-import { CREDIT_PACKS, creditPurchaseError } from "./logic.js";
+import { CREDIT_PACKS, creditPurchaseError, PROMO_ITEMS, PROMO_KINDS, PROMO_SCOPES, promoPurchaseError } from "./logic.js";
 
 const SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("PLATFORM_STRIPE_WEBHOOK_SECRET") ?? "";
@@ -69,6 +69,31 @@ Deno.serve(async (req) => {
       const m = input.method === "pix" || input.method === "card" ? input.method : null;
       const r = await core.openPayment({ registry, store, chargeId: cid, userId: user.id, method: m, email: user.email, appUrl: APP_URL });
       return json({ url: r.url });
+    }
+    if (input.action === "buy_promo") {
+      // Destaque ou impulsionamento: o banco confere tudo (casa em dia, item, vaga, dias, autorização) e calcula o preço pelo painel.
+      const kind = String(input.kind ?? ""), scope = String(input.scope ?? ""), days = Number(input.days);
+      const itemType = input.item_type == null ? null : String(input.item_type);
+      const itemId = input.item_id == null ? null : String(input.item_id);
+      if (!PROMO_KINDS.includes(kind) || !PROMO_SCOPES.includes(scope)) return fail("Escolha o tipo e o alcance.");
+      if (!Number.isInteger(days) || days < 1 || days > 90) return fail("Escolha de 1 a 90 dias.");
+      if (itemType !== null && !PROMO_ITEMS.includes(itemType)) return fail("Item inválido.");
+      if (itemId !== null && !/^[0-9a-f-]{36}$/i.test(itemId)) return fail("Item inválido.");
+      const { data: h } = await admin.from("houses").select("id").eq("owner_id", user.id).maybeSingle();
+      if (!h) return fail("Somente a casa contrata.", 403);
+      const { data: cid, error: perr } = await admin.rpc("platform_promo_purchase", { p_house: h.id, p_kind: kind, p_scope: scope, p_days: days, p_item_type: itemType, p_item_id: itemId, p_authorized: input.authorized === true });
+      if (perr || typeof cid !== "string") {
+        console.error("platform_promo_purchase", perr?.message);
+        return fail(promoPurchaseError(perr?.message), /sem_vaga/.test(perr?.message ?? "") ? 409 : 400, /sem_vaga/.test(perr?.message ?? "") ? "sem_vaga" : undefined);
+      }
+      const m = input.method === "pix" || input.method === "card" ? input.method : null;
+      const r = await core.openPayment({ registry, store, chargeId: cid, userId: user.id, method: m, email: user.email, appUrl: APP_URL });
+      return json({ url: r.url });
+    }
+    if (input.action === "promo_refund") {
+      const id = String(input.charge_id ?? "");
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("Informe a compra.");
+      return json(await core.promoRefund({ registry, store, userId: user.id, chargeId: id }));
     }
     if (input.action === "card_setup") return json(await core.cardSetup({ registry, store, userId: user.id, email: user.email, appUrl: APP_URL }));
     if (input.action === "card_sync") {

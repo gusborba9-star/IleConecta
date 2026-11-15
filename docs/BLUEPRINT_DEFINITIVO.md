@@ -386,14 +386,18 @@ A plataforma oferece denúncia, bloqueio, remoção, registro de ocorrência, re
 
 # 17. DESTAQUE E IMPULSIONAMENTO
 
-São produtos distintos.
+São produtos distintos (decisão do proprietário, 14/11/2026; substitui a versão anterior, em que o impulsionamento era de publicações).
 
-- **Destaque:** posicionamento privilegiado de uma casa, oferta ou ritual em áreas estratégicas. Aumenta visibilidade de uma entidade.
-- **Impulsionamento:** amplia distribuição de uma publicação ou conteúdo. Aumenta alcance de um conteúdo.
+- **Destaque:** a casa inteira (página e descrição) aparece primeiro nas buscas, por **cidade, estado ou país**. Há número máximo de casas em destaque ao mesmo tempo em cada alcance (**3 por cidade, 6 por estado, 15 por país**, editável no admin com motivo e auditoria). Quando lota, a compra é bloqueada com aviso e a casa pode entrar na **lista de espera** (é avisada quando abre vaga). Os destaques ativos se revezam nas primeiras posições.
+- **Impulsionamento:** leva **um serviço ou ritual** da casa a mais gente na cidade, no estado ou no país. Cada item tem o seu próprio impulso. Sem limite de vagas na primeira versão. Só serviço ativo e listado, ou ritual publicado que ainda vai acontecer (o impulso termina antes do ritual). Publicações ficam para depois.
 
-Ambos podem ter abrangência cidade, estado ou país e duração de 3, 7 ou 20 dias.
+**Tempo e cobrança.** Valor por dia (tabela `pricing`, editável no admin; o servidor calcula, a tela só mostra). Seletor livre de 1 a 90 dias com atalhos 3, 7 e 20. O relógio começa na **entrega** (pagamento validado) e cada dia é um **bloco de 24 horas** contado dali; o 1º dia já conta como usado. Nova compra do **mesmo item e alcance** soma os dias ao final (entra quando a anterior termina); itens ou alcances diferentes são compras independentes. A compra exige a caixa **"Autorizo o início imediato…"** (carimbada no banco).
 
-Toda promoção é identificada. Período contratado é respeitado; início e expiração são controlados; cobrança vinculada à campanha; resultados apresentados; frequência e elegibilidade controladas. Preços, posições e limites são parâmetros comerciais administráveis, não valores espalhados pelo código.
+**Reembolso (até 7 dias do pagamento).** Devolve (valor pago ÷ dias) × dias que **ainda não começaram**, sem descontar a tarifa do provedor (a plataforma absorve). O dia em andamento continua até o fim do bloco. Nada iniciado = valor integral. Pedido só em "Pedidos e validações" (nada na tela de compra, por orientação do advogado); o texto está nos Termos (Pagamentos e reembolsos, itens e–g). Se a vaga acabar enquanto o pagamento é confirmado, o valor é devolvido integralmente de forma automática.
+
+**Suspensão.** Falta de pagamento pausa o relógio (e o destaque some); regularizar faz o tempo restante voltar a correr.
+
+**Comunicação.** Toda promoção é identificada ("Promovido" / "Em destaque"). Cada casa vê o fim exato ("termina em dd/mm às hh:mm"), os dias restantes e um contador na tela principal e nas telas de compra. Aviso 1 dia antes do fim, com renovação que soma dias. Botão "Impulsionar" em cada serviço e ritual. Resultados (aparições e cliques por compra) ainda a construir.
 
 ---
 
@@ -419,7 +423,7 @@ Direcionamento (matriz aprovada pelo proprietário em 14/11/2026; os números vi
 - **Venda pela plataforma:** nos planos pagos a venda começa ligada e a casa pode desligá-la (aparece a lista do que ela perde); nos pagos a plataforma não cobra taxa de transação, vive da mensalidade. Rituais coletivos são sempre vendidos pela plataforma, em qualquer plano.
 - **Cancelamento e reembolso de 7 dias (decisão de 14/11/2026):** a casa que cancela (agora ou no vencimento) ou conclui o reembolso volta ao plano **Grátis**, e não a "Conta inativa". Falta de pagamento continua levando à suspensão e ao bloqueio.
 - **Vantagens de pagar pela plataforma** são mostradas ao cliente (reembolso antes de a casa começar, comprovante e histórico, só quem comprou avalia, relato de problema pelo Suporte, pagamento por fora sem suporte) e à casa (lista do que perde ao vender por fora).
-- **Destaque e impulsionamento (a construir):** começam na hora do pagamento; segunda compra do mesmo alcance soma dias ao final; sem reembolso depois de iniciado, salvo o texto do advogado (proporcional aos dias não usados em até 7 dias; integral se ainda não começou), com caixa "Autorizo o início imediato…".
+- **Destaque e impulsionamento:** ver §17 (construído na etapa de 14/11/2026).
 
 A matriz exata de recursos e limites deve ser central. Módulos não criam regras próprias de plano.
 
