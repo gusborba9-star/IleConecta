@@ -17,7 +17,7 @@ const DOC_LABEL: Record<ConsentDocKey, { title: string; slug: string }> = {
 
 const GROUPS: { title: string; slugs: string[] }[] = [
   { title: "Termos e privacidade", slugs: ["termos-do-cliente", "termos-da-casa", "privacidade-lgpd", "eventos-e-taxas"] },
-  { title: "Normas da comunidade", slugs: ["normas-de-uso", "conduta"] },
+  { title: "Normas da comunidade", slugs: ["normas-de-uso", "conduta", "novidades-seguranca"] },
   { title: "Sobre o Ilê Conecta", slugs: ["quem-somos", "visao"] },
 ];
 

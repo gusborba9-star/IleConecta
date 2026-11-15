@@ -19,6 +19,7 @@ import Support from "@/pages/Support";
 import MyCases from "@/pages/MyCases";
 import { ForgotPassword, ResetPassword } from "@/pages/Recover";
 import Terms from "@/pages/Terms";
+import Moderation from "@/pages/Moderation";
 import HouseMembers from "@/pages/HouseMembers";
 import Divulgacao from "@/pages/Divulgacao";
 import Equipe from "@/pages/Equipe";
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="/suporte/chamados" element={<MyCases />} />
         <Route path="/suporte/chamados/:id" element={<MyCases />} />
         <Route path="/termos" element={<Terms />} />
+        <Route path="/moderacao" element={<Moderation />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
         <Route path="/divulgacao" element={<Divulgacao />} />
         <Route path="/equipe" element={<Equipe />} />
