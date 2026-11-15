@@ -45,6 +45,11 @@ const DELIVERY_INFO: Record<string, OfferInfo> = {
   sigilo: { icon: Lock, text: "Realizado com sigilo" },
 };
 
+/** Abre o chat da casa já citando o serviço (a mensagem vem escrita; a pessoa pode ajustar antes de enviar). */
+function askTimePath(ownerId: string | undefined, s: { id: string; title: string }): string {
+  return `/mensagens/${ownerId}?servico=${encodeURIComponent(s.id)}&t=${encodeURIComponent(s.title.slice(0, 80))}`;
+}
+
 export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
@@ -280,7 +285,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
               priceNote={segment === "jogo" ? "por sessão" : s.stages > 1 ? `Em ${s.stages} etapas` : "à vista"}
               primary={noButton ? undefined : { label: primaryLabel(segment, picked[s.id]), onClick: () => { setContractSlot(picked[s.id] ?? ""); setContracting(s); } }}
               hint={cardHint(segment, payOn, noButton)}
-              chat={{ onClick: () => nav(`/mensagens/${ownerId}`), status: chatStatus, label: "Conversar para agendar" }}
+              chat={{ onClick: () => nav(askTimePath(ownerId, s)), status: chatStatus, label: s.delivery === "presencial" || s.bookable ? "Pedir horário à casa" : "Conversar com a casa" }}
             />
           );
         }
@@ -329,7 +334,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
                     {myOpenOrder(s.id) && canCancelOrder(myOpenOrder(s.id)!.status) && (
                       <Button size="sm" variant="outline" onClick={() => ask({ title: "Cancelar o seu pedido?", message: "Se já foi pago, o valor é devolvido integralmente enquanto a casa não iniciar o trabalho.", confirmLabel: "Cancelar pedido", danger: true }, () => orderAct(() => cancelOrder(myOpenOrder(s.id)!.id), "Pedido cancelado."))}>Cancelar pedido</Button>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => nav(`/mensagens/${ownerId}`)}>{s.delivery === "presencial" ? "Conversar para agendar" : "Conversar com a casa"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => nav(askTimePath(ownerId, s))}>{s.delivery === "presencial" || s.bookable ? "Pedir horário à casa" : "Conversar com a casa"}</Button>
                   </>
                 )}
               </div>

@@ -1,11 +1,13 @@
 import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Bot, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Bot, CalendarClock, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
 import ChatCheckoutButton from "@/components/chat/ChatCheckoutButton";
+import ProposalCard from "@/components/chat/ProposalCard";
+import ProposeScheduleModal from "@/components/chat/ProposeScheduleModal";
 import ChatSafetyMenu from "@/components/chat/ChatSafetyMenu";
 import { useApp } from "@/contexts/AppContext";
 import { askAssistant, fetchAssistantAvatar } from "@/lib/assistant";
@@ -30,6 +32,7 @@ export default function RealMessages() {
   const { id: otherId } = useParams();
   const { currentUser } = useApp();
   const nav = useNavigate();
+  const [query, setQuery] = useSearchParams();
   const me = currentUser?.id;
   const [convos, setConvos] = useState<ConversationRow[]>([]);
   const [convId, setConvId] = useState<string | null>(null);
@@ -141,6 +144,14 @@ export default function RealMessages() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [msgs.length]);
 
+  // "Pedir horário à casa": a conversa abre com a mensagem pronta citando o serviço (a pessoa ajusta e envia).
+  const askTitle = query.get("t");
+  useEffect(() => {
+    if (!askTitle || !convId) return;
+    setText((cur) => cur || `Olá! Quero agendar "${askTitle.slice(0, 80)}". Quais horários a casa tem disponíveis?`);
+    setQuery({}, { replace: true });
+  }, [askTitle, convId, setQuery]);
+
   // No celular, ao abrir uma conversa o cabeçalho (com o menu ⋮) volta para a tela.
   useEffect(() => {
     if (otherId) rootRef.current?.scrollIntoView({ block: "start" });
@@ -181,6 +192,7 @@ export default function RealMessages() {
 
   const [quick, setQuick] = useState<QuickReply[]>([]);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [proposeOpen, setProposeOpen] = useState(false);
   const iAmHouse = currentUser?.type === "commercial";
   useEffect(() => {
     if (iAmHouse) void fetchQuickReplies().then(setQuick);
@@ -294,7 +306,8 @@ export default function RealMessages() {
                         <>
                           {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}
                           {!(m.attachmentPath && isPlaceholderText(m.text)) && m.text}
-                          {m.action && m.fromAssistant && otherId && <div><ChatCheckoutButton action={m.action} ownerId={otherId} /></div>}
+                          {m.action && m.action.target !== "proposal" && m.fromAssistant && otherId && <div><ChatCheckoutButton action={m.action as { target: "ritual" | "service"; id: string }} ownerId={otherId} /></div>}
+                          {m.action?.target === "proposal" && !m.fromAssistant && <ProposalCard proposalId={m.action.id} onChanged={() => void refreshRef.current()} />}
                         </>
                       )}
                       <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-forest-foreground/70" : "text-muted-foreground")}>
@@ -347,6 +360,9 @@ export default function RealMessages() {
                     )}
                   </div>
                 )}
+                {iAmHouse && peer && !peer.isHouse && otherId && (
+                  <Button size="icon" variant="ghost" aria-label="Propor horário" title="Propor horário" disabled={busy || !convId} onClick={() => setProposeOpen(true)}><CalendarClock className="h-4 w-4" /></Button>
+                )}
                 <Button size="icon" variant="ghost" aria-label={mediaOk ? "Anexar foto, vídeo ou PDF" : "Anexar PDF"} disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
                 <input
                   aria-label="Mensagem"
@@ -366,6 +382,9 @@ export default function RealMessages() {
         )}
       </section>
     </Card>
+    {iAmHouse && peer && !peer.isHouse && otherId && me && (
+      <ProposeScheduleModal open={proposeOpen} ownerId={me} clientId={otherId} clientName={peer.name} onClose={() => setProposeOpen(false)} onSent={() => void refreshRef.current()} />
+    )}
     </div>
   );
 }

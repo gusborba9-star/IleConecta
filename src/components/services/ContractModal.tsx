@@ -9,6 +9,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Link } from "react-router-dom";
 import type { Service } from "@/lib/services";
 import { createBooking, createOrder, setOrderModality } from "@/lib/serviceOrders";
+import { acceptProposal } from "@/lib/proposals";
 import { goToCheckout } from "@/lib/payments";
 import { formatCents } from "@/lib/servicesCore";
 import PlatformBenefits from "@/components/PlatformBenefits";
@@ -21,11 +22,13 @@ interface Props {
   houseName?: string;
   /** Horário já escolhido no card (ISO); abre a tela com ele marcado. */
   initialSlot?: string;
+  /** Horário combinado pelo chat: a casa já escolheu o dia e a hora, então não há seleção de horário. */
+  proposal?: { id: string; whenText: string };
   onClose: () => void;
   onDone: () => void;
 }
 
-export default function ContractModal({ service, initialSlot, onClose, onDone }: Props) {
+export default function ContractModal({ service, initialSlot, proposal, onClose, onDone }: Props) {
   const [note, setNote] = useState("");
   const [modality, setModality] = useState<"presencial" | "distancia" | "">("");
   const [saving, setSaving] = useState(false);
@@ -53,7 +56,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
     setDayPick("");
     if (!service) return;
     let alive = true;
-    if (service.bookable) {
+    if (service.bookable && !proposal) {
       void fetchSlots(service.id).then((r) => {
         if (!alive) return;
         setSlots(r);
@@ -76,7 +79,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
     return () => {
       alive = false;
     };
-  }, [service, initialSlot, ownerId, currentUser?.id]);
+  }, [service, initialSlot, proposal, ownerId, currentUser?.id]);
 
   if (!service) return null;
 
@@ -84,7 +87,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
     event.preventDefault();
     if (!payReady) return;
     if ((!sensitiveDone && !okSensitive) || (payOn && !termsDone && !okCheckout)) return void toast.error("Marque os aceites para continuar.");
-    if (service.bookable && !slot) return void toast.error("Escolha o dia e o horário.");
+    if (service.bookable && !proposal && !slot) return void toast.error("Escolha o dia e o horário.");
     if (service.delivery === "hibrido" && !modality) return void toast.error("Escolha como quer receber: presencial ou à distância.");
     setSaving(true);
     // Cada compra deixa o seu registro (versão, data, IP e o serviço); se não gravar, o pedido não segue.
@@ -94,7 +97,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
       setSaving(false);
       return void toast.error(consentError);
     }
-    const { error, id } = service.bookable ? await createBooking(service.id, slot, note) : await createOrder(service.id, note);
+    const { error, id } = proposal ? await acceptProposal(proposal.id, note) : service.bookable ? await createBooking(service.id, slot, note) : await createOrder(service.id, note);
     if (error) {
       setSaving(false);
       return void toast.error(error);
@@ -124,11 +127,14 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
   return (
     <Modal open onClose={onClose} title={`Contratar — ${service.title}`} maxWidth="max-w-lg">
       <form onSubmit={submit} className="space-y-4">
-        {service.bookable && (
+        {proposal && (
+          <p className="rounded-xl bg-muted px-3 py-2 text-sm">Horário combinado com a casa: <strong>{proposal.whenText}</strong> (Brasília)</p>
+        )}
+        {service.bookable && !proposal && (
           <fieldset className="space-y-2">
             <legend className="text-sm font-semibold">Escolha o dia e o horário</legend>
             {slots === null && <p className="text-sm text-muted-foreground">Carregando horários…</p>}
-            {slots && slots.length === 0 && <p className="text-sm text-muted-foreground">Não há horários livres nos próximos dias. Fale com a casa pelo chat.</p>}
+            {slots && slots.length === 0 && <p className="text-sm text-muted-foreground">Não há horários livres nos próximos dias. Peça um horário à casa pelo chat: ela propõe e você confirma aqui.</p>}
             {slots && slots.length > 0 && (() => {
               const days = groupSlots(slots);
               const current = days.find((d) => d.day === dayPick) ?? null;
@@ -191,7 +197,7 @@ export default function ContractModal({ service, initialSlot, onClose, onDone }:
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving || !payReady}>{saving ? "Enviando…" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
+          <Button type="submit" disabled={saving || !payReady}>{saving ? "Enviando…" : proposal ? "Confirmar e pagar" : service.bookable ? "Agendar" : "Enviar pedido"}</Button>
         </div>
       </form>
     </Modal>
