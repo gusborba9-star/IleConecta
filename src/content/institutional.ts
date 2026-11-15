@@ -260,6 +260,13 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Moderação, advertências e contestação",
+        paragraphs: [
+          `A ${BRAND} utiliza ferramentas automatizadas e análise humana para identificar conteúdos que violem estes Termos, em especial promessas de resultado garantido e a divulgação de contatos externos no Plano Grátis. Identificada a infração, a casa será notificada por advertência pelo aplicativo e terá o prazo de até 72 (setenta e duas) horas para corrigir o conteúdo. Para conteúdos publicados antes da regra, o prazo de correção é de 15 (quinze) dias.`,
+          "Não havendo a correção no prazo, o conteúdo infringente poderá ser ocultado ou suspenso, sem prejuízo dos demais conteúdos e serviços da casa, até que seja ajustado. A casa que discordar da medida poderá contestá-la em até 7 (sete) dias corridos, pelo aplicativo ou pelo Suporte, e a contestação será analisada pela administração. A moderação incide apenas sobre conteúdos públicos da casa, nunca sobre as conversas do chat.",
+        ],
+      },
+      {
         heading: "Vedações e inexistência de garantia de resultado",
         paragraphs: [
           "É proibido prometer, divulgar ou sugerir garantia de resultado específico, prazos certos para desfechos de vida privada, saúde, reconciliação ou ganhos financeiros. Os serviços têm natureza espiritual e de convicção pessoal. A casa responde por qualquer publicidade que induza o cliente a erro.",
@@ -325,6 +332,40 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           "Você pode pedir acesso, correção, exclusão dos seus dados, entre outros direitos previstos em lei. Para isso, fale com o suporte.",
         ],
+      },
+    ],
+  },
+  {
+    slug: "novidades-seguranca",
+    title: "Novidades de segurança e transparência",
+    summary: "Atendimento dentro da plataforma e comunicação ética, com período de adaptação de 30 dias.",
+    sections: [
+      {
+        paragraphs: [
+          `Estamos fortalecendo a segurança e a transparência no ${BRAND} para proteger as casas e quem busca atendimento. Veja o que muda:`,
+        ],
+      },
+      {
+        heading: "Atendimento dentro da plataforma no Plano Grátis",
+        paragraphs: [
+          "No Plano Grátis, o atendimento e a venda acontecem dentro da plataforma. Não é permitido divulgar telefone, link, e-mail ou arroba de rede social nos textos públicos da casa (nome, apresentação, serviços, rituais e publicações). Use o chat da plataforma para atender seus clientes. As conversas do chat não são verificadas por essa regra.",
+        ],
+      },
+      {
+        heading: "Comunicação ética, sem promessas garantidas",
+        paragraphs: [
+          "Os serviços têm natureza espiritual e de convicção pessoal. Por isso, não são permitidas promessas ou garantias de resultado, nem prazos certos para desfechos da vida pessoal, saúde, reconciliação ou ganhos financeiros. Descreva o trabalho pelo que ele é: a natureza espiritual, os fundamentos da casa e o acolhimento oferecido.",
+        ],
+      },
+      {
+        heading: "Período de adaptação de 30 dias",
+        paragraphs: [
+          "Nos primeiros 30 dias, o objetivo é educativo. Se identificarmos algum trecho a ajustar, a administração envia uma orientação, sem penalidade. Depois do período de adaptação, a casa passa a receber uma advertência com prazo de 72 horas para o ajuste. Sem o ajuste no prazo, apenas aquele anúncio fica oculto até a correção; o restante da casa continua funcionando. Você pode contestar em até 7 dias corridos.",
+        ],
+      },
+      {
+        heading: "Onde acompanhar",
+        paragraphs: ["Orientações e avisos aparecem em Avisos de moderação, na sua conta, e também como notificação. Dúvidas? Fale com o Suporte."],
       },
     ],
   },
