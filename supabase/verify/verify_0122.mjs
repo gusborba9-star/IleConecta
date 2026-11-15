@@ -1,0 +1,54 @@
+// Verificação LOCAL da 0122 (aviso da administração). Uso: node supabase/verify/verify_0122.mjs
+import { readFileSync } from "node:fs";
+import { freshDb, connect } from "./pgbase.mjs";
+let bad = 0, total = 0; const ok = (n, c, d = "") => { total++; console.log(`${c ? "PASS" : "FAIL"} ${n}${d ? " — " + String(d).slice(0, 200) : ""}`); if (!c) bad++; };
+const name = "vf0122";
+const { c: su, failed } = await freshDb(name, { with64: true, max: 122 });
+ok("migrations 0001–0122 aplicadas", failed.filter((f) => !f.startsWith("0068")).length === 0, failed.join(" | "));
+let again = null; try { await su.query(readFileSync(new URL("../migrations/0122_aviso_geral_pela_administracao.sql", import.meta.url), "utf8")); } catch (e) { again = e.message; }
+ok("0122 reaplica sem erro", again === null, again ?? "");
+await su.query(`alter role service_role bypassrls; grant usage on schema public, auth to anon, authenticated, service_role;
+  grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
+  grant execute on all functions in schema public to anon, authenticated, service_role;
+  revoke all on table public.admin_announcements from public, anon, authenticated;
+  revoke execute on function public.admin_announce_count(text), public.admin_search_recipients(text), public.admin_announce(text,text,text,uuid[]), public.admin_announcements_list() from public, anon;`);
+const q = (c, sql, p) => c.query(sql, p).then((r) => ({ rows: r.rows, n: r.rowCount }), (e) => ({ err: e.message }));
+const as = async (role, uid, fn) => { const c = await connect(name); try { await c.query(`select set_config('test.uid',$1,false), set_config('test.role',$2,false)`, [uid ?? "", role]); await c.query(`set role ${role}`); return await fn(c); } finally { await c.end(); } };
+const tryAs = (uid, sql, p) => as("authenticated", uid, (c) => q(c, sql, p));
+const U = { H1: "c0122000-0000-0000-0000-0000000000a1", H2: "c0122000-0000-0000-0000-0000000000a2", C1: "c0122000-0000-0000-0000-0000000000c1", C2: "c0122000-0000-0000-0000-0000000000c2", A: "c0122000-0000-0000-0000-0000000000d1" };
+for (const [k, u] of Object.entries(U)) {
+  await su.query("insert into auth.users(id,email) values ($1,$2)", [u, `${k}@x.com`]);
+  await su.query("insert into profiles(id,account_type,display_name) values ($1,$2,$3) on conflict (id) do update set account_type=$2, display_name=$3", [u, k.startsWith("H") ? "casa" : "cliente", k === "H1" ? "Maria de Oxum" : "Pessoa " + k]);
+}
+await su.query("insert into public.admins(user_id) values ($1)", [U.A]);
+await su.query("set session_replication_role = replica");
+await su.query("insert into houses(id,owner_id,name,slug,plan) values ('d0122000-0000-0000-0000-0000000000aa',$1,'Casa Estrela do Mar','casa-estrela','gratis')", [U.H1]);
+await su.query("set session_replication_role = origin");
+const TXT = "Aviso de teste para a comunidade do Ilê Conecta.";
+const cnt = async (t = TXT) => (await su.query("select user_id from notifications where text=$1", [t])).rows.map((r) => r.user_id);
+let r;
+r = await tryAs(U.C1, "select admin_announce($1,null,'todos',null)", [TXT]); ok("cliente não envia aviso", !!r.err, r.err);
+r = await tryAs(U.C1, "select * from admin_announcements_list()"); ok("cliente não vê histórico", !!r.err);
+r = await tryAs(U.C1, "select * from admin_search_recipients('Maria')"); ok("cliente não busca pessoas", !!r.err);
+r = await as("anon", null, (c) => q(c, "select admin_announce($1,null,'todos',null)", [TXT])); ok("anônimo não envia", !!r.err);
+r = await tryAs(U.A, "select admin_announce_count('casas') n"); ok("prévia: casas = 2", r.rows?.[0]?.n === 2, JSON.stringify(r));
+r = await tryAs(U.A, "select admin_announce_count('clientes') n"); ok("prévia: clientes = 3 (inclui a conta admin)", r.rows?.[0]?.n === 3);
+r = await tryAs(U.A, "select admin_announce_count('todos') n"); ok("prévia: todos = 5", r.rows?.[0]?.n === 5);
+r = await tryAs(U.A, "select admin_announce('curto',null,'todos',null)"); ok("texto curto recusado", !!r.err, r.err);
+r = await tryAs(U.A, "select admin_announce($1,null,'todos',null)", ["x".repeat(401)]); ok("texto acima de 400 recusado", !!r.err);
+r = await tryAs(U.A, "select admin_announce($1,'https://golpe.com','casas',null)", [TXT]); ok("link externo recusado", !!r.err, r.err);
+r = await tryAs(U.A, "select admin_announce($1,null,'outro',null)", [TXT]); ok("público inválido recusado", !!r.err);
+r = await tryAs(U.A, "select admin_announce($1,null,'selecionados',null)", [TXT]); ok("selecionados sem ninguém recusado", !!r.err);
+r = await tryAs(U.A, "select admin_announce($1,'/sobre/novidades-seguranca','casas',null) n", [TXT]); ok("envio para casas", !r.err && r.rows[0].n === 2, r.err);
+let ids = await cnt(); ok("só as casas receberam", ids.length === 2 && ids.includes(U.H1) && ids.includes(U.H2));
+r = await tryAs(U.A, "select admin_announce($1,'/sobre/novidades-seguranca','casas',null) n", [TXT]); ok("repetir não duplica", r.rows?.[0]?.n === 0);
+r = await tryAs(U.A, "select admin_announce($1,null,'todos',null) n", [TXT]); ok("'todos' completa só quem faltava", r.rows?.[0]?.n === 3 && (await cnt()).length === 5);
+r = await tryAs(U.A, "select admin_announce($1,null,'selecionados',$2) n", ["Mensagem só para a pessoa escolhida.", [U.C2, "c0122000-0000-0000-0000-00000000ffff"]]); ok("selecionados: só existentes e escolhidos", r.rows?.[0]?.n === 1 && (await cnt("Mensagem só para a pessoa escolhida.")).join() === U.C2, r.err);
+r = await tryAs(U.A, "select admin_announce($1,null,'clientes',null) n", ["Aviso só para clientes cadastrados."]); ok("clientes", r.rows?.[0]?.n === 3);
+r = await tryAs(U.A, "select * from admin_search_recipients('maria')"); ok("busca por nome", r.rows?.length === 1 && r.rows[0].id === U.H1, JSON.stringify(r));
+r = await tryAs(U.A, "select * from admin_search_recipients('estrela')"); ok("busca por nome da casa", r.rows?.length === 1 && r.rows[0].house_name === "Casa Estrela do Mar");
+r = await tryAs(U.A, "select * from admin_search_recipients('%')"); ok("curinga % é literal (1 caractere não busca)", !r.err && r.rows.length === 0);
+r = await tryAs(U.A, "select * from admin_search_recipients('%%')"); ok("'%%' não lista todo mundo", !r.err && r.rows.length === 0, JSON.stringify(r.rows));
+r = await tryAs(U.A, "select * from admin_announcements_list()"); ok("histórico com 5 envios e contagens", r.rows?.length === 5 && r.rows.some((x) => x.audience === "selecionados" && x.recipients === 1), String(r.rows?.length));
+r = await tryAs(U.A, "select * from admin_announcements"); ok("tabela de histórico sem acesso direto", !!r.err);
+console.log(`\n${total - bad}/${total} aprovados`); await su.end(); process.exit(bad ? 1 : 0);
