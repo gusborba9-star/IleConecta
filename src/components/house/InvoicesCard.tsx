@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchBillingStatus, fetchInvoices, payCharge, type InvoiceRow } from "@/lib/platformBilling";
-import { canPay, kindLabel, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
+import { canPay, kindLabel, pixOffer, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
 import { formatCents } from "@/lib/financePanelCore";
 
 /** Faturas da plataforma para a casa (planos, vagas, destaque...). Só aparece quando a casa já tem alguma. */
@@ -36,6 +36,8 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
   };
 
   if (rows.length === 0) return null;
+  const today = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10); // dia em Brasília (UTC-3)
+  const offer = (r: InvoiceRow) => pixOffer(r, today);
   return (
     <Card className="p-5">
       <h2 className="font-display font-bold text-lg">Faturas da plataforma</h2>
@@ -47,9 +49,10 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
             <span className="font-semibold">{formatCents(r.amountCents)}</span>
             <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge>
             {canPay({ status: r.status }) && (
-              <span className="w-full flex flex-wrap gap-2 pt-1">
-                <Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void pay(r.id, "pix")}>{busy === `${r.id}:pix` ? "Abrindo…" : "Pagar com Pix"}</Button>
+              <span className="w-full flex flex-wrap items-center gap-2 pt-1">
+                <Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void pay(r.id, "pix")}>{busy === `${r.id}:pix` ? "Abrindo…" : offer(r) ? `Pagar com Pix (${formatCents(offer(r)!.payCents)})` : "Pagar com Pix"}</Button>
                 <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void pay(r.id, "card")}>{busy === `${r.id}:card` ? "Abrindo…" : "Pagar com cartão"}</Button>
+                {offer(r) && <span className="text-xs text-muted-foreground">Pix com {offer(r)!.pct}% de desconto até {shortDate(offer(r)!.until)}. No cartão, valor cheio.</span>}
               </span>
             )}
           </li>

@@ -168,3 +168,28 @@ test("conta inativa com fatura vencida: o aviso não promete reativar tudo ao pa
   const proc = alertView(readStatus(raw({ overdue: true, level: "total", charges: [{ id: "c1", kind: "plan", amount_cents: 500, due_date: "2026-11-08", status: "em_processamento", methods: [], tolerance_end: "2026-11-11", total_on: "2026-12-12" }] })), { inactive: true });
   assert.match(proc.text, /em análise/);
 });
+
+import { pixOffer } from "../src/lib/platformBillingCore.js";
+import { buildConfig, readConfig } from "../src/lib/billingAdminCore.js";
+
+test("oferta do Pix: só em fatura em aberto, dentro do prazo e com desconto válido", () => {
+  const inv = { amountCents: 10000, status: "aberta", pixDiscountCents: 500, pixDiscountUntil: "2026-12-10" };
+  assert.deepEqual(pixOffer(inv, "2026-12-09"), { discountCents: 500, payCents: 9500, until: "2026-12-10", pct: 5 });
+  assert.ok(pixOffer(inv, "2026-12-10"));
+  assert.equal(pixOffer(inv, "2026-12-11"), null);
+  assert.equal(pixOffer({ ...inv, status: "paga" }, "2026-12-09"), null);
+  assert.equal(pixOffer({ ...inv, pixDiscountCents: 0 }, "2026-12-09"), null);
+  assert.equal(pixOffer({ ...inv, pixDiscountUntil: null }, "2026-12-09"), null);
+  assert.equal(pixOffer({ ...inv, pixDiscountCents: 10000 }, "2026-12-09"), null);
+});
+
+test("painel: o desconto do Pix é lido, validado e enviado no formato do banco", () => {
+  const base = readConfig({ enabled: true, notice_days: 7, tolerance_business_days: 3, total_block_days: 30, provider: {}, methods: {} });
+  assert.deepEqual(base.pix, { enabled: false, pct: 5, endsDays: 1 });
+  const r = buildConfig({ ...base, pix: { enabled: true, pct: "5", endsDays: "1" } });
+  assert.ok(r.ok); assert.deepEqual(r.value.pix_discount, { enabled: true, pct: 5, ends_days_before: 1 });
+  assert.equal(buildConfig({ ...base, pix: { enabled: true, pct: "0", endsDays: "1" } }).ok, false);
+  assert.equal(buildConfig({ ...base, pix: { enabled: true, pct: "21", endsDays: "1" } }).ok, false);
+  assert.equal(buildConfig({ ...base, pix: { enabled: true, pct: "5", endsDays: "15" } }).ok, false);
+  assert.equal(readConfig({ pix_discount: { enabled: true, pct: 8, ends_days_before: 2 } }).pix.pct, 8);
+});

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildConfig, canCancel, needsEnableConfirm, readAdminCharge, readConfig, toggleMethod } from "../src/lib/billingAdminCore.js";
 
-const db = { enabled: false, notice_days: 3, tolerance_business_days: 3, total_block_days: 30,
+const db = { enabled: false, notice_days: 3, tolerance_business_days: 3, total_block_days: 30, pix_discount: { enabled: false, pct: 5, ends_days_before: 1 },
   provider: { plan: "stripe", extra_seat: "stripe", credit_pack: "stripe", highlight: "stripe", boost: "stripe" },
   methods: { plan: ["card", "card_recurring", "pix"], extra_seat: ["card", "pix"], credit_pack: ["card", "pix"], highlight: ["pix"], boost: ["card"] } };
 

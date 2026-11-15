@@ -4,7 +4,7 @@ export const KIND_ADMIN_LABELS: Record<string, string>;
 export const METHODS: Method[];
 export const METHOD_LABELS: Record<string, string>;
 export const DEFAULT_TOTAL_DAYS: number;
-export interface ConfigForm { enabled: boolean; noticeDays: number | string; toleranceDays: number | string; totalDays: number | string; methods: Record<string, Method[]>; provider: Record<string, string> }
+export interface ConfigForm { enabled: boolean; noticeDays: number | string; toleranceDays: number | string; totalDays: number | string; pix: { enabled: boolean; pct: number | string; endsDays: number | string }; methods: Record<string, Method[]>; provider: Record<string, string> }
 export function readConfig(raw: unknown): ConfigForm;
 export function buildConfig(f: ConfigForm): { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 export function needsEnableConfirm(before: { enabled: boolean }, after: { enabled: boolean }): boolean;

@@ -1,6 +1,6 @@
 // Porta do banco da Cobrança da Plataforma (Supabase, chave de serviço). Toda mudança financeira passa por funções do banco
 // (atômicas e idempotentes); aqui só há leituras e chamadas a essas funções.
-const COLS = "id, house_id, kind, item_key, description, amount_cents, due_date, status, provider, provider_ref, provider_method, paid_ref, processor_fee_cents";
+const COLS = "id, house_id, kind, item_key, description, amount_cents, due_date, status, provider, provider_ref, provider_method, paid_ref, processor_fee_cents, pix_discount_cents, pix_discount_until";
 
 export function createStore(admin) {
   const rpc = async (name, args) => {
@@ -25,7 +25,9 @@ export function createStore(admin) {
       if (error) throw new Error(error.message);
       return count ?? 0;
     },
-    attach: (chargeId, provider, ref, method, url) => rpc("platform_charge_attach", { p_charge: chargeId, p_provider: provider, p_ref: ref, p_method: method, p_url: url }),
+    attach: (chargeId, provider, ref, method, url, amountCents = null) => rpc("platform_charge_attach", { p_charge: chargeId, p_provider: provider, p_ref: ref, p_method: method, p_url: url, p_amount: amountCents }),
+    payable: (chargeId, method) => rpc("platform_charge_payable", { p_charge: chargeId, p_method: method }),
+    expected: (provider, ref) => rpc("platform_ref_expected", { p_provider: provider, p_ref: ref }),
     chargeIdByRef: (provider, ref) => rpc("platform_charge_of_ref", { p_provider: provider, p_ref: ref }),
     progress: (provider, ref, state) => rpc("platform_charge_progress", { p_provider: provider, p_ref: ref, p_state: state }),
     confirm: (provider, ref, paidCents, feeCents) => rpc("platform_charge_confirm", { p_provider: provider, p_ref: ref, p_paid_cents: paidCents, p_fee_cents: feeCents }),

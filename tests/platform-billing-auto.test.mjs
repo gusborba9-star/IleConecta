@@ -25,6 +25,8 @@ function setup({ due = null, cfg = {}, owners = { u1: HOUSE } } = {}) {
     autoBegin: async (id, n) => { calls.begin.push([id, n]); return true; },
     autoResult: async (...a) => { calls.result.push(a); },
     chargeById: async () => charge,
+    expected: async () => Number(charge.amount_cents),
+    payable: async () => Number(charge.amount_cents),
     attach: async (id, prov, ref, method, url) => { calls.attach.push([id, prov, ref, method, url]); if (charge.status === "paga") throw new Error("cobranca_cancelada"); charge.provider = prov; charge.provider_ref = ref; },
     chargeIdByRef: async (prov, ref) => (ref === charge.provider_ref ? CH : null),
     confirm: async () => { charge.status = "paga"; return { duplicate: false }; },

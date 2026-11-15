@@ -187,6 +187,7 @@ test("abrir o pagamento de novo em outro segundo, sem página gravada, não bate
     chargeById: async () => c,
     houseOwner: async () => "u1",
     refCount: async () => 0,
+    payable: async () => Number(c.amount_cents),
     attach: async () => { attached++; if (attached === 1) throw new Error("falha ao gravar"); },
   };
   const base = { registry, store, chargeId: c.id, userId: "u1", method: "card", email: "a@b.c", appUrl: "https://app.example" };
