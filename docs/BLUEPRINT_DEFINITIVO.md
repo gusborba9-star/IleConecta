@@ -386,6 +386,8 @@ A plataforma oferece denúncia, bloqueio, remoção, registro de ocorrência, re
 
 # 17. DESTAQUE E IMPULSIONAMENTO
 
+**Situação (15/11/2026):** em produção (migration 0114 aplicada pelos passos 221–233; rotina `promotions-tick` a cada 15 minutos; compra e reembolso pela função `platform-billing`). Validação ponta a ponta no modo teste do Stripe em andamento.
+
 São produtos distintos (decisão do proprietário, 14/11/2026; substitui a versão anterior, em que o impulsionamento era de publicações).
 
 - **Destaque:** a casa inteira (página e descrição) aparece primeiro nas buscas, por **cidade, estado ou país**. Há número máximo de casas em destaque ao mesmo tempo em cada alcance (**3 por cidade, 6 por estado, 15 por país**, editável no admin com motivo e auditoria). Quando lota, a compra é bloqueada com aviso e a casa pode entrar na **lista de espera** (é avisada quando abre vaga). Os destaques ativos se revezam nas primeiras posições.
