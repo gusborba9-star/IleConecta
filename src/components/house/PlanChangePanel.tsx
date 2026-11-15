@@ -67,7 +67,7 @@ export default function PlanChangePanel({ status, target, onClose, onChanged }: 
                 <Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void pay("pix")}>{busy === "pix" ? "Abrindo…" : `Pagar ${formatMoney(monthly)} com Pix`}</Button>
                 <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void pay("card")}>{busy === "card" ? "Abrindo…" : "Pagar com cartão"}</Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Ao pagar, você contrata o plano e concorda com os {TERMS}. Em até 7 dias do primeiro pagamento você pode pedir o reembolso integral, em Pedidos e validações.</p>
+              <p className="text-xs text-muted-foreground mt-2">Ao pagar, você contrata o plano e concorda com os {TERMS}.</p>
             </>
           )}
 
@@ -78,7 +78,7 @@ export default function PlanChangePanel({ status, target, onClose, onChanged }: 
                 <Button size="sm" variant="gold" disabled={busy !== null} onClick={() => void pay("pix")}>{busy === "pix" ? "Abrindo…" : `Pagar ${formatMoney(quote.amountCents / 100)} com Pix`}</Button>
                 <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void pay("card")}>{busy === "card" ? "Abrindo…" : "Pagar com cartão"}</Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Ao pagar, você concorda com os {TERMS}. Este pagamento não tem novo reembolso de 7 dias.</p>
+              <p className="text-xs text-muted-foreground mt-2">Ao pagar, você concorda com os {TERMS}.</p>
             </>
           )}
           {up && !quote && <p className="text-sm mt-1">{blockedUp ?? "A troca para este plano não está disponível agora."}</p>}
