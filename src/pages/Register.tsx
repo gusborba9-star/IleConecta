@@ -1,3 +1,4 @@
+import StateSelect from "@/components/profile/StateSelect";
 import PasswordInput from "@/components/base/PasswordInput";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -130,7 +131,7 @@ export default function Register() {
           </div>
           <div>
             <Label htmlFor="register-state">Estado</Label>
-            <Input id="register-state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            <StateSelect id="register-state" value={form.state} onChange={(uf) => setForm({ ...form, state: uf })} />
           </div>
           {type === "commercial" && (
             <div className="md:col-span-2">

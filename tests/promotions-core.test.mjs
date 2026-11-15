@@ -55,3 +55,17 @@ test("editDaysDraft: campo de dias editável (apagar, digitar 20, limite 90)", a
   assert.deepEqual(editDaysDraft("a1b", 90), { text: "1", days: 1 });
   assert.deepEqual(editDaysDraft("50", 30), { text: "30", days: 30 });
 });
+
+test("brStates: nome ou sigla em qualquer grafia vira a sigla; lista com 27 estados", async () => {
+  const { BR_STATES, ufFromText } = await import("../src/lib/brStates.js");
+  assert.equal(BR_STATES.length, 27);
+  assert.equal(new Set(BR_STATES.map((s) => s.uf)).size, 27);
+  for (const s of BR_STATES) assert.equal(ufFromText(s.uf), s.uf);
+  assert.equal(ufFromText("Río grande do Sul"), "RS");
+  assert.equal(ufFromText("rio grande do norte"), "RN");
+  assert.equal(ufFromText("Brasília"), "DF");
+  assert.equal(ufFromText("Mato Grosso do Sul"), "MS");
+  assert.equal(ufFromText("Mato Grosso"), "MT");
+  assert.equal(ufFromText("RI"), "");
+  assert.equal(ufFromText(null), "");
+});

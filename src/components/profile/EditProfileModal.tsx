@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImagePlus } from "lucide-react";
 import { Avatar, Button, Input, Label, Modal, Textarea } from "@/components/base";
+import { ufFromText } from "@/lib/brStates";
+import StateSelect from "@/components/profile/StateSelect";
 import { useApp } from "@/contexts/AppContext";
 import { uploadProfileImage, validateImageFile, type ImageKind } from "@/lib/imageUpload";
 import type { HouseUser, User } from "@/types";
@@ -38,7 +40,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
     setName(currentUser.name);
     setBio(currentUser.bio ?? "");
     setCity(currentUser.city);
-    setState(currentUser.state);
+    setState(ufFromText(currentUser.state));
     setCategory(house?.category ?? "");
     setTags(house?.tags.join(", ") ?? "");
     setOfferings(house?.offerings ?? "");
@@ -85,7 +87,7 @@ export default function EditProfileModal({ open, onClose }: Props) {
       name: name.trim(),
       bio: bio.trim(),
       city: city.trim(),
-      state: state.trim().toUpperCase().slice(0, 2),
+      state: ufFromText(state),
     };
     if (isHouse) {
       patch.category = category.trim() || "Casa Espiritual";
@@ -184,14 +186,14 @@ export default function EditProfileModal({ open, onClose }: Props) {
           <div className="text-[11px] text-muted-foreground text-right">{bio.length}/500</div>
         </div>
 
-        <div className="grid grid-cols-[1fr_88px] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] gap-3">
           <div>
             <Label htmlFor="ep-city">Cidade</Label>
             <Input id="ep-city" value={city} maxLength={80} onChange={(e) => setCity(e.target.value)} />
           </div>
           <div>
-            <Label htmlFor="ep-state">UF</Label>
-            <Input id="ep-state" value={state} maxLength={2} onChange={(e) => setState(e.target.value)} />
+            <Label htmlFor="ep-state">Estado</Label>
+            <StateSelect id="ep-state" value={state} onChange={setState} />
           </div>
         </div>
 
