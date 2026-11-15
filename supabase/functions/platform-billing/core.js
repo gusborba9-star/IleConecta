@@ -27,6 +27,10 @@ export async function openPayment({ registry, store, chargeId, userId, method = 
   const methods = method ? [method] : allowed;
   if (!methods.length) throw new ChargeStateError("Nenhum meio de pagamento disponível para esta fatura.", "method_unavailable");
 
+  // Valor desta página: o banco decide (cheio, ou com o desconto do Pix dentro do prazo). Nunca vem de fora.
+  const amountCents = Number(await store.payable(charge.id, methods.length === 1 ? methods[0] : null));
+  if (!Number.isInteger(amountCents) || amountCents < 100) throw new ChargeStateError("Não foi possível calcular o valor da fatura. Tente de novo.", "amount_unavailable");
+
   // Página já aberta e ainda válida para a mesma escolha: reaproveita (clique repetido não cria outra).
   if (charge.provider_ref && charge.provider === adapter.id) {
     const cur = await adapter.getCheckout({ ref: charge.provider_ref });
@@ -34,7 +38,7 @@ export async function openPayment({ registry, store, chargeId, userId, method = 
       await settleRef({ store, adapter, ref: charge.provider_ref, hint: null, log });
       throw new ChargeStateError(cur.paid ? "Esta fatura já foi paga." : "Seu pagamento está em análise. Assim que for confirmado, a fatura é baixada sozinha.", cur.paid ? "paid" : "processing");
     }
-    if (cur.status === "open" && cur.url && (charge.provider_method ?? null) === (methods.length === 1 ? methods[0] : null)) return { url: cur.url, reused: true };
+    if (cur.status === "open" && cur.url && (charge.provider_method ?? null) === (methods.length === 1 ? methods[0] : null) && (cur.amountCents === undefined || Number(cur.amountCents) === amountCents)) return { url: cur.url, reused: true };
   }
 
   const attempt = await store.refCount(charge.id);
@@ -43,11 +47,11 @@ export async function openPayment({ registry, store, chargeId, userId, method = 
   // e uma nova tentativa depois de uma falha antes de gravar a página nunca bate no erro "chave já usada".
   const expiresAtSec = checkoutExpiry(nowMs);
   const session = await adapter.createCheckout({
-    charge, methods, appUrl, email, expiresAtSec,
-    idempotencyKey: `pb:${charge.id}:${attempt}:${methods.join("+")}:${expiresAtSec}`,
+    charge: { ...charge, amount_cents: amountCents }, methods, appUrl, email, expiresAtSec,
+    idempotencyKey: `pb:${charge.id}:${attempt}:${methods.join("+")}:${amountCents}:${expiresAtSec}`,
   });
   try {
-    await store.attach(charge.id, adapter.id, session.ref, session.method ?? (methods.length === 1 ? methods[0] : null), session.url);
+    await store.attach(charge.id, adapter.id, session.ref, session.method ?? (methods.length === 1 ? methods[0] : null), session.url, amountCents);
   } catch (e) {
     log.error("attach_failed", charge.id, msg(e));
     throw new ChargeStateError("Não foi possível abrir o pagamento agora. Tente de novo.", "attach_failed");
@@ -64,7 +68,9 @@ export async function settleRef({ store, adapter, ref, hint = null, log = consol
   try {
     if (s.paid) {
       const charge = await store.chargeById(chargeId);
-      if (s.currency !== "brl" || s.amountCents !== Number(charge.amount_cents)) throw new DivergenceError(`valor_divergente: provedor ${s.amountCents} ${s.currency}, fatura ${charge.amount_cents}`);
+      // o valor esperado é o pedido naquela página (cheio ou com o desconto do Pix); o banco confere de novo ao confirmar
+      const expected = Number(await store.expected(adapter.id, ref));
+      if (s.currency !== "brl" || !Number.isFinite(expected) || s.amountCents !== expected) throw new DivergenceError(`valor_divergente: provedor ${s.amountCents} ${s.currency}, esperado ${expected}, fatura ${charge.amount_cents}`);
       const res = await store.confirm(adapter.id, ref, s.amountCents, s.feeCents ?? null);
       return { outcome: res?.duplicate ? "duplicate" : "paid", charge: chargeId };
     }

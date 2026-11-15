@@ -24,6 +24,11 @@ export function readConfig(raw) {
     noticeDays: int(o.notice_days) ?? 3,
     toleranceDays: int(o.tolerance_business_days) ?? 3,
     totalDays: int(o.total_block_days) ?? DEFAULT_TOTAL_DAYS,
+    pix: {
+      enabled: o.pix_discount?.enabled === true,
+      pct: int(o.pix_discount?.pct) ?? 5,
+      endsDays: int(o.pix_discount?.ends_days_before) ?? 1,
+    },
     methods,
     provider,
   };
@@ -38,6 +43,9 @@ export function buildConfig(f) {
   if (notice === null || notice < 1 || notice > 15) return { ok: false, error: "Avisar de 1 a 15 dias antes do vencimento." };
   if (tol === null || tol < 0 || tol > 10) return { ok: false, error: "Tolerância de 0 a 10 dias úteis." };
   if (total === null || total < 7 || total > 90) return { ok: false, error: "Bloqueio total de 7 a 90 dias depois da suspensão parcial." };
+  const pctN = n(f.pix?.pct ?? 5), endsN = n(f.pix?.endsDays ?? 1);
+  if (pctN === null || pctN < 1 || pctN > 20) return { ok: false, error: "Desconto do Pix de 1% a 20%." };
+  if (endsN === null || endsN < 0 || endsN > 14) return { ok: false, error: "O desconto do Pix termina de 0 a 14 dias antes do vencimento." };
   const methods = {};
   const provider = {};
   for (const k of KINDS) {
@@ -48,7 +56,7 @@ export function buildConfig(f) {
     if (typeof p !== "string" || !/^[a-z][a-z0-9_]{1,23}$/.test(p)) return { ok: false, error: "Provedor inválido." };
     provider[k] = p;
   }
-  return { ok: true, value: { enabled: f.enabled === true, notice_days: notice, tolerance_business_days: tol, total_block_days: total, provider, methods } };
+  return { ok: true, value: { enabled: f.enabled === true, notice_days: notice, tolerance_business_days: tol, total_block_days: total, pix_discount: { enabled: f.pix?.enabled === true, pct: pctN, ends_days_before: endsN }, provider, methods } };
 }
 
 /** Ligar a cobrança é o passo que muda a vida das casas: a tela pede confirmação só quando passa de desligada para ligada. */

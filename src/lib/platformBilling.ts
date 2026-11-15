@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { LEGAL_VERSION } from "@/lib/legalCore";
 import { readStatus, type BillingMethod, type BillingStatus } from "@/lib/platformBillingCore";
 
-export interface InvoiceRow { id: string; kind: string; description: string | null; amountCents: number; dueDate: string; status: string; paidAt: string | null }
+export interface InvoiceRow { id: string; kind: string; description: string | null; amountCents: number; dueDate: string; status: string; paidAt: string | null; pixDiscountCents: number; pixDiscountUntil: string | null }
 
 /** Situação de cobrança da casa de quem está logado (o banco decide; a tela só mostra). */
 export async function fetchBillingStatus(): Promise<BillingStatus | null> {
@@ -16,13 +16,14 @@ export async function fetchBillingStatus(): Promise<BillingStatus | null> {
 export async function fetchInvoices(houseId: string, limit = 24): Promise<InvoiceRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.from("platform_charges")
-    .select("id, kind, description, amount_cents, due_date, status, paid_at, idempotency_key")
+    .select("id, kind, description, amount_cents, due_date, status, paid_at, idempotency_key, pix_discount_cents, pix_discount_until")
     .eq("house_id", houseId).or("kind.neq.credit_pack,status.neq.cancelada").order("due_date", { ascending: false }).limit(limit);
   if (error || !data) return [];
   // pedidos de assinatura/upgrade que a casa abandonou (cancelados sozinhos depois de 2 dias) não poluem a lista de faturas
   return data.filter((r) => !(r.status === "cancelada" && /^(assinatura|upgrade):/.test(String(r.idempotency_key ?? "")))).map((r) => ({
     id: String(r.id), kind: String(r.kind), description: r.description ? String(r.description) : null,
     amountCents: Number(r.amount_cents), dueDate: String(r.due_date), status: String(r.status), paidAt: r.paid_at ? String(r.paid_at) : null,
+    pixDiscountCents: Number(r.pix_discount_cents ?? 0), pixDiscountUntil: r.pix_discount_until ? String(r.pix_discount_until) : null,
   }));
 }
 

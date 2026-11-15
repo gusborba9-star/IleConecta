@@ -24,3 +24,5 @@ export interface CardInput {
 export interface CardView { hasCard: boolean; title: string; expiry: string | null; expired: boolean; on: boolean; summary: string; problem: string | null; lastText: string | null }
 export function cardView(status: CardInput | null | undefined, todayIso?: string): CardView | null;
 export function authorizationText(input?: { planName?: string | null; amountCents?: number | null }): { period: "mensal"; planKey: string | null; amountCents: number | null; text: string };
+
+export function pixOffer(inv: { amountCents: number; status: string; pixDiscountCents?: number; pixDiscountUntil?: string | null }, todayIso?: string): { discountCents: number; payCents: number; until: string; pct: number } | null;

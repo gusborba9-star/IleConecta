@@ -111,6 +111,19 @@ export default function BillingAdminCard() {
             </label>
           ))}
         </div>
+        <div className="rounded-xl border border-border p-3 space-y-2 text-sm">
+          <label className="flex items-center gap-2 font-semibold">
+            <input type="checkbox" checked={form.pix.enabled} onChange={(e) => set({ pix: { ...form.pix, enabled: e.target.checked } })} />
+            Desconto de pontualidade no Pix (só na mensalidade do plano)
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 block"><span className="block text-muted-foreground">Desconto (%)</span>
+              <Input inputMode="numeric" value={String(form.pix.pct)} onChange={(e) => set({ pix: { ...form.pix, pct: e.target.value } })} /></label>
+            <label className="space-y-1 block"><span className="block text-muted-foreground">Termina quantos dias antes do vencimento (1 = véspera)</span>
+              <Input inputMode="numeric" value={String(form.pix.endsDays)} onChange={(e) => set({ pix: { ...form.pix, endsDays: e.target.value } })} /></label>
+          </div>
+          <p className="text-xs text-muted-foreground">A fatura da mensalidade aparece com a antecedência de “Aviso antes do vencimento”; o desconto vale desse momento até a data acima. Só vale no Pix e só para faturas emitidas depois de ligar.</p>
+        </div>
         <div className="space-y-2">
           <div className="text-sm font-semibold">Formas de pagamento e provedor</div>
           {KINDS.map((k) => (

@@ -172,3 +172,12 @@ export function authorizationText({ planName, amountCents } = {}) {
     text: `Li e concordo com os Termos de Uso do Ilê Conecta e autorizo a cobrança automática recorrente ${what}, até que eu solicite o cancelamento. Posso desligar a cobrança automática ou remover o cartão quando quiser.`,
   };
 }
+
+/** Oferta do Pix com desconto numa fatura em aberto (só exibição: o valor cobrado vem do banco). null = sem desconto agora. */
+export function pixOffer(inv, todayIso = new Date().toISOString().slice(0, 10)) {
+  const cents = Number(inv?.pixDiscountCents ?? 0), until = inv?.pixDiscountUntil ? String(inv.pixDiscountUntil).slice(0, 10) : "";
+  if (!(cents > 0) || !until || !["aberta", "vencida"].includes(inv?.status) || todayIso > until) return null;
+  const amount = Number(inv?.amountCents ?? 0);
+  if (!(amount > cents)) return null;
+  return { discountCents: cents, payCents: amount - cents, until, pct: Math.round((100 * cents) / amount) };
+}
