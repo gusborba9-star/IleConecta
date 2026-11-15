@@ -173,3 +173,19 @@ test("minPlanFor: o primeiro plano que inclui a ferramenta (para o selo da tela 
 test("o card do Grátis diz que o link e o QR code da casa estão incluídos", () => {
   assert.ok(DEFAULT_PLAN_MATRIX.copy.gratis.benefits.some((b) => /QR code/.test(b.text)));
 });
+
+test("tabela de comparação: 4 colunas por linha, sem undefined/NaN/{} e valores batem com a matriz", async () => {
+  const { compareRows } = await import("../src/lib/planMatrixCore.js");
+  const rows = compareRows(DEFAULT_PLAN_MATRIX);
+  assert.ok(rows.length >= 10);
+  for (const r of rows) {
+    assert.equal(r.cells.length, 4);
+    for (const c of r.cells) assert.doesNotMatch(c, /undefined|NaN|\{|\}/);
+  }
+  const by = (k) => rows.find((r) => r.key === k).cells;
+  assert.deepEqual(by("limit_services"), ["3", "Sem limite", "Sem limite", "Sem limite"]);
+  assert.deepEqual(by("assistant_replies"), ["—", "100", "500", "1.700"]);
+  assert.deepEqual(by("members_area"), ["—", "—", "—", "Incluído"]);
+  assert.ok(!compareRows(DEFAULT_PLAN_MATRIX, (f) => f !== "ritual_video").some((r) => r.key === "ritual_video"));
+  assert.equal(compareRows(null).length, rows.length);
+});

@@ -157,3 +157,39 @@ export function benefitsFor(matrix, plan, isOn) {
 }
 
 export const cloneDefaultMatrix = () => clone(DEFAULT_PLAN_MATRIX);
+
+const COMPARE_NUMBERS = [
+  ["limit_services", "Serviços ativos", "all"],
+  ["limit_rituals", "Rituais ativos", "all"],
+  ["limit_posts_month", "Publicações por mês", "all"],
+  ["assistant_replies", "Respostas da assistente por mês", "none"],
+  ["quick_replies", "Respostas rápidas", "none"],
+  ["campaign_links", "Links de divulgação", "none"],
+  ["included_seats", "Acessos de equipe inclusos", "none"],
+];
+const COMPARE_FLAGS = [
+  ["members_area", "Área de membros e mensalidades"],
+  ["chat_media", "Fotos e vídeos no chat"],
+  ["calendar_full", "Calendário completo"],
+  ["campaign_daily_count", "Contagem dia a dia dos links"],
+  ["campaign_insights_full", "Assuntos e serviços mais procurados"],
+  ["assistant_discount", "Assistente com desconto (se a casa liberar)"],
+  ["ritual_video", "Vídeo de 30 s nos registros do ritual"],
+];
+
+/** Linhas da tabela "Compare os planos": cada célula é um texto pronto ("Sem limite", "—", número ou "Incluído"). Nunca "undefined". */
+export function compareRows(matrix, isOn = () => true) {
+  const rows = [];
+  for (const [key, label, zero] of COMPARE_NUMBERS) {
+    rows.push({ key, label, cells: PLAN_IDS.map((p) => {
+      const n = Number(planCap(matrix, p, key)) || 0;
+      if (n > 0) return n.toLocaleString("pt-BR");
+      return zero === "all" ? "Sem limite" : "—";
+    }) });
+  }
+  for (const [key, label] of COMPARE_FLAGS) {
+    if (key === "ritual_video" && !isOn("ritual_video")) continue;
+    rows.push({ key, label, cells: PLAN_IDS.map((p) => (planCap(matrix, p, key) === true ? "Incluído" : "—")) });
+  }
+  return rows;
+}

@@ -18,6 +18,7 @@ import OrdersCard from "@/components/house/OrdersCard";
 import ReactivateCard from "@/components/house/ReactivateCard";
 import ReturningNoticeCard from "@/components/house/ReturningNoticeCard";
 import FreePlanNotice, { SellOnPlatformCard } from "@/components/house/FreePlanNotice";
+import PlanCompare from "@/components/house/PlanCompare";
 import PlanChangePanel from "@/components/house/PlanChangePanel";
 import { fetchPlanChange } from "@/lib/planChange";
 import { PLAN_RANK, type PlanChangeStatus } from "@/lib/planChangeCore";
@@ -191,6 +192,7 @@ export default function Plans() {
           );
         })}
       </div>
+      <PlanCompare mine={mine} userId={userId} />
       {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine && mine !== "gratis" ? config.pricing.plans[mine].name : null} monthly={mine && mine !== "gratis" ? config.pricing.plans[mine].monthly : null} />}
       {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
