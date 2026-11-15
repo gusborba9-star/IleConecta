@@ -17,3 +17,5 @@ export declare function planCap(matrix: PlanMatrix | null | undefined, plan: str
 export declare function renderBenefit(text: string, caps: Partial<PlanCaps> | null | undefined): string;
 export declare function benefitsFor(matrix: PlanMatrix | null | undefined, plan: HousePlanId, isOn: (feature: string) => boolean): { text: string; isNew: boolean }[];
 export declare const cloneDefaultMatrix: () => PlanMatrix;
+export interface CompareRow { key: string; label: string; cells: string[] }
+export declare function compareRows(matrix: PlanMatrix | null | undefined, isOn?: (feature: string) => boolean): CompareRow[];

@@ -9,6 +9,7 @@ import QuietHoursCard from "@/components/house/QuietHoursCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
 import HouseKpis from "@/components/house/HouseKpis";
+import PlanUpsellModal from "@/components/house/PlanUpsellModal";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
@@ -34,6 +35,7 @@ export default function HouseHome() {
   const nav = useNavigate();
   const house = currentUser?.type === "commercial" ? (currentUser as HouseUser) : null;
   const [termsOk, setTermsOk] = useState(true);
+  const [upsell, setUpsell] = useState<{ title: string; about: string; planName: string; open: () => void } | null>(null);
   const [members, setMembers] = useState<{ total: number; vencidas: number; perto: number } | null>(null);
   const houseId = house?.id;
   const { config } = usePlatformConfig();
@@ -61,13 +63,13 @@ export default function HouseHome() {
 
   const memberText = !members || members.total === 0 ? "Mensalidades e avisos de cobrança" : members.vencidas > 0 ? `${members.vencidas} em atraso` : members.perto > 0 ? `${members.perto} vencem em breve` : `${members.total} em dia`;
   const tiles = [
-    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, needs: "members_area" as CapFlagKey, onClick: () => nav("/painel/membros") }] : []),
+    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, about: "Controle mensalidades, vencimentos e avisos de cobrança dos membros da sua casa em um só lugar.", needs: "members_area" as CapFlagKey, onClick: () => nav("/painel/membros") }] : []),
     { icon: Plus, title: "Novo serviço", text: "Jogos, consultas, trabalhos e atendimentos", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
     { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
     { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
     { icon: TrendingUp, title: "Destacar e impulsionar", text: "Mais alcance para a casa e os rituais", onClick: () => nav("/impulsionar") },
-    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", needs: "campaign_links" as CapNumberKey, onClick: () => nav("/divulgacao") }] : []),
-    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe da casa", text: "Convide quem ajuda a atender e defina o que vê", needs: "included_seats" as CapNumberKey, onClick: () => nav("/equipe") }] : []),
+    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", about: "Crie links próprios por rede social, cartões para postar e respostas rápidas, e veja de onde vêm as visitas.", needs: "campaign_links" as CapNumberKey, onClick: () => nav("/divulgacao") }] : []),
+    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe da casa", text: "Convide quem ajuda a atender e defina o que vê", about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver.", needs: "included_seats" as CapNumberKey, onClick: () => nav("/equipe") }] : []),
     { icon: Pencil, title: "Editar perfil", text: "Foto, capa e apresentação da casa", onClick: () => nav(`/casa/${house.id}?editar=1`) },
     { icon: Bot, title: "Assistente virtual", text: "Como ela atende seus clientes", onClick: () => nav("/perfil") },
   ];
@@ -106,7 +108,7 @@ export default function HouseHome() {
           <button
             key={t.title}
             type="button"
-            onClick={t.onClick}
+            onClick={() => { const pn = planTag(t); if (pn && "about" in t) setUpsell({ title: t.title, about: t.about, planName: pn, open: t.onClick }); else t.onClick(); }}
             className={`lift relative text-left rounded-[22px] p-4 min-h-24 border ${TILE_TONES[i % TILE_TONES.length].box}`}
           >
             {"badge" in t && t.badge > 0 && (
@@ -118,6 +120,13 @@ export default function HouseHome() {
         ))}
       </section>
 
+      <PlanUpsellModal
+        tool={upsell}
+        planName={upsell?.planName ?? ""}
+        onClose={() => setUpsell(null)}
+        onPlans={() => { setUpsell(null); nav("/planos"); }}
+        onHow={() => { const go = upsell?.open; setUpsell(null); go?.(); }}
+      />
       <ShareHouseCard />
       <ReferralCard />
       <AssistantReportCard />
