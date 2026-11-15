@@ -1,0 +1,31 @@
+// Verificação LOCAL da 0119 (ritual não publica sobre bloqueio manual). Uso: node supabase/verify/verify_0119.mjs (PG em 127.0.0.1:5544)
+import { readFileSync } from "node:fs";
+import { freshDb } from "./pgbase.mjs";
+let bad = 0, total = 0; const ok = (n, c, d = "") => { total++; console.log(`${c ? "PASS" : "FAIL"} ${n}${d ? " — " + String(d).slice(0, 200) : ""}`); if (!c) bad++; };
+const { c: su, failed } = await freshDb("vf0119", { with64: true, max: 119 });
+ok("migrations 0001–0119 aplicadas sem erro", failed.filter((f) => !f.startsWith("0068")).length === 0, failed.join(" | "));
+const mig = readFileSync(new URL("../migrations/0119_ritual_nao_publica_sobre_bloqueio.sql", import.meta.url), "utf8");
+let again = null; try { await su.query(mig); } catch (e) { again = e.message; }
+ok("0119 reaplica sem erro", again === null, again ?? "");
+const q = (sql, p) => su.query(sql, p).then((r) => ({ rows: r.rows }), (e) => ({ err: e.message }));
+const O = "c0119000-0000-0000-0000-00000000000a", H = "d0119000-0000-0000-0000-0000000000aa";
+await su.query("insert into auth.users(id,email) values ($1,'o@x.com')", [O]);
+await su.query("insert into profiles(id,account_type,display_name) values ($1,'casa','Casa Teste') on conflict (id) do update set account_type='casa'", [O]);
+await su.query("set session_replication_role = replica"); await su.query("insert into houses(id,owner_id,name,slug,plan) values ($1,$2,'Casa T','casa-t','maximo')", [H, O]); await su.query("set session_replication_role = origin");
+const day = (n, h) => { const d = new Date(Date.now() + n * 864e5); d.setUTCHours(h, 0, 0, 0); return d.toISOString(); };
+const D = "Descrição longa o suficiente para passar na validação mínima de descrição do ritual.";
+const ev = (t, status = "publicado", dur = 120) => q("insert into events(house_id,title,description,price_cents,seats_total,starts_at,status,duration_min) values ($1,'Ritual de teste',$3,5000,10,$2,$4,$5) returning id", [H, t, D, status, dur]);
+await su.query("insert into house_blocks(house_id,starts_at,ends_at,note) values ($1,$2::timestamptz,$2::timestamptz + interval '3 hours','folga')", [H, day(5, 18)]);
+let r = await ev(day(5, 19)); ok("publicar sobre bloqueio é recusado", /bloqueado na sua agenda/.test(r.err ?? ""), r.err);
+r = await ev(day(5, 17)); ok("começa antes e invade o bloqueio: recusado", Boolean(r.err), r.err);
+r = await ev(day(5, 22)); ok("depois do bloqueio: publica", !r.err, r.err);
+r = await ev(day(6, 19)); ok("outro dia: publica", !r.err, r.err);
+r = await ev(day(5, 19), "rascunho"); ok("rascunho sobre bloqueio é aceito (só a publicação é barrada)", !r.err, r.err);
+const rid = r.rows?.[0]?.id;
+r = await q("update events set status='publicado' where id=$1", [rid]); ok("publicar o rascunho sobre o bloqueio é recusado", Boolean(r.err), r.err);
+const ok1 = (await q("select id from events where title='Ritual de teste' and starts_at=$1", [day(6, 19)])).rows[0].id;
+await su.query("insert into house_blocks(house_id,starts_at,ends_at) values ($1,$2::timestamptz,$2::timestamptz + interval '3 hours')", [H, day(6, 18)]);
+r = await q("update events set title='Novo título', seats_total=12 where id=$1", [ok1]); ok("editar título e vagas de ritual já publicado, mesmo com bloqueio criado depois, continua permitido", !r.err, r.err);
+r = await q("update events set starts_at=starts_at + interval '30 minutes' where id=$1", [ok1]); ok("mudar o horário de ritual publicado para dentro do bloqueio é recusado", Boolean(r.err), r.err);
+r = await q("select has_function_privilege('anon','public.events_schedule_guard()','execute') a, has_function_privilege('authenticated','public.events_schedule_guard()','execute') b"); ok("função interna fechada", !r.rows[0].a && !r.rows[0].b);
+console.log(`\n${total - bad}/${total} aprovados`); await su.end(); process.exit(bad ? 1 : 0);
