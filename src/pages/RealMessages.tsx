@@ -17,7 +17,7 @@ import { shouldCallAssistant, type Handoff } from "@/lib/handoffCore";
 import { fetchAssistantName } from "@/lib/catalog";
 import AssistantAvatar from "@/components/assistant/AssistantAvatar";
 import { fetchQuickReplies, type QuickReply } from "@/lib/campaigns";
-import PremiumShowcase from "@/components/premium/PremiumShowcase";
+import ChatPremiumStrip from "@/components/premium/ChatPremiumStrip";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { isPlaceholderText, prepareFile, sendAttachment, uploadFile } from "@/lib/chatFiles";
 import {
@@ -337,7 +337,7 @@ export default function RealMessages() {
             </div>
 
             {!iBlocked && !mediaOk && currentUser?.type === "commercial" && (
-              <div className="px-3 pt-2 border-t border-border bg-card"><PremiumShowcase kind="chat" compact /></div>
+              <ChatPremiumStrip />
             )}
             {iBlocked ? (
               <div className="p-3 border-t border-border bg-card text-sm text-center text-muted-foreground">
