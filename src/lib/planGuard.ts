@@ -5,7 +5,7 @@ import { toast } from "sonner";
  * ritual sobre atendimento ou bloqueio da agenda).
  * O banco escreve a mensagem em português; só ela é mostrada, e só quando é uma dessas (nunca texto técnico).
  */
-const PLAN_GUARD = /^(Você chegou ao limite de |Para publicar (serviços|rituais com valor) no plano Grátis|Já existe um atendimento marcado neste horário|Este horário está bloqueado na sua agenda|Informe a duração do ritual)/;
+const PLAN_GUARD = /^(Você chegou ao limite de |Para publicar (serviços|rituais com valor) no plano Grátis|Já existe um atendimento marcado neste horário|Este horário está bloqueado na sua agenda|Informe a duração do ritual|No Plano Grátis, a divulgação de contatos externos)/;
 const NEEDS_PAYMENT = /conecte primeiro a sua conta de recebimento/;
 
 let last: { m: string; at: number } | null = null;
