@@ -597,6 +597,8 @@ public.promo_rechain(uuid, text, text, uuid, timestamptz), public.promotion_deli
 public.platform_promo_refund_begin(uuid, uuid, uuid, timestamptz), public.platform_promo_refund_done(uuid, text, timestamptz), public.platform_promo_refund_fail(uuid, text),
 public.platform_promo_refunds_pending(interval), public.promotions_tick(timestamptz) to service_role;
 
+revoke all on function public.promo_availability(), public.promo_waitlist_join(text), public.promo_waitlist_leave(text), public.my_promotions(), public.admin_set_promo_limit(text, int, text), public.promotions_visible() from public, anon, authenticated;
+
 grant execute on function public.promo_availability(), public.promo_waitlist_join(text), public.promo_waitlist_leave(text), public.my_promotions(), public.admin_set_promo_limit(text, int, text) to authenticated, service_role;
 
 grant execute on function public.promotions_visible() to anon, authenticated, service_role;

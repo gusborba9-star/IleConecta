@@ -1,4 +1,4 @@
-// Verifica que os passos de produção 221–232 (rodados 2x cada, em ordem) deixam o banco idêntico ao das migrations 0114.
+// Verifica que os passos de produção 221–233 (rodados 2x cada, em ordem) deixam o banco idêntico ao das migrations 0114.
 // Uso: node supabase/verify/verify_rollout_221.mjs   (PG em 127.0.0.1:5544)
 import { readFileSync } from "node:fs";
 import { freshDb } from "./pgbase.mjs";
@@ -7,7 +7,7 @@ const ROLL = new URL("../rollout/", import.meta.url).pathname;
 const A = await freshDb("vf_roll221_a", { with64: true, max: 113 });   // produção até a 0113
 const B = await freshDb("vf_roll221_b", { with64: true, max: 114 });   // referência: migrations 0001–0114
 ok("bases montadas", A.failed.length === 0 && B.failed.length === 0, [...A.failed, ...B.failed].join(" | "));
-for (let n = 221; n <= 232; n++) {
+for (let n = 221; n <= 233; n++) {
   const sql = readFileSync(`${ROLL}passo-${n}.sql`, "utf8");
   let e1 = null, e2 = null;
   try { await A.c.query(sql); } catch (e) { e1 = e.message; }
