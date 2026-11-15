@@ -33,7 +33,7 @@ export interface ChatMessage {
   attachmentName: string | null;
   attachmentSize: number | null;
   /** Botão de pagamento que a assistente colocou no chat (ritual ou serviço da casa). */
-  action: { target: "ritual" | "service"; id: string } | null;
+  action: { target: "ritual" | "service" | "proposal"; id: string } | null;
   /** Nome de quem da equipe respondeu pela casa. */
   staffName: string | null;
 }
@@ -90,7 +90,7 @@ const MSG_COLS = "id, sender_id, text, from_assistant, created_at, read, deliver
 
 function toAction(v: unknown): ChatMessage["action"] {
   const a = v as { target?: unknown; id?: unknown } | null;
-  return a && (a.target === "ritual" || a.target === "service") && typeof a.id === "string" ? { target: a.target, id: a.id } : null;
+  return a && (a.target === "ritual" || a.target === "service" || a.target === "proposal") && typeof a.id === "string" ? { target: a.target, id: a.id } : null;
 }
 
 export async function fetchMessages(conversationId: string): Promise<ChatMessage[]> {
