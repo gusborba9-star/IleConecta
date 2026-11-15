@@ -112,7 +112,7 @@ export default function HouseHome() {
             {"badge" in t && t.badge > 0 && (
               <span className="absolute right-3 top-3 min-w-5 h-5 px-1.5 rounded-full bg-[hsl(var(--danger))] text-white text-xs font-bold grid place-items-center" aria-label={`${t.badge} em atraso`}>{t.badge}</span>
             )}
-            <span className="flex items-center gap-2 font-semibold"><t.icon className={`h-4 w-4 ${TILE_TONES[i % TILE_TONES.length].icon}`} />{t.title}{planTag(t) && <span className="ml-auto rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{planTag(t)}</span>}</span>
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold"><span className="flex items-center gap-2"><t.icon className={`h-4 w-4 shrink-0 ${TILE_TONES[i % TILE_TONES.length].icon}`} />{t.title}</span>{planTag(t) && <span className="shrink-0 whitespace-nowrap rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{planTag(t)}</span>}</span>
             <span className="block text-sm text-muted-foreground mt-1">{t.text}</span>
           </button>
         ))}
