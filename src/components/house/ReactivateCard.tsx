@@ -65,7 +65,7 @@ export default function ReactivateCard({ plan, refreshKey = 0 }: { plan: PlanId 
             <Button size="sm" variant="gold" disabled={busy !== null || !choice} onClick={() => void go("pix")}>{busy === "pix" ? "Abrindo…" : `Reativar${price ? ` por ${price}` : ""} com Pix`}</Button>
             <Button size="sm" variant="outline" disabled={busy !== null || !choice} onClick={() => void go("card")}>{busy === "card" ? "Abrindo…" : "Reativar com cartão"}</Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Ao pagar, você contrata o plano novamente e concorda com os <Link to="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</Link>. Esta contratação não tem novo reembolso de 7 dias. Dúvidas? Fale com o suporte.</p>
+          <p className="text-xs text-muted-foreground mt-2">Ao pagar, você contrata o plano novamente e concorda com os <Link to="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</Link>. Dúvidas? Fale com o suporte.</p>
         </div>
       </div>
     </Card>

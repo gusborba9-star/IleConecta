@@ -72,7 +72,7 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado e vale por 3 meses a partir da compra; depois disso o saldo restante zera. Você pode desistir em até 7 dias e receber de volta o valor das respostas não usadas.
+            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado e vale por 3 meses a partir da compra; depois disso o saldo restante zera.
           </p>
         </div>
       )}
