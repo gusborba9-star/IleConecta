@@ -25,6 +25,7 @@ async function api(page, { rpc = {}, rest = {}, fn = {} } = {}) {
 }
 const noHScroll = async (page) => expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
 const CPF = "529.982.247-25";
+const U = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 
 for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "desktop", width: 1280, height: 800 }]) {
   test.describe(vp.name, () => {
@@ -165,6 +166,55 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await p3.goto("/tests/browser/ui-harness.html?c=housepending");
       await expect(p3.getByRole("alert")).toContainText("Não foi possível carregar");
       await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate|stack/i);
+    });
+
+    test("Pessoas da casa: segmentos, busca, história da pessoa; texto hostil não vira código", async ({ page }) => {
+      const P = (n, o = {}) => ({ person_id: U(n), name: `Pessoa ${n}`, avatar_url: null, city: "Salvador", state: "BA", segments: ["cliente"], purchases: 1, spent_cents: 5000, first_at: "2026-10-01T10:00:00Z", last_at: new Date(Date.now() - 2 * 86400000).toISOString(), ...o });
+      const counts = { todos: 3, seguidor: 1, conversou: 0, interessado: 0, cliente: 2, recorrente: 0, participante: 0, membro: 0, pendencia: 1, sumido: 0 };
+      const calls = await api(page, { rpc: {
+        house_people: (b) => ({ role: "titular", segment: b.p_segment, total: b.p_segment === "cliente" ? 2 : 3, counts, items: b.p_search ? [P(7, { name: "Ana Souza" })] : [P(1, { name: "<img src=x onerror=window.__xss=1>", segments: ["cliente", "pendencia"], spent_cents: 12345 }), P(2, { segments: ["seguidor"], purchases: 0, spent_cents: 0 }), P(3, { segments: ["cliente"] })].slice(0, b.p_segment === "cliente" ? 2 : 3) }),
+        house_person_timeline: () => ({ role: "titular", person: P(1), events: [{ at: new Date(Date.now() - 86400000).toISOString(), kind: "pedido", ref_id: U(30), title: "Trabalho de limpeza", detail: "confirmado" }, { at: "2026-10-01T10:00:00Z", kind: "seguiu", ref_id: U(9), title: "Passou a seguir a casa", detail: null }] }),
+      } });
+      await page.goto("/tests/browser/ui-harness.html?c=people");
+      await expect(page.getByRole("heading", { name: "Pessoas da casa" })).toBeVisible();
+      const rows = page.locator("li").filter({ hasText: /Última atividade/ });
+      await expect(rows).toHaveCount(3);
+      await expect(page.getByText("<img src=x onerror=window.__xss=1>")).toBeVisible();
+      expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+      await expect(rows.first()).toContainText(/R\$\s123,45/);
+      await expect(page.getByRole("tab", { name: /Conversaram/ })).toHaveCount(0); // segmento vazio não aparece
+      await noHScroll(page);
+      await page.getByRole("tab", { name: /Clientes \(2\)/ }).click();
+      await expect(rows).toHaveCount(2);
+      await page.getByRole("tab", { name: /^Todas/ }).click();
+      await rows.first().getByRole("button").first().click();
+      await expect(page.getByRole("list", { name: "Linha do tempo" })).toBeVisible();
+      await expect(page.getByText("Trabalho de limpeza")).toBeVisible();
+      await expect(page.getByText(/pago, esperando início/)).toBeVisible();
+      await expect(page.getByText("ontem").first()).toBeVisible();
+      await noHScroll(page);
+      await page.getByLabel("Buscar pessoa pelo nome").fill("ana");
+      await expect(page.getByText("Ana Souza")).toBeVisible();
+      await expect(rows).toHaveCount(1);
+      expect(calls.filter((c) => c.name === "house_people").some((c) => c.body.p_search === "ana")).toBe(true);
+      expect(calls.filter((c) => c.name === "house_person_timeline")[0].body.p_person).toBe(U(1));
+    });
+
+    test("Pessoas da casa: equipe não vê valores; sem permissão e erro do servidor aparecem em português, sem detalhe técnico", async ({ page }) => {
+      await api(page, { rpc: { house_people: { role: "equipe", segment: "todos", total: 1, counts: { todos: 1, cliente: 1 }, items: [{ person_id: U(1), name: "Bia", avatar_url: null, city: null, state: null, segments: ["cliente"], purchases: 3, spent_cents: null, first_at: null, last_at: null }] } } });
+      await page.goto("/tests/browser/ui-harness.html?c=people");
+      await expect(page.getByText("Bia")).toBeVisible();
+      await expect(page.getByText("3 compras")).toBeVisible();
+      await expect(page.locator("body")).not.toContainText("R$");
+      const p2 = await page.context().newPage();
+      await api(p2, { rpc: { house_people: { status: 403, body: { message: "sem_permissao" } } } });
+      await p2.goto("/tests/browser/ui-harness.html?c=people");
+      await expect(p2.getByRole("alert")).toContainText("Você não tem permissão");
+      const p3 = await page.context().newPage();
+      await api(p3, { rpc: { house_people: { status: 500, body: { message: "relation pg_x failed sqlstate 42P01" } } } });
+      await p3.goto("/tests/browser/ui-harness.html?c=people");
+      await expect(p3.getByRole("alert")).toContainText("Não foi possível carregar as pessoas.");
+      await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate/i);
     });
 
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {

@@ -1,6 +1,6 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Headset, Send, Trash2 } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
@@ -279,6 +279,7 @@ export default function Atendimento() {
       </Card>
 
       {link.perms.some((p) => ["chat_read", "chat_reply", "orders", "members"].includes(p)) && <HousePendingCard />}
+      {link.perms.some((p) => ["chat_read", "chat_reply", "orders", "members"].includes(p)) && <Link to="/pessoas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">Ver as pessoas da casa</Link>}
 
       {tabs.length === 0 ? (
         <Card className="p-6 text-sm text-muted-foreground">A casa ainda não liberou nenhuma ferramenta para você. Peça a ela para ligar o que você precisa.</Card>

@@ -26,6 +26,7 @@ import Equipe from "@/pages/Equipe";
 import EquipeConvite from "@/pages/EquipeConvite";
 import Atendimento from "@/pages/Atendimento";
 import Mensalidades from "@/pages/Mensalidades";
+import Pessoas from "@/pages/Pessoas";
 import MemberInvite from "@/pages/MemberInvite";
 import Info from "@/pages/Info";
 import PublicHousePage from "@/pages/PublicHouse";
@@ -106,6 +107,7 @@ export default function App() {
         <Route path="/equipe/convite/:token" element={<EquipeConvite />} />
         <Route path="/atendimento" element={<Atendimento />} />
         <Route path="/mensalidades" element={<Mensalidades />} />
+        <Route path="/pessoas" element={<Pessoas />} />
         <Route path="/convite/:token" element={<MemberInvite />} />
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />
         <Route path="/pagamento/conta" element={<PaymentAccountReturn />} />
