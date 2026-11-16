@@ -145,3 +145,12 @@ export async function startUpgrade(plan: "intermediario" | "maximo", method: "pi
   window.location.assign(r.url);
   return null;
 }
+
+/** Casa assinante: contrata uma vaga extra de equipe pagando só os dias que faltam do ciclo. A vaga é liberada quando o pagamento é confirmado. */
+export async function startSeat(method: "pix" | "card" | null): Promise<string | null> {
+  const r = await call({ action: "seat", method });
+  if (r.error) return r.error;
+  if (!r.url) return "Não foi possível abrir o pagamento.";
+  window.location.assign(r.url);
+  return null;
+}

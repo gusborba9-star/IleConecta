@@ -446,6 +446,8 @@ A matriz exata de recursos e limites deve ser central. Módulos não criam regra
 
 Cobrança e vagas permanecem sincronizadas. Upgrades, downgrades e cancelamentos não podem gerar vagas duplicadas ou cobranças indevidas.
 
+**Contratação no app (decisões do proprietário, 15/11/2026; migration 0125):** todos os planos pagos (Essencial, Profissional e Premium) compram vaga extra em Equipe, no cartão "Vagas de equipe". Paga-se na hora só o valor proporcional aos dias que faltam até a renovação (Pix ou cartão); a vaga é liberada somente quando o pagamento é confirmado e entra na fatura mensal de vagas a partir da renovação seguinte. A fatura da vaga é pedida pela própria casa na hora: sem lembretes, sem cartão automático e nunca vira atraso. Fica indisponível com fatura em atraso, pagamento em processamento, reembolso do plano em andamento, assinatura cancelada, redução de vagas agendada, fatura mensal de vagas da próxima renovação já gerada, ou valor proporcional abaixo do mínimo (R$ 1,00). Limite de 20 vagas extras. **Reduzir:** a vaga continua até o fim do ciclo pago e some da fatura seguinte, sem devolução; só dá para reduzir se a equipe em uso couber; a casa pode desfazer até a fatura seguinte ser gerada. **Reembolso de 7 dias vale só para o plano**, não para a vaga extra. Vaga estornada pelo provedor não some sozinha: fica registrada para a administração decidir. A rotina mensal não cobra vaga de ciclo já passado. Divergência resolvida: a decisão de 14/11 (acesso de equipe só a partir do Premium) vale para as vagas incluídas; as extras são compradas por todos os planos pagos (tabela acima).
+
 ## 18.3 Créditos de IA
 
 | Pacote | Respostas | Preço |

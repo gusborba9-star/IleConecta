@@ -40,6 +40,7 @@ export function createStore(admin) {
     reactivationIssue: (houseId, plan = null) => rpc("platform_reactivation_issue", { p_house: houseId, p_plan: plan }),
     subscribeIssue: (houseId, plan) => rpc("platform_subscribe_issue", { p_house: houseId, p_plan: plan }),
     upgradeIssue: (houseId, plan) => rpc("platform_upgrade_issue", { p_house: houseId, p_plan: plan }),
+    seatIssue: (houseId) => rpc("platform_seat_issue", { p_house: houseId }),
     planRefundBegin: (houseId, chargeId, by) => rpc("platform_plan_refund_begin", { p_house: houseId, p_charge: chargeId, p_by: by }),
     planRefundDone: (refundId, ref) => rpc("platform_plan_refund_done", { p_refund: refundId, p_refund_ref: ref }),
     planRefundFail: (refundId, error) => rpc("platform_plan_refund_fail", { p_refund: refundId, p_error: error }),

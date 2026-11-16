@@ -247,7 +247,7 @@ export async function reactivate({ registry, store, userId, plan = null, method 
 
 // ---------- contratação de plano dentro do app (primeira assinatura e upgrade) ----------
 // Só as recusas conhecidas do banco viram mensagem para a casa; qualquer outro erro segue como erro interno (não vaza detalhe).
-const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
+const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|A fatura de vagas da próxima renovação|Há uma redução de vagas agendada|A casa já está no limite|Este plano não tem vaga adicional|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
 // Quem está no Grátis assina qualquer plano pago (Essencial = base); quem já assina só sobe para Profissional ou Premium.
 const SUBSCRIBE_PLANS = ["base", "intermediario", "maximo"];
 const UPGRADE_PLANS = ["intermediario", "maximo"];
@@ -271,6 +271,20 @@ export function subscribe({ store, ...rest }) {
 /** Casa assinante sobe de plano: paga só a diferença proporcional aos dias que faltam no ciclo; ao confirmar, o plano sobe na hora. */
 export function upgrade({ store, ...rest }) {
   return planChange({ store, ...rest, allowed: UPGRADE_PLANS, issue: (h, p) => store.upgradeIssue(h, p) });
+}
+
+/** Casa assinante contrata uma vaga extra de equipe: paga só os dias que faltam do ciclo; a vaga é liberada pelo banco quando o pagamento é confirmado. */
+export async function seat({ registry, store, userId, method, email, appUrl, log }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa contrata vaga de equipe.", "forbidden");
+  let chargeId;
+  try {
+    chargeId = await store.seatIssue(houseId);
+  } catch (e) {
+    throw PLAN_CHANGE_OK.test(msg(e)) ? new ChargeStateError(msg(e), "plan_change_denied") : e;
+  }
+  if (typeof chargeId !== "string") throw new ChargeStateError("Não foi possível preparar a vaga agora. Tente de novo.", "plan_change_denied");
+  return openPayment({ registry, store, chargeId, userId, method, email, appUrl, log });
 }
 
 // ---------- cartão salvo da casa ----------
