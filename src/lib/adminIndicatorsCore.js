@@ -9,7 +9,13 @@ export const INDICATORS = {
   novas_casas: { group: "Crescimento", label: "Novas casas", unit: "n", better: "up",
     definition: "Casas criadas no período.", source: "Casas da plataforma." },
   conversao_pct: { group: "Crescimento", label: "Casas novas que já pagaram plano", unit: "pct", better: "up",
-    definition: "Das casas criadas no período, quantas já têm ao menos uma cobrança de plano paga (conversão do Grátis para o pago).", source: "Casas e cobranças de plano da plataforma." },
+    definition: "Das casas criadas no período, quantas já estiveram em plano pago (começaram nele ou subiram do Grátis). Troca feita pela administração não conta.", source: "Histórico de plano das casas." },
+  cancelamentos: { group: "Crescimento", label: "Casas que voltaram ao Grátis", unit: "n", better: "down",
+    definition: "Casas que saíram de um plano pago para o Grátis no período: cancelamento, reembolso dos primeiros dias ou descida na renovação. Troca feita pela administração não conta.", source: "Histórico de plano das casas. Exato a partir de 16/11/2026." },
+  ativos_no_periodo: { group: "Crescimento", label: "Pessoas ativas no período", unit: "n", better: "up",
+    definition: "Pessoas diferentes que abriram o app em pelo menos um dia do período.", source: "Dias de atividade (só a data de cada acesso). Exato a partir de quando o registro começou." },
+  casas_ativas_no_periodo: { group: "Crescimento", label: "Casas ativas no período", unit: "n", better: "up",
+    definition: "Casas cuja titular abriu o app em pelo menos um dia do período.", source: "Dias de atividade das titulares." },
   volume_cents: { group: "Negócio das casas", label: "Volume transacionado", unit: "brl", better: "up",
     definition: "Soma bruta dos pagamentos confirmados no período (pedidos, rituais e mensalidades de membros).", source: "Pagamentos das casas." },
   casas_que_venderam: { group: "Negócio das casas", label: "Casas que venderam", unit: "n", better: "up",
@@ -75,7 +81,7 @@ export const INDICATORS = {
   casas_pagantes: { group: "Base de hoje", label: "Casas em plano pago", unit: "n", better: "up", snapshot: true,
     definition: "Casas que hoje não estão no plano Grátis.", source: "Plano atual das casas." },
   retencao_pct: { group: "Base de hoje", label: "Retenção de assinantes", unit: "pct", better: "up", snapshot: true,
-    definition: "Das casas que pagaram plano entre 60 e 30 dias atrás, quantas pagaram de novo nos últimos 30 dias.", source: "Cobranças de plano pagas. Sempre sobre 30 dias, qualquer que seja o período escolhido." },
+    definition: "Das casas em plano pago há 30 dias, quantas continuam em plano pago hoje.", source: "Histórico de plano das casas. Sempre sobre 30 dias, qualquer que seja o período escolhido. Exata a partir de 16/11/2026." },
   casos_em_aberto: { group: "Base de hoje", label: "Casos ainda em aberto", unit: "n", better: "down", snapshot: true,
     definition: "Casos de suporte que ainda não foram resolvidos nem recusados (de todo o tempo).", source: "Casos de suporte." },
 };
@@ -92,14 +98,14 @@ function pair(raw, key) {
   const m = raw && typeof raw === "object" && raw.metrics && typeof raw.metrics === "object" ? raw.metrics[key] : null;
   return { current: nonNeg(m?.current), previous: nonNeg(m?.previous) };
 }
-const RAW_KEYS = ["novas_contas", "novas_casas", "novas_casas_pagantes", "volume_cents", "comissao_cents", "casas_que_venderam", "receita_assinatura_cents", "receita_divulgacao_cents",
+const RAW_KEYS = ["novas_contas", "novas_casas", "novas_casas_pagantes", "cancelamentos", "ativos_no_periodo", "casas_ativas_no_periodo", "volume_cents", "comissao_cents", "casas_que_venderam", "receita_assinatura_cents", "receita_divulgacao_cents",
   "receita_creditos_cents", "cobrancas_vencidas", "cobrancas_canceladas", "reembolsos_pedidos", "reembolsos_feitos", "pagamentos_estornados", "reembolsos_plano_cents", "pagamentos_contestados",
   "casos_disputa", "incidentes", "casos_abertos", "casos_resolvidos", "casos_com_resposta", "casos_resposta_no_prazo", "casos_sem_resposta_no_prazo", "primeira_resposta_mediana_h",
   "ia_respostas", "ia_tokens_entrada", "ia_tokens_saida", "mensagens", "pedidos_criados", "reservas_criadas"];
 
 /** Lê a resposta do banco e monta todos os indicadores (inclusive os derivados). Sem dado, o valor é null (a tela mostra "—"). */
 export function readAdminIndicators(raw) {
-  const empty = { days: 30, items: {}, plans: [] };
+  const empty = { days: 30, items: {}, plans: [], activitySince: null, activityPartial: false };
   if (!raw || typeof raw !== "object") return empty;
   const days = PERIODS.includes(raw.days) ? raw.days : 30;
   const b = {};
@@ -119,7 +125,12 @@ export function readAdminIndicators(raw) {
   for (const k of ["ativos_7d", "ativos_30d", "casas_ativas_30d", "usuarios_total", "casas_total", "casos_em_aberto"]) items[k] = snapVal(nonNeg(snap[k]));
   items.casas_pagantes = snapVal(snap.casas_por_plano && typeof snap.casas_por_plano === "object" ? paying : null);
   items.retencao_pct = snapVal(pct(nonNeg(snap.assinantes_retidos), nonNeg(snap.assinantes_base)));
-  return { days, items, plans };
+  const isoDay = (v) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
+  const since = isoDay(snap.atividade_desde);
+  const prevStart = isoDay(raw.previous_since);
+  // O registro de dias começou depois do início do período anterior: os números de "ativos" ficam menores que a realidade.
+  const activityPartial = since !== null && prevStart !== null && since > prevStart;
+  return { days, items, plans, activitySince: since, activityPartial };
 }
 
 /** Texto do valor, na unidade do indicador; sem dado vira "—". */

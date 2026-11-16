@@ -6,16 +6,16 @@ import { INDICATORS, GROUPS, PERIODS, PLAN_LABELS, readAdminIndicators, formatIn
 
 const P = (current, previous = 0) => ({ current, previous });
 const raw = (o = {}, s = {}) => ({
-  days: 30,
+  days: 30, previous_since: "2026-09-17T12:00:00Z",
   metrics: {
-    novas_contas: P(3, 1), novas_casas: P(4, 2), novas_casas_pagantes: P(1, 2), volume_cents: P(31000, 5000), comissao_cents: P(3000, 500), casas_que_venderam: P(2, 1),
+    novas_contas: P(3, 1), novas_casas: P(4, 2), novas_casas_pagantes: P(1, 2), cancelamentos: P(2, 1), ativos_no_periodo: P(4, 2), casas_ativas_no_periodo: P(2, 1), volume_cents: P(31000, 5000), comissao_cents: P(3000, 500), casas_que_venderam: P(2, 1),
     receita_assinatura_cents: P(10990, 26970), receita_divulgacao_cents: P(4000, 0), receita_creditos_cents: P(3000, 0), cobrancas_vencidas: P(1, 1), cobrancas_canceladas: P(1, 1),
     reembolsos_pedidos: P(2, 1), reembolsos_feitos: P(1, 1), pagamentos_estornados: P(2, 0), reembolsos_plano_cents: P(8990, 1234), pagamentos_contestados: P(1, 0),
     casos_disputa: P(1, 0), incidentes: P(2, 0), casos_abertos: P(5, 1), casos_resolvidos: P(2, 1), casos_com_resposta: P(3, 1), casos_resposta_no_prazo: P(2, 1),
     casos_sem_resposta_no_prazo: P(1, 0), primeira_resposta_mediana_h: P("2.0", "5.0"), ia_respostas: P(3, 1), ia_tokens_entrada: P(600, 10), ia_tokens_saida: P(150, 5),
     mensagens: P(4, 1), pedidos_criados: P(7, 1), reservas_criadas: P(1, 0), ...o,
   },
-  snapshot: { usuarios_total: 7, casas_total: 2, casas_por_plano: { maximo: 1, base: 1 }, ativos_7d: 2, ativos_30d: 3, casas_ativas_30d: 1, assinantes_base: 2, assinantes_retidos: 1, casos_em_aberto: 3, ...s },
+  snapshot: { usuarios_total: 7, casas_total: 2, casas_por_plano: { maximo: 1, base: 1 }, atividade_desde: "2026-11-16", ativos_7d: 2, ativos_30d: 3, casas_ativas_30d: 1, assinantes_base: 2, assinantes_retidos: 1, casos_em_aberto: 3, ...s },
 });
 
 test("lê o formato do banco e calcula os derivados", () => {
@@ -28,7 +28,20 @@ test("lê o formato do banco e calcula os derivados", () => {
   assert.equal(v.items.primeira_resposta_mediana_h.current, 2);
   assert.equal(v.items.retencao_pct.current, 50); assert.equal(v.items.retencao_pct.previous, null);
   assert.equal(v.items.casas_pagantes.current, 2);
+  assert.deepEqual(v.items.cancelamentos, { current: 2, previous: 1 });
+  assert.deepEqual(v.items.ativos_no_periodo, { current: 4, previous: 2 });
   assert.deepEqual(v.plans.map((p) => [p.plan, p.count]), [["gratis", 0], ["base", 1], ["intermediario", 0], ["maximo", 1]]);
+});
+
+test("aviso de registro parcial só quando os dias de atividade começaram depois do período anterior", () => {
+  const partial = readAdminIndicators(raw());
+  assert.equal(partial.activitySince, "2026-11-16"); assert.equal(partial.activityPartial, true);
+  const full = readAdminIndicators(raw({}, { atividade_desde: "2026-08-01" }));
+  assert.equal(full.activityPartial, false);
+  const none = readAdminIndicators(raw({}, { atividade_desde: null }));
+  assert.equal(none.activitySince, null); assert.equal(none.activityPartial, false);
+  const junk = readAdminIndicators(raw({}, { atividade_desde: "amanhã" }));
+  assert.equal(junk.activitySince, null); assert.equal(junk.activityPartial, false);
 });
 
 test("grátis não conta como casa em plano pago", () => {
@@ -92,13 +105,13 @@ test("todo indicador tem grupo, definição e origem escritas", () => {
 });
 
 test("coerência com o SQL: toda chave lida existe na função e vice-versa", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0133_indicadores_da_administracao.sql", import.meta.url), "utf8");
+  const sql = readFileSync(new URL("../supabase/migrations/0134_historico_de_plano_e_dias_de_atividade.sql", import.meta.url), "utf8");
   const sqlKeys = [...sql.matchAll(/^\s+'([a-z0-9_]+)', /gm)].map((m) => m[1]).filter((k) => !["generated_at", "days", "since", "previous_since", "metrics", "snapshot", "scope"].includes(k));
   const v = readAdminIndicators(raw());
   const shown = new Set(Object.keys(v.items));
   const derived = new Set(["conversao_pct", "receita_total_cents", "no_prazo_pct", "ia_tokens", "casas_pagantes", "retencao_pct"]);
   for (const k of Object.keys(INDICATORS)) assert.ok(derived.has(k) || sqlKeys.includes(k), `${k} não existe no SQL`);
-  for (const k of ["novas_casas_pagantes", "casos_com_resposta", "casos_resposta_no_prazo", "ia_tokens_entrada", "ia_tokens_saida", "assinantes_base", "assinantes_retidos", "casas_por_plano"]) assert.ok(sqlKeys.includes(k), k);
+  for (const k of ["novas_casas_pagantes", "casos_com_resposta", "casos_resposta_no_prazo", "ia_tokens_entrada", "ia_tokens_saida", "assinantes_base", "assinantes_retidos", "casas_por_plano", "atividade_desde", "cancelamentos"]) assert.ok(sqlKeys.includes(k), k);
   assert.ok(shown.size > 30);
 });
 
@@ -108,4 +121,17 @@ test("a migration não cria tabela e só a administração executa", () => {
   assert.match(sql, /if not public\.is_admin\(\) then raise exception 'not_admin'/);
   assert.match(sql, /revoke all on function public\.admin_indicators\(integer\) from public, anon, authenticated;/);
   assert.ok(readdirSync(new URL("../supabase/migrations/", import.meta.url)).some((f) => f === "0133_indicadores_da_administracao.sql"));
+});
+
+test("0134: só duas tabelas novas, fechadas ao público, e a função de indicadores continua só da administração", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/0134_historico_de_plano_e_dias_de_atividade.sql", import.meta.url), "utf8").replace(/--[^\n]*/g, "");
+  assert.equal((sql.match(/create table/gi) ?? []).length, 2);
+  for (const t of ["house_plan_history", "user_activity_days"]) {
+    assert.match(sql, new RegExp(`alter table public\\.${t} enable row level security`));
+    assert.match(sql, new RegExp(`revoke all on public\\.${t} from public, anon, authenticated`));
+  }
+  assert.ok(!/create policy/i.test(sql));
+  assert.match(sql, /if not public\.is_admin\(\) then raise exception 'not_admin'/);
+  assert.match(sql, /delete from public\.user_activity_days where user_id = p_user/);
+  assert.match(sql, /'dias_de_acesso'/);
 });
