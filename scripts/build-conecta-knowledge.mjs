@@ -15,7 +15,7 @@ const pageText = (p) => [`## ${p.title}`, p.summary, ...p.sections.flatMap((s) =
 const out = [
   "# Perguntas frequentes", ...faq.FAQ.map((f) => `P: ${f.q}\nR: ${f.a}`),
   "# Mapa de telas", ...scr.SCREENS.map((s) => `- ${s.name} (${s.path}) [${s.audience ?? "todos"}]: ${s.what}`),
-  "# Documentos oficiais (versão preliminar, sujeita a revisão jurídica)", ...inst.INFO_PAGES.map(pageText),
+  "# Documentos oficiais (revisados pelo advogado)", ...inst.INFO_PAGES.map(pageText),
 ].join("\n\n");
 
 const file = `// GERADO por scripts/build-conecta-knowledge.mjs — não edite à mão.\nexport const KNOWLEDGE = ${JSON.stringify(out)};\nexport const SCREEN_PATHS = ${JSON.stringify(scr.SCREEN_PATHS)};\n`;
