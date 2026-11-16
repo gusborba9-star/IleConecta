@@ -42,6 +42,8 @@ select case length(regexp_replace(coalesce(p, ''), '[^0-9]', '', 'g'))
   else null end;
 $$;
 
+revoke all on function public.tax_id_kind(text), public.tax_id_format(text) from public, anon, authenticated;
+
 -- ============ 2) Chave de criptografia no cofre (criada uma vez) e tabelas fechadas
 do $$
 begin

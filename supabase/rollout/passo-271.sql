@@ -26,6 +26,10 @@ insert into public.tax_id_access_log (admin_id, house_id, action, reason) values
 return jsonb_build_object('kind', k);
 end $$;
 
+revoke all on function public.admin_house_tax_id(uuid, text), public.admin_house_tax_id_set(uuid, text, text) from public, anon, authenticated;
+
+grant execute on function public.admin_house_tax_id(uuid, text), public.admin_house_tax_id_set(uuid, text, text) to authenticated;
+
 -- ============ 6) Contratar plano pago, reativar, subir de plano e comprar vaga passam a exigir o documento
 create or replace function public.platform_subscribe_issue(p_house uuid, p_plan text, p_now timestamptz default now())
 returns uuid language plpgsql security definer set search_path = public as $$

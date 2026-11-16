@@ -14,6 +14,8 @@ raise exception 'Informe o CPF ou CNPJ da casa em Planos antes de contratar.';
 end if;
 end $$;
 
+revoke all on function public.tax_id_key(), public.platform_require_tax_id(uuid) from public, anon, authenticated;
+
 -- ============ 4) A casa informa (uma vez) e vê só o final
 create or replace function public.tax_id_store(p_house uuid, p_doc text, p_by uuid, p_replace boolean) returns text
 language plpgsql security definer set search_path = public, extensions as $$
@@ -58,3 +60,7 @@ select * into t from public.house_tax_ids where house_id = h;
 return jsonb_build_object('has_house', true, 'set', found, 'kind', t.kind, 'masked', t.masked,
   'subscribed', exists (select 1 from public.house_billing_plan where house_id = h and active));
 end $$;
+
+revoke all on function public.tax_id_store(uuid, text, uuid, boolean), public.my_tax_id_set(text), public.my_tax_id_status() from public, anon, authenticated;
+
+grant execute on function public.my_tax_id_set(text), public.my_tax_id_status() to authenticated;

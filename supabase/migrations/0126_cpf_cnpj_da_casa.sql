@@ -40,6 +40,8 @@ select case length(regexp_replace(coalesce(p, ''), '[^0-9]', '', 'g'))
   else null end;
 $$;
 
+revoke all on function public.tax_id_kind(text), public.tax_id_format(text) from public, anon, authenticated;
+
 -- ============ 2) Chave de criptografia no cofre (criada uma vez) e tabelas fechadas
 do $$
 begin
@@ -86,6 +88,8 @@ raise exception 'Informe o CPF ou CNPJ da casa em Planos antes de contratar.';
 end if;
 end $$;
 
+revoke all on function public.tax_id_key(), public.platform_require_tax_id(uuid) from public, anon, authenticated;
+
 -- ============ 4) A casa informa (uma vez) e vê só o final
 create or replace function public.tax_id_store(p_house uuid, p_doc text, p_by uuid, p_replace boolean) returns text
 language plpgsql security definer set search_path = public, extensions as $$
@@ -131,6 +135,10 @@ return jsonb_build_object('has_house', true, 'set', found, 'kind', t.kind, 'mask
   'subscribed', exists (select 1 from public.house_billing_plan where house_id = h and active));
 end $$;
 
+revoke all on function public.tax_id_store(uuid, text, uuid, boolean), public.my_tax_id_set(text), public.my_tax_id_status() from public, anon, authenticated;
+
+grant execute on function public.my_tax_id_set(text), public.my_tax_id_status() to authenticated;
+
 -- ============ 5) Administração: consulta com motivo (registrada) e correção com motivo
 create or replace function public.admin_house_tax_id(p_house uuid, p_reason text) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -156,6 +164,10 @@ k := public.tax_id_store(p_house, p_doc, auth.uid(), true);
 insert into public.tax_id_access_log (admin_id, house_id, action, reason) values (auth.uid(), p_house, 'corrigir', left(btrim(p_reason), 300));
 return jsonb_build_object('kind', k);
 end $$;
+
+revoke all on function public.admin_house_tax_id(uuid, text), public.admin_house_tax_id_set(uuid, text, text) from public, anon, authenticated;
+
+grant execute on function public.admin_house_tax_id(uuid, text), public.admin_house_tax_id_set(uuid, text, text) to authenticated;
 
 -- ============ 6) Contratar plano pago, reativar, subir de plano e comprar vaga passam a exigir o documento
 create or replace function public.platform_subscribe_issue(p_house uuid, p_plan text, p_now timestamptz default now())
