@@ -13,6 +13,7 @@ import { formatMoney } from "@/lib/pricing";
 import { minPlanFor } from "@/lib/planMatrixCore";
 import { HOUSE_PLAN_IDS, FREE_PLAN_NAME } from "@/lib/platformConfigCore";
 import { qrSvg } from "@/lib/qr";
+import SeatCard from "@/components/house/SeatCard";
 import {
   PERMS, cancelStaffInvite, createStaffInvite, fetchSeatAllowance, fetchTeam, removeStaff, staffInviteUrl, togglePerm, updateStaff,
   type PermKey, type StaffInvite, type StaffMember,
@@ -120,6 +121,7 @@ export default function Equipe() {
         <h1 className="font-display font-bold text-2xl flex items-start gap-2 mt-1"><UsersRound className="h-6 w-6 mt-1 shrink-0 text-primary" /> <span>Mais alguém atendendo, com você no controle</span></h1>
         <p className="text-sm text-muted-foreground mt-1">Seu acesso é o principal. Cada pessoa convidada atende os clientes pela casa, vê só as ferramentas que você liberar e aparece no chat como “Atendido por” com o nome dela. Você pausa ou remove quando quiser.</p>
       </Card>
+      <SeatCard onChanged={() => { if (houseId) void reload(houseId); }} />
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -178,7 +180,7 @@ export default function Equipe() {
           upgradeFor && allowance === 0 ? (
           <div className="pillow rounded-2xl bg-muted/30 p-4 space-y-2">
             <div className="font-semibold">Acesso de equipe a partir do plano {upgradeFor}</div>
-            <p className="text-sm text-muted-foreground">Seu plano atual não inclui acessos para a equipe. No plano {upgradeFor} a casa já tem acesso incluso, para quem ajuda a atender.</p>
+            <p className="text-sm text-muted-foreground">Seu plano atual não inclui acessos para a equipe. No plano {upgradeFor} a casa já tem acesso incluso, para quem ajuda a atender. Quem assina um plano pago também pode contratar vagas extras no cartão “Vagas de equipe”, acima.</p>
             <Link to="/planos" className="inline-block text-sm text-primary font-semibold">Ver os planos</Link>
           </div>
           ) : (
@@ -187,7 +189,7 @@ export default function Equipe() {
             <p className="text-sm text-muted-foreground">
               Acesso extra: <strong>{formatMoney(price ?? null)}/mês</strong> no plano atual. Se a casa mudar de plano, o valor acompanha o novo plano, e a pessoa continua com o acesso e as mesmas permissões.
             </p>
-            <p className="text-xs text-muted-foreground">A contratação dentro do app chega com o pagamento recorrente. Por enquanto, peça pelo <Link to="/suporte" className="text-primary font-semibold">Suporte</Link> e liberamos o acesso para a sua casa.</p>
+            <p className="text-xs text-muted-foreground">Quem tem plano pago contrata a vaga extra no cartão “Vagas de equipe”, logo acima.</p>
           </div>
           )
         )}

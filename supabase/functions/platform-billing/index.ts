@@ -123,6 +123,11 @@ Deno.serve(async (req) => {
       const r = await fn({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });
       return json({ url: r.url });
     }
+    if (input.action === "seat") {
+      const method = input.method === "pix" || input.method === "card" ? input.method : null;
+      const r = await core.seat({ registry, store, userId: user.id, method, email: user.email, appUrl: APP_URL });
+      return json({ url: r.url });
+    }
     if (input.action === "plan_refund") {
       const id = String(input.charge_id ?? "");
       if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("Informe o pagamento.");

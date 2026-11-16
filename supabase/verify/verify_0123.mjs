@@ -37,7 +37,7 @@ async function house() {
   return { O, H };
 }
 const issue = async (H, due, desc = "Mensalidade do plano", amount = 10000, kind = "plan") => {
-  const r = await sv("select public.platform_charge_issue($1,$2,$3,$4::bigint,current_date+$5::int,current_date-$8::int,$6,$7) id", [H, kind, kind === "plan" ? "plan:maximo" : "p80", amount, due, desc, `v0123-key-${++seq}`, seq + 100]);
+  const r = await sv("select public.platform_charge_issue($1,$2,$3,$4::bigint,(now() at time zone 'America/Sao_Paulo')::date+$5::int,(now() at time zone 'America/Sao_Paulo')::date-$8::int,$6,$7) id", [H, kind, kind === "plan" ? "plan:maximo" : "p80", amount, due, desc, `v0123-key-${++seq}`, seq + 100]);
   if (r.err) throw new Error(r.err);
   return r.rows[0].id;
 };
@@ -99,7 +99,7 @@ ok("duplicidade gera registro para devolver", Number((await sv("select count(*):
 
 // ---- prazo vencido no attach
 id = await issue(H, 7);
-await sv("set session_replication_role = replica"); await sv("update platform_charges set pix_discount_until = current_date - 2 where id=$1", [id]); await sv("set session_replication_role = origin");
+await sv("set session_replication_role = replica"); await sv("update platform_charges set pix_discount_until = (now() at time zone 'America/Sao_Paulo')::date - 2 where id=$1", [id]); await sv("set session_replication_role = origin");
 ok("prazo vencido: attach com desconto recusado, cheio aceito", /valor_invalido/.test((await attach(id, ref(), "pix", 9500)).err ?? "") && !(await attach(id, ref(), "pix", 10000)).err);
 ok("prazo vencido: payable já devolve o cheio", (await pay(id, "pix")) === 10000);
 // referência antiga sem valor (criada antes desta migration)
