@@ -16,6 +16,7 @@ import AssistantCreditsCard from "@/components/house/AssistantCreditsCard";
 import CardAutoChargeCard from "@/components/house/CardAutoChargeCard";
 import OrdersCard from "@/components/house/OrdersCard";
 import ReactivateCard from "@/components/house/ReactivateCard";
+import TaxIdCard from "@/components/house/TaxIdCard";
 import ReturningNoticeCard from "@/components/house/ReturningNoticeCard";
 import FreePlanNotice, { SellOnPlatformCard } from "@/components/house/FreePlanNotice";
 import PlanCompare from "@/components/house/PlanCompare";
@@ -119,6 +120,7 @@ export default function Plans() {
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
       {isRemoteAuth && isHouse && <ReactivateCard plan={mine === "gratis" ? null : mine} refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <TaxIdCard />}
       {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
       {isRemoteAuth && isHouse && <ReturningNoticeCard />}
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">

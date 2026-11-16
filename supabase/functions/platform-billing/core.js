@@ -230,7 +230,7 @@ export async function settleRefunds({ registry, store, log = console }) {
 }
 
 // ---------- reativação da casa cancelada por reembolso (a casa paga e volta sozinha) ----------
-const REACTIVATE_OK = /não está cancelada|não tem mensalidade|Plano inválido|fatura vencida/;
+const REACTIVATE_OK = /não está cancelada|não tem mensalidade|Plano inválido|fatura vencida|Informe o CPF ou CNPJ/;
 /** Emite (ou reaproveita) a fatura de reativação do plano atual e abre o pagamento. Ao pagar, o banco reativa a casa. */
 export async function reactivate({ registry, store, userId, plan = null, method = null, email, appUrl, log = console }) {
   const houseId = await store.houseOfOwner(userId);
@@ -247,7 +247,7 @@ export async function reactivate({ registry, store, userId, plan = null, method 
 
 // ---------- contratação de plano dentro do app (primeira assinatura e upgrade) ----------
 // Só as recusas conhecidas do banco viram mensagem para a casa; qualquer outro erro segue como erro interno (não vaza detalhe).
-const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|A fatura de vagas da próxima renovação|Há uma redução de vagas agendada|A casa já está no limite|Este plano não tem vaga adicional|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
+const PLAN_CHANGE_OK = /^(A cobrança da plataforma ainda não está ativa|A casa não tem assinatura ativa|A casa já tem assinatura ativa|A assinatura está cancelada|Há uma fatura em atraso|Há um pagamento em processamento|Há um reembolso do plano|Escolha um plano|A fatura da próxima renovação|A fatura de vagas da próxima renovação|Há uma redução de vagas agendada|A casa já está no limite|Este plano não tem vaga adicional|Informe o CPF ou CNPJ|Nos 7 dias do primeiro pagamento|A renovação está muito próxima|Este plano não tem mensalidade)/;
 // Quem está no Grátis assina qualquer plano pago (Essencial = base); quem já assina só sobe para Profissional ou Premium.
 const SUBSCRIBE_PLANS = ["base", "intermediario", "maximo"];
 const UPGRADE_PLANS = ["intermediario", "maximo"];
