@@ -193,3 +193,19 @@ test("painel: o desconto do Pix é lido, validado e enviado no formato do banco"
   assert.equal(buildConfig({ ...base, pix: { enabled: true, pct: "5", endsDays: "15" } }).ok, false);
   assert.equal(readConfig({ pix_discount: { enabled: true, pct: 8, ends_days_before: 2 } }).pix.pct, 8);
 });
+
+test("reembolso da vaga extra: leitura defensiva e texto com valor, retirada da vaga e prazo", async () => {
+  const { readSeatRefunds, seatRefundText } = await import("../src/lib/aiCreditsCore.js");
+  assert.deepEqual(readSeatRefunds(null), { items: [], history: [], windowDays: 7 });
+  const id = "11111111-1111-1111-1111-111111111111";
+  const r = readSeatRefunds({ window_days: 7, items: [{ charge_id: id, amount_cents: 3990, deadline: "2026-11-20T12:00:00Z" }, { charge_id: "x", amount_cents: 100 }, { charge_id: id, amount_cents: 0 }, { charge_id: id, amount_cents: "abc" }], history: [{ amount_cents: 3990, status: "concluido", at: "a" }, { amount_cents: 0, status: "concluido" }, { amount_cents: 500, status: "?" }] });
+  assert.equal(r.items.length, 1);
+  assert.equal(r.history.length, 2);
+  assert.equal(r.history[1].status, "pendente");
+  const t = seatRefundText(r.items[0], Date.parse("2026-11-17T12:00:00Z"));
+  assert.equal(t.money, "R$ 39,90");
+  assert.match(t.line, /valor integral/);
+  assert.match(t.line, /vaga é retirada/);
+  assert.match(t.line, /Faltam 3 dias/);
+  assert.match(seatRefundText(r.items[0], Date.parse("2026-11-20T00:00:00Z")).line, /Último dia/);
+});

@@ -76,7 +76,7 @@ export default function SeatCard({ onChanged }: { onChanged?: () => void }) {
             <Button variant="gold" disabled={busy !== null} onClick={() => void buy("pix")}>{busy === "pix" ? "Abrindo…" : `Contratar com Pix (${formatCents(st.quote.amountCents)})`}</Button>
             <Button variant="outline" disabled={busy !== null} onClick={() => void buy("card")}>{busy === "card" ? "Abrindo…" : "Contratar com cartão"}</Button>
           </div>
-          <p className="text-xs text-muted-foreground">A vaga é liberada quando o pagamento é confirmado. O reembolso de 7 dias vale para o plano, não para a vaga extra.</p>
+          <p className="text-xs text-muted-foreground">A vaga é liberada quando o pagamento é confirmado. Você pode pedir o reembolso integral desta primeira contratação em até 7 dias, em Pedidos e validações. As renovações mensais não têm reembolso.</p>
         </div>
       ) : st.blocked ? (
         <p className="text-sm text-muted-foreground">{st.blocked}</p>
