@@ -9,9 +9,25 @@ export const DEFAULT_TOTAL_DAYS = 30;
 
 const int = (v) => (typeof v === "number" && Number.isInteger(v) ? v : null);
 
+const ISO = /^20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
+/** Dia de hoje em São Paulo (AAAA-MM-DD). */
+export function todaySP(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+/** Prazo do bloqueio total: o que vale hoje, a mudança agendada (se ainda não chegou o dia) e o valor mostrado no campo (o desejado). */
+export function readTotalDays(o, today = todaySP()) {
+  const base = int(o?.total_block_days) ?? DEFAULT_TOTAL_DAYS;
+  const nx = o?.total_block_next;
+  const nd = int(nx?.days);
+  if (nd === null || nd < 7 || nd > 90 || typeof nx?.from !== "string" || !ISO.test(nx.from)) return { now: base, next: null, shown: base };
+  if (nx.from <= today) return { now: nd, next: null, shown: nd };
+  return { now: base, next: { days: nd, from: nx.from }, shown: nd };
+}
+
 /** Resposta do banco → formulário. Valores fora do esperado viram o padrão seguro (cobrança desligada). */
 export function readConfig(raw) {
   const o = raw && typeof raw === "object" ? raw : {};
+  const tot = readTotalDays(o);
   const methods = {};
   const provider = {};
   for (const k of KINDS) {
@@ -23,7 +39,9 @@ export function readConfig(raw) {
     enabled: o.enabled === true,
     noticeDays: int(o.notice_days) ?? 3,
     toleranceDays: int(o.tolerance_business_days) ?? 3,
-    totalDays: int(o.total_block_days) ?? DEFAULT_TOTAL_DAYS,
+    totalDays: tot.shown,
+    totalNow: tot.now,
+    totalNext: tot.next,
     pix: {
       enabled: o.pix_discount?.enabled === true,
       pct: int(o.pix_discount?.pct) ?? 5,

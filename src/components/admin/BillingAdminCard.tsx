@@ -111,6 +111,11 @@ export default function BillingAdminCard() {
             </label>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground">
+          {saved.totalNext
+            ? `Prazo do bloqueio total em vigor: ${saved.totalNow} dias. A mudança para ${saved.totalNext.days} dias já foi avisada às casas e passa a valer em ${saved.totalNext.from.split("-").reverse().join("/")}. Para cancelar, volte o campo para ${saved.totalNow} e salve.`
+            : `Prazo do bloqueio total em vigor: ${saved.totalNow ?? saved.totalDays} dias. Se você mudar esse prazo, as casas recebem um aviso e a mudança só vale 30 dias depois.`}
+        </p>
         <div className="rounded-xl border border-border p-3 space-y-2 text-sm">
           <label className="flex items-center gap-2 font-semibold">
             <input type="checkbox" checked={form.pix.enabled} onChange={(e) => set({ pix: { ...form.pix, enabled: e.target.checked } })} />
