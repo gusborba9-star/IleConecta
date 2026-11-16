@@ -19,6 +19,12 @@ export default function AdminTaxIdCard() {
     if (!supabase) return;
     void supabase.rpc("admin_houses_plans").then(({ data }) => setHouses(((data as HouseRow[] | null) ?? []).map((h) => ({ house_id: String(h.house_id), name: String(h.name) }))));
   }, []);
+  // o número completo não fica na tela: some sozinho em 30 segundos
+  useEffect(() => {
+    if (!shown) return;
+    const t = window.setTimeout(() => setShown(null), 30_000);
+    return () => window.clearTimeout(t);
+  }, [shown]);
   const reasonOk = reason.trim().length >= 10;
   const view = async () => {
     setBusy(true);
@@ -51,7 +57,7 @@ export default function AdminTaxIdCard() {
       </div>
       {shown && <p className="text-sm font-semibold">{shown}</p>}
       <div className="flex flex-wrap gap-2">
-        <Input aria-label="Novo documento" className="max-w-xs" inputMode="numeric" placeholder="Novo CPF ou CNPJ (correção)" value={fix} onChange={(e) => setFix(formatTaxIdInput(e.target.value))} />
+        <Input aria-label="Novo documento" className="max-w-xs" inputMode="text" autoCapitalize="characters" placeholder="Novo CPF ou CNPJ (correção)" value={fix} onChange={(e) => setFix(formatTaxIdInput(e.target.value))} />
         <Button variant="outline" disabled={!pick || !reasonOk || !taxIdKind(fix) || busy} onClick={() => void correct()}>Corrigir</Button>
       </div>
     </Card>
