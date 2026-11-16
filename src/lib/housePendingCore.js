@@ -34,6 +34,10 @@ export function houseTarget(tab, role) {
     default: return null;
   }
 }
+/** A página da casa é aberta pelo id da conta da titular (não pelo id interno da casa). Equipe não responde avaliações: sem link. */
+export function houseReviewsPath(role, ownerUserId) {
+  return role !== "equipe" && typeof ownerUserId === "string" && ownerUserId.length > 0 ? `/casa/${encodeURIComponent(ownerUserId)}?aba=avaliacoes` : null;
+}
 const PRIORITIES = ["alta", "normal"];
 const TABS = ["atendimento", "pedidos", "mensalidades", "moderacao", "suporte", "cobranca", "cadastro", "assistente", "avaliacoes"];
 const str = (v) => (typeof v === "string" ? v : "");
