@@ -69,3 +69,6 @@ language sql stable security definer set search_path = public as $$
      and not exists (select 1 from public.house_staff hs where hs.house_id = p_house and hs.user_id = g.uid)
      and not exists (select 1 from public.user_blocks b where (b.blocker_id = p_owner and b.blocked_id = g.uid) or (b.blocker_id = g.uid and b.blocked_id = p_owner));
 $$;
+
+-- Fechada já aqui, no mesmo passo em que nasce: recebe a casa por parâmetro e só pode ser chamada pelas funções abaixo.
+revoke all on function public.house_people_base(uuid, uuid, boolean, boolean, boolean, boolean) from public, anon, authenticated;

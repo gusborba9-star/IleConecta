@@ -20,6 +20,8 @@ begin
   if not (can_chat or can_orders or can_members) then raise exception 'sem_permissao' using errcode = '42501'; end if;
 end $$;
 
+revoke all on function public.house_people_ctx() from public, anon, authenticated;
+
 -- ============ 3) lista com segmentos ============
 create or replace function public.house_people(p_segment text default 'todos', p_search text default null, p_limit integer default 50, p_offset integer default 0)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
