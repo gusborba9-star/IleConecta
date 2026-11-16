@@ -474,7 +474,7 @@ Comissões, assinaturas, vagas adicionais, créditos de IA, destaques, impulsion
 
 Aprovado em 12/11/2026 (registro em §33.1). Vale para planos, vagas adicionais, destaque, impulsionamento e créditos de IA.
 
-- **Meios:** cartão, cartão recorrente e Pix avulso. O sistema emite mensalmente a cobrança (boleto ou QR code Pix, conforme o provedor), com aviso mínimo de 3 dias antes do vencimento (prazo configurável no painel).
+- **Meios:** cartão, cartão recorrente e Pix avulso. O sistema emite mensalmente a cobrança (boleto ou QR code Pix, conforme o provedor), com aviso mínimo de 3 dias antes do vencimento (prazo configurável no painel). **Desconto de pontualidade no Pix (15/11/2026; migration 0123):** opcional, desligado por padrão, ligado no painel (decisão: 5%, janela de 7 dias a partir da emissão da fatura, termina na véspera do vencimento). O Pix tem sessão própria com o valor reduzido; o cartão cobra o valor cheio. Não aparece para casa com cartão automático ativo. Texto nos Termos pendente de confirmação do advogado.
 - **Calendário próprio:** o calendário de cobranças, os avisos e a tolerância ficam no banco da plataforma. O provedor só processa o pagamento.
 - **Avisos escalonados:** fatura disponível; véspera e dia do vencimento; durante a tolerância ("pague e evite a suspensão").
 - **Tolerância:** 3 dias úteis após o vencimento. Sem multa nem juros. Não há suspensão enquanto houver pagamento em processamento.
