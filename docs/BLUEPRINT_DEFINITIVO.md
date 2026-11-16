@@ -361,6 +361,8 @@ A timeline referencia eventos originais: conversas, intenções, pedidos, pagame
 
 Central de pendências consolida conversas sem resposta, interesses encaminhados, pedidos, reservas, pagamentos, reembolsos, eventos, mensalidades, ocorrências e tarefas.
 
+- **Central de pendências da administração (construída em 16/11/2026, migration 0129):** só leitura, sem tabela nova; junta suporte, moderação, denúncias de conversa, avaliações contestadas, exclusão de conta, reembolsos (cliente e plataforma), cobranças sem confirmação e pedidos presos em reembolso, vencidos primeiro, com atalho para onde se resolve. Chamados que esperam outra pessoa não entram. Os prazos padrão ficam em `pending_deadline_hours`. A visão da casa (conversas sem resposta, interesses encaminhados, mensalidades, reservas) segue na próxima entrega da Fase 5. A contestação de avaliação pode ser encerrada pela administração sem esconder a avaliação, e a casa não contesta de novo a mesma avaliação.
+
 Segmentação respeita consentimento, finalidade e restrições de dados sensíveis. Funil comercial é ferramenta de análise e não substitui estados oficiais.
 
 ---

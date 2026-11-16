@@ -103,6 +103,8 @@ export interface ReportedReview {
   reason: string;
   reportedAt: string;
   hidden: boolean;
+  /** Quando a administração encerrou a denúncia mantendo a avaliação (null = ainda pendente). */
+  reviewedAt: string | null;
 }
 export async function fetchReportedReviews(): Promise<ReportedReview[]> {
   if (!supabase) return [];
@@ -116,6 +118,8 @@ export async function fetchReportedReviews(): Promise<ReportedReview[]> {
     reason: String(r.report_reason ?? ""),
     reportedAt: String(r.reported_at),
     hidden: r.hidden === true,
+    reviewedAt: typeof r.reviewed_at === "string" ? r.reviewed_at : null,
   }));
 }
+export const keepReviewReport = (id: string) => run("admin_review_report_keep", { p_review: id });
 export const setReviewHidden = (id: string, hidden: boolean) => run("admin_set_review_hidden", { p_review: id, p_hidden: hidden });
