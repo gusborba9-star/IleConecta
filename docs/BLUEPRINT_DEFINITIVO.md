@@ -365,6 +365,8 @@ Central de pendências consolida conversas sem resposta, interesses encaminhados
 
 Segmentação respeita consentimento, finalidade e restrições de dados sensíveis. Funil comercial é ferramenta de análise e não substitui estados oficiais.
 
+- **Pessoas da casa (construído em 16/11/2026, migration 0131):** só leitura, sem tabela nova. Lista as pessoas que têm relação real com a casa (seguem, conversaram, pediram, reservaram ou são membros com conta) com os segmentos seguidor, conversou, interessado, cliente, recorrente, participante, membro, com pendência e sem contato há 90 dias, e abre a linha do tempo de cada uma, que referencia os registros originais (nunca o texto de mensagens). A titular vê tudo; a equipe vê só o que a permissão libera e nunca valores, avaliações nem reembolsos. Avaliação anônima não liga à pessoa, pessoa bloqueada não aparece e quem não tem relação com a casa não abre linha do tempo. Segmentos servem para atender e acompanhar; não há exportação nem envio em massa.
+
 ---
 
 # 15. EQUIPE E PERMISSÕES

@@ -2,7 +2,7 @@ import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Bot, Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users, UsersRound } from "lucide-react";
+import { Bot, Contact, Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users, UsersRound } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
@@ -66,6 +66,7 @@ export default function HouseHome() {
   const memberText = !members || members.total === 0 ? "Mensalidades e avisos de cobrança" : members.vencidas > 0 ? `${members.vencidas} em atraso` : members.perto > 0 ? `${members.perto} vencem em breve` : `${members.total} em dia`;
   const tiles = [
     ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, about: "Controle mensalidades, vencimentos e avisos de cobrança dos membros da sua casa em um só lugar.", needs: "members_area" as CapFlagKey, onClick: () => nav("/painel/membros") }] : []),
+    ...(isRemoteAuth ? [{ icon: Contact, title: "Pessoas da casa", text: "Seguidores, clientes e membros, com a história de cada um", onClick: () => nav("/pessoas") }] : []),
     { icon: Plus, title: "Novo serviço", text: "Jogos, consultas, trabalhos e atendimentos", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
     { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
     { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
