@@ -1,3 +1,4 @@
+import HousePendingCard from "@/components/house/HousePendingCard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -276,6 +277,8 @@ export default function Atendimento() {
         <h1 className="font-display font-bold text-2xl flex items-start gap-2 mt-1"><Headset className="h-6 w-6 mt-1 shrink-0 text-primary" /> <span>{link.houseName}</span></h1>
         <p className="text-sm text-muted-foreground mt-1">Você atende como <strong>{link.staffName}</strong>. Aparece só o que a casa liberou para você.</p>
       </Card>
+
+      {link.perms.some((p) => ["chat_read", "chat_reply", "orders", "members"].includes(p)) && <HousePendingCard />}
 
       {tabs.length === 0 ? (
         <Card className="p-6 text-sm text-muted-foreground">A casa ainda não liberou nenhuma ferramenta para você. Peça a ela para ligar o que você precisa.</Card>

@@ -1,3 +1,4 @@
+import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -99,6 +100,8 @@ export default function HouseHome() {
         </div>
         </div>
       </Card>
+
+      {isRemoteAuth && <HousePendingCard />}
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
 

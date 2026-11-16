@@ -116,6 +116,57 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await expect(p2.getByRole("alert")).not.toContainText(/pg_|sqlstate|stack/i);
     });
 
+    test("Central da casa: pendências, a pagar com desconto do Pix, dados hostis sem quebrar e atalho para onde resolver", async ({ page }) => {
+      const U = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
+      const it = (o) => ({ kind: "conversa_sem_resposta", ref_id: U(1), title: "Conversa com Ana", detail: "sem_resposta", priority: "normal", due_at: new Date(Date.now() - 6 * 3600000).toISOString(), overdue: true, since: new Date(Date.now() - 30 * 3600000).toISOString(), tab: "atendimento", ...o });
+      const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+      const items = [it({}), it({ ref_id: U(2), kind: "assunto_da_assistente", title: "<img src=x onerror=window.__xss=1>", priority: "alta", overdue: false, due_at: new Date(Date.now() + 3 * 3600000).toISOString() }), it({ ref_id: U(3), kind: "mensalidade_vencida", title: "Mensalidade de Bia — R$ 50,00", overdue: false, due_at: null, tab: "mensalidades" }), { kind: "inventado", ref_id: U(4) }, null];
+      await api(page, { rpc: { house_pending_center: { house_id: U(9), house_name: "Casa Um", role: "titular", total: 9, overdue: 1, counts: { conversa_sem_resposta: 1, assunto_da_assistente: 1, mensalidade_vencida: 1 }, items,
+        to_pay: { total_cents: 59980, count: 2, charges: [{ id: U(5), kind: "plan", description: "Plano", amount_cents: 29990, due_date: day(-3), status: "vencida", pix_discount_cents: 0, overdue: true }, { id: U(6), kind: "plan", description: "Plano", amount_cents: 29990, due_date: day(10), status: "aberta", pix_discount_cents: 1500, overdue: false }] } } } });
+      await page.goto("/tests/browser/ui-harness.html?c=housepending");
+      await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
+      await expect(page.getByText("1 vencida")).toBeVisible();
+      await expect(page.getByText(/mostrando as 3 mais urgentes/)).toBeVisible();
+      const rows = page.locator("li").filter({ hasText: /Conversa com Ana|Assunto passado|Mensalidade de Bia/ });
+      await expect(rows).toHaveCount(3);
+      await expect(rows.first()).toContainText("Conversa sem resposta");
+      await expect(page.getByText(/venceu há 6 h/)).toBeVisible();
+      await expect(page.getByText("<img src=x onerror=window.__xss=1>")).toBeVisible();
+      expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+      const pay = page.getByRole("region", { name: "A pagar à plataforma" });
+      await expect(pay).toBeVisible();
+      await expect(pay).toContainText("R$ 599,80");
+      await expect(pay).toContainText("(vencida)");
+      await expect(pay).toContainText(/no Pix: R\$\s284,90/);
+      await noHScroll(page);
+      await page.getByLabel("Só vencidas").check();
+      await expect(page.getByText("Mensalidade de Bia")).toHaveCount(0);
+      await page.getByLabel("Só vencidas").uncheck();
+      await page.getByLabel("Filtrar por tipo").selectOption("mensalidade_vencida");
+      await expect(page.getByText("Mensalidade de Bia")).toBeVisible();
+      await page.getByRole("button", { name: /Abrir Mensalidades/ }).click();
+      await expect(page).toHaveURL(/\/mensalidades/);
+    });
+
+    test("Central da casa: equipe não vê 'a pagar'; vazia; quem não é da casa não vê o cartão; erro do servidor sem detalhe técnico", async ({ page }) => {
+      await api(page, { rpc: { house_pending_center: { house_id: "00000000-0000-0000-0000-000000000009", house_name: "Casa Um", role: "equipe", total: 0, overdue: 0, counts: {}, items: [], to_pay: null } } });
+      await page.goto("/tests/browser/ui-harness.html?c=housepending");
+      await expect(page.getByText("O que espera a casa e que você pode acompanhar.")).toBeVisible();
+      await expect(page.getByText("Nada pendente agora.")).toBeVisible();
+      await expect(page.getByRole("region", { name: "A pagar à plataforma" })).toHaveCount(0);
+      await noHScroll(page);
+      const p2 = await page.context().newPage();
+      await api(p2, { rpc: { house_pending_center: { status: 403, body: { message: "not_house" } } } });
+      await p2.goto("/tests/browser/ui-harness.html?c=housepending");
+      await p2.waitForTimeout(800);
+      await expect(p2.getByRole("heading", { name: "Central de pendências" })).toHaveCount(0);
+      const p3 = await page.context().newPage();
+      await api(p3, { rpc: { house_pending_center: { status: 500, body: { message: "Não foi possível carregar as pendências." } } } });
+      await p3.goto("/tests/browser/ui-harness.html?c=housepending");
+      await expect(p3.getByRole("alert")).toContainText("Não foi possível carregar");
+      await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate|stack/i);
+    });
+
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {
       let set = false;
       const calls = await api(page, { rpc: {
