@@ -1,4 +1,5 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
+import HouseIndicatorsCard from "@/components/house/HouseIndicatorsCard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -234,6 +235,8 @@ function Stats() {
     void fetchTopics().then(setTopics);
   }, []);
   return (
+    <div className="space-y-4">
+    <HouseIndicatorsCard />
     <Card className="p-5 space-y-4">
       <h2 className="font-display font-bold text-lg">Números da divulgação</h2>
       <div>
@@ -249,6 +252,7 @@ function Stats() {
         )}
       </div>
     </Card>
+    </div>
   );
 }
 

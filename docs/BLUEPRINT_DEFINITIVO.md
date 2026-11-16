@@ -687,6 +687,8 @@ Priorizar velocidade sem sacrificar consistência ou segurança.
 
 Visualizações, alcance, seguidores, conversas, intenções, conversão, vendas, volume, ticket médio, ocupação de vagas, reservas, cancelamentos, reembolsos, recorrência, desempenho da assistente, tempo de resposta, pendências e avaliações.
 
+- **Construído em 16/11/2026 (migration 0132):** seguidores, pessoas que falaram, tempo de resposta (mediana), pedidos criados e pagos, conversão, cancelados ou vencidos, valor vendido, ticket médio, vagas e ocupação, clientes que voltaram, avaliações e reembolsos, cada um com período anterior, definição e origem. Desempenho da assistente fica no relatório próprio e pendências na central. **Ainda sem registro:** visualizações e alcance do perfil (dependem de registrar visitas) e intenções além das conversas. A equipe com a permissão de indicadores nunca vê dinheiro, reembolsos nem avaliações.
+
 ## 28.2 Indicadores centrais
 
 Casas/usuários ativos, crescimento, conversão, volume transacionado, receita de comissão/assinatura/divulgação, retenção, cancelamento, reembolsos, disputas, qualidade do atendimento, custo de IA, uso de recursos e incidentes.
