@@ -693,6 +693,8 @@ Visualizações, alcance, seguidores, conversas, intenções, conversão, vendas
 
 Casas/usuários ativos, crescimento, conversão, volume transacionado, receita de comissão/assinatura/divulgação, retenção, cancelamento, reembolsos, disputas, qualidade do atendimento, custo de IA, uso de recursos e incidentes.
 
+- **Construído em 16/11/2026 (migration 0133, só administração):** contas e casas novas, conversão para plano pago, volume transacionado, receita (comissão, assinatura, divulgação, créditos), cobranças vencidas e canceladas, reembolsos, estornos, contestações, disputas, incidentes graves, qualidade do atendimento (primeira resposta e prazo), uso de IA (tokens), ativos, casas por plano e retenção de assinantes, cada um com período anterior, definição e origem. **Limites:** "ativos" vem do último acesso (sem histórico); conversão e retenção usam cobranças de plano pagas, pois não há histórico de plano; cancelamento de assinatura ainda não tem registro próprio.
+
 ## 28.3 Inteligência
 
 Identificar ofertas procuradas, horários de demanda, campanhas eficientes, conversão, gargalos, retenção, consumo de IA e riscos. Dados agregados respeitam privacidade e não expõem dados sensíveis indevidamente.
