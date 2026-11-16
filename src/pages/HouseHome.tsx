@@ -10,6 +10,7 @@ import QuietHoursCard from "@/components/house/QuietHoursCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
 import HouseKpis from "@/components/house/HouseKpis";
+import HouseIndicatorsCard from "@/components/house/HouseIndicatorsCard";
 import PromoList from "@/components/promo/PromoList";
 import PlanUpsellModal from "@/components/house/PlanUpsellModal";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
@@ -105,6 +106,7 @@ export default function HouseHome() {
       {isRemoteAuth && <HousePendingCard />}
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
+      {isRemoteAuth && <HouseIndicatorsCard />}
 
       {isRemoteAuth && <PromoList title="Destaque e impulsionamento em andamento" />}
 

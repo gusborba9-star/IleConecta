@@ -217,6 +217,58 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate/i);
     });
 
+    test("Indicadores da casa: números com variação, período e 'como é calculado'", async ({ page }) => {
+      const P = (current, previous = 0) => ({ current, previous });
+      const body = (days, role = "titular") => ({ days, role, metrics: {
+        novos_seguidores: P(3, 2), pessoas_que_falaram: P(4, 1), tempo_resposta_min: P(90, 30), pedidos_criados: P(7, 2), pedidos_pagos: P(3, 2), pedidos_perdidos: P(2, 0),
+        reservas_confirmadas: P(4, 1), reservas_canceladas: P(1, 0), clientes_no_periodo: P(5, 2), clientes_que_voltaram: P(1, 0),
+        volume_cents: P(27000, 13000), reembolsos: P(1, 0), avaliacoes: P(2, 1), nota_media: P(4.5, 3) },
+        snapshot: { seguidores_total: 6, ocupacao_pct: 20, avaliacoes_sem_resposta: 2 } });
+      const calls = await api(page, { rpc: { house_indicators: (b) => body(b.p_days) } });
+      await page.goto("/tests/browser/ui-harness.html?c=indicators");
+      await expect(page.getByRole("heading", { name: "Indicadores da casa" })).toBeVisible();
+      const tile = (name) => page.locator("li").filter({ hasText: name });
+      await expect(tile("Pedidos criados")).toContainText("7");
+      await expect(tile("Pedidos criados")).toContainText("+250% sobre o período anterior");
+      await expect(tile("Tempo de resposta")).toContainText("1,5 h");
+      await expect(tile("Tempo de resposta")).toContainText("+200% sobre o período anterior");
+      await expect(tile("Conversão dos pedidos")).toContainText("42,9%");
+      await expect(tile("Valor vendido")).toContainText(/R\$\s270,00/);
+      await expect(tile("Ticket médio")).toContainText(/R\$\s38,57/);
+      await expect(tile("Ocupação")).toContainText("20%");
+      await expect(page.getByText("6 pessoas seguem a casa hoje.")).toBeVisible();
+      await expect(page.getByText("O que é:")).toHaveCount(0);
+      await noHScroll(page);
+      await page.getByRole("button", { name: /Conversão dos pedidos: como é calculado/ }).click();
+      await expect(page.getByText(/Pedidos pagos dividido pelos pedidos criados/)).toBeVisible();
+      await expect(page.getByText(/De onde vem:/)).toBeVisible();
+      await page.getByRole("tab", { name: "90 dias" }).click();
+      await expect.poll(() => calls.filter((c) => c.name === "house_indicators").map((c) => c.body.p_days)).toContain(90);
+      await expect(page.getByText(/Comparados com os 90 dias anteriores/)).toBeVisible();
+      await noHScroll(page);
+    });
+
+    test("Indicadores da casa: equipe não vê dinheiro nem avaliações; sem permissão some; erro do servidor sem detalhe técnico", async ({ page }) => {
+      const P = (current, previous = 0) => ({ current, previous });
+      await api(page, { rpc: { house_indicators: { days: 30, role: "equipe", metrics: { pedidos_criados: P(7, 2), pedidos_pagos: P(3, 2), volume_cents: P(27000, 13000), nota_media: P(4.5, 3), reembolsos: P(1, 0) }, snapshot: { seguidores_total: 1, ocupacao_pct: null, avaliacoes_sem_resposta: 2 } } } });
+      await page.goto("/tests/browser/ui-harness.html?c=indicators");
+      await expect(page.getByRole("heading", { name: "Indicadores da casa" })).toBeVisible();
+      await expect(page.locator("li").filter({ hasText: "Pedidos criados" })).toContainText("7");
+      for (const t of ["Valor vendido", "Ticket médio", "Nota média", "Reembolsos pedidos", "Avaliações"]) await expect(page.locator("li").filter({ hasText: t })).toHaveCount(0);
+      await expect(page.locator("body")).not.toContainText("R$");
+      await expect(page.getByText("1 pessoa segue a casa hoje.")).toBeVisible();
+      const p2 = await page.context().newPage();
+      await api(p2, { rpc: { house_indicators: { status: 403, body: { message: "sem_permissao" } } } });
+      await p2.goto("/tests/browser/ui-harness.html?c=indicators");
+      await p2.waitForTimeout(800);
+      await expect(p2.getByRole("heading", { name: "Indicadores da casa" })).toHaveCount(0);
+      const p3 = await page.context().newPage();
+      await api(p3, { rpc: { house_indicators: { status: 500, body: { message: "relation pg_x failed sqlstate 42P01" } } } });
+      await p3.goto("/tests/browser/ui-harness.html?c=indicators");
+      await expect(p3.getByRole("alert")).toContainText("Não foi possível carregar os indicadores.");
+      await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate/i);
+    });
+
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {
       let set = false;
       const calls = await api(page, { rpc: {
