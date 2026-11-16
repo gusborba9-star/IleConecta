@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchHousePending } from "@/lib/housePending";
-import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseTarget, type HousePendingView } from "@/lib/housePendingCore.js";
+import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseReviewsPath, houseTarget, type HousePendingView } from "@/lib/housePendingCore.js";
 import { kindLabel, shortDate } from "@/lib/platformBillingCore.js";
 import { formatBRL } from "@/lib/utils";
+import { useApp } from "@/contexts/AppContext";
 
 /** Central de pendências da casa: o que espera a casa (ou a equipe, conforme a permissão), vencidos primeiro, mais o que há a pagar à plataforma. */
 export default function HousePendingCard() {
   const nav = useNavigate();
+  const { currentUser } = useApp();
   const [view, setView] = useState<HousePendingView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -72,7 +74,7 @@ export default function HousePendingCard() {
                 <ul className="space-y-2">
                   {items.map((i) => {
                     const target = houseTarget(i.tab, view.role);
-                    const path = target ? (target.path ?? (view.houseId ? `/casa/${view.houseId}` : null)) : null;
+                    const path = target ? (target.path ?? houseReviewsPath(view.role, currentUser?.id)) : null;
                     return (
                       <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
                         <div className="flex flex-wrap items-center gap-2">

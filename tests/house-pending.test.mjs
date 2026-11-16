@@ -1,4 +1,5 @@
 // Central de pendências da casa: leitura defensiva, destinos por papel e coerência com o SQL (0130).
+import { houseReviewsPath } from "../src/lib/housePendingCore.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -71,4 +72,11 @@ test("filtros e prazos reaproveitam o mesmo comportamento da central da administ
   assert.equal(filterPending(v.items, { onlyOverdue: true }).length, 1);
   assert.equal(filterPending(v.items, { kind: "fatura" }).length, 1);
   assert.equal(dueText(null), "sem prazo");
+});
+
+test("avaliação sem resposta abre a página da casa pelo id da conta da titular, na aba de avaliações", () => {
+  assert.equal(houseReviewsPath("titular", "f847527a-266e-494d-9163-80736aeedae5"), "/casa/f847527a-266e-494d-9163-80736aeedae5?aba=avaliacoes");
+  assert.equal(houseReviewsPath("equipe", "f847527a-266e-494d-9163-80736aeedae5"), null);
+  assert.equal(houseReviewsPath("titular", null), null); assert.equal(houseReviewsPath("titular", ""), null); assert.equal(houseReviewsPath("titular", undefined), null);
+  assert.equal(houseReviewsPath("titular", "a/b?x"), "/casa/a%2Fb%3Fx?aba=avaliacoes");
 });
