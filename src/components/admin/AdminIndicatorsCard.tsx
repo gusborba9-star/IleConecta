@@ -75,6 +75,9 @@ export default function AdminIndicatorsCard() {
           </section>
         ))
       )}
+      {view?.activityPartial && view.activitySince && (
+        <p className="text-xs text-muted-foreground">O registro dos dias de atividade começou em {view.activitySince.split("-").reverse().join("/")}; antes disso os números de pessoas ativas aparecem menores que a realidade.</p>
+      )}
       {view && <p className="text-xs text-muted-foreground">Casas por plano hoje: {view.plans.map((p) => `${p.label} ${p.count}`).join(" · ")}.</p>}
     </Card>
   );
