@@ -148,7 +148,7 @@ export async function processWebhook({ registry, store, providerId, rawBody, hea
 }
 
 // ---------- reembolso de créditos em 7 dias ----------
-const REFUND_OK = /prazo de 7 dias|Esta compra não está ativa|Todos os dias desta compra|primeiro pagamento do plano|já foi usado por esta casa|já foram usados|já foi reembolsada|não pode ser reembolsada|Nada a reembolsar|Pacote não encontrado|Pagamento sem referência/;
+const REFUND_OK = /prazo de 7 dias|Esta compra não está ativa|Todos os dias desta compra|primeiro pagamento do plano|já foi usado por esta casa|já foram usados|já foi reembolsada|não pode ser reembolsada|Nada a reembolsar|Pacote não encontrado|Pagamento sem referência|Há mais pessoas na equipe do que vagas|reembolso desta vaga/;
 const refundError = (e) => (REFUND_OK.test(msg(e)) ? new ChargeStateError(msg(e), "refund_denied") : e);
 
 /** Pede o estorno ao provedor (mesma chave sempre) e conclui no banco. Sem resposta do provedor: fica pendente e a rotina repete. */
@@ -163,10 +163,10 @@ async function runRefund({ registry, store, b, log = console, kind = "credit" })
   }
   if (!r) return { status: "pending", amount_cents: Number(b.amount_cents) };
   if (r.outcome === "failed") {
-    await (kind === "plan" ? store.planRefundFail : kind === "promo" ? store.promoRefundFail : store.refundFail)(b.refund_id, r.code ?? "recusado");
-    throw new ChargeStateError(`Não foi possível concluir o reembolso agora. ${kind === "plan" ? "Sua assinatura foi mantida." : kind === "promo" ? "Os seus dias foram mantidos." : "Seus créditos foram mantidos."} Tente de novo em instantes ou fale com o suporte.`, "refund_failed");
+    await (kind === "plan" ? store.planRefundFail : kind === "promo" ? store.promoRefundFail : kind === "seat" ? store.seatRefundFail : store.refundFail)(b.refund_id, r.code ?? "recusado");
+    throw new ChargeStateError(`Não foi possível concluir o reembolso agora. ${kind === "plan" ? "Sua assinatura foi mantida." : kind === "promo" ? "Os seus dias foram mantidos." : kind === "seat" ? "Sua vaga foi mantida." : "Seus créditos foram mantidos."} Tente de novo em instantes ou fale com o suporte.`, "refund_failed");
   }
-  await (kind === "plan" ? store.planRefundDone : kind === "promo" ? store.promoRefundDone : store.refundDone)(b.refund_id, r.ref ?? null);
+  await (kind === "plan" ? store.planRefundDone : kind === "promo" ? store.promoRefundDone : kind === "seat" ? store.seatRefundDone : store.refundDone)(b.refund_id, r.ref ?? null);
   return { status: "done", amount_cents: Number(b.amount_cents) };
 }
 
@@ -209,13 +209,27 @@ export async function promoRefund({ registry, store, userId, chargeId, log = con
   return runRefund({ registry, store, b, log, kind: "promo" });
 }
 
-/** Rotina: refaz reembolsos (de créditos, de plano e de destaque/impulsionamento) que ficaram sem resposta do provedor. */
+/** A casa pede o reembolso integral da PRIMEIRA contratação de uma vaga extra (até 7 dias): a vaga é retirada quando o estorno é aprovado. */
+export async function seatRefund({ registry, store, userId, chargeId, log = console }) {
+  const houseId = await store.houseOfOwner(userId);
+  if (!houseId) throw new ChargeStateError("Somente a casa pede reembolso.", "forbidden");
+  let b;
+  try {
+    b = await store.seatRefundBegin(houseId, chargeId, userId);
+  } catch (e) {
+    throw refundError(e);
+  }
+  return runRefund({ registry, store, b, log, kind: "seat" });
+}
+
+/** Rotina: refaz reembolsos (de créditos, de plano, de vaga extra e de destaque/impulsionamento) que ficaram sem resposta do provedor. */
 export async function settleRefunds({ registry, store, log = console }) {
   const out = { pending: 0, done: 0, errors: [] };
   const jobs = [
     ...(((await store.refundsPending()) ?? []).map((p) => [p, "credit"])),
     ...(((await store.planRefundsPending()) ?? []).map((p) => [p, "plan"])),
     ...(((await store.promoRefundsPending?.()) ?? []).map((p) => [p, "promo"])),
+    ...(((await store.seatRefundsPending?.()) ?? []).map((p) => [p, "seat"])),
   ];
   for (const [p, kind] of jobs) {
     out.pending++;

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { readCredits, readPlanRefund, readRefunds, type Credits, type PackKey, type PlanRefund, type Refunds } from "@/lib/aiCreditsCore";
+import { readCredits, readPlanRefund, readRefunds, readSeatRefunds, type Credits, type PackKey, type PlanRefund, type Refunds, type SeatRefunds } from "@/lib/aiCreditsCore";
 
 export async function fetchCredits(): Promise<Credits | null> {
   if (!supabase) return null;
@@ -58,6 +58,28 @@ export async function fetchPlanRefund(): Promise<PlanRefund | null> {
 export async function requestPlanRefund(chargeId: string): Promise<{ error: string | null; pending?: boolean }> {
   if (!supabase) return { error: "Indisponível." };
   const { data, error } = await supabase.functions.invoke("platform-billing", { body: { action: "plan_refund", charge_id: chargeId } });
+  if (error) {
+    try {
+      const ctx = (error as { context?: Response }).context;
+      const b = ctx ? ((await ctx.json()) as { error?: string }) : null;
+      return { error: b?.error ?? "Não foi possível pedir o reembolso agora. Tente de novo." };
+    } catch {
+      return { error: "Não foi possível pedir o reembolso agora. Tente de novo." };
+    }
+  }
+  return { error: null, pending: (data as { status?: string } | null)?.status === "pending" };
+}
+
+export async function fetchSeatRefunds(): Promise<SeatRefunds | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("my_seat_refunds");
+  return error ? null : readSeatRefunds(data);
+}
+
+/** Pede o reembolso integral da primeira contratação da vaga extra (até 7 dias). A vaga é retirada quando o estorno é aprovado. */
+export async function requestSeatRefund(chargeId: string): Promise<{ error: string | null; pending?: boolean }> {
+  if (!supabase) return { error: "Indisponível." };
+  const { data, error } = await supabase.functions.invoke("platform-billing", { body: { action: "seat_refund", charge_id: chargeId } });
   if (error) {
     try {
       const ctx = (error as { context?: Response }).context;

@@ -21,3 +21,8 @@ export function readPlanRefund(raw: unknown): PlanRefund | null;
 export function planRefundText(p: PlanRefund, now?: number): { money: string; line: string };
 
 export const RETURNING_REFUND_TEXT: string;
+
+export interface SeatRefundItem { chargeId: string; amountCents: number; deadline: string }
+export interface SeatRefunds { items: SeatRefundItem[]; history: { at: string; status: "pendente" | "concluido"; amountCents: number }[]; windowDays: number }
+export function readSeatRefunds(raw: unknown): SeatRefunds;
+export function seatRefundText(i: SeatRefundItem, now?: number): { money: string; line: string };

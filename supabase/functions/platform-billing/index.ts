@@ -133,6 +133,11 @@ Deno.serve(async (req) => {
       if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("Informe o pagamento.");
       return json(await core.planRefund({ registry, store, userId: user.id, chargeId: id }));
     }
+    if (input.action === "seat_refund") {
+      const id = String(input.charge_id ?? "");
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("Informe o pagamento.");
+      return json(await core.seatRefund({ registry, store, userId: user.id, chargeId: id }));
+    }
     const chargeId = String(input.charge_id ?? "");
     if (!/^[0-9a-f-]{36}$/i.test(chargeId)) return fail("Informe a fatura.");
     switch (input.action) {

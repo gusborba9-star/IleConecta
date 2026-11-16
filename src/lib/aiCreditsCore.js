@@ -111,3 +111,23 @@ export function planRefundText(p, now = Date.now()) {
 
 /** Texto mostrado quando uma conta anterior do mesmo e-mail (excluída) já usou o reembolso de 7 dias. */
 export const RETURNING_REFUND_TEXT = "Conta reutilizada: o reembolso de 7 dias do plano já foi utilizado em uma conta anterior vinculada a este e-mail e não é concedido novamente.";
+
+/** Reembolso da primeira contratação da vaga extra (my_seat_refunds): leitura defensiva do que o banco devolve. */
+export function readSeatRefunds(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const items = (Array.isArray(r.items) ? r.items : [])
+    .map((i) => ({ chargeId: String(i?.charge_id ?? ""), amountCents: Number(i?.amount_cents), deadline: String(i?.deadline ?? "") }))
+    .filter((i) => /^[0-9a-f-]{36}$/i.test(i.chargeId) && Number.isFinite(i.amountCents) && i.amountCents > 0);
+  const history = (Array.isArray(r.history) ? r.history : [])
+    .map((h) => ({ at: String(h?.at ?? ""), status: h?.status === "concluido" ? "concluido" : "pendente", amountCents: Number(h?.amount_cents) || 0 }))
+    .filter((h) => h.amountCents > 0);
+  return { items, history, windowDays: Number(r.window_days) > 0 ? Number(r.window_days) : 7 };
+}
+
+export function seatRefundText(i, now = Date.now()) {
+  const money = `R$ ${(i.amountCents / 100).toFixed(2).replace(".", ",")}`;
+  const ms = Date.parse(i.deadline) - now;
+  const days = Number.isFinite(ms) ? Math.max(0, Math.ceil(ms / 86400000)) : null;
+  const left = days === null ? "" : days <= 1 ? " Último dia para pedir." : ` Faltam ${days} dias para pedir.`;
+  return { money, line: `Primeira contratação da vaga extra: devolvemos ${money} (valor integral) e a vaga é retirada.${left}` };
+}

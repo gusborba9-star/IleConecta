@@ -30,6 +30,48 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
   test.describe(vp.name, () => {
     test.use({ viewport: { width: vp.width, height: vp.height } });
 
+    test("Vaga extra: pedir o reembolso de 7 dias da primeira contratação (confirma, chama o servidor uma vez, mostra o resultado)", async ({ page }) => {
+      const ID = "11111111-1111-1111-1111-111111111111";
+      let items = [{ charge_id: ID, amount_cents: 3990, deadline: new Date(Date.now() + 3 * 86400000).toISOString() }];
+      const calls = await api(page, {
+        rpc: { my_credit_refunds: { items: [], history: [], window_days: 7 }, my_seat_refunds: () => ({ has_house: true, window_days: 7, items, history: items.length ? [] : [{ amount_cents: 3990, status: "pendente", at: "2026-11-16T10:00:00Z" }] }) },
+        fn: { "platform-billing": () => { items = []; return { status: "done", amount_cents: 3990 }; } },
+      });
+      const dialogs = [];
+      page.on("dialog", async (d) => { dialogs.push(d.message()); await d.accept(); });
+      await page.goto("/tests/browser/ui-harness.html?c=orders");
+      await page.getByText("Pedidos e validações").click();
+      await page.getByText("Vaga extra de equipe: primeira contratação").click();
+      await expect(page.getByText(/devolvemos R\$ 39,90 \(valor integral\) e a vaga é retirada/)).toBeVisible();
+      await expect(page.getByText(/renovações mensais da vaga não têm reembolso/)).toBeVisible();
+      await noHScroll(page);
+      await page.getByRole("button", { name: "Cancelar vaga e solicitar reembolso" }).dblclick();
+      await expect(page.getByText(/Pedido aprovado/)).toBeVisible();
+      expect(dialogs).toHaveLength(1);
+      expect(dialogs[0]).toMatch(/R\$ 39,90/);
+      const fnCalls = calls.filter((c) => c.kind === "fn");
+      expect(fnCalls).toHaveLength(1);
+      expect(fnCalls[0].body).toEqual({ action: "seat_refund", charge_id: ID });
+      await expect(page.getByRole("button", { name: "Cancelar vaga e solicitar reembolso" })).toHaveCount(0);
+      await expect(page.getByText("Reembolso da vaga extra de R$ 39,90: a caminho")).toBeVisible();
+    });
+
+    test("Vaga extra: recusa do servidor aparece em português, sem detalhe técnico; dados hostis não quebram a tela", async ({ page }) => {
+      const ID = "22222222-2222-2222-2222-222222222222";
+      await api(page, {
+        rpc: { my_credit_refunds: { items: [], history: [], window_days: 7 }, my_seat_refunds: { has_house: true, window_days: 7, items: [{ charge_id: ID, amount_cents: 3990, deadline: "2099-01-01T00:00:00Z" }, { charge_id: "<script>x</script>", amount_cents: 100 }, { charge_id: ID, amount_cents: -5 }], history: [] } },
+        fn: { "platform-billing": { status: 409, body: { error: "Há mais pessoas na equipe do que vagas. Remova 1 pessoa(s) da equipe antes de pedir o reembolso." } } },
+      });
+      page.on("dialog", (d) => d.accept());
+      await page.goto("/tests/browser/ui-harness.html?c=orders");
+      await page.getByText("Pedidos e validações").click();
+      await expect(page.getByText("Vaga extra de equipe: primeira contratação")).toHaveCount(1);
+      await page.getByText("Vaga extra de equipe: primeira contratação").click();
+      await page.getByRole("button", { name: "Cancelar vaga e solicitar reembolso" }).click();
+      await expect(page.getByText(/Remova 1 pessoa\(s\) da equipe antes de pedir o reembolso/)).toBeVisible();
+      await noHScroll(page);
+    });
+
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {
       let set = false;
       const calls = await api(page, { rpc: {

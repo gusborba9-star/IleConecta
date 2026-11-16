@@ -1,7 +1,7 @@
 // Reembolso de créditos em 7 dias: pedido da casa, estorno no provedor, repetição segura e falhas (provedor e banco simulados).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { creditRefund, planRefund, settleRefunds, sweep } from "../supabase/functions/platform-billing/core.js";
+import { creditRefund, planRefund, seatRefund, settleRefunds, sweep } from "../supabase/functions/platform-billing/core.js";
 import { createFakeProvider } from "../supabase/functions/platform-billing/fakeProvider.js";
 import { createRegistry } from "../supabase/functions/platform-billing/provider.js";
 import { interpretRefund } from "../supabase/functions/platform-billing/logic.js";
@@ -10,10 +10,10 @@ import { createStripeAdapter } from "../supabase/functions/platform-billing/stri
 const CH = "11111111-1111-1111-1111-111111111111", HOUSE = "22222222-2222-2222-2222-222222222222", RF = "33333333-3333-3333-3333-333333333333";
 const silent = { error() {}, log() {} };
 
-function setup({ begin = null, pending = [], planPending = [] } = {}) {
+function setup({ begin = null, pending = [], planPending = [], seatPending = [] } = {}) {
   const fake = createFakeProvider({ id: "fake" });
   const registry = createRegistry([fake]);
-  const calls = { begin: [], done: [], fail: [], pbegin: [], pdone: [], pfail: [] };
+  const calls = { begin: [], done: [], fail: [], pbegin: [], pdone: [], pfail: [], sbegin: [], sdone: [], sfail: [] };
   const b = { refund_id: RF, provider: "fake", ref: "cs_pay_1", amount_cents: 4242, credits: 170, resume: false };
   const store = {
     config: async () => ({ enabled: true, provider: { plan: "fake" } }),
@@ -26,6 +26,10 @@ function setup({ begin = null, pending = [], planPending = [] } = {}) {
     planRefundDone: async (id, ref) => { calls.pdone.push([id, ref]); },
     planRefundFail: async (id, err) => { calls.pfail.push([id, err]); },
     planRefundsPending: async () => planPending,
+    seatRefundBegin: async (h, c, by) => { calls.sbegin.push([h, c, by]); if (begin instanceof Error) throw begin; return begin ?? { ...b, credits: undefined }; },
+    seatRefundDone: async (id, ref) => { calls.sdone.push([id, ref]); },
+    seatRefundFail: async (id, err) => { calls.sfail.push([id, err]); },
+    seatRefundsPending: async () => seatPending,
     tick: async () => ({}), autoEnabled: async () => false, autoDue: async () => [], openWithRef: async () => [], paidWithoutFee: async () => [],
   };
   return { fake, registry, store, calls, b };
@@ -172,4 +176,49 @@ test("a rotina também refaz os reembolsos de plano pendentes", async () => {
   const r = await settleRefunds({ registry: t.registry, store: t.store, log: silent });
   assert.equal(r.pending, 1); assert.equal(r.done, 1);
   assert.equal(t.calls.pdone.length, 1); assert.equal(t.calls.done.length, 0);
+});
+
+test("reembolso da vaga extra: estorno integral e conclusão pela função da vaga (nunca as de plano ou créditos)", async () => {
+  const t = setup();
+  const r = await seatRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent });
+  assert.deepEqual(r, { status: "done", amount_cents: 4242 });
+  assert.deepEqual(t.calls.sbegin[0], [HOUSE, CH, "u1"]);
+  assert.equal(t.calls.sdone.length, 1);
+  assert.equal(t.calls.done.length + t.calls.begin.length + t.calls.pdone.length + t.calls.pbegin.length, 0);
+  const [[key, sent]] = [...t.fake.refunds.entries()];
+  assert.equal(key, `pbrefund:${RF}`);
+  assert.equal(sent.amountCents, 4242);
+});
+
+test("reembolso da vaga extra: recusas do banco viram mensagem para a casa; erro técnico não vaza", async () => {
+  for (const m of ["O prazo de 7 dias para reembolso já passou.", "Esta vaga já foi reembolsada.", "Esta cobrança não pode ser reembolsada.", "Há mais pessoas na equipe do que vagas. Remova 1 pessoa(s) da equipe antes de pedir o reembolso.", "A fatura de vagas da próxima renovação já está paga ou em pagamento. Fale com o suporte para o reembolso desta vaga.", "Pagamento sem referência do provedor."]) {
+    const t = setup({ begin: new Error(m) });
+    await assert.rejects(() => seatRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent }), (e) => e.code === "refund_denied" && e.message === m);
+    assert.equal(t.fake.refunds.size, 0, "nada é pedido ao provedor");
+  }
+  const t = setup({ begin: new Error('relation "platform_seat_refunds" does not exist') });
+  await assert.rejects(() => seatRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent }), (e) => e.code !== "refund_denied");
+  const t2 = setup();
+  await assert.rejects(() => seatRefund({ registry: t2.registry, store: t2.store, userId: "u9", chargeId: CH, log: silent }), /Somente a casa/);
+  assert.equal(t2.calls.sbegin.length, 0);
+});
+
+test("reembolso da vaga extra recusado pelo provedor: registra a falha e diz que a vaga foi mantida", async () => {
+  const t = setup();
+  t.registry.byId("fake").refund = async () => ({ outcome: "failed", code: "recusado" });
+  await assert.rejects(() => seatRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent }), (e) => e.code === "refund_failed" && /vaga foi mantida/.test(e.message));
+  assert.equal(t.calls.sfail.length, 1);
+  assert.equal(t.calls.sdone.length, 0);
+});
+
+test("reembolso da vaga extra sem resposta do provedor fica pendente e a rotina refaz sem duplicar", async () => {
+  const t = setup();
+  t.registry.byId("fake").refund = async () => { throw new Error("rede caiu"); };
+  const r = await seatRefund({ registry: t.registry, store: t.store, userId: "u1", chargeId: CH, log: silent });
+  assert.deepEqual(r, { status: "pending", amount_cents: 4242 });
+  assert.equal(t.calls.sdone.length, 0);
+  const t2 = setup({ seatPending: [{ refund_id: RF, provider: "fake", ref: "cs_pay_1", amount_cents: 3990 }] });
+  const s = await settleRefunds({ registry: t2.registry, store: t2.store, log: silent });
+  assert.equal(s.pending, 1); assert.equal(s.done, 1);
+  assert.equal(t2.calls.sdone.length, 1); assert.equal(t2.calls.pdone.length + t2.calls.done.length, 0);
 });

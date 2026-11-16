@@ -9,13 +9,14 @@ import SeatCard from "../../src/components/house/SeatCard";
 import AdminTaxIdCard from "../../src/components/admin/AdminTaxIdCard";
 import BillingAdminCard from "../../src/components/admin/BillingAdminCard";
 import InvoicesCard from "../../src/components/house/InvoicesCard";
+import OrdersCard from "../../src/components/house/OrdersCard";
 import { AppProvider } from "../../src/contexts/AppContext";
 import { BrowserRouter } from "react-router-dom";
 import "../../src/index.css";
 
 applyTheme(getThemePref());
 const which = new URLSearchParams(location.search).get("c");
-const C = { tax: TaxIdCard, seat: SeatCard, admintax: AdminTaxIdCard, billing: BillingAdminCard, invoices: InvoicesCard }[which];
+const C = { tax: TaxIdCard, seat: SeatCard, admintax: AdminTaxIdCard, billing: BillingAdminCard, invoices: InvoicesCard, orders: OrdersCard }[which];
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter><AppProvider><ConfirmProvider>
     <main style={{ maxWidth: 960, margin: "0 auto", padding: 16 }}>{C ? <C /> : <p>componente desconhecido</p>}</main>
