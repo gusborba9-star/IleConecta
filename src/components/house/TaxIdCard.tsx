@@ -46,7 +46,7 @@ export default function TaxIdCard() {
       </div>
       <div className="max-w-sm">
         <Label htmlFor="taxid">CPF ou CNPJ</Label>
-        <Input id="taxid" inputMode="numeric" autoComplete="off" value={value} onChange={(e) => setValue(formatTaxIdInput(e.target.value))} placeholder="000.000.000-00 ou 00.000.000/0000-00" aria-invalid={value.length >= 14 && !kind} />
+        <Input id="taxid" inputMode="text" autoCapitalize="characters" autoComplete="off" value={value} onChange={(e) => setValue(formatTaxIdInput(e.target.value))} placeholder="000.000.000-00 ou 00.000.000/0000-00" aria-invalid={value.length >= 14 && !kind} />
         {value.length >= 14 && !kind && <p className="text-xs text-[hsl(var(--danger))] mt-1">Números inválidos. Confira.</p>}
       </div>
       <p className="text-xs text-muted-foreground">Guardamos criptografado, sem aparecer em nenhuma página pública. A administração só consulta com motivo registrado. Depois de informado, só o Suporte corrige.</p>

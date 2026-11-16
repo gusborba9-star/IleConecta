@@ -1,3 +1,4 @@
+import { userMessage } from "@/lib/userMessage";
 import { supabase } from "@/lib/supabase";
 import { readSeatStatus, type SeatStatus } from "@/lib/seatsCore";
 
@@ -7,7 +8,7 @@ export async function fetchSeatStatus(): Promise<SeatStatus | null> {
   return error ? null : readSeatStatus(data);
 }
 
-const known = (m: string) => (m.length < 260 && /[a-zà-ú]/i.test(m) ? m : "");
+const known = (m: string) => userMessage(m);
 
 export async function scheduleSeatRelease(keep: number): Promise<string | null> {
   if (!supabase) return "Indisponível.";

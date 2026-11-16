@@ -1,7 +1,8 @@
+import { userMessage } from "@/lib/userMessage";
 import { supabase } from "@/lib/supabase";
 import { readTaxIdStatus, type TaxIdStatus } from "@/lib/taxIdCore";
 
-const known = (m: string) => (m.length < 260 && /[a-zà-ú]/i.test(m) ? m : "");
+const known = (m: string) => userMessage(m);
 
 export async function fetchTaxIdStatus(): Promise<TaxIdStatus | null> {
   if (!supabase) return null;

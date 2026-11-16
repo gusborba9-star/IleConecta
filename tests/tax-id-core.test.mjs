@@ -22,8 +22,9 @@ test("máscara progressiva de CPF e de CNPJ", () => {
   assert.equal(formatTaxIdInput("529982247251"), "52.998.224/7251");
   assert.equal(formatTaxIdInput("11222333000181"), "11.222.333/0001-81");
   assert.equal(formatTaxIdInput("112223330001819999"), "11.222.333/0001-81", "corta no tamanho máximo");
-  assert.equal(formatTaxIdInput("ab1c2"), "12");
+  assert.equal(formatTaxIdInput("ab1c2"), "AB.1C2", "com letra já é CNPJ alfanumérico (maiúsculas)");
   assert.equal(onlyDigits("11.222.333/0001-81"), "11222333000181");
+  assert.equal(formatTaxIdInput("12abc34501de35"), "12.ABC.345/01DE-35");
 });
 
 test("o formato digitado volta a ser válido", () => {
@@ -38,4 +39,20 @@ test("status do banco: só aceita máscara no formato esperado; lixo vira 'sem d
   assert.equal(readTaxIdStatus({ set: true, masked: "529.982.247-25" }).masked, null, "número completo nunca é exibido, mesmo que viesse");
   assert.equal(readTaxIdStatus({ masked: "<script>" }).masked, null);
   for (const bad of [null, undefined, "x", 5, []]) assert.equal(readTaxIdStatus(bad).set, false);
+});
+
+test("CNPJ alfanumérico (formato novo da Receita): exemplo oficial válido, minúsculas aceitas, dígito errado recusado", () => {
+  assert.equal(taxIdKind("12.ABC.345/01DE-35"), "cnpj");
+  assert.equal(taxIdKind("12abc34501de35"), "cnpj");
+  assert.equal(taxIdKind("12.ABC.345/01DE-36"), null);
+  assert.equal(taxIdKind("12.ABC.345/01DE-3Z"), null, "os dois últimos são sempre números");
+  assert.equal(taxIdKind(formatTaxIdInput("12abc34501de35")), "cnpj");
+});
+
+test("lixo ao redor do número, acentos, controle e tamanhos absurdos são recusados (igual ao banco)", () => {
+  const cpf = "52998224725";
+  for (const bad of [`${cpf}'); delete from houses; --`, `ÇÁ${cpf.slice(2)}`, `A${cpf.slice(1)}`, `\t${cpf}\t`.replace(/\t/g, "\u0007"), `${cpf}\n`.replace("\n", "\u0000"), "1".repeat(5000), "١٢٣٤٥٦٧٨٩٠١"]) {
+    assert.equal(taxIdKind(bad), null, JSON.stringify(bad).slice(0, 40));
+  }
+  assert.equal(taxIdKind(`  ${cpf}  `), "cpf", "espaços nas pontas são tolerados");
 });
