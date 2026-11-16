@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/base";
 import { Stars } from "@/components/reviews/Stars";
-import { fetchReportedReviews, setReviewHidden, type ReportedReview } from "@/lib/reviews";
+import { fetchReportedReviews, keepReviewReport, setReviewHidden, type ReportedReview } from "@/lib/reviews";
 
 /** Avaliações contestadas pelas casas: a administração decide se esconde ou mantém. */
 export default function ReportedReviewsCard() {
@@ -23,6 +23,15 @@ export default function ReportedReviewsCard() {
     void load();
   };
 
+  const keep = async (r: ReportedReview) => {
+    setBusy(r.id);
+    const error = await keepReviewReport(r.id);
+    setBusy(null);
+    if (error) return void toast.error(error);
+    toast.success("Denúncia encerrada. A avaliação continua visível.");
+    void load();
+  };
+
   return (
     <Card className="p-5 space-y-3">
       <h2 className="font-display font-bold text-lg">Avaliações contestadas</h2>
@@ -32,10 +41,13 @@ export default function ReportedReviewsCard() {
         <ul className="space-y-3">
           {items.map((r) => (
             <li key={r.id} className="rounded-xl border border-border p-3 space-y-1 text-sm pillow">
-              <div className="flex flex-wrap items-center gap-2"><Stars value={r.rating} size={14} /><span className="font-semibold">{r.house}</span><span className="text-xs text-muted-foreground">{r.hidden ? "· escondida" : "· visível"}</span></div>
+              <div className="flex flex-wrap items-center gap-2"><Stars value={r.rating} size={14} /><span className="font-semibold">{r.house}</span><span className="text-xs text-muted-foreground">{r.hidden ? "· escondida" : "· visível"}{r.reviewedAt && !r.hidden ? " · denúncia encerrada" : ""}</span></div>
               {r.comment && <p className="whitespace-pre-line">“{r.comment}”</p>}
               <p className="text-xs text-muted-foreground">Motivo da casa: {r.reason}</p>
-              <Button size="sm" variant={r.hidden ? "outline" : "danger"} disabled={busy === r.id} onClick={() => void toggle(r)}>{r.hidden ? "Voltar a mostrar" : "Esconder avaliação"}</Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant={r.hidden ? "outline" : "danger"} disabled={busy === r.id} onClick={() => void toggle(r)}>{r.hidden ? "Voltar a mostrar" : "Esconder avaliação"}</Button>
+                {!r.hidden && !r.reviewedAt && <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => void keep(r)}>Manter visível e encerrar denúncia</Button>}
+              </div>
             </li>
           ))}
         </ul>

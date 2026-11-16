@@ -36,6 +36,7 @@ import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
+import PendingCenterCard from "@/components/admin/PendingCenterCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -109,6 +110,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
           <p className="text-sm text-muted-foreground mt-1">As mudanças valem na hora, sem deploy. Tudo fica registrado no histórico.</p>
         </div>
       </div>}
+
+      {section === "visao" && <PendingCenterCard />}
 
       {section === "visao" && (!metrics ? (
         <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card>

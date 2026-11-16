@@ -72,6 +72,50 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await noHScroll(page);
     });
 
+    test("Central de pendências: vencidos primeiro, filtros, dados hostis sem quebrar e atalho para onde resolver", async ({ page }) => {
+      const it = (o) => ({ kind: "suporte", ref_id: "r1", house_id: "h1", house_name: "Casa Um", title: "Cobrança em duplicidade", detail: "pagamento", priority: "alta", due_at: new Date(Date.now() - 5 * 3600000).toISOString(), overdue: true, since: new Date(Date.now() - 30 * 3600000).toISOString(), tab: "suporte", ...o });
+      const items = [
+        it({}),
+        it({ ref_id: "r2", kind: "moderacao", title: "<img src=x onerror=window.__xss=1>", priority: "normal", overdue: false, due_at: new Date(Date.now() + 2 * 86400000).toISOString(), tab: "moderacao", house_name: null }),
+        it({ ref_id: "r3", kind: "reembolso_plataforma", title: "Reembolso de plano de 89,90", detail: "falhou", overdue: false, due_at: null, tab: "cobranca" }),
+        { kind: "inventado", ref_id: "x" }, null,
+      ];
+      await api(page, { rpc: { admin_pending_center: { generated_at: new Date().toISOString(), total: 12, overdue: 1, counts: { suporte: 1, moderacao: 1, reembolso_plataforma: 1 }, items } } });
+      await page.goto("/tests/browser/ui-harness.html?c=pending");
+      await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
+      await expect(page.getByText("1 vencida")).toBeVisible();
+      await expect(page.getByText(/de 12 pendências/)).toBeVisible();
+      await expect(page.getByText(/mostrando as 3 mais urgentes/)).toBeVisible();
+      const rows = page.locator("li");
+      await expect(rows).toHaveCount(3);
+      await expect(rows.first()).toContainText("Chamado de suporte");
+      await expect(rows.first()).toContainText(/venceu há 5 h/);
+      await expect(page.getByText("<img src=x onerror=window.__xss=1>")).toBeVisible();
+      expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+      await expect(rows.nth(2)).toContainText("sem prazo");
+      await noHScroll(page);
+      await page.getByLabel("Só vencidas").check();
+      await expect(rows).toHaveCount(1);
+      await page.getByLabel("Só vencidas").uncheck();
+      await page.getByLabel("Filtrar por tipo").selectOption("moderacao");
+      await expect(rows).toHaveCount(1);
+      await expect(rows.first()).toContainText("Moderação");
+      await page.getByRole("button", { name: /Resolver em Configurações › Moderação/ }).click();
+      await expect(page).toHaveURL(/[?&]s=config/);
+    });
+
+    test("Central de pendências: vazia, com erro do servidor e sem detalhe técnico", async ({ page }) => {
+      await api(page, { rpc: { admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } } });
+      await page.goto("/tests/browser/ui-harness.html?c=pending");
+      await expect(page.getByText("Nada pendente agora.")).toBeVisible();
+      await noHScroll(page);
+      const p2 = await page.context().newPage();
+      await api(p2, { rpc: { admin_pending_center: { status: 403, body: { message: "Área restrita à administração." } } } });
+      await p2.goto("/tests/browser/ui-harness.html?c=pending");
+      await expect(p2.getByRole("alert")).toContainText("Área restrita");
+      await expect(p2.getByRole("alert")).not.toContainText(/pg_|sqlstate|stack/i);
+    });
+
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {
       let set = false;
       const calls = await api(page, { rpc: {
