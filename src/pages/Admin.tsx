@@ -30,6 +30,7 @@ import PromoLimitsCard from "@/components/admin/PromoLimitsCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import AdminModerationCard from "@/components/admin/AdminModerationCard";
 import AdminAnnounceCard from "@/components/admin/AdminAnnounceCard";
+import AdminTaxIdCard from "@/components/admin/AdminTaxIdCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
@@ -238,6 +239,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       <AdminModerationCard />
 
       <AdminAnnounceCard />
+      <AdminTaxIdCard />
 
       <FinancePanelCard />
 

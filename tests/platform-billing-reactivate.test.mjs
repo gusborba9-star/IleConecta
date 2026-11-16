@@ -30,7 +30,7 @@ test("quem não tem casa não reativa", async () => {
 });
 
 test("recusas do banco viram mensagem clara (casa não cancelada, plano sem mensalidade); erro desconhecido não vaza", async () => {
-  for (const m of ["A casa não está cancelada por reembolso.", "Este plano não tem mensalidade para reativar. Fale com o suporte.", "Plano inválido."]) {
+  for (const m of ["A casa não está cancelada por reembolso.", "Este plano não tem mensalidade para reativar. Fale com o suporte.", "Plano inválido.", "Informe o CPF ou CNPJ da casa em Planos antes de contratar."]) {
     const t = setup({ issue: new Error(m) });
     await assert.rejects(() => reactivate({ registry: t.registry, store: t.store, userId: "u1", email: "a@b.c", appUrl: "https://x.test", log: silent }), (e) => e.code === "reactivation_denied" && e.message === m);
   }

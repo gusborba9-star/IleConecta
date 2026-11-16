@@ -5,6 +5,7 @@ import { Download, LifeBuoy, Lock, Power } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
 import ReactivateCard from "@/components/house/ReactivateCard";
+import TaxIdCard from "@/components/house/TaxIdCard";
 import { downloadMyData } from "@/lib/accountGate";
 import { lockCopy } from "@/lib/accountGateCore";
 import type { AccountGate } from "@/lib/accountGateCore";
@@ -39,6 +40,7 @@ export default function AccountLockScreen({ gate, plan }: { gate: AccountGate; p
 
       {copy.action === "desbloquear" && <BillingAlertCard />}
       {copy.action === "quitar" && <BillingAlertCard inactive />}
+      {copy.action === "reativar" && <TaxIdCard />}
       {copy.action === "reativar" && <ReactivateCard plan={plan} />}
 
       <Card className="p-5 space-y-3">

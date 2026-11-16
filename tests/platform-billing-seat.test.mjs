@@ -48,6 +48,7 @@ test("recusas conhecidas do banco viram mensagem clara", async () => {
     "Há uma redução de vagas agendada. Desfaça a redução antes de contratar outra vaga.",
     "A casa já está no limite de 20 vagas extras.",
     "Este plano não tem vaga adicional na tabela.",
+    "Informe o CPF ou CNPJ da casa em Planos antes de contratar.",
     "A fatura de vagas da próxima renovação já foi gerada. A contratação de uma nova vaga fica disponível depois do vencimento dela.",
     "A renovação está muito próxima e o valor fica abaixo do mínimo de cobrança. A contratação fica disponível depois da renovação.",
   ];
