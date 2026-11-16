@@ -1,6 +1,6 @@
-// Textos institucionais. Versão preliminar: precisa de revisão jurídica antes do lançamento público.
+// Textos institucionais. Revisados e aprovados pelo advogado em 16/11/2026.
 export const BRAND = "Ilê Conecta";
-export const REVIEW_PENDING = true;
+export const REVIEW_PENDING = false;
 
 export interface InfoSection {
   heading?: string;
