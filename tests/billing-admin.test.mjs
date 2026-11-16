@@ -71,3 +71,25 @@ test("só fatura em aberto pode ser cancelada", () => {
   for (const s of ["aberta", "vencida", "em_processamento"]) assert.equal(canCancel(s), true);
   for (const s of ["paga", "cancelada", "estornada", "", "x"]) assert.equal(canCancel(s), false);
 });
+
+test("prazo do bloqueio total: mudança agendada aparece como desejada e não vai no envio", async () => {
+  const { readTotalDays } = await import("../src/lib/billingAdminCore.js");
+  const sch = { ...db, total_block_next: { days: 45, from: "2026-12-15" } };
+  const early = readTotalDays(sch, "2026-11-20");
+  assert.deepEqual(early, { now: 30, next: { days: 45, from: "2026-12-15" }, shown: 45 });
+  const late = readTotalDays(sch, "2026-12-15");
+  assert.deepEqual(late, { now: 45, next: null, shown: 45 }, "no dia marcado já vale");
+  const f = readConfig(sch);
+  assert.equal(f.totalDays, 45);
+  const r = buildConfig(f);
+  assert.equal(r.ok, true);
+  assert.equal("total_block_next" in r.value, false, "a data nunca é enviada pelo painel");
+  assert.equal(r.value.total_block_days, 45);
+});
+
+test("prazo agendado inválido é ignorado", async () => {
+  const { readTotalDays } = await import("../src/lib/billingAdminCore.js");
+  for (const bad of [{ days: 6, from: "2026-12-15" }, { days: 45, from: "15/12/2026" }, { days: "45", from: "2026-12-15" }, null, "x"]) {
+    assert.deepEqual(readTotalDays({ ...db, total_block_next: bad }, "2026-11-20"), { now: 30, next: null, shown: 30 });
+  }
+});
