@@ -13,6 +13,7 @@ import OrdersCard from "../../src/components/house/OrdersCard";
 import PendingCenterCard from "../../src/components/admin/PendingCenterCard";
 import HousePendingCard from "../../src/components/house/HousePendingCard";
 import HouseIndicatorsCard from "../../src/components/house/HouseIndicatorsCard";
+import AdminIndicatorsCard from "../../src/components/admin/AdminIndicatorsCard";
 import { PeopleBoard } from "../../src/pages/Pessoas";
 import { AppProvider } from "../../src/contexts/AppContext";
 import { BrowserRouter } from "react-router-dom";
@@ -20,7 +21,7 @@ import "../../src/index.css";
 
 applyTheme(getThemePref());
 const which = new URLSearchParams(location.search).get("c");
-const C = { tax: TaxIdCard, seat: SeatCard, admintax: AdminTaxIdCard, billing: BillingAdminCard, invoices: InvoicesCard, orders: OrdersCard, pending: PendingCenterCard, housepending: HousePendingCard, people: PeopleBoard, indicators: HouseIndicatorsCard }[which];
+const C = { tax: TaxIdCard, seat: SeatCard, admintax: AdminTaxIdCard, billing: BillingAdminCard, invoices: InvoicesCard, orders: OrdersCard, pending: PendingCenterCard, housepending: HousePendingCard, people: PeopleBoard, indicators: HouseIndicatorsCard, adminind: AdminIndicatorsCard }[which];
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter><AppProvider><ConfirmProvider>
     <main style={{ maxWidth: 960, margin: "0 auto", padding: 16 }}>{C ? <C /> : <p>componente desconhecido</p>}</main>

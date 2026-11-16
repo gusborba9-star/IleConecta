@@ -37,6 +37,7 @@ import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import PendingCenterCard from "@/components/admin/PendingCenterCard";
+import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -112,6 +113,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </div>}
 
       {section === "visao" && <PendingCenterCard />}
+      {section === "visao" && <AdminIndicatorsCard />}
 
       {section === "visao" && (!metrics ? (
         <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card>

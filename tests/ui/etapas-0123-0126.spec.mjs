@@ -269,6 +269,55 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate/i);
     });
 
+    test("Indicadores da plataforma: grupos, variação, período e 'como é calculado'", async ({ page }) => {
+      const P = (current, previous = 0) => ({ current, previous });
+      const body = (days) => ({ days, metrics: {
+        novas_contas: P(30, 10), novas_casas: P(4, 2), novas_casas_pagantes: P(1, 2), volume_cents: P(3100000, 500000), comissao_cents: P(300000, 50000), casas_que_venderam: P(2, 1),
+        receita_assinatura_cents: P(1099000, 2697000), receita_divulgacao_cents: P(400000, 0), receita_creditos_cents: P(300000, 0), cobrancas_vencidas: P(1, 1), cobrancas_canceladas: P(1, 1),
+        reembolsos_pedidos: P(2, 1), reembolsos_feitos: P(1, 1), pagamentos_estornados: P(2, 0), reembolsos_plano_cents: P(8990, 1234), pagamentos_contestados: P(1, 0),
+        casos_disputa: P(1, 0), incidentes: P(2, 4), casos_abertos: P(5, 1), casos_resolvidos: P(2, 1), casos_com_resposta: P(3, 1), casos_resposta_no_prazo: P(2, 1),
+        casos_sem_resposta_no_prazo: P(1, 0), primeira_resposta_mediana_h: P(2, 5), ia_respostas: P(3, 1), ia_tokens_entrada: P(600, 10), ia_tokens_saida: P(150, 5),
+        mensagens: P(40, 10), pedidos_criados: P(7, 1), reservas_criadas: P(1, 0) },
+        snapshot: { usuarios_total: 70, casas_total: 6, casas_por_plano: { gratis: 3, base: 2, maximo: 1 }, ativos_7d: 20, ativos_30d: 33, casas_ativas_30d: 5, assinantes_base: 2, assinantes_retidos: 1, casos_em_aberto: 3 } });
+      const calls = await api(page, { rpc: { admin_indicators: (b) => body(b.p_days) } });
+      await page.goto("/tests/browser/ui-harness.html?c=adminind");
+      await expect(page.getByRole("heading", { name: "Indicadores da plataforma" })).toBeVisible();
+      const tile = (name) => page.locator("li").filter({ hasText: name });
+      await expect(tile("Novas contas")).toContainText("30");
+      await expect(tile("Novas contas")).toContainText("+200% sobre o período anterior");
+      await expect(tile("Casas novas que já pagaram plano")).toContainText("25%");
+      await expect(tile("Volume transacionado")).toContainText(/R\$\s31\.000,00/);
+      await expect(tile("Receita total")).toContainText(/R\$\s20\.990,00/);
+      await expect(tile("Incidentes graves")).toContainText("−50% sobre o período anterior");
+      await expect(tile("Primeira resposta")).toContainText("2 h");
+      await expect(tile("Respondidos no prazo")).toContainText("66,7%");
+      await expect(tile("Texto processado pela IA")).toContainText("750");
+      await expect(tile("Retenção de assinantes")).toContainText("50%");
+      await expect(tile("Casas em plano pago")).toContainText("3");
+      await expect(page.getByText("Casas por plano hoje: Grátis 3 · Essencial 2 · Profissional 0 · Premium 1.")).toBeVisible();
+      await expect(page.getByText("O que é:")).toHaveCount(0);
+      await noHScroll(page);
+      await page.getByRole("button", { name: /Respondidos no prazo: como é calculado/ }).click();
+      await expect(page.getByText(/dentro do prazo/)).toBeVisible();
+      await expect(page.getByText(/De onde vem:/)).toBeVisible();
+      await page.getByRole("tab", { name: "7 dias" }).click();
+      await expect.poll(() => calls.filter((c) => c.name === "admin_indicators").map((c) => c.body.p_days)).toContain(7);
+      await expect(page.getByText(/Comparados com os 7 dias anteriores/)).toBeVisible();
+      await noHScroll(page);
+    });
+
+    test("Indicadores da plataforma: quem não é administração não vê o cartão; erro do servidor sem detalhe técnico", async ({ page }) => {
+      await api(page, { rpc: { admin_indicators: { status: 403, body: { message: "not_admin" } } } });
+      await page.goto("/tests/browser/ui-harness.html?c=adminind");
+      await page.waitForTimeout(800);
+      await expect(page.getByRole("heading", { name: "Indicadores da plataforma" })).toHaveCount(0);
+      const p3 = await page.context().newPage();
+      await api(p3, { rpc: { admin_indicators: { status: 500, body: { message: "relation pg_x failed sqlstate 42P01" } } } });
+      await p3.goto("/tests/browser/ui-harness.html?c=adminind");
+      await expect(p3.getByRole("alert")).toContainText("Não foi possível carregar os indicadores.");
+      await expect(p3.getByRole("alert")).not.toContainText(/pg_|sqlstate/i);
+    });
+
     test("CPF/CNPJ: digita, valida, guarda uma vez e mostra só o final", async ({ page }) => {
       let set = false;
       const calls = await api(page, { rpc: {
