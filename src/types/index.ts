@@ -64,6 +64,8 @@ export interface Post {
   editedAt?: string;
   /** Só para a casa dona de post impulsionado: uma correção de texto na primeira hora ("correcao") ou texto travado ("travado"). */
   textLock?: { state: "correcao" | "travado"; until?: string };
+  /** Só para a casa dona de post impulsionado: o que ela pode fazer para excluir (livre não aparece). */
+  deleteInfo?: { state: "reembolsavel" | "reembolso_pendente" | "liberado" | "aguardar"; deadline?: string };
   /** A casa desativou novos comentários nesta publicação. */
   commentsOff?: boolean;
   createdAt: string;

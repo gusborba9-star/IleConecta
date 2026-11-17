@@ -3,7 +3,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const OWNER = U(1), HID = U(60);
 const profile = { id: OWNER, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-6", accepted_at: "2026-11-01T10:00:00Z" }];
 const house = (plan) => ({ id: HID, owner_id: OWNER, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan, created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const setup = (page, plan, extra = {}) => api(page, { rest: { profiles: profile, legal_consents: consents, houses: [house(plan)], posts: (body) => (body ? { id: U(900), created_at: "2026-11-17T10:00:00Z" } : (extra.list ?? [])), ...(extra.rest ?? {}) }, rpc: extra.rpc ?? {}, storageOk: extra.storageOk });
 

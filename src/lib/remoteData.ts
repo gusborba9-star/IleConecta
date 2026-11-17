@@ -185,7 +185,7 @@ export async function remoteCreatePost(
 export async function remoteDeletePost(postId: string, cardPath?: string): Promise<string | null> {
   if (!supabase) return "Não foi possível excluir agora. Tente novamente.";
   const { data, error } = await supabase.from("posts").delete().eq("id", postId).select("id");
-  if (error) return /^Esta publicação está impulsionada/.test(error.message ?? "") ? error.message : "Não foi possível excluir agora. Tente novamente.";
+  if (error) return /^(Esta publicação está impulsionada|O reembolso desta publicação)/.test(error.message ?? "") ? error.message : "Não foi possível excluir agora. Tente novamente.";
   // a regra do banco só deixa a dona apagar: se nada foi apagado, a publicação continua (não finge sucesso)
   if (!data || data.length === 0) return "Não foi possível excluir agora. Tente novamente.";
   if (cardPath) await removeCardImage(cardPath);
@@ -202,6 +202,22 @@ export async function fetchMyPostTextLocks(): Promise<Map<string, TextLock>> {
   if (error || !Array.isArray(data)) return out;
   for (const r of data as Row[]) {
     if (r.state === "correcao" || r.state === "travado") out.set(String(r.post_id), { state: r.state, ...(r.until ? { until: String(r.until) } : {}) });
+  }
+  return out;
+}
+
+export type DeleteInfo = NonNullable<Post["deleteInfo"]>;
+
+/** Posts da própria casa que estão impulsionados e o caminho para excluí-los (a regra é do banco; aqui só se mostra). */
+export async function fetchMyPostDeleteStates(): Promise<Map<string, DeleteInfo>> {
+  const out = new Map<string, DeleteInfo>();
+  if (!supabase) return out;
+  const { data, error } = await supabase.rpc("my_post_delete_states");
+  if (error || !Array.isArray(data)) return out;
+  for (const r of data as Row[]) {
+    if (r.state === "reembolsavel" || r.state === "reembolso_pendente" || r.state === "liberado" || r.state === "aguardar") {
+      out.set(String(r.post_id), { state: r.state, ...(r.deadline ? { deadline: String(r.deadline) } : {}) });
+    }
   }
   return out;
 }

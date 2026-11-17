@@ -23,6 +23,7 @@ import {
   remoteDeletePost,
   remoteEditPostText,
   fetchMyPostTextLocks,
+  fetchMyPostDeleteStates,
   remoteSetCommentsOff,
   remoteSetCommentHidden,
 } from "@/lib/remoteData";
@@ -120,9 +121,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refreshRemote = async () => {
     if (!isSupabaseConfigured) return;
-    const [houses, feed, locks] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts(), fetchMyPostTextLocks()]);
+    const [houses, feed, locks, dels] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts(), fetchMyPostTextLocks(), fetchMyPostDeleteStates()]);
     setRemoteHouses(houses);
-    setRemotePosts(feed.posts.map((p) => (locks.has(p.id) ? { ...p, textLock: locks.get(p.id) } : p)));
+    setRemotePosts(feed.posts.map((p) => (locks.has(p.id) || dels.has(p.id) ? { ...p, ...(locks.has(p.id) ? { textLock: locks.get(p.id) } : {}), ...(dels.has(p.id) ? { deleteInfo: dels.get(p.id) } : {}) } : p)));
     setRemoteCommenters(feed.commenters);
   };
 

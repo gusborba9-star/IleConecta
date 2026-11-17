@@ -40,6 +40,13 @@ export async function buyPromotion(i: BuyPromoInput): Promise<{ error: string | 
   return { error: null };
 }
 
+/** Marca (ou desmarca) que, concluído o reembolso desta compra, a publicação impulsionada deve ser excluída. Devolve null se salvou ou a mensagem do motivo. */
+export async function setPostDeleteAfterRefund(chargeId: string, on: boolean): Promise<string | null> {
+  if (!supabase) return "Indisponível.";
+  const { error } = await supabase.rpc("house_set_post_delete_after_refund", { p_charge: chargeId, p_on: on });
+  return error ? "Não foi possível preparar o pedido agora. Tente novamente." : null;
+}
+
 export async function requestPromoRefund(chargeId: string): Promise<{ error: string | null; pending?: boolean }> {
   const r = await invoke({ action: "promo_refund", charge_id: chargeId });
   if (r.error) return { error: r.error };
