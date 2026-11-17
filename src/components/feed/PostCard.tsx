@@ -161,7 +161,7 @@ export default function PostCard({ post }: { post: Post }) {
         <div role="alertdialog" aria-label="Confirmar exclusão" className="mx-4 mb-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3 space-y-2">
           {!di && <p className="text-sm"><strong>Excluir esta publicação?</strong> As curtidas e os comentários dela também serão apagados. Isso não pode ser desfeito.</p>}
           {di?.state === "reembolsavel" && (
-            <p className="text-sm"><strong>Esta publicação está impulsionada.</strong> Antes de excluir, peça o reembolso dos dias de impulsionamento que ainda não começaram, em Pedidos e validações{deadlineText ? ` (disponível até ${deadlineText})` : " (até 7 dias depois da compra)"}. Os dias que já começaram não são devolvidos. Quando o reembolso for concluído, volte aqui para excluir.</p>
+            <p className="text-sm"><strong>Esta publicação está impulsionada e não pode ser excluída agora.</strong> Para excluir antes do fim, vá até Pedidos e validações e escolha “Cancelar agora”{deadlineText ? ` (disponível até ${deadlineText})` : " (até 7 dias depois da compra)"}. Lá você vê o valor do reembolso dos dias que ainda não começaram; o dia em andamento não é devolvido.</p>
           )}
           {di?.state === "reembolso_pendente" && <p className="text-sm"><strong>O reembolso está sendo concluído.</strong> Volte em alguns minutos para excluir a publicação.</p>}
           {di?.state === "aguardar" && <p className="text-sm"><strong>Esta publicação está impulsionada</strong> e só poderá ser excluída quando o impulsionamento terminar.</p>}

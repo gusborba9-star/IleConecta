@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchPlanRefund, fetchRefunds, fetchSeatRefunds, requestPlanRefund, requestRefund, requestSeatRefund } from "@/lib/aiCredits";
-import { fetchMyPromotions, requestPromoRefund } from "@/lib/promotions";
+import { fetchMyPromotions, requestPromoRefund, setPostDeleteAfterRefund } from "@/lib/promotions";
 import { promoName, promoRefundText, type MyPromo } from "@/lib/promotionsCore";
 import { formatMoney } from "@/lib/pricing";
 import { RETURNING_REFUND_TEXT, planRefundText, refundText, seatRefundText, type PlanRefund, type Refunds, type SeatRefunds } from "@/lib/aiCreditsCore";
@@ -15,21 +15,20 @@ import { RETURNING_REFUND_TEXT, planRefundText, refundText, seatRefundText, type
  * Fica recolhido e sem destaque de propósito: o caminho existe e é fácil de achar, sem induzir o pedido. O prazo e o caminho estão escritos nos Termos.
  */
 export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?: number; onChanged?: () => void }) {
-  const { isRemoteAuth } = useApp();
+  const { isRemoteAuth, refreshRemote } = useApp();
+  const [confirmPromo, setConfirmPromo] = useState<MyPromo | null>(null);
   const [refunds, setRefunds] = useState<Refunds | null>(null);
   const [plan, setPlan] = useState<PlanRefund | null>(null);
   const [seats, setSeats] = useState<SeatRefunds | null>(null);
   const [promos, setPromos] = useState<MyPromo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const box = useRef<HTMLDetailsElement>(null);
   const { hash } = useLocation();
-  // O caminho vindo da exclusão de uma publicação (/planos#pedidos) chega com a seção já aberta.
-  useEffect(() => {
-    if (hash !== "#pedidos" || !box.current) return;
-    box.current.open = true;
-    box.current.scrollIntoView({ block: "start" });
+  // O caminho vindo da exclusão de uma publicação (/planos#pedidos) chega com a seção já aberta, mesmo que ela só apareça depois do login carregar.
+  const openOnHash = useCallback((el: HTMLDetailsElement | null) => {
+    if (!el || hash !== "#pedidos") return;
+    el.open = true;
+    el.scrollIntoView({ block: "start" });
   }, [hash]);
-
   useEffect(() => {
     if (!isRemoteAuth) return;
     let alive = true;
@@ -52,15 +51,28 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
     onChanged?.();
   };
 
+  // Confirmação de verdade ([Continuar até o final] / [Cancelar agora]); em publicação, "cancelar agora" também exclui a publicação quando o estorno for confirmado.
   const cancelPromo = async (i: MyPromo) => {
     if (!i.chargeId || i.refundCents === null) return;
-    if (!window.confirm(`Cancelar os dias que ainda não começaram e pedir o reembolso de ${formatMoney(i.refundCents / 100)}? O dia que já está em andamento continua até o fim.`)) return;
-    setBusy(i.chargeId);
-    const r = await requestPromoRefund(i.chargeId);
+    const chargeId = i.chargeId;
+    const isPost = i.itemType === "post" && !!i.itemId;
+    setConfirmPromo(null);
+    setBusy(chargeId);
+    if (isPost) {
+      const prep = await setPostDeleteAfterRefund(chargeId, true);
+      if (prep) {
+        setBusy(null);
+        return void toast.error(prep);
+      }
+    }
+    const r = await requestPromoRefund(chargeId);
+    if (r.error && isPost) await setPostDeleteAfterRefund(chargeId, false);
     setBusy(null);
     if (r.error) toast.error(r.error);
+    else if (isPost) toast.success(r.pending ? "Pedido registrado. A publicação será excluída assim que o estorno for confirmado." : "Reembolso aprovado e publicação excluída. O dinheiro volta pelo mesmo meio de pagamento em alguns dias.");
     else toast.success(r.pending ? "Pedido registrado. O estorno está a caminho e será confirmado em instantes." : "Pedido aprovado. O dinheiro volta pelo mesmo meio de pagamento em alguns dias.");
     onChanged?.();
+    void refreshRemote();
     setPromos((await fetchMyPromotions()).items.filter((x) => x.refundCents !== null && x.chargeId));
   };
 
@@ -95,7 +107,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   const empty = seatItems.length === 0 && seatHistory.length === 0 && promos.length === 0 && refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
   return (
     <Card className="p-5">
-      <details id="pedidos" ref={box}>
+      <details id="pedidos" ref={openOnHash}>
         <summary className="flex cursor-pointer items-center gap-2 list-none">
           <ClipboardList className="h-5 w-5 shrink-0 text-forest" aria-hidden />
           <h2 className="font-display font-bold text-lg">Pedidos e validações</h2>
@@ -134,13 +146,30 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
               </div>
             </details>
           ))}
+          {confirmPromo && (
+            <div role="alertdialog" aria-label="Confirmar cancelamento" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+              {confirmPromo.itemType === "post" ? (
+                <p className="text-sm">
+                  <strong>Cancelar agora e excluir a publicação?</strong> Vamos pedir o reembolso de {formatMoney((confirmPromo.refundCents ?? 0) / 100)} pelos dias que ainda não começaram. O dia em andamento não é devolvido e para quando a publicação sair do ar. A publicação, com as curtidas e os comentários, será excluída assim que o estorno for confirmado (pode levar alguns minutos). Se houver outra compra de impulsionamento para esta publicação, ela também precisa ser reembolsada; a publicação sai quando a última terminar. Isso não pode ser desfeito.
+                </p>
+              ) : (
+                <p className="text-sm">
+                  <strong>Cancelar agora?</strong> Vamos pedir o reembolso de {formatMoney((confirmPromo.refundCents ?? 0) / 100)} pelos dias que ainda não começaram. O dia em andamento continua até o fim do seu bloco de 24 horas e não é devolvido.
+                </p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => setConfirmPromo(null)}>Continuar até o final</Button>
+                <Button variant="danger" size="sm" disabled={busy !== null} onClick={() => void cancelPromo(confirmPromo)}>Cancelar agora</Button>
+              </div>
+            </div>
+          )}
           {promos.map((i) => (
             <details key={i.id} className="rounded-lg border border-border p-3">
               <summary className="cursor-pointer text-sm font-semibold list-none">{promoName(i)}</summary>
               <div className="mt-2 space-y-2">
                 <p className="text-sm">{promoRefundText(i, (c) => formatMoney(c / 100))}</p>
-                <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void cancelPromo(i)}>
-                  {busy === i.chargeId ? "Enviando…" : "Cancelar dias não iniciados e solicitar reembolso"}
+                <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => setConfirmPromo(i)}>
+                  {busy === i.chargeId ? "Enviando…" : i.itemType === "post" ? "Cancelar impulsionamento, excluir publicação e solicitar reembolso" : "Cancelar dias não iniciados e solicitar reembolso"}
                 </Button>
                 <p className="text-xs text-muted-foreground">Até 7 dias depois do pagamento. Devolvemos o valor proporcional aos dias que ainda não começaram, sem descontar tarifa. Cada dia é um bloco de 24 horas contado a partir do início.</p>
               </div>

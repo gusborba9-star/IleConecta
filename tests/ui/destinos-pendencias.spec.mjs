@@ -26,7 +26,7 @@ const PEND = { house_id: HOUSE_ROW_ID, house_name: "Casa Teste", role: "titular"
 
 test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)", () => {
   const setup = async (page) => api(page, {
-    rest: { profiles: profile, houses: [houseRow], legal_consents: [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }] },
+    rest: { profiles: profile, houses: [houseRow], legal_consents: [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-6", accepted_at: "2026-11-01T10:00:00Z" }] },
     rpc: { house_pending_center: PEND, payments_enabled: true, house_invoices: [], my_staff_house: [] },
   });
   const go = async (page, label) => {
@@ -76,7 +76,7 @@ test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)
 test("equipe: pedido e conversa abrem a aba certa do Atendimento; nada leva a telas da titular", async ({ page }) => {
   const STAFF = { role: "equipe", house_id: HOUSE_ROW_ID, house_name: "Casa Teste", total: 2, overdue: 0, counts: { pedido_para_iniciar: 1, conversa_sem_resposta: 1, reembolso_da_casa: 1 }, items: [item("pedido_para_iniciar", 1, "pedidos"), item("conversa_sem_resposta", 2, "atendimento", { ref_id: CONV }), item("reembolso_da_casa", 3, "pedidos")], to_pay: null };
   await api(page, {
-    rest: { profiles: { ...profile, account_type: "pessoa" }, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }] },
+    rest: { profiles: { ...profile, account_type: "pessoa" }, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-6", accepted_at: "2026-11-01T10:00:00Z" }] },
     rpc: { staff_conversations: [{ conversation_id: CONV, other_id: PERSON, other_name: "Ana Cliente", last_text: "oi", last_at: "2026-11-16T10:00:00Z" }], staff_messages: [{ id: U(5), sender_id: PERSON, text: "Preciso de ajuda", created_at: "2026-11-16T10:00:00Z", from_assistant: false }], house_pending_center: STAFF, my_staff_house: [{ house_id: HOUSE_ROW_ID, house_name: "Casa Teste", owner_id: U(9), staff_name: "Ana", perms: ["chat_read", "orders", "members"] }] },
   });
   await page.goto("/atendimento");
