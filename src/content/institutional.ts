@@ -95,6 +95,7 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           "O pagamento do cliente vai direto para a conta de pagamento da casa, sem retenção pela plataforma. A comissão da plataforma é descontada automaticamente em cada pagamento, e a tarifa do processador de pagamento (Stripe) é cobrada da casa.",
           "Se o cliente relatar falha na entrega dentro de 30 dias após a conclusão (art. 26 do Código de Defesa do Consumidor), a plataforma analisa. Se o reembolso for aprovado, o valor integral é devolvido ao cliente a partir da conta de pagamento da casa.",
+          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do repasse conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
         ],
       },
       {
@@ -175,6 +176,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: "Recebimento, tarifas e comissão",
         paragraphs: [
           "Os pagamentos são processados pelo Stripe e caem direto na conta de pagamento da casa, sem retenção pela plataforma. A tarifa do Stripe é cobrada da casa. A comissão da plataforma (15% sobre rituais com vagas e 4% sobre serviços contratados pela plataforma) é descontada automaticamente em cada pagamento. Para receber, a casa cadastra a sua conta de pagamento no Stripe e mantém os dados em dia.",
+          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do repasse conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
         ],
       },
       {
@@ -215,6 +217,7 @@ export const INFO_PAGES: InfoPage[] = [
           "Vagas extras de equipe: as vagas extras de equipe são contratadas por ciclo mensal, conforme o valor correspondente ao plano vigente da casa, e são liberadas imediatamente após a confirmação do pagamento. No mês da primeira contratação, o valor é cobrado proporcionalmente aos dias restantes do ciclo atual. A solicitação de redução de vagas fica agendada para surtir efeito ao final do ciclo já pago, sem reembolso proporcional do período em curso. O direito de arrependimento de 7 (sete) dias corridos aplica-se exclusivamente à primeira contratação da vaga extra, implicando seu cancelamento imediato após a conclusão do estorno. Em caso de contestação bancária (chargeback) ou estorno indevido, a plataforma poderá suspender imediatamente a respectiva vaga até a regularização.",
           "Alterações nas condições de cobrança e bloqueio: eventuais alterações nas condições de cobrança ou nos prazos de bloqueio previstos nestes Termos são comunicadas com antecedência mínima de 30 (trinta) dias, por meio de notificação registrada na plataforma, passando a vigorar somente após o término desse prazo. Caso a casa não concorde com as novas condições, pode solicitar o cancelamento de sua assinatura sem ônus antes da entrada em vigor das alterações.",
           "Plano Grátis: no plano Grátis, os serviços e rituais devem ser comercializados exclusivamente por meio da plataforma, com os meios de pagamento por ela oferecidos, sendo obrigatório conectar a conta de recebimento antes de publicar itens com valor. A tentativa de negociar, divulgar contatos externos ou receber pagamentos por fora da plataforma constitui infração grave, sujeita à avaliação da administração, que notifica a casa e pode aplicar advertência, suspensão ou exclusão da conta. A casa que deseja utilizar outros meios de pagamento pode contratar um plano pago. O plano Grátis tem limites de serviços ativos, rituais ativos e publicações por mês, informados na página de Planos.",
+          "Pacotes Avulsos de Créditos de IA: Os pacotes de créditos avulsos adquiridos pela CASA ESPIRITUAL possuem validade de 3 (três) meses contados da data de confirmação do pagamento; após esse prazo, eventuais créditos não utilizados expirarão automaticamente, sem direito a reembolso ou prorrogação. O consumo seguirá obrigatoriamente a seguinte ordem: primeiro será utilizada a franquia mensal incluída no plano vigente e, posteriormente, os pacotes avulsos, iniciando-se sempre pelo pacote com data de aquisição mais antiga. Em caso de pedido de reembolso dentro do prazo legal de 7 (sete) dias corridos, pacotes sem uso serão devolvidos integralmente e pacotes com uso parcial terão reembolso proporcional às respostas não utilizadas.",
           "Direito de arrependimento: conforme o art. 49 do Código de Defesa do Consumidor, o reembolso poderá ser solicitado em até 7 (sete) dias corridos, diretamente na seção Pedidos e validações, obedecendo às seguintes regras por modalidade:",
           "a) Planos e vagas extras: aplica-se exclusivamente à primeira contratação do plano ou da vaga extra (não se aplicando às renovações automáticas). Concluído o reembolso, a assinatura ou a vaga extra é imediatamente encerrada e, no caso do plano, a casa retorna ao plano Grátis, com os limites e as regras desse plano.",
           "b) Pacotes de créditos da assistente: aplica-se a cada compra avulsa. Se não houver uso dentro dos 7 dias, o valor é devolvido integralmente. Havendo uso parcial (considerando que a franquia mensal do plano é consumida antes dos pacotes avulsos), é devolvido o valor proporcional às respostas não utilizadas, ficando a tarifa do provedor de pagamento arcada pela plataforma.",
@@ -323,11 +326,23 @@ export const INFO_PAGES: InfoPage[] = [
       },
       {
         heading: "Quanto tempo guardamos",
+        paragraphs: [
+          "Prazos de Retenção e Eliminação de Dados: O Ilê Conecta armazena os dados pessoais apenas pelo tempo necessário para cumprir as finalidades para as quais foram coletados ou para atender a exigências legais e regulatórias, observando os seguintes prazos:",
+        ],
         bullets: [
-          "Registros de acesso: por no mínimo 6 meses (Marco Civil da Internet, Lei nº 12.965/2014, art. 15).",
-          "Registros de pagamentos e transações: por 5 anos, para obrigações fiscais e eventual defesa em processos.",
-          "Se você pedir a exclusão, apagamos os dados da visualização ativa e mantemos, em sigilo, apenas o que a lei exige guardar.",
-          "Contas excluídas: por até 5 anos, mantemos em base restrita, acessível apenas à administração, o e-mail do titular, os registros financeiros e fiscais e os registros de aceite, para cumprir obrigações legais, exercer direitos e prevenir fraudes e uso abusivo de benefícios (por exemplo, o reembolso de 7 dias já utilizado em conta anterior com o mesmo e-mail).",
+          "Registros de acesso à aplicação (logs de IP, data e hora): 6 (seis) meses, conforme exigido pelo art. 15 do Marco Civil da Internet;",
+          "Registros financeiros, pagamentos, estornos e documentos fiscais: 5 (cinco) anos, para cumprimento de obrigações fiscais e contábeis;",
+          "Logs de aceite dos Termos e identificador de e-mail de contas excluídas: até 5 (cinco) anos, armazenados em base restrita e auditada, para exercício regular de direitos e prevenção a fraudes ou uso abusivo de benefícios;",
+          "Chamados de suporte, denúncias e respectivas mensagens: 24 (vinte e quatro) meses após o encerramento do chamado, para auditoria de segurança e resolução de eventuais disputas;",
+          "Histórico de atendimentos realizados pela casa e auditoria de ações da equipe: 12 (doze) meses, para controle operacional e transparência da gestão da conta;",
+          "Mensagens excluídas pelo usuário: mantidas em arquivo restrito por 30 (trinta) dias por segurança e eliminadas definitivamente após esse período;",
+          "Conversas com a assistente de suporte: 3 (três) dias, sendo descartadas automaticamente após esse prazo;",
+          "Interações brutas de visualização e clique em impulsionamentos: 24 (vinte e quatro) horas, mantendo-se posteriormente apenas os totais diários consolidados e anônimos.",
+        ],
+      },
+      {
+        paragraphs: [
+          "Após o encerramento definitivo da conta (concluído o prazo de 7 dias da solicitação), o perfil público, fotos, publicações e dados de cartão são apagados ou anonimizados, permanecendo retidos exclusivamente os registros sujeitos aos prazos legais acima.",
           "Cartões: ao excluir a conta, o cartão cadastrado é desvinculado. Os parceiros de pagamento (como o Stripe) podem reter registros históricos das transações pelo prazo exigido pela legislação financeira e pelas normas do setor de cartões.",
         ],
       },

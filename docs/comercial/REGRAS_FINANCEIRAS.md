@@ -146,3 +146,9 @@ Não registrar repasse como realizado sem evidência do provedor. Não somar val
 - Não prometer retenção de saldo ou reembolso garantido sem comprovação.
 - Não ativar cobrança real ou alterar provedor sem autorização expressa.
 - Não marcar pagamento, repasse ou reembolso como concluído sem confirmação verificável.
+
+## Regra única da tarifa do processador (Stripe) — validada pelo advogado em 17/11/2026
+- Compras cliente→casa (serviços, consultas, rituais, trabalhos e mensalidades de membros): a tarifa do Stripe é da **casa**.
+- Compras casa→plataforma (planos, créditos de IA, destaques, impulsionamentos e vagas extras de equipe): a tarifa é da **plataforma**, inclusive em reembolso dentro do prazo legal.
+- Texto nos Termos da casa e em "Eventos, taxa e repasse" (versão 2026-11-rascunho-7), na redação do advogado.
+- Ponto levado ao advogado: a redação diz "descontados no momento do repasse"; no desenho atual (cobrança direta) a tarifa é descontada pelo Stripe no recebimento, sem repasse da plataforma.

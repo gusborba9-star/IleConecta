@@ -72,7 +72,7 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado e vale por 3 meses a partir da compra; depois disso o saldo restante zera.
+            Pagamento por Pix ou cartão. O crédito entra assim que o pagamento é confirmado. Os créditos avulsos têm validade de 3 meses a partir da compra e são consumidos após a franquia mensal do seu plano (do pacote mais antigo para o mais novo).
           </p>
         </div>
       )}
