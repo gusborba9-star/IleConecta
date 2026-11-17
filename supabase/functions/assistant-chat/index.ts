@@ -3,7 +3,6 @@
 // A IA só escreve texto: preço, vaga, desconto e pagamento vêm do banco/servidor (ver logic.js).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
-  DEFAULT_MODELS,
   HISTORY_LIMIT,
   buildGreeting,
   buildSystemPrompt,
@@ -20,6 +19,7 @@ import {
   monthStartISO,
   normalizeAgenda,
   planLimits,
+  resolveModels,
   toChatMessages,
   windowStartISO,
 } from "./logic.js";
@@ -112,29 +112,44 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!house) return json(404, { error: "casa_nao_encontrada" });
 
+  // As quatro leituras abaixo só dependem da casa: vão juntas (uma ida ao banco em vez de quatro em fila).
+  const [{ data: featRow }, { data: billingLevel, error: billingErr }, { data: planMatrix }, { data: assistant }] = await Promise.all([
+    admin.from("platform_settings").select("value").eq("key", "features").maybeSingle(),
+    admin.rpc("house_billing_level", { h: house.id }),
+    admin.rpc("plan_matrix"), // sempre uma matriz válida; se a leitura falhar, valem os valores iniciais
+    admin.from("assistants")
+      .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
+      .eq("house_id", house.id).maybeSingle(),
+  ]);
+
   // Interruptor do painel admin: desligado (ou em teste para outras casas) bloqueia antes de qualquer custo.
-  const { data: featRow } = await admin.from("platform_settings").select("value").eq("key", "features").maybeSingle();
   if (!featureEnabled(featRow?.value, "assistant", house.owner_id)) {
     return json(403, { error: "recurso_desativado", message: "A assistente está temporariamente indisponível." });
   }
 
   // Cobrança da plataforma: casa em suspensão parcial ou total não usa a assistente (custo de IA). Falha na leitura NÃO derruba a assistente (domínios independentes).
-  const { data: billingLevel, error: billingErr } = await admin.rpc("house_billing_level", { h: house.id });
   if (billingErr) console.error("house_billing_level", billingErr.message);
   else if (billingLevel && billingLevel !== "ok") {
     return json(403, { error: "casa_indisponivel", message: MESSAGES.casa_indisponivel });
   }
 
-  // Matriz central de planos (limites da assistente por plano). O banco devolve sempre uma matriz válida; se a leitura falhar, valem os valores iniciais.
-  const { data: planMatrix } = await admin.rpc("plan_matrix");
-
-  const { data: assistant } = await admin
-    .from("assistants")
-    .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
-    .eq("house_id", house.id)
-    .maybeSingle();
-
-  // 3) Plano, cota mensal e limite por usuário.
+  // 3) Plano, cota mensal e limite por usuário. Antes de contar, reserva esta resposta no banco (atômico por casa): respostas que já estão
+  // em andamento entram na conta, então pedidos simultâneos não furam o limite por pessoa, a franquia do mês nem o saldo de créditos.
+  // Se a reserva falhar (migration 0154 ainda não aplicada), segue só com a conferência simples de antes.
+  let reservationId: string | null = null;
+  let inflightHouse = 0;
+  let inflightUser = 0;
+  {
+    const { data: rsv, error: rsvErr } = await admin.rpc("assistant_reserve", { p_house: house.id, p_user: user.id });
+    if (rsvErr) console.error("assistant_reserve", rsvErr.message);
+    else {
+      reservationId = String((rsv as { id?: string } | null)?.id ?? "") || null;
+      inflightHouse = Number((rsv as { house?: number } | null)?.house ?? 0) || 0;
+      inflightUser = Number((rsv as { user?: number } | null)?.user ?? 0) || 0;
+    }
+  }
+  // Toda saída daqui para baixo (resposta, erro ou bloqueio) libera a reserva no final.
+  try {
   const [{ count: usedMonth }, { count: usedWindow }, { data: creditsRaw, error: creditsErr }] = await Promise.all([
     admin.from("assistant_usage").select("id", { count: "exact", head: true })
       .eq("house_id", house.id).gte("created_at", monthStartISO()),
@@ -152,6 +167,8 @@ Deno.serve(async (req) => {
     usedByUserInWindow: usedWindow ?? 0,
     matrix: planMatrix,
     creditBalance,
+    inflightHouse,
+    inflightUser,
   });
   if (blocked) return json(blocked === "cota_mensal" || blocked === "muitas_mensagens" ? 429 : 403, {
     error: blocked,
@@ -249,7 +266,7 @@ Deno.serve(async (req) => {
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);
 
   // 6) Chama o OpenRouter (modelo barato por padrão; com alternativas se falhar).
-  const models = assistant?.model ? [assistant.model, ...DEFAULT_MODELS] : DEFAULT_MODELS;
+  const models = resolveModels(assistant?.model);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
   let reply = "";
@@ -380,4 +397,10 @@ Deno.serve(async (req) => {
     remaining_this_month: Math.max(0, limit - used),
     credits_left: left,
   });
+  } finally {
+    if (reservationId) {
+      const { error: relErr } = await admin.rpc("assistant_release", { p_id: reservationId });
+      if (relErr) console.error("assistant_release", relErr.message); // a reserva expira sozinha em 120 s
+    }
+  }
 });
