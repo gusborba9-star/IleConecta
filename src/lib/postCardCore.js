@@ -48,12 +48,13 @@ export function sampleBrightness(rgba, percentile = 0.9) {
 
 export const SCRIM_MIN = 0.35; // sempre há um véu leve atrás do texto (gosto do desenho)
 export const SCRIM_MAX = 0.85;
-/** Força (0 a 1) do véu escuro atrás do texto branco para o fundo mais claro (`brightness`, 0-255) chegar a contraste AA. */
-export function scrimAlpha(brightness, min = MIN_CONTRAST) {
+/** Força (0 a 1) do véu escuro atrás do texto (branco, ou de outra cor com luminância `textLum`) para o fundo mais claro (`brightness`, 0-255) chegar a contraste AA. */
+export function scrimAlpha(brightness, min = MIN_CONTRAST, textLum = 1) {
   const b = Number.isFinite(brightness) ? Math.min(255, Math.max(0, brightness)) : 255;
+  const tl = Number.isFinite(textLum) ? Math.min(1, Math.max(0, textLum)) : 1;
   for (let a = SCRIM_MIN; a <= SCRIM_MAX + 1e-9; a += 0.01) {
     const v = b * (1 - a);
-    if (contrast(1, relLuminance(v, v, v)) >= min) return Math.round(a * 100) / 100;
+    if (contrast(tl, relLuminance(v, v, v)) >= min) return Math.round(a * 100) / 100;
   }
   return SCRIM_MAX;
 }

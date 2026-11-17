@@ -11,5 +11,5 @@ export function fromColumn(v: unknown): CardMode;
 export function relLuminance(r: number, g: number, b: number): number;
 export function contrast(l1: number, l2: number): number;
 export function sampleBrightness(rgba: ArrayLike<number> | null | undefined, percentile?: number): number;
-export function scrimAlpha(brightness: number, min?: number): number;
+export function scrimAlpha(brightness: number, min?: number, textLum?: number): number;
 export function validateDraft(d: { text: unknown; mode: unknown; hasImage: boolean; ack: boolean; allowed: boolean }): { ok: boolean; error?: string };

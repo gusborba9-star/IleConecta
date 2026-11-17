@@ -27,7 +27,7 @@ export const CAP_FLAGS = {
   campaign_daily_count: "Contagem dia a dia dos links de divulgação",
   campaign_insights_full: "Todos os assuntos e serviços mais procurados",
   ritual_video: "Vídeo de 30 s nos registros do ritual",
-  styled_posts: "Posts com a cara da sua casa (foto de fundo e texto legível)",
+  styled_posts: "Posts com a cara da sua casa (foto de fundo, letras com a sua identidade e texto legível)",
 };
 export const CAP_NUMBER_KEYS = Object.keys(CAP_NUMBERS);
 export const CAP_FLAG_KEYS = Object.keys(CAP_FLAGS);
@@ -72,7 +72,7 @@ export const DEFAULT_PLAN_MATRIX = {
         { text: "A assistente da casa atende 24h (até {assistant_replies} respostas por mês) e informa as datas da agenda", feature: null },
         { text: "Ela conhece a sua casa: serviços, rituais, horários e perguntas frequentes", feature: null },
         { text: "Passa para você os assuntos delicados, com aviso no sino", feature: null },
-        { text: "Posts com a cara da sua casa: a foto do seu templo ou altar vira o fundo da publicação, com o texto sempre legível", feature: null },
+        { text: "Posts com a cara da sua casa: a foto do seu templo ou altar vira o fundo da publicação, com letras na sua identidade (fonte, cor e tamanho) e texto sempre legível", feature: null },
         { text: "Catálogo interno e relatório do atendimento", feature: null },
         { text: "Até {campaign_links} links de divulgação, com QR code e modo discreto", feature: null },
         { text: "Até {quick_replies} respostas rápidas para o chat", feature: null },
