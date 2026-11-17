@@ -1,3 +1,4 @@
+import { focusRow } from "@/lib/focusCore.js";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
@@ -66,7 +67,7 @@ export default function AdminModerationCard() {
       {shown.map((r) => {
         const actions = adminActions(r);
         return (
-          <div key={r.id} className="rounded-lg border border-border/70 p-3 space-y-2 text-sm">
+          <div key={r.id} {...focusRow(r.id)} className="rounded-lg border border-border/70 p-3 space-y-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div><span className="font-semibold">{r.house_name}</span> · {TARGET_LABEL[r.target_table]} · {REASON_LABEL[r.reason]}</div>
               <div className="text-xs text-muted-foreground">{STATUS_LABEL[r.status]} · {fmt(r.created_at)}</div>

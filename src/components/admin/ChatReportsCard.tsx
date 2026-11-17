@@ -1,3 +1,4 @@
+import { focusRow } from "@/lib/focusCore.js";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input } from "@/components/base";
@@ -44,7 +45,7 @@ export default function ChatReportsCard() {
       <h2 className="font-display font-bold text-lg">Denúncias do chat {openCount > 0 && <span className="text-sm text-destructive">({openCount} abertas)</span>}</h2>
       {rows.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma denúncia até agora.</p>}
       {rows.map((r) => (
-        <div key={r.id} className="rounded-lg border border-border/70 p-3 space-y-2 text-sm">
+        <div key={r.id} {...focusRow(r.id)} className="rounded-lg border border-border/70 p-3 space-y-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><span className="font-semibold">{r.reporter_name}</span> denunciou <span className="font-semibold">{r.reported_name}</span> · {reason(r.reason)}</div>
             <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")} · {r.status === "aberta" ? "aberta" : "resolvida"}</div>

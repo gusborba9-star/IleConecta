@@ -1,9 +1,13 @@
+import { adminPath } from "@/lib/focusCore.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchPendingCenter } from "@/lib/pendingCenter";
 import { KIND_LABELS, PRIORITY_LABELS, TAB_TARGET, dueText, filterPending, type PendingView } from "@/lib/pendingCenterCore.js";
+
+// Só estes tipos têm uma linha própria, com o mesmo id, na tela de destino (os outros abrem só a seção).
+const FOCUS_KINDS = new Set(["suporte", "moderacao", "denuncia_chat", "avaliacao_denunciada", "reembolso_cliente", "cobranca_travada"]);
 
 /** Central de pendências: tudo que espera a administração, vencidos primeiro, com atalho para onde se resolve. */
 export default function PendingCenterCard() {
@@ -75,7 +79,7 @@ export default function PendingCenterCard() {
                     <p className="break-words">{i.title}</p>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}{i.overdue ? ` · prioridade ${PRIORITY_LABELS[i.priority].toLowerCase()}` : ""}</span>
-                      {target && <Button size="sm" variant="outline" onClick={() => setParams(target.section === "visao" ? {} : { s: target.section })}>Resolver em {target.label}</Button>}
+                      {target && <Button size="sm" variant="outline" onClick={() => setParams(Object.fromEntries(new URLSearchParams(adminPath(target.section, FOCUS_KINDS.has(i.kind) ? i.refId : null).slice(1))))}>Resolver em {target.label}</Button>}
                     </div>
                   </li>
                 );

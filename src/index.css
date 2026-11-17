@@ -205,3 +205,13 @@
   }
   .scroll-x::-webkit-scrollbar { display: none; }
 }
+
+/* Item em foco vindo da central de pendências */
+[data-focused="true"] {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+  animation: foco-pulse 1.6s ease-out 1;
+}
+@keyframes foco-pulse { 0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); } 100% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); } }
+@media (prefers-reduced-motion: reduce) { [data-focused="true"] { animation: none; } }

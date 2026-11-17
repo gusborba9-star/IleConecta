@@ -1,3 +1,4 @@
+import { useFocusRow } from "@/hooks/useFocusRow";
 import { useSearchParams } from "react-router-dom";
 import { BarChart3, FileText, History, LifeBuoy, RotateCcw, Settings, Users } from "lucide-react";
 import Admin, { type AdminSection } from "@/pages/Admin";
@@ -26,6 +27,7 @@ export default function AdminShell() {
   const raw = params.get("s");
   const current: SectionId = SECTIONS.some((x) => x.id === raw) ? (raw as SectionId) : "visao";
 
+  useFocusRow(current);
   if (!isAdmin) return <Admin />;
   // Central de comando: o tema escuro vale só dentro desta área (ver .admin-theme em index.css).
 

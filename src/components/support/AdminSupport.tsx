@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { focusRow, readFocus } from "@/lib/focusCore.js";
+import { useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input, Textarea } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
@@ -23,6 +25,15 @@ export default function AdminSupport() {
     if (r.ok) { setRows(sortQueue(r.data)); setError(null); } else setError(r.error);
   }, [closedView]);
   useEffect(() => { void load(); }, [load]);
+  // Vindo da central de pendências (?foco=<chamado>): abre o chamado pedido, uma vez, se ele estiver na fila.
+  const [params] = useSearchParams();
+  const wanted = readFocus(params.get("foco"));
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!wanted || autoOpened.current || !rows.some((r) => r.id === wanted)) return;
+    autoOpened.current = true;
+    setOpen(wanted);
+  }, [wanted, rows]);
 
   if (open) return <CaseDossier id={open} onBack={() => { setOpen(null); void load(); }} />;
 
@@ -37,7 +48,7 @@ export default function AdminSupport() {
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {!error && rows.length === 0 && <p className="text-sm text-muted-foreground">Nenhum chamado {closedView ? "resolvido" : "aberto"}.</p>}
         {rows.map((c) => (
-          <button key={c.id} onClick={() => setOpen(c.id)} className="block w-full text-left rounded-lg border border-border/70 p-3 hover:bg-muted/50">
+          <button key={c.id} {...focusRow(c.id)} onClick={() => setOpen(c.id)} className="block w-full text-left rounded-lg border border-border/70 p-3 hover:bg-muted/50">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={PRI_TONE[c.priority as keyof typeof PRI_TONE] ?? "muted"}>{c.priority}</Badge>
               {c.overdue && <Badge tone="danger">prazo vencido</Badge>}
