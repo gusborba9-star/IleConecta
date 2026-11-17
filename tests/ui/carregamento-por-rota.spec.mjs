@@ -17,7 +17,7 @@ test.describe("carregamento por tela", () => {
     await setup(page);
     await page.goto("/");
     await page.goto("/descobrir");
-    await expect(page.locator("main, [role=main], body")).toBeVisible();
+    await expect(page.getByRole("main")).toBeVisible();
     await page.goto("/termos");
     await expect(page.getByRole("heading", { name: "Termos e normas" })).toBeVisible();
   });

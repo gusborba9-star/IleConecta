@@ -29,8 +29,18 @@ Banco local com todas as migrations (0001–0147) e dados simulados em `scripts/
 3. **Comentários do feed sob demanda (migration 0150, passo 316; aprovado pelo proprietário):** o feed trazia todos os comentários de cada post (10 posts de 300 comentários = 633 KB e 178 ms). Agora traz só a contagem (6 KB e 10 ms) e a lista é lida ao abrir (2 ms para 300 comentários), com "Carregando", erro com "Tentar de novo", contagem que sobe ao comentar e leitura nova se a contagem mudar. A contagem respeita a regra de leitura (comentário oculto só conta para a casa e para quem escreveu).
 4. **Presença a cada 15 s:** medida em 0,4 ms por chamada (~36 por segundo no pico = cerca de 1% de um núcleo). **Não foi alterada**: o ganho não justifica mexer na regra de 35 s da casa online.
 
+## Dia de mensalidades (migration 0153, passo 319)
+Banco de carga: 4.000 membros em 200 casas. A rotina diária criou as 4.000 mensalidades do mês e os avisos em 231 ms; repetida, não criou nada nem avisou de novo. O Stripe confirmou as 4.000 de uma vez por 30 conexões: 2.067 por segundo, mediana 13 ms, p95 25 ms, zero erros. Reenvio de 500 confirmações e o mesmo pagamento 20 vezes ao mesmo tempo: tudo "já confirmado", sem lançamento nem aviso duplicado. Conferência: 4.000 pagas, 0 abertas, todo pagamento com os 3 lançamentos e a soma certa.
+**Defeito achado e corrigido:** a tarifa do Stripe de mensalidade ficava gravada no pagamento, mas não virava o lançamento `taxa_provedor` da casa (a casa só era descoberta por ritual ou serviço), então o painel financeiro mostrava tarifa 0. Corrigido na 0153 (aplicada e verificada em produção); no teste, 200 tarifas passaram de 0 para 200 lançamentos.
+
+## Reserva simultânea da última vaga
+70 pessoas pedindo ao mesmo tempo um ritual de 10 vagas: 10 reservaram, 60 receberam "Vagas esgotadas", o banco conta 10 ocupadas, ninguém passou do limite (339 ms). Duplo clique (15 pedidos simultâneos da mesma pessoa): 1 reserva, 14 respostas "Você já tem vaga".
+
+## Celular (4G lento, processador 4 vezes mais lento, com brotli)
+Carregamento por tela (cada página só é baixada quando a pessoa chega nela; entrada, feed e página inicial da casa ficam no pacote principal): a primeira carga caiu de **316 KB para 210 KB (-33%)** e a primeira tela de ~2,2 s para **~1,6 s**; sem deslocamento de layout (CLS 0) e bloqueio de 17 a 54 ms. Falha ao baixar uma tela mostra aviso com "Tentar de novo" (uma recarga automática, nunca em laço). Imagens reais do feed logado ainda não foram medidas.
+
 ## Riscos que dependem de decisão ou de ação do proprietário
 - **Plano gratuito do Supabase** (pausa por inatividade, sem backup diário, 200 conexões simultâneas de tempo real): migrar para o Pro antes do lançamento (decisão do proprietário, 17/11/2026).
 
 ## Ainda por medir
-Tempo real e plano de produção só se validam em produção depois do Pro; dia de mensalidade (4.000 confirmações do Stripe no mesmo dia); reserva simultânea da mesma vaga; carga de imagens e Core Web Vitals no celular; custo e latência da IA.
+Tempo real e plano de produção só se validam em produção depois do Pro; peso real das imagens do feed logado no celular; custo e latência da IA; observabilidade, acessibilidade e plano de rollback.
