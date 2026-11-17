@@ -1,4 +1,4 @@
-import { adminPath } from "@/lib/focusCore.js";
+import { adminPath, readFocus } from "@/lib/focusCore.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
@@ -6,6 +6,8 @@ import { Badge, Button, Card } from "@/components/base";
 import { fetchPendingCenter } from "@/lib/pendingCenter";
 import { KIND_LABELS, PRIORITY_LABELS, TAB_TARGET, dueText, filterPending, type PendingView } from "@/lib/pendingCenterCore.js";
 
+// Tipos cujo registro aparece na linha do tempo da casa (o item vem destacado lá).
+const TIMELINE_KINDS = new Set(["suporte", "moderacao", "avaliacao_denunciada", "reembolso_cliente", "reembolso_plataforma", "cobranca_travada"]);
 // Só estes tipos têm uma linha própria, com o mesmo id, na tela de destino (os outros abrem só a seção).
 const FOCUS_KINDS = new Set(["suporte", "moderacao", "denuncia_chat", "avaliacao_denunciada", "reembolso_cliente", "cobranca_travada"]);
 
@@ -80,7 +82,7 @@ export default function PendingCenterCard() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}{i.overdue ? ` · prioridade ${PRIORITY_LABELS[i.priority].toLowerCase()}` : ""}</span>
                       {target && <Button size="sm" variant="outline" onClick={() => setParams(Object.fromEntries(new URLSearchParams(adminPath(target.section, FOCUS_KINDS.has(i.kind) ? i.refId : null).slice(1))))}>Resolver em {target.label}</Button>}
-                      {i.houseId && <Button size="sm" variant="ghost" onClick={() => setParams({ s: "usuarios", casa: i.houseId as string })}>Linha do tempo da casa</Button>}
+                      {i.houseId && <Button size="sm" variant="ghost" onClick={() => setParams({ s: "usuarios", casa: i.houseId as string, ...(TIMELINE_KINDS.has(i.kind) && readFocus(i.refId) ? { foco: i.refId } : {}) })}>Linha do tempo da casa</Button>}
                     </div>
                   </li>
                 );

@@ -42,7 +42,7 @@ test.describe("central da administração abre o item exato", () => {
     await resolve(page, "Chamado do alvo");
     await expect(page).toHaveURL(new RegExp(`s=suporte&foco=${CASES.s2}`));
     await expect(page.getByRole("button", { name: /Chamado 1/ })).toHaveCount(0); // a fila deu lugar ao dossiê do chamado pedido
-    expect(calls.some((c) => c.name === "admin_support_dossier")).toBe(true);
+    await expect.poll(() => calls.some((c) => c.name === "admin_support_dossier")).toBe(true);
   });
   test("tipo sem linha própria abre só a seção; foco inválido na URL é ignorado (sem erro)", async ({ page }) => {
     await setup(page);
@@ -55,5 +55,16 @@ test.describe("central da administração abre o item exato", () => {
     await page.waitForTimeout(1200);
     expect(errors).toEqual([]);
     expect(await page.locator("[data-focused]").count()).toBe(0);
+  });
+
+  test("histórico da administração: abrir a linha do tempo de uma casa aparece com nome legível (não a chave técnica)", async ({ page }) => {
+    await api(page, {
+      rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }], admin_audit: [{ id: 2, key: "ver_linha_do_tempo_da_casa", created_at: "2026-11-16T22:00:00Z" }, { id: 1, key: "billing_enroll", created_at: "2026-11-16T21:00:00Z" }] },
+      rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } },
+    });
+    await page.goto("/admin?s=historico");
+    await expect(page.getByText("Abriu a linha do tempo de uma casa")).toBeVisible();
+    await expect(page.getByText("Cobrança automática: casa inscrita")).toBeVisible();
+    await expect(page.getByText("ver_linha_do_tempo_da_casa")).toHaveCount(0);
   });
 });

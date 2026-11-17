@@ -80,6 +80,18 @@ test.describe("linha do tempo da casa (administração, app inteiro)", () => {
     await expect(page).toHaveURL(new RegExp(`s=usuarios&casa=${H1}`));
     await expect(page.locator("strong", { hasText: "Casa Um" })).toBeVisible();
   });
+  test("reembolso da plataforma que falhou: a linha do tempo abre com o item destacado", async ({ page }) => {
+    const REF = U(640);
+    await setup(page, {
+      admin_pending_center: { total: 1, overdue: 0, counts: { reembolso_plataforma: 1 }, items: [{ kind: "reembolso_plataforma", ref_id: REF, house_id: H1, house_name: "Casa Um", title: "Reembolso de plano de R$ 89,90", detail: "falhou", priority: "alta", due_at: null, overdue: false, since: null, tab: "cobranca" }] },
+      admin_house_timeline: { ...PAGE1, events: [ev(1, "fatura_emitida"), { ...ev(2, "reembolso_plataforma", { status: "falhou", amount_cents: 8990 }), ref_id: REF }, ev(3, "suporte")], has_more: false, next_before: null },
+    });
+    await page.goto("/admin");
+    await page.locator("li").filter({ hasText: "Reembolso de plano" }).getByRole("button", { name: "Linha do tempo da casa" }).click();
+    await expect(page).toHaveURL(new RegExp(`s=usuarios&casa=${H1}&foco=${REF}`));
+    await expect(page.locator(`[data-foco="${REF}"]`)).toHaveAttribute("data-focused", "true");
+    await expect(page.locator(`[data-foco="${U(601)}"]`)).not.toHaveAttribute("data-focused", "true");
+  });
   test("celular estreito: sem rolagem horizontal", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await setup(page);
