@@ -1,0 +1,15 @@
+export type CardMode = "normal" | "total" | "parcial";
+export const CARD_MODES: { id: CardMode; label: string; desc: string }[];
+export const CARD_TEXT_MAX: number;
+export const POST_TEXT_MAX: number;
+export const MIN_CONTRAST: number;
+export const SCRIM_MIN: number;
+export const SCRIM_MAX: number;
+export function modeId(x: unknown): CardMode;
+export function toColumn(mode: unknown): "total" | "parcial" | null;
+export function fromColumn(v: unknown): CardMode;
+export function relLuminance(r: number, g: number, b: number): number;
+export function contrast(l1: number, l2: number): number;
+export function sampleBrightness(rgba: ArrayLike<number> | null | undefined, percentile?: number): number;
+export function scrimAlpha(brightness: number, min?: number): number;
+export function validateDraft(d: { text: unknown; mode: unknown; hasImage: boolean; ack: boolean; allowed: boolean }): { ok: boolean; error?: string };

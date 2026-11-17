@@ -4,7 +4,7 @@ export const SESSION = { access_token: "aaa.bbb.ccc", refresh_token: "r", token_
 export const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
 
 /** API simulada: `rpc[name]` devolve o corpo (ou {status, body}); registra as chamadas. */
-export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {} } = {}) {
+export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {}, storageOk = null } = {}) {
   // Quem é administrador nos testes antigos é o dono, salvo se o teste disser outra coisa (módulos de acesso, 0138).
   const rpc = rpcIn.is_admin === true && !("admin_my_access" in rpcIn) ? { ...rpcIn, admin_my_access: { admin: true, owner: true, perms: [] } } : rpcIn;
   const calls = [];
@@ -20,6 +20,8 @@ export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {} } = {}) {
     if (t) { calls.push({ kind: "rest", name: t[1], body }); const v = rest[t[1]] ?? []; return send(req.headers()["accept"]?.includes("vnd.pgrst.object") ? (Array.isArray(v) ? v[0] ?? null : v) : v); }
     const f = url.pathname.match(/\/functions\/v1\/(.+)$/);
     if (f) { calls.push({ kind: "fn", name: f[1], body }); return send(fn[f[1]] ?? {}); }
+    const st = url.pathname.match(/\/storage\/v1\/object\/(.+)$/);
+    if (st) { calls.push({ kind: "storage", name: decodeURIComponent(st[1]), method: req.method(), body }); return send(storageOk ?? { Key: decodeURIComponent(st[1]) }); }
     return route.fulfill({ status: 404, headers: CORS, body: "{}" });
   });
   return calls;

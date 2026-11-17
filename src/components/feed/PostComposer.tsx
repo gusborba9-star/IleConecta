@@ -4,6 +4,11 @@ import { Avatar, Button, Card, Textarea } from "@/components/base";
 import { Image, Sparkles, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { toastSaveError } from "@/lib/planGuard";
+import PostStylePicker from "@/components/feed/PostStylePicker";
+import { EMPTY_STYLE, type StyleDraft } from "@/components/feed/postStyleDraft";
+import { useOwnerPlan } from "@/lib/housePlan";
+import { toColumn, validateDraft } from "@/lib/postCardCore";
+import { removeCardImage, uploadCardImage } from "@/lib/postImages";
 
 export default function PostComposer() {
   const { currentUser, createPost, isRemoteAuth } = useApp();
@@ -11,6 +16,9 @@ export default function PostComposer() {
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
   const isHouse = currentUser?.type === "commercial";
+  const [style, setStyle] = useState<StyleDraft>(EMPTY_STYLE);
+  const { caps } = useOwnerPlan(isHouse ? currentUser?.id : null);
+  const allowed = caps?.styled_posts === true;
 
   if (!currentUser) return null;
 
@@ -18,18 +26,35 @@ export default function PostComposer() {
   if (isRemoteAuth && !isHouse) return null;
 
   const submit = async () => {
-    if (!text.trim()) return toast.error("Escreva algo antes de publicar");
+    const check = validateDraft({ text, mode: style.mode, hasImage: Boolean(style.image), ack: style.ack, allowed });
+    if (!check.ok) return toast.error(check.error);
     setSending(true);
-    const saved = await createPost({
-      houseId: currentUser.id,
-      content: text.trim(),
-      kind: "geral",
-      image: image || undefined,
-    });
+    const col = toColumn(style.mode);
+    let cardPath: string | null = null;
+    if (col && style.image) {
+      if (isRemoteAuth) {
+        cardPath = await uploadCardImage(currentUser.id, style.image.blob);
+        if (!cardPath) { setSending(false); return toast.error("Não foi possível enviar a foto agora. Tente novamente."); }
+      }
+    }
+    const saved = await createPost(
+      {
+        houseId: currentUser.id,
+        content: text.trim(),
+        kind: "geral",
+        image: col ? undefined : image || undefined,
+        card: col && style.image ? { style: col, image: style.image.previewUrl, scrimPct: style.image.scrimPct } : undefined,
+      },
+      cardPath ? { cardPath } : undefined
+    );
     setSending(false);
-    if (!saved) return toastSaveError("Não foi possível publicar agora. Tente novamente.");
+    if (!saved) {
+      if (cardPath) void removeCardImage(cardPath);
+      return toastSaveError("Não foi possível publicar agora. Tente novamente.");
+    }
     setText("");
     setImage("");
+    setStyle(EMPTY_STYLE);
     toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");
   };
 
@@ -49,7 +74,8 @@ export default function PostComposer() {
             onChange={(e) => setText(e.target.value)}
             rows={3}
           />
-          {image && (
+          {isHouse && <PostStylePicker value={style} onChange={setStyle} text={text} allowed={allowed || !isRemoteAuth} houseName={currentUser.name} />}
+          {image && !style.image && (
             <div className="relative rounded-xl overflow-hidden">
               <img src={image} alt="" className="w-full max-h-72 object-cover" />
               <button onClick={() => setImage("")} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 text-white">✕</button>
