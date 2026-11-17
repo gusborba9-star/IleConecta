@@ -1,3 +1,4 @@
+import { focusRow } from "@/lib/focusCore.js";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Input } from "@/components/base";
@@ -193,7 +194,7 @@ export default function BillingAdminCard() {
         <div className="text-sm font-semibold">Últimas faturas</div>
         {charges.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma fatura emitida.</p>}
         {charges.map((c) => (
-          <div key={c.id} className="flex flex-wrap items-center gap-2 text-sm border-b border-border pb-2">
+          <div key={c.id} {...focusRow(c.id)} className="flex flex-wrap items-center gap-2 text-sm border-b border-border pb-2">
             <span className="flex-1 min-w-[8rem]">{nameOf(c.houseId)} · {c.description ?? c.kind}</span>
             <span className="text-muted-foreground">vence {shortDate(c.dueDate)}</span>
             <strong>{formatCents(c.amountCents)}</strong>

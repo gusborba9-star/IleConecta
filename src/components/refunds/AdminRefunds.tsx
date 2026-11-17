@@ -1,3 +1,4 @@
+import { focusRow } from "@/lib/focusCore.js";
 import { useConfirm, type ConfirmOptions } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -53,7 +54,7 @@ export default function AdminRefunds() {
       {rows !== null && rows.length === 0 && <p className="text-sm text-muted-foreground mt-4">Nenhum pedido em aberto.</p>}
       <div className="mt-4 space-y-4">
         {(rows ?? []).map((r) => (
-          <div key={r.id} className="border-t border-border/60 pt-4 first:border-0 first:pt-0">
+          <div key={r.id} {...focusRow(r.id)} className="border-t border-border/60 pt-4 first:border-0 first:pt-0">
             <div className="flex flex-wrap items-center gap-2">
               <strong>{r.clientName}</strong>
               <span className="text-muted-foreground text-sm">→ {r.houseName}</span>
