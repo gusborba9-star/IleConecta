@@ -9,6 +9,7 @@ import AdminSupport from "@/components/support/AdminSupport";
 import AdminRefunds from "@/components/refunds/AdminRefunds";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { cn } from "@/lib/utils";
+import { allowedSections } from "@/lib/adminAccessCore";
 
 const SECTIONS = [
   { id: "visao", label: "Visão geral", icon: BarChart3 },
@@ -23,10 +24,14 @@ type SectionId = (typeof SECTIONS)[number]["id"];
 
 /** Painel admin estilo CRM: menu lateral no computador e abas roláveis no celular. */
 export default function AdminShell() {
-  const { isAdmin } = usePlatformConfig();
+  const { isAdmin, access, can } = usePlatformConfig();
   const [params, setParams] = useSearchParams();
   const raw = params.get("s");
-  const current: SectionId = SECTIONS.some((x) => x.id === raw) ? (raw as SectionId) : "visao";
+  const open = allowedSections(access, SECTIONS.map((x) => x.id));
+  const visible = SECTIONS.filter((x) => open.includes(x.id));
+  const wanted: SectionId = SECTIONS.some((x) => x.id === raw) ? (raw as SectionId) : "visao";
+  // Quem não tem acesso à seção pedida (link antigo, endereço digitado) cai na primeira que pode abrir.
+  const current: SectionId | null = open.includes(wanted) ? wanted : (open[0] ?? null);
 
   useFocusRow(current);
   if (!isAdmin) return <Admin />;
@@ -36,7 +41,7 @@ export default function AdminShell() {
     <div className="admin-theme rounded-3xl p-3 sm:p-4 shadow-altar ring-1 ring-[hsl(160_16%_20%)] lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-4 mb-16 lg:mb-4">
       <div className="lg:col-span-2 mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-primary"><span className="h-2 w-2 rounded-full bg-primary animate-pulse-slow" />Central de comando · Ilê Conecta</div>
       <nav aria-label="Seções do painel" className="mb-4 lg:mb-0 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-20 lg:self-start rounded-2xl border border-border bg-card p-2 pillow">
-        {SECTIONS.map(({ id, label, icon: Icon }) => (
+        {visible.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setParams(id === "visao" ? {} : { s: id })}
@@ -51,10 +56,11 @@ export default function AdminShell() {
         ))}
       </nav>
       <div className="min-w-0 space-y-4">
+        {current === null && <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Sua conta está na equipe da administração, mas ainda não recebeu nenhum módulo de acesso. Peça ao dono da plataforma.</p>}
         {(current === "visao" || current === "config" || current === "historico") && <Admin section={current as AdminSection} />}
         {current === "reembolsos" && <AdminRefunds />}
         {current === "suporte" && <AdminSupport />}
-        {current === "usuarios" && <><AdminHouseTimelineCard /><AdminUsers /></>}
+        {current === "usuarios" && <>{can("indicadores") && <AdminHouseTimelineCard />}{can("dono") && <AdminUsers />}</>}
         {current === "docs" && <AdminDocs />}
       </div>
     </div>

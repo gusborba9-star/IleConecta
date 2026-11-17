@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     if (!u?.user) return json({ error: "nao_autorizado" }, 401);
     const asUser = createClient(SB_URL, SB_ANON, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
     const result = await runAdminAction({
-      isAdmin: async () => Boolean((await asUser.rpc("is_admin")).data),
+      isAdmin: async () => Boolean((await asUser.rpc("admin_can", { p_module: "suporte" })).data),
       actorId: u.user.id,
       authAdmin: admin.auth.admin,
       authPublic: createClient(SB_URL, SB_ANON, { auth: { persistSession: false } }).auth,

@@ -2,6 +2,7 @@ import { focusRow, readFocus } from "@/lib/focusCore.js";
 import { useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { Badge, Button, Card, Input, Textarea } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
 import {
@@ -15,6 +16,7 @@ const PRI_TONE = { urgente: "danger", alta: "gold", normal: "muted" } as const;
 
 /** Seção "Suporte" do painel: fila por prioridade, dossiê com fatos reais, resposta por canal, decisão e ferramentas de conta. */
 export default function AdminSupport() {
+  const { can } = usePlatformConfig();
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [closedView, setClosedView] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function AdminSupport() {
 
   return (
     <div className="space-y-4">
-      <EmailCard />
+      {can("dono") && <EmailCard />}
       <Card className="p-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display font-bold text-lg">Chamados {!closedView && rows.length > 0 && <span className="text-sm text-muted-foreground">({rows.length} abertos)</span>}</h2>
@@ -95,6 +97,7 @@ function EmailCard() {
 }
 
 function PartyCard({ title, p, caseId }: { title: string; p: Party | null; caseId: string }) {
+  const { can } = usePlatformConfig();
   const [ident, setIdent] = useState<{ nome: string | null; email: string | null; guardada_ate: string } | null>(null);
   const look = async () => {
     const reason = window.prompt("Motivo da consulta da identidade retida (mín. 10 letras):") ?? "";
@@ -111,7 +114,7 @@ function PartyCard({ title, p, caseId }: { title: string; p: Party | null; caseI
         <div className="text-xs">
           <Badge tone="danger">conta excluída</Badge>
           {p.identidade_retida && <div className="mt-1">Identidade retida: {p.identidade_retida.nome ?? "(apagada pelo prazo)"} · {p.identidade_retida.email ?? "—"}</div>}
-          {!ident && p.identidade_retida && <button className="text-primary font-semibold mt-1" onClick={() => void look()}>Registrar consulta e ver casas</button>}
+          {!ident && p.identidade_retida && can("dono") && <button className="text-primary font-semibold mt-1" onClick={() => void look()}>Registrar consulta e ver casas</button>}
           {ident && <div className="mt-1">Guardada até {when(ident.guardada_ate)}</div>}
         </div>
       )}
@@ -145,6 +148,7 @@ function Facts({ facts }: { facts: Record<string, unknown> }) {
 }
 
 function CaseDossier({ id, onBack }: { id: string; onBack: () => void }) {
+  const { can } = usePlatformConfig();
   const [d, setD] = useState<Dossier | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [channel, setChannel] = useState<"autor" | "envolvido" | "interna">("autor");
@@ -277,8 +281,10 @@ function CaseDossier({ id, onBack }: { id: string; onBack: () => void }) {
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => void userAction("account_state", p.id)}>Ver estado da conta</Button>
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => void userAction("send_password_reset", p.id)}>Enviar recuperação de senha</Button>
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => void userAction("resend_confirmation", p.id)}>Reenviar confirmação</Button>
+                {can("contas") && <>
                 <Button size="sm" variant="danger" disabled={busy} onClick={() => { const r = ask("Motivo da suspensão (mín. 10 letras):", 10); if (r) void run(() => adminSuspend(p.id, r, id), "Conta suspensa."); }}>Suspender</Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const r = ask("Motivo da reativação (mín. 10 letras):", 10); if (r) void run(() => adminUnsuspend(p.id, r), "Conta reativada."); }}>Reativar</Button>
+                </>}
               </div>
             </div>
           ))}
