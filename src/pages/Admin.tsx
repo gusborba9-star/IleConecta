@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { Badge, Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { actors, filterAudit, mergeAudit } from "@/lib/auditCore";
 import {
   FEATURE_KEYS,
   FEATURE_STATES,
@@ -65,6 +66,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
   const [draft, setDraft] = useState<PlatformConfig>(() => clone(config));
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [auditWho, setAuditWho] = useState<string>("");
+  const [auditMore, setAuditMore] = useState(true);
   const [houses, setHouses] = useState<{ owner_id: string; name: string }[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -328,14 +331,31 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
       {section === "historico" && <Card className="p-5">
         <h2 className="font-display font-bold text-lg mb-2">Histórico de alterações</h2>
-        {audit.length === 0 ? (
+        {actors(audit).length > 1 && (
+          <select aria-label="Filtrar por quem fez" value={auditWho} onChange={(e) => setAuditWho(e.target.value)} className="mb-3 h-9 rounded-xl border border-border bg-card px-3 text-sm">
+            <option value="">Todos os administradores</option>
+            {actors(audit).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        )}
+        {filterAudit(audit, auditWho || null).length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma alteração ainda.</p>
         ) : (
-          <ul className="text-sm space-y-1">
-            {audit.map((a) => (
-              <li key={a.id} className="flex gap-2"><Badge tone="muted">{SETTING_LABEL[a.key] ?? a.key}</Badge><span className="text-muted-foreground">{new Date(a.created_at).toLocaleString("pt-BR")}</span></li>
+          <ul className="text-sm space-y-1.5" data-testid="audit-list">
+            {filterAudit(audit, auditWho || null).map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <Badge tone="muted">{SETTING_LABEL[a.key] ?? a.key}</Badge>
+                <span className="font-medium">{a.actor}</span>
+                <span className="text-muted-foreground">{new Date(a.createdAt).toLocaleString("pt-BR")}</span>
+              </li>
             ))}
           </ul>
+        )}
+        {auditMore && audit.length >= 50 && (
+          <Button variant="outline" className="mt-3" onClick={async () => {
+            const more = await fetchAudit(audit[audit.length - 1].id);
+            if (more.length < 50) setAuditMore(false);
+            setAudit((cur) => mergeAudit(cur, more));
+          }}>Ver mais antigos</Button>
         )}
       </Card>}
     </div>

@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 
-const files = readdirSync("supabase/migrations").filter((f) => /^01(29|3[0-9])_/.test(f)).sort();
+const files = readdirSync("supabase/migrations").filter((f) => /^01(29|3[0-6])_/.test(f)).sort();
 const strip = (sql) => sql.replace(/--[^\n]*/g, "");
 
 test("a Fase 5 existe e cobre as migrations 0129 a 0136", () => {

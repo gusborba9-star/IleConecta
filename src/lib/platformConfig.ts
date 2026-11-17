@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_CONFIG, sanitizeConfig, type PlatformConfig } from "@/lib/platformConfigCore";
+import { readAudit, type AuditEntry } from "@/lib/auditCore";
 
 export * from "@/lib/platformConfigCore";
 
@@ -41,16 +42,12 @@ export async function fetchAdminMetrics(): Promise<AdminMetrics | null> {
   return error ? null : (data as AdminMetrics);
 }
 
-export interface AuditRow {
-  id: number;
-  key: string;
-  created_at: string;
-}
+export type AuditRow = AuditEntry;
 
-export async function fetchAudit(): Promise<AuditRow[]> {
+export async function fetchAudit(before?: number): Promise<AuditRow[]> {
   if (!supabase) return [];
-  const { data } = await supabase.from("admin_audit").select("id, key, created_at").order("id", { ascending: false }).limit(30);
-  return (data ?? []) as AuditRow[];
+  const { data, error } = await supabase.rpc("admin_audit_feed", { p_limit: 50, p_before: before ?? null });
+  return error ? [] : readAudit(data);
 }
 
 export async function fetchHousesForBeta(): Promise<{ owner_id: string; name: string }[]> {
