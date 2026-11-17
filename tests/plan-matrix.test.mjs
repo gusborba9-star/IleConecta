@@ -33,7 +33,7 @@ test("os valores iniciais batem com a matriz aprovada pelo proprietário (14/11/
 });
 
 test("anti-divergência: o padrão do código é idêntico ao plan_matrix_default() do banco", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0112_card_gratis_link_qr.sql", import.meta.url), "utf8"); // definição vigente (a 0112 acrescentou o link e o QR code ao card do Grátis)
+  const sql = readFileSync(new URL("../supabase/migrations/0140_posts_com_a_cara_da_casa.sql", import.meta.url), "utf8"); // definição vigente (a 0140 acrescentou a ferramenta "posts com a cara da sua casa")
   const m = sql.match(/select '(\{"caps".*?\})'::jsonb;/s);
   assert.ok(m, "semente não encontrada");
   assert.deepEqual(JSON.parse(m[1]), DEFAULT_PLAN_MATRIX);

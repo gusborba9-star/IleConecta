@@ -3,6 +3,8 @@ import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
 import { fetchFollowSummary } from "@/lib/follows";
 import { fetchReviewSummary } from "@/lib/reviews";
+import { fromColumn } from "@/lib/postCardCore";
+import { cardImageUrl } from "@/lib/postImages";
 
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=1600&h=600&fit=crop";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -80,7 +82,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, house_id, kind, content, image_url, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, profiles(display_name, avatar_url, account_type, city, state))"
+      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, profiles(display_name, avatar_url, account_type, city, state))"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -127,6 +129,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
       houseId: String(owner),
       content: String(row.content),
       image: row.image_url ?? undefined,
+      card: readCard(row),
       kind: row.kind,
       likes: ((row.post_likes as Row[]) ?? []).map((l) => String(l.user_id)),
       likeCount: counts.get(String(row.id)),
@@ -137,17 +140,27 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   return { posts, commenters: Array.from(commenters.values()) };
 }
 
+/** Card estilizado de uma linha do banco (ou nada, se for o card normal ou os dados não forem confiáveis). */
+function readCard(row: Row): Post["card"] {
+  const style = fromColumn(row.card_style);
+  if (style === "normal" || typeof row.card_image_path !== "string") return undefined;
+  const image = cardImageUrl(row.card_image_path);
+  if (!image) return undefined;
+  const pct = Number(row.card_scrim);
+  return { style, image, scrimPct: Number.isFinite(pct) ? Math.min(85, Math.max(35, Math.round(pct))) : 55 };
+}
+
 /** Cria a publicação da casa logada. Devolve o post salvo ou null se o servidor recusar. */
 export async function remoteCreatePost(
   ownerId: string,
-  input: { content: string; kind: Post["kind"]; image?: string }
+  input: { content: string; kind: Post["kind"]; image?: string; card?: { style: "total" | "parcial"; path: string; scrimPct: number } }
 ): Promise<Post | null> {
   if (!supabase) return null;
   const { data: house } = await supabase.from("houses").select("id").eq("owner_id", ownerId).maybeSingle();
   if (!house) return null;
   const { data, error } = await supabase
     .from("posts")
-    .insert({ house_id: house.id, kind: input.kind, content: input.content, image_url: input.image ?? null })
+    .insert({ house_id: house.id, kind: input.kind, content: input.content, image_url: input.image ?? null, ...(input.card ? { card_style: input.card.style, card_image_path: input.card.path, card_rights_ack: true, card_scrim: input.card.scrimPct } : {}) })
     .select("id, created_at")
     .single();
   if (error) rememberPlanGuard(error);
@@ -157,6 +170,7 @@ export async function remoteCreatePost(
     houseId: ownerId,
     content: input.content,
     image: input.image,
+    card: input.card ? { style: input.card.style, image: cardImageUrl(input.card.path) ?? "", scrimPct: input.card.scrimPct } : undefined,
     kind: input.kind,
     likes: [],
     comments: [],

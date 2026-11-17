@@ -27,16 +27,17 @@ export const CAP_FLAGS = {
   campaign_daily_count: "Contagem dia a dia dos links de divulgação",
   campaign_insights_full: "Todos os assuntos e serviços mais procurados",
   ritual_video: "Vídeo de 30 s nos registros do ritual",
+  styled_posts: "Posts com a cara da sua casa (foto de fundo e texto legível)",
 };
 export const CAP_NUMBER_KEYS = Object.keys(CAP_NUMBERS);
 export const CAP_FLAG_KEYS = Object.keys(CAP_FLAGS);
 
 export const DEFAULT_PLAN_MATRIX = {
   caps: {
-    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
-    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
-    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false },
-    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true },
+    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false },
+    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false },
+    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true },
+    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true },
   },
   // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month} viram o número do plano na hora de mostrar.
   // "feature" esconde o item até o interruptor do painel ser ligado (aparece sozinho, como novidade).
@@ -71,6 +72,7 @@ export const DEFAULT_PLAN_MATRIX = {
         { text: "A assistente da casa atende 24h (até {assistant_replies} respostas por mês) e informa as datas da agenda", feature: null },
         { text: "Ela conhece a sua casa: serviços, rituais, horários e perguntas frequentes", feature: null },
         { text: "Passa para você os assuntos delicados, com aviso no sino", feature: null },
+        { text: "Posts com a cara da sua casa: a foto do seu templo ou altar vira o fundo da publicação, com o texto sempre legível", feature: null },
         { text: "Catálogo interno e relatório do atendimento", feature: null },
         { text: "Até {campaign_links} links de divulgação, com QR code e modo discreto", feature: null },
         { text: "Até {quick_replies} respostas rápidas para o chat", feature: null },

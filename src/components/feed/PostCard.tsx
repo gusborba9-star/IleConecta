@@ -1,3 +1,4 @@
+import StyledPostBody from "@/components/feed/StyledPostBody";
 import { useState } from "react";
 import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
@@ -60,9 +61,13 @@ export default function PostCard({ post }: { post: Post }) {
         </button>
       </div>
 
-      <div className="px-4 pb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{post.content}</div>
+      {post.card ? (
+        <StyledPostBody text={post.content} card={post.card} />
+      ) : (
+        <div className="px-4 pb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{post.content}</div>
+      )}
 
-      {post.image && (
+      {!post.card && post.image && (
         <div className="border-t border-border">
           <img src={post.image} alt="" className="w-full max-h-[520px] object-cover" />
         </div>

@@ -48,7 +48,7 @@ interface AppState {
   login: (email: string, password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   register: (data: RegisterInput) => Promise<AuthResult>;
-  createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">) => Promise<Post | null>;
+  createPost: (post: Omit<Post, "id" | "createdAt" | "likes" | "comments">, opts?: { cardPath?: string }) => Promise<Post | null>;
   /** Recarrega casas e publicações reais do servidor (sem efeito no modo demonstração). */
   refreshRemote: () => Promise<void>;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
@@ -247,10 +247,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserId(user.id);
       return { ok: true, user };
     },
-    async createPost(post) {
+    async createPost(post, opts) {
       if (isSupabaseConfigured) {
         if (!currentUser) return null;
-        const saved = await remoteCreatePost(currentUser.id, { content: post.content, kind: post.kind, image: post.image });
+        const saved = await remoteCreatePost(currentUser.id, {
+          content: post.content,
+          kind: post.kind,
+          image: post.image,
+          card: post.card && opts?.cardPath ? { style: post.card.style, path: opts.cardPath, scrimPct: post.card.scrimPct } : undefined,
+        });
         if (saved) setRemotePosts((prev) => [saved, ...prev]);
         return saved;
       }

@@ -46,6 +46,8 @@ export interface Post {
   houseId: string; // author user id
   content: string;
   image?: string;
+  /** Card estilizado (Profissional/Premium): modo, imagem da plataforma e força do fundo atrás do texto (%). */
+  card?: { style: "total" | "parcial"; image: string; scrimPct: number };
   kind: "trabalho" | "ritual" | "buzios" | "story" | "geral";
   ritualId?: string;
   likes: string[]; // user ids visíveis (o banco só mostra as próprias curtidas; a dona da casa vê todas)
