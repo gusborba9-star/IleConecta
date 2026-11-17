@@ -23,6 +23,9 @@ await su.query(`alter table cron.job add column if not exists active boolean def
 const mig = readFileSync(new URL("../migrations/0155_saude_da_plataforma_e_alertas.sql", import.meta.url), "utf8");
 let e = null; try { await su.query(mig); await su.query(mig); } catch (x) { e = x.message; }
 ok("0155 aplica e reaplica sem erro", e === null, e ?? "");
+const mig56 = readFileSync(new URL("../migrations/0156_saude_rotina_em_execucao_nao_e_falha.sql", import.meta.url), "utf8");
+let e56 = null; try { await su.query(mig56); await su.query(mig56); } catch (x) { e56 = x.message; }
+ok("0156 (rotina em execução não é falha) aplica e reaplica sem erro", e56 === null, e56 ?? "");
 ok("a migration agenda as duas rotinas (health-check a cada 10 min e purge-system-events)", /cron\.schedule\('health-check', '\*\/10 \* \* \* \*'/.test(mig) && /cron\.schedule\('purge-system-events'/.test(mig));
 
 // ---- permissões e RLS
@@ -103,6 +106,10 @@ await su.query("delete from notifications; delete from health_alerts");
 await su.query("insert into cron.job_run_details(jobid,status,start_time) values (1,'succeeded',now() - interval '1 minute'), (2,'succeeded',now() - interval '10 minutes'), (3,'succeeded',now() - interval '5 hours'), (4,'succeeded',now() - interval '5 minutes')");
 await hc();
 ok("tudo saudável: nenhum aviso", (await notes()).length === 0);
+await su.query("insert into cron.job_run_details(jobid,status,start_time) values (2,'running',now()), (1,'starting',now())");
+await hc();
+ok("rotina em execução (running/starting) não é falha: nenhum aviso falso", (await notes()).length === 0 && (await su.query("select count(*)::int n from health_alerts")).rows[0].n === 0);
+await su.query("delete from cron.job_run_details where status in ('running','starting')");
 await su.query("insert into cron.job_run_details(jobid,status,start_time) values (2,'failed',now() - interval '5 minutes')");
 await hc();
 let n1 = await notes();
