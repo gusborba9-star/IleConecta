@@ -26,10 +26,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
   useEffect(() => {
     void load();
     // Aviso novo em tempo real: atualiza o sino e, se a pessoa ativou, toca o som.
-    const stop = subscribeNotifications(userId, () => {
-      void load();
-      if (chimeEnabled()) void playChime();
-    });
+    const stop = subscribeNotifications(
+      userId,
+      () => {
+        void load();
+        if (chimeEnabled()) void playChime();
+      },
+      () => void load(),
+    );
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 60000);
