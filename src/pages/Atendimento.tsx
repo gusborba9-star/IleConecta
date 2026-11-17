@@ -41,9 +41,16 @@ function Conversations({ link }: { link: StaffLink }) {
   const listRef = useRef<HTMLDivElement>(null);
   const canReply = hasPerm(link.perms, "chat_reply");
 
+  // `?conversa=<id>`: vem da central de pendências; abre a conversa pedida (se ela for da lista liberada a esta pessoa)
+  const [params] = useSearchParams();
+  const wantedConv = params.get("conversa");
   useEffect(() => {
-    void fetchStaffConversations().then(setConvs);
-  }, []);
+    void fetchStaffConversations().then((list) => {
+      setConvs(list);
+      const hit = wantedConv ? list.find((c) => c.id === wantedConv) : undefined;
+      if (hit) setOpen(hit);
+    });
+  }, [wantedConv]);
   const loadThread = useCallback(async (c: StaffConversation) => {
     setMsgs(await fetchStaffMessages(c.id));
     setHandoff(await fetchHandoff(c.id));
