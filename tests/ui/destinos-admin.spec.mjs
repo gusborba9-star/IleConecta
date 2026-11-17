@@ -59,8 +59,8 @@ test.describe("central da administração abre o item exato", () => {
 
   test("histórico da administração: abrir a linha do tempo de uma casa aparece com nome legível (não a chave técnica)", async ({ page }) => {
     await api(page, {
-      rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }], admin_audit: [{ id: 2, key: "ver_linha_do_tempo_da_casa", created_at: "2026-11-16T22:00:00Z" }, { id: 1, key: "billing_enroll", created_at: "2026-11-16T21:00:00Z" }] },
-      rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } },
+      rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }] },
+      rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_audit_feed: [{ id: 2, key: "ver_linha_do_tempo_da_casa", created_at: "2026-11-16T22:00:00Z", admin_id: null, actor: "Gustavo" }, { id: 1, key: "billing_enroll", created_at: "2026-11-16T21:00:00Z", admin_id: null, actor: "Gustavo" }] },
     });
     await page.goto("/admin?s=historico");
     await expect(page.getByText("Abriu a linha do tempo de uma casa")).toBeVisible();
