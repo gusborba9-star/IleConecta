@@ -95,7 +95,7 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           "O pagamento do cliente vai direto para a conta de pagamento da casa, sem retenção pela plataforma. A comissão da plataforma é descontada automaticamente em cada pagamento, e a tarifa do processador de pagamento (Stripe) é cobrada da casa.",
           "Se o cliente relatar falha na entrega dentro de 30 dias após a conclusão (art. 26 do Código de Defesa do Consumidor), a plataforma analisa. Se o reembolso for aprovado, o valor integral é devolvido ao cliente a partir da conta de pagamento da casa.",
-          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do repasse conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
+          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do recebimento conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
         ],
       },
       {
@@ -176,7 +176,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: "Recebimento, tarifas e comissão",
         paragraphs: [
           "Os pagamentos são processados pelo Stripe e caem direto na conta de pagamento da casa, sem retenção pela plataforma. A tarifa do Stripe é cobrada da casa. A comissão da plataforma (15% sobre rituais com vagas e 4% sobre serviços contratados pela plataforma) é descontada automaticamente em cada pagamento. Para receber, a casa cadastra a sua conta de pagamento no Stripe e mantém os dados em dia.",
-          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do repasse conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
+          "Tarifas de Processamento de Pagamento: Nas transações realizadas entre CLIENTES e CASAS ESPIRITUAIS (serviços, consultas, rituais, trabalhos e mensalidades de membros), os custos e tarifas cobrados pelo processador de pagamentos (Stripe) serão arcados exclusivamente pela CASA ESPIRITUAL, descontados no momento do recebimento conforme as condições vigentes. Nas contratações realizadas pela CASA ESPIRITUAL diretamente junto ao Ilê Conecta (planos de assinatura, pacotes de créditos de IA, destaques, impulsionamentos e vagas extras de equipe), as tarifas do processador de pagamentos serão arcadas integralmente pela plataforma, inclusive em caso de reembolso dentro do prazo legal.",
         ],
       },
       {
@@ -294,6 +294,7 @@ export const INFO_PAGES: InfoPage[] = [
           "Cadastro: nome, e-mail, cidade e estado, e o tipo de conta (cliente ou casa).",
           "Conteúdo: fotos, publicações, comentários e mensagens.",
           "Uso do sistema: ações dentro da plataforma, como reservas e conversas com a assistente.",
+          "Registros de acesso: endereço IP, data e hora em que a sua conta acessa a plataforma. Guardamos por 6 meses, por obrigação legal (LGPD, art. 7º, II, e Marco Civil da Internet, art. 15), e depois apagamos automaticamente.",
           "Documento do responsável pela casa (CPF ou CNPJ), informado ao contratar plano ou recursos pagos.",
         ],
       },

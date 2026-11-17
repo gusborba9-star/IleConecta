@@ -151,4 +151,4 @@ Não registrar repasse como realizado sem evidência do provedor. Não somar val
 - Compras cliente→casa (serviços, consultas, rituais, trabalhos e mensalidades de membros): a tarifa do Stripe é da **casa**.
 - Compras casa→plataforma (planos, créditos de IA, destaques, impulsionamentos e vagas extras de equipe): a tarifa é da **plataforma**, inclusive em reembolso dentro do prazo legal.
 - Texto nos Termos da casa e em "Eventos, taxa e repasse" (versão 2026-11-rascunho-7), na redação do advogado.
-- Ponto levado ao advogado: a redação diz "descontados no momento do repasse"; no desenho atual (cobrança direta) a tarifa é descontada pelo Stripe no recebimento, sem repasse da plataforma.
+- Redação ajustada com o advogado (17/11/2026): "descontados no momento do recebimento", fiel à cobrança direta (o Stripe desconta a tarifa no recebimento; a plataforma não faz repasse).
