@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { reportClientError } from "@/lib/clientErrors";
 
 /** Se uma tela não abre (internet caiu no meio do carregamento, publicação nova no ar, erro inesperado), mostra um aviso com o botão de tentar de novo
  *  em vez de deixar a tela em branco. */
@@ -9,6 +10,7 @@ export default class TelaComErro extends Component<{ children: ReactNode }, { er
   }
   componentDidCatch(error: unknown) {
     console.error("Tela não abriu:", error);
+    reportClientError(error);
   }
   render() {
     if (!this.state.erro) return this.props.children;

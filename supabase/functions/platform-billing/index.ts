@@ -16,6 +16,11 @@ const SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("PLATFORM_STRIPE_WEBHOOK_SECRET") ?? "";
 const APP_URL = (Deno.env.get("APP_URL") ?? "https://ile-conecta.vercel.app").replace(/\/$/, "");
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+
+// Registra uma falha inesperada para o painel "Saúde da plataforma" (nunca atrapalha a resposta).
+async function logFalha(source: string, detail: string) {
+  try { await admin.rpc("log_system_event", { p_kind: "funcao_erro", p_source: source, p_detail: detail }); } catch { /* sem registro */ }
+}
 const registry = createRegistry([createStripeAdapter({ secret: SECRET, webhookSecret: WEBHOOK_SECRET })]);
 const store = createStore(admin);
 
@@ -152,7 +157,8 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("platform_billing_error", String(e));
     if (e instanceof ChargeStateError) return fail(e.message, CODE_STATUS[e.code] ?? 409, e.code);
-    if (e instanceof ProviderError) return fail("O meio de pagamento não respondeu. Tente de novo em instantes.", 502);
+    if (e instanceof ProviderError) { await logFalha("platform-billing", `provedor: ${e.message}`); return fail("O meio de pagamento não respondeu. Tente de novo em instantes.", 502); }
+    await logFalha("platform-billing", String(e));
     return fail("Não foi possível concluir agora. Tente de novo.", 500);
   }
 });

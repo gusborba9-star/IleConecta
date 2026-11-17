@@ -6,6 +6,7 @@ import { applyTheme, getThemePref, watchSystemTheme } from "./lib/theme";
 import App from "./App";
 import { AppProvider } from "./contexts/AppContext";
 import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
+import { installClientErrorReporting } from "./lib/clientErrors";
 import "./index.css";
 
 // Depois de uma publicação nova, uma aba antiga pode pedir uma tela que mudou de nome: recarrega uma vez só para pegar a versão nova.
@@ -27,6 +28,7 @@ window.addEventListener("load", () => {
   }
 });
 
+installClientErrorReporting();
 applyTheme(getThemePref());
 watchSystemTheme();
 

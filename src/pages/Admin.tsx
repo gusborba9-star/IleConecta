@@ -38,6 +38,7 @@ import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import PendingCenterCard from "@/components/admin/PendingCenterCard";
+import PlatformHealthCard from "@/components/admin/PlatformHealthCard";
 import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
@@ -116,6 +117,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </div>}
 
       {section === "visao" && <PendingCenterCard />}
+      {section === "visao" && can("dono") && <PlatformHealthCard />}
       {section === "visao" && <AdminIndicatorsCard />}
 
       {section === "visao" && (!metrics ? (

@@ -19,6 +19,11 @@ const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
 
+// Registra uma falha inesperada para o painel "Saúde da plataforma" (nunca atrapalha a resposta).
+async function logFalha(source: string, detail: string) {
+  try { await admin.rpc("log_system_event", { p_kind: "funcao_erro", p_source: source, p_detail: detail }); } catch { /* sem registro */ }
+}
+
 // Provedor ativo para NOVAS cobranças e cadastros. Pagamentos já existentes seguem o provedor gravado neles.
 const ACTIVE_PROVIDER = "stripe";
 const registry = createRegistry([createStripeAdapter({ secret: SECRET, webhookSecret: WEBHOOK_SECRET })], [ACTIVE_PROVIDER]);
@@ -240,7 +245,8 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("payments_error", String(e));
     if (e instanceof DivergenceError || e instanceof CheckoutStateError) return fail(e.message, 409);
-    if (e instanceof ProviderError) return fail(`Provedor: ${e.message}`.slice(0, 300), 502);
+    if (e instanceof ProviderError) { await logFalha("payments", `provedor: ${e.message}`); return fail(`Provedor: ${e.message}`.slice(0, 300), 502); }
+    await logFalha("payments", String(e));
     return fail("Não foi possível concluir agora. Tente de novo.", 500);
   }
 });

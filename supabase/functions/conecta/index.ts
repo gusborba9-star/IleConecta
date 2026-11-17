@@ -65,6 +65,10 @@ Deno.serve(async (req) => {
           if (!res.ok) throw new Error(`openrouter_${res.status}`);
           const out = await res.json();
           return String(out?.choices?.[0]?.message?.content ?? "");
+        } catch (e) {
+          // a falha vai para a Saúde da plataforma (só o código do provedor, nunca o texto da pessoa); a assistente responde "indisponível"
+          try { await admin.rpc("log_system_event", { p_kind: "ia_falha", p_source: "conecta", p_detail: e instanceof Error ? e.message : "falha desconhecida" }); } catch { /* sem registro */ }
+          throw e;
         } finally { clearTimeout(t); }
       },
     }, body);
