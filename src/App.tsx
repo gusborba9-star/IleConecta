@@ -1,42 +1,56 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/layout/AppShell";
 import PublicLayout from "@/components/layout/PublicLayout";
 import Feed from "@/pages/Feed";
 import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import HousePage from "@/pages/HousePage";
-import Profile from "@/pages/Profile";
-import Rituals from "@/pages/Rituals";
-import RitualDetail from "@/pages/RitualDetail";
-import Messages from "@/pages/Messages";
-import RealMessages from "@/pages/RealMessages";
-import Boost from "@/pages/Boost";
-import Discover from "@/pages/Discover";
-import Highlights from "@/pages/Highlights";
-import Plans from "@/pages/Plans";
-import Activity from "@/pages/Activity";
-import Support from "@/pages/Support";
-import MyCases from "@/pages/MyCases";
-import { ForgotPassword, ResetPassword } from "@/pages/Recover";
-import Terms from "@/pages/Terms";
-import Moderation from "@/pages/Moderation";
-import HouseMembers from "@/pages/HouseMembers";
-import Divulgacao from "@/pages/Divulgacao";
-import Equipe from "@/pages/Equipe";
-import EquipeConvite from "@/pages/EquipeConvite";
-import Atendimento from "@/pages/Atendimento";
-import Mensalidades from "@/pages/Mensalidades";
-import Pessoas from "@/pages/Pessoas";
-import MemberInvite from "@/pages/MemberInvite";
-import Info from "@/pages/Info";
-import PublicHousePage from "@/pages/PublicHouse";
-import AdminShell from "@/pages/AdminShell";
 import HouseHome from "@/pages/HouseHome";
-import PaymentReturn from "@/pages/PaymentReturn";
-import PaymentAccountReturn from "@/pages/PaymentAccountReturn";
-import NotFound from "@/pages/NotFound";
 import { useApp } from "@/contexts/AppContext";
 import { ConfirmProvider } from "@/components/base/Confirm";
+import TelaComErro from "@/components/layout/TelaComErro";
+
+// Cada tela é baixada só quando a pessoa chega nela: o primeiro carregamento no celular fica bem menor.
+// Entrada (login), feed e página inicial da casa ficam no pacote principal.
+const Register = lazy(() => import("@/pages/Register"));
+const HousePage = lazy(() => import("@/pages/HousePage"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Rituals = lazy(() => import("@/pages/Rituals"));
+const RitualDetail = lazy(() => import("@/pages/RitualDetail"));
+const Messages = lazy(() => import("@/pages/Messages"));
+const RealMessages = lazy(() => import("@/pages/RealMessages"));
+const Boost = lazy(() => import("@/pages/Boost"));
+const Discover = lazy(() => import("@/pages/Discover"));
+const Highlights = lazy(() => import("@/pages/Highlights"));
+const Plans = lazy(() => import("@/pages/Plans"));
+const Activity = lazy(() => import("@/pages/Activity"));
+const Support = lazy(() => import("@/pages/Support"));
+const MyCases = lazy(() => import("@/pages/MyCases"));
+const ForgotPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ResetPassword })));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Moderation = lazy(() => import("@/pages/Moderation"));
+const HouseMembers = lazy(() => import("@/pages/HouseMembers"));
+const Divulgacao = lazy(() => import("@/pages/Divulgacao"));
+const Equipe = lazy(() => import("@/pages/Equipe"));
+const EquipeConvite = lazy(() => import("@/pages/EquipeConvite"));
+const Atendimento = lazy(() => import("@/pages/Atendimento"));
+const Mensalidades = lazy(() => import("@/pages/Mensalidades"));
+const Pessoas = lazy(() => import("@/pages/Pessoas"));
+const MemberInvite = lazy(() => import("@/pages/MemberInvite"));
+const Info = lazy(() => import("@/pages/Info"));
+const PublicHousePage = lazy(() => import("@/pages/PublicHouse"));
+const AdminShell = lazy(() => import("@/pages/AdminShell"));
+const PaymentReturn = lazy(() => import("@/pages/PaymentReturn"));
+const PaymentAccountReturn = lazy(() => import("@/pages/PaymentAccountReturn"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+
+function TelaCarregando() {
+  return (
+    <div className="min-h-[50vh] grid place-items-center text-sm text-muted-foreground" role="status">
+      Carregando…
+    </div>
+  );
+}
 
 function Protected({ children }: { children: JSX.Element }) {
   const { currentUser, authReady } = useApp();
@@ -67,6 +81,8 @@ function Home() {
 export default function App() {
   return (
     <ConfirmProvider>
+    <TelaComErro>
+    <Suspense fallback={<TelaCarregando />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -115,6 +131,8 @@ export default function App() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
+    </TelaComErro>
     </ConfirmProvider>
   );
 }

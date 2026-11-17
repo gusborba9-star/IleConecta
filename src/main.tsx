@@ -8,6 +8,25 @@ import { AppProvider } from "./contexts/AppContext";
 import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
 import "./index.css";
 
+// Depois de uma publicação nova, uma aba antiga pode pedir uma tela que mudou de nome: recarrega uma vez só para pegar a versão nova.
+window.addEventListener("vite:preloadError", (ev) => {
+  try {
+    if (sessionStorage.getItem("ile.reload.chunk")) return;
+    sessionStorage.setItem("ile.reload.chunk", "1");
+  } catch {
+    return;
+  }
+  ev.preventDefault();
+  window.location.reload();
+});
+window.addEventListener("load", () => {
+  try {
+    sessionStorage.removeItem("ile.reload.chunk");
+  } catch {
+    /* sem sessionStorage */
+  }
+});
+
 applyTheme(getThemePref());
 watchSystemTheme();
 
