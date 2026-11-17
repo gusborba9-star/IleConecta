@@ -73,3 +73,29 @@ test("toda rotina agendada nas migrations tem descrição em português (rotina 
   const sem = [...names].filter((n) => !cronDescription(n));
   assert.deepEqual(sem, []);
 });
+
+test("orientações: cada tipo de alerta e de erro diz quem resolve e o que fazer, sem quebrar com texto estranho", async () => {
+  const { describeAlert, describeError, WHO_TEXT } = await import("../src/lib/platformHealthCore.js");
+  for (const code of ["cron_falhou:refund-sweep", "cron_parou:x", "pico:erro_app", "pico:ia_falha", "pico:funcao_erro", "qualquer", "", null, undefined, "<b>:<i>"]) {
+    const d = describeAlert(code);
+    assert.ok(d.title.length > 5 && d.steps.length >= 1 && WHO_TEXT[d.who], String(code));
+  }
+  assert.equal(describeAlert("cron_falhou:refund-sweep").routine, "refund-sweep");
+  assert.equal(describeAlert("pico:ia_falha").routine, null);
+  for (const [k, s] of [["erro_app", "app"], ["ia_falha", "assistant-chat"], ["funcao_erro", "payments"], ["funcao_erro", "push-notify"], ["funcao_erro", "x"], ["??", ""]]) {
+    const d = describeError(k, s);
+    assert.ok(d.steps.length >= 1 && WHO_TEXT[d.who], `${k}/${s}`);
+  }
+  assert.match(describeError("ia_falha", "x").steps[0], /OpenRouter/);
+});
+
+test("leitura: can_run, alerta visto e execuções manuais; lixo vira valor seguro", () => {
+  const h = readHealth({ ...base, cron: [{ name: "a", can_run: true }, { name: "b", can_run: "sim" }, { name: "c" }], alerts: [{ code: "x", since: "2026-11-17T21:50:00Z", seen_at: "lixo" }, { code: "y", seen_at: "2026-11-17T21:55:00Z" }],
+    manual_runs: Array.from({ length: 9 }, (_, i) => ({ routine: "r" + i, at: "2026-11-17T21:50:00Z", ok: i === 0, note: i === 1 ? "z".repeat(999) : null })) });
+  assert.deepEqual(h.cron.map((c) => c.canRun), [true, false, false]);
+  assert.equal(h.alerts[0].seenAt, null);
+  assert.ok(h.alerts[1].seenAt);
+  assert.equal(h.manualRuns.length, 5);
+  assert.equal(h.manualRuns[1].note.length, 200);
+  assert.deepEqual(readHealth(null).manualRuns, []);
+});

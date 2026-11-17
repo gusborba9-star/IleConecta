@@ -11,7 +11,7 @@ export function readHealth(raw) {
   const counts = (o) => ({ erro_app: num(o?.erro_app), ia_falha: num(o?.ia_falha), funcao_erro: num(o?.funcao_erro) });
   const cron = (Array.isArray(r.cron) ? r.cron : []).slice(0, 100).map((c) => ({
     name: txt(c?.name, 80), schedule: txt(c?.schedule, 40), active: c?.active !== false,
-    lastRun: iso(c?.last_run), lastStatus: txt(c?.last_status, 40) || null, runs24: num(c?.runs_24h), failed24: num(c?.failed_24h), failed30: num(c?.failed_30min),
+    lastRun: iso(c?.last_run), lastStatus: txt(c?.last_status, 40) || null, runs24: num(c?.runs_24h), failed24: num(c?.failed_24h), failed30: num(c?.failed_30min), canRun: c?.can_run === true,
   }));
   return {
     generatedAt: iso(r.generated_at),
@@ -22,7 +22,8 @@ export function readHealth(raw) {
     })),
     cron,
     db: { sizeBytes: num(r.db?.size_bytes), connections: num(r.db?.connections) },
-    alerts: (Array.isArray(r.alerts) ? r.alerts : []).slice(0, 50).map((a) => ({ code: txt(a?.code, 120), since: iso(a?.since) })),
+    alerts: (Array.isArray(r.alerts) ? r.alerts : []).slice(0, 50).map((a) => ({ code: txt(a?.code, 120), since: iso(a?.since), seenAt: iso(a?.seen_at) })),
+    manualRuns: (Array.isArray(r.manual_runs) ? r.manual_runs : []).slice(0, 5).map((m) => ({ routine: txt(m?.routine, 80), at: iso(m?.at), ok: m?.ok === true, note: txt(m?.note, 200) || null })),
   };
 }
 
@@ -92,6 +93,46 @@ export function cronWhen(schedule) {
   }
   return "";
 }
+
+/** Orientação em português para cada tipo de problema: quem resolve e o que fazer. who: "claude" (me chame), "voce" (ação sua), "ambos" (você confere, depois me chama). */
+export function describeAlert(code) {
+  const [tipo, alvo = ""] = String(code ?? "").split(":");
+  if (tipo === "cron_falhou") return { title: `A rotina "${alvo}" falhou`, who: "ambos", routine: alvo, steps: [
+    "Toque em “Rodar agora” nessa rotina (na lista abaixo). Se foi oscilação, ela volta ao normal.",
+    "Se falhar de novo, me mande um print desta tela: é defeito e eu corrijo." ] };
+  if (tipo === "cron_parou") return { title: `A rotina "${alvo}" parou de rodar`, who: "ambos", routine: alvo, steps: [
+    "Confira no painel do Supabase se o projeto não está pausado ou com problema.",
+    "Se estiver tudo normal, toque em “Rodar agora” nessa rotina.",
+    "Se continuar parada, me chame." ] };
+  if (tipo === "pico" && alvo === "erro_app") return { title: "Muitos erros no app em pouco tempo", who: "claude", routine: null, steps: [
+    "Abra o app e veja se alguma tela está quebrada.",
+    "Me mande um print desta tela, com os “Erros mais frequentes”: a correção é comigo." ] };
+  if (tipo === "pico" && alvo === "ia_falha") return { title: "Muitas falhas da assistente de IA", who: "ambos", routine: null, steps: [
+    "Entre na OpenRouter e confira o saldo e o limite de gasto da chave (ação sua).",
+    "Se estiver tudo certo e as falhas continuarem, me chame. A assistente já tenta o modelo reserva sozinha." ] };
+  if (tipo === "pico" && alvo === "funcao_erro") return { title: "Muitos erros em funções do servidor", who: "ambos", routine: null, steps: [
+    "Veja nos “Erros mais frequentes” qual função falhou.",
+    "Se for pagamento (payments ou platform-billing), confira no painel da Stripe se há eventos falhando; a Stripe reenvia sozinha por alguns dias.",
+    "Me mande um print desta tela: a correção é comigo." ] };
+  return { title: "Alerta técnico", who: "claude", routine: null, steps: ["Me mande um print desta tela para eu investigar."] };
+}
+
+export function describeError(kind, source) {
+  if (kind === "ia_falha") return { who: "ambos", steps: [
+    "Confira o saldo e o limite de gasto da chave na OpenRouter (ação sua).",
+    "Se estiver tudo certo e repetir, me mande um print. A assistente já tenta o modelo reserva sozinha." ] };
+  if (kind === "funcao_erro" && (source === "payments" || source === "platform-billing")) return { who: "ambos", steps: [
+    "Confira no painel da Stripe se há eventos ou webhooks falhando; a Stripe reenvia sozinha por alguns dias.",
+    "Se repetir, me mande um print: a correção é comigo." ] };
+  if (kind === "funcao_erro" && source === "push-notify") return { who: "claude", steps: [
+    "Isso só atrasa avisos no celular; o resto funciona normalmente.",
+    "Se repetir, me mande um print." ] };
+  return { who: "claude", steps: [
+    kind === "erro_app" ? "É um defeito de tela; quem está usando segue com o resto do app." : "É um erro do servidor.",
+    "Me mande um print desta tela: a correção é comigo." ] };
+}
+
+export const WHO_TEXT = { claude: "Quem resolve: eu (Claude)", voce: "Quem resolve: você", ambos: "Você confere e, se continuar, me chama" };
 
 export function ago(isoStr, now = Date.now()) {
   const t = Date.parse(isoStr ?? "");

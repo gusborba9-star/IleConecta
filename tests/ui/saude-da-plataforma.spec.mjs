@@ -13,11 +13,12 @@ const HEALTH = {
     { kind: "erro_app", source: "app", route: null, detail: "<img src=x onerror=window.__xss=1>", n: 2, first_at: ago(3600000), last_at: ago(60000) },
   ],
   cron: [
-    { name: "refund-sweep", schedule: "*/10 * * * *", active: true, last_run: ago(300000), last_status: "succeeded", runs_24h: 144, failed_24h: 0, failed_30min: 0 },
-    { name: "plan-trial-revert", schedule: "5 * * * *", active: true, last_run: ago(600000), last_status: "failed", runs_24h: 24, failed_24h: 1, failed_30min: 1 },
-    { name: "purge-live-pings", schedule: "30 3 * * *", active: true, last_run: null, last_status: null, runs_24h: 0, failed_24h: 0, failed_30min: 0 },
+    { name: "refund-sweep", schedule: "*/10 * * * *", active: true, last_run: ago(300000), last_status: "succeeded", runs_24h: 144, failed_24h: 0, failed_30min: 0, can_run: true },
+    { name: "plan-trial-revert", schedule: "5 * * * *", active: true, last_run: ago(600000), last_status: "failed", runs_24h: 24, failed_24h: 1, failed_30min: 1, can_run: true },
+    { name: "purge-live-pings", schedule: "30 3 * * *", active: true, last_run: null, last_status: null, runs_24h: 0, failed_24h: 0, failed_30min: 0, can_run: false },
   ],
-  db: { size_bytes: 27 * 1048576, connections: 7 }, alerts: [{ code: "cron_falhou:plan-trial-revert", since: ago(500000) }],
+  db: { size_bytes: 27 * 1048576, connections: 7 }, alerts: [{ code: "cron_falhou:plan-trial-revert", since: ago(500000), seen_at: null }, { code: "pico:ia_falha", since: ago(900000), seen_at: ago(60000) }],
+  manual_runs: [{ routine: "refund-sweep", at: ago(3600000), ok: true, note: null }],
 };
 
 test.describe("app relata erros inesperados", () => {
@@ -77,7 +78,7 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
       await page.goto("/admin");
       await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
       await expect(page.getByText("Precisa de atenção")).toBeVisible();
-      await expect(page.getByText("1 alerta em aberto")).toBeVisible();
+      await expect(page.getByText("2 alertas em aberto")).toBeVisible();
       await expect(page.getByText("Erros no app", { exact: true })).toBeVisible();
       await expect(page.getByText("5×")).toBeVisible();
       await expect(page.getByText("TypeError: x is undefined")).toBeVisible();
@@ -118,5 +119,85 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
     await page.waitForTimeout(500);
     await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toHaveCount(0);
     expect(calls.filter((c) => c.name === "admin_health").length).toBe(0);
+  });
+});
+
+test.describe("ações do dono no cartão", () => {
+  const setup = (page, extra = {}) => api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: HEALTH, ...extra } });
+  test("alerta abre com 'o que fazer' em português; 'Já vi' chama o servidor", async ({ page }) => {
+    let visto = false;
+    const calls = await setup(page, {
+      admin_ack_alert: () => { visto = true; return true; },
+      admin_health: () => (visto ? { ...HEALTH, alerts: HEALTH.alerts.map((a) => ({ ...a, seen_at: a.seen_at ?? ago(1000) })) } : HEALTH),
+    });
+    await page.goto("/admin");
+    const al = page.getByRole("region", { name: "Alertas em aberto" });
+    await expect(al.locator("ul > li")).toHaveCount(2);
+    await expect(al.locator("ul > li").nth(0)).toContainText("novo");
+    await expect(al.locator("ul > li").nth(1)).toContainText("visto");
+    await al.getByText('A rotina "plan-trial-revert" falhou').click();
+    await expect(al).toContainText("Toque em “Rodar agora” nessa rotina");
+    await expect(al).toContainText("Você confere e, se continuar, me chama");
+    await al.getByRole("button", { name: "Já vi" }).click();
+    await expect.poll(() => calls.filter((c) => c.name === "admin_ack_alert").length).toBe(1);
+    expect(calls.find((c) => c.name === "admin_ack_alert").body).toEqual({ p_code: "cron_falhou:plan-trial-revert" });
+    await expect(al.getByRole("button", { name: "Já vi" })).toHaveCount(0);
+  });
+  test("erro frequente abre com quem resolve e o que fazer", async ({ page }) => {
+    await setup(page);
+    await page.goto("/admin");
+    const top = page.getByRole("region", { name: "Erros mais frequentes" });
+    await top.getByText("TypeError: x is undefined").click();
+    await expect(top).toContainText("Quem resolve: eu (Claude)");
+    await expect(top).toContainText("Me mande um print desta tela");
+  });
+  test("'Rodar agora': pede confirmação, roda só a rotina escolhida; rotina de limpeza não tem botão", async ({ page }) => {
+    const calls = await setup(page, { admin_run_routine: { ok: true } });
+    await page.goto("/admin");
+    const cron = page.getByRole("region", { name: "Rotinas agendadas" });
+    await expect(cron.getByRole("button", { name: /Rodar agora a rotina/ })).toHaveCount(2);
+    await expect(cron.locator("li").nth(2).getByRole("button")).toHaveCount(0);
+    await cron.getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
+    expect(calls.filter((c) => c.name === "admin_run_routine").length).toBe(0);
+    await cron.getByRole("button", { name: "Cancelar" }).click();
+    expect(calls.filter((c) => c.name === "admin_run_routine").length).toBe(0);
+    await cron.getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
+    await cron.getByRole("button", { name: "Rodar", exact: true }).click();
+    await expect.poll(() => calls.filter((c) => c.name === "admin_run_routine").length).toBe(1);
+    expect(calls.find((c) => c.name === "admin_run_routine").body).toEqual({ p_name: "refund-sweep" });
+    await expect(cron.getByRole("status")).toContainText("Rotina executada");
+  });
+  test("'Rodar agora' que falha de novo mostra o motivo e pede o print", async ({ page }) => {
+    await setup(page, { admin_run_routine: { ok: false, message: "division by zero" } });
+    await page.goto("/admin");
+    const cron = page.getByRole("region", { name: "Rotinas agendadas" });
+    await cron.getByRole("button", { name: "Rodar agora a rotina plan-trial-revert" }).click();
+    await cron.getByRole("button", { name: "Rodar", exact: true }).click();
+    await expect(cron.getByRole("status")).toContainText("Falhou de novo: division by zero");
+    await expect(cron.getByRole("status")).toContainText("Me mande um print");
+  });
+  test("servidor recusa (um minuto, limite): a mensagem aparece e o app segue de pé", async ({ page }) => {
+    await setup(page, { admin_run_routine: { status: 400, body: { message: "Esta rotina acabou de rodar. Espere um minuto." } } });
+    await page.goto("/admin");
+    const cron = page.getByRole("region", { name: "Rotinas agendadas" });
+    await cron.getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
+    await cron.getByRole("button", { name: "Rodar", exact: true }).click();
+    await expect(cron.getByRole("status")).toContainText("acabou de rodar");
+    await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
+  });
+  test("últimas execuções manuais aparecem; texto hostil no alerta fica como texto", async ({ page }) => {
+    await setup(page, { admin_health: { ...HEALTH, alerts: [{ code: "<img src=x onerror=window.__xss=2>", since: ago(1000), seen_at: null }], manual_runs: [{ routine: "refund-sweep", at: ago(3600000), ok: false, note: "<b>x</b>" }] } });
+    await page.goto("/admin");
+    await expect(page.getByRole("region", { name: "Últimas execuções manuais" })).toContainText("falhou: <b>x</b>");
+    await expect(page.getByRole("region", { name: "Alertas em aberto" })).toContainText("Alerta técnico");
+    expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  });
+  test("celular 375: sem rolagem lateral com alertas e botões", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await setup(page);
+    await page.goto("/admin");
+    await page.getByRole("region", { name: "Alertas em aberto" }).getByText('A rotina "plan-trial-revert" falhou').click();
+    await page.getByRole("region", { name: "Rotinas agendadas" }).getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
+    await noHScroll(page);
   });
 });
