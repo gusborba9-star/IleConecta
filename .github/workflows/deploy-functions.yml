@@ -18,6 +18,7 @@ on:
           - assistant-chat
           - support-admin
           - conecta
+          - push-notify
 
 permissions:
   contents: read
