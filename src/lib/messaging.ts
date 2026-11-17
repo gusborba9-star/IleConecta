@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { subscribeLive } from "@/lib/live";
 
 export interface Peer {
   id: string;
@@ -114,12 +115,7 @@ export async function sendDirect(conversationId: string, senderId: string, text:
 
 /** Avisa quando chegar mensagem nova (ou mudança de leitura/exclusão) em qualquer conversa minha. Devolve a função de cancelar. */
 export function subscribeMessages(onChange: () => void): () => void {
-  if (!supabase) return () => {};
-  const client = supabase;
-  const channel = client.channel(`messages-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "*", schema: "public", table: "messages" }, onChange).subscribe();
-  return () => {
-    void client.removeChannel(channel);
-  };
+  return subscribeLive("messages", onChange);
 }
 
 /** Eu bloqueei este contato? */

@@ -1,5 +1,6 @@
 import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
+import { subscribeLive } from "@/lib/live";
 import { refundCancelled } from "@/lib/payments";
 import type { IntakeField, RitualMode, RitualValue } from "@/lib/ritualsCore";
 
@@ -169,12 +170,7 @@ export async function fetchAttendees(eventId: string): Promise<Attendee[]> {
 
 /** Avisa quando houver mudança de reservas (a casa vê as vagas na hora). Devolve a função de cancelar. */
 export function subscribeReservations(onChange: () => void): () => void {
-  if (!supabase) return () => {};
-  const client = supabase;
-  const channel = client.channel(`reservations-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, onChange).subscribe();
-  return () => {
-    void client.removeChannel(channel);
-  };
+  return subscribeLive("reservations", onChange);
 }
 
 /** Eventos em que a pessoa está na fila de espera. */

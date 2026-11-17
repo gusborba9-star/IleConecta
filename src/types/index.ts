@@ -60,6 +60,10 @@ export interface Post {
     /** A casa ocultou este comentário: só ela e quem escreveu o veem. */
     hidden?: boolean;
   }[];
+  /** Total de comentários que a pessoa enxerga, vindo do servidor (o feed não traz a lista: ela é lida ao abrir). */
+  commentCount?: number;
+  /** false = a lista ainda não foi lida (post real); true = já foi; ausente = demonstração (a lista já está completa). */
+  commentsLoaded?: boolean;
   /** Data da última edição do texto (a publicação mostra "editado"). */
   editedAt?: string;
   /** Só para a casa dona de post impulsionado: uma correção de texto na primeira hora ("correcao") ou texto travado ("travado"). */

@@ -16,6 +16,7 @@ import {
 import {
   fetchRemoteHouses,
   fetchRemotePosts,
+  fetchPostComments,
   isRemoteId,
   remoteAddComment,
   remoteCreatePost,
@@ -28,6 +29,7 @@ import {
   remoteSetCommentHidden,
 } from "@/lib/remoteData";
 import { exposeState } from "@/lib/dataSource";
+import { mergeFeedComments, withLoadedComments, withNewComment } from "@/lib/postCommentsCore";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 import {
   isAuthState,
@@ -62,6 +64,8 @@ interface AppState {
   /** Exclui a publicação (só a casa dona). Devolve null se saiu, ou a mensagem do motivo. */
   deletePost: (postId: string) => Promise<string | null>;
   commentPost: (postId: string, text: string) => void;
+  /** Lê os comentários de uma publicação real (ao abrir a lista). Devolve true se carregou. */
+  loadComments: (postId: string) => Promise<boolean>;
   /** Edita o texto da publicação (só a casa dona). Devolve null se salvou, ou a mensagem do motivo. */
   editPost: (postId: string, text: string) => Promise<string | null>;
   /** Liga/desliga os comentários novos da publicação (só a casa dona). */
@@ -77,6 +81,13 @@ interface AppState {
   getUser: (id: string) => User | null;
   /** Salva alterações do perfil. Devolve false se o servidor recusar (modo real). */
   updateUser: (patch: Partial<User>) => Promise<boolean>;
+}
+
+/** Junta pessoas por id, mantendo as que já estavam (quem comentou e já foi lido continua disponível depois de recarregar o feed). */
+function mergeById<T extends { id: string }>(prev: T[], add: T[]): T[] {
+  if (add.length === 0) return prev;
+  const have = new Set(prev.map((x) => x.id));
+  return [...prev, ...add.filter((x) => !have.has(x.id))];
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -123,8 +134,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured) return;
     const [houses, feed, locks, dels] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts(), fetchMyPostTextLocks(), fetchMyPostDeleteStates()]);
     setRemoteHouses(houses);
-    setRemotePosts(feed.posts.map((p) => (locks.has(p.id) || dels.has(p.id) ? { ...p, ...(locks.has(p.id) ? { textLock: locks.get(p.id) } : {}), ...(dels.has(p.id) ? { deleteInfo: dels.get(p.id) } : {}) } : p)));
-    setRemoteCommenters(feed.commenters);
+    const fresh = feed.posts.map((p) => (locks.has(p.id) || dels.has(p.id) ? { ...p, ...(locks.has(p.id) ? { textLock: locks.get(p.id) } : {}), ...(dels.has(p.id) ? { deleteInfo: dels.get(p.id) } : {}) } : p));
+    setRemotePosts((prev) => mergeFeedComments(prev, fresh));
+    setRemoteCommenters((prev) => mergeById(prev, feed.commenters));
   };
 
   const remoteUserId = remoteUser?.id ?? null;
@@ -375,6 +387,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setPosts((prev) => prev.map(flip));
     },
+    async loadComments(postId) {
+      if (!isRemoteId(postId)) return true;
+      const res = await fetchPostComments(postId);
+      if (!res) return false;
+      setRemoteCommenters((prev) => mergeById(prev, res.commenters));
+      setRemotePosts((prev) => prev.map((p) => (p.id === postId ? withLoadedComments(p, res.comments) : p)));
+      return true;
+    },
     commentPost(postId, text) {
       if (!currentUser) return;
       const author = currentUser.id;
@@ -384,7 +404,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setRemotePosts((prev) =>
             prev.map((p) =>
               p.id === postId
-                ? { ...p, comments: [...p.comments, { id: saved.id, userId: author, text, createdAt: saved.createdAt }] }
+                ? withNewComment(p, { id: saved.id, userId: author, text, createdAt: saved.createdAt })
                 : p
             )
           );

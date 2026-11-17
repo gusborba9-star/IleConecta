@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { subscribeLive } from "@/lib/live";
 
 export type RefundStatus = "pendente" | "aprovado" | "recusado" | "reembolsado" | "cancelado";
 
@@ -134,10 +135,5 @@ export const decideRefund = (id: string, approve: boolean, note: string) => call
 export const completeRefund = (id: string) => call("complete_refund", { p_id: id });
 
 export function subscribeRefunds(onChange: () => void): () => void {
-  if (!supabase) return () => {};
-  const client = supabase;
-  const channel = client.channel(`refunds-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "*", schema: "public", table: "refund_requests" }, onChange).subscribe();
-  return () => {
-    void client.removeChannel(channel);
-  };
+  return subscribeLive("refunds", onChange);
 }

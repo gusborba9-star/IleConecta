@@ -83,7 +83,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, edited_at, comments_off, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, hidden_by_house, profiles(display_name, avatar_url, account_type, city, state))"
+      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, edited_at, comments_off, created_at, houses(owner_id), post_likes(user_id)"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -91,40 +91,24 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
 
   // Contagem pública de curtidas: a tabela só mostra ao visitante as próprias curtidas.
   const counts = new Map<string, number>();
+  const commentCounts = new Map<string, number>();
+  let commentCountsOk = false;
   const ids = (data as Row[]).map((r) => String(r.id));
   if (ids.length > 0) {
-    const { data: cnt } = await supabase.rpc("post_like_counts", { p_posts: ids });
-    for (const c of (cnt as Row[] | null) ?? []) counts.set(String(c.post_id), Number(c.n ?? 0));
+    const [likeRes, comRes] = await Promise.all([supabase.rpc("post_like_counts", { p_posts: ids }), supabase.rpc("post_comment_counts", { p_posts: ids })]);
+    for (const c of (likeRes.data as Row[] | null) ?? []) counts.set(String(c.post_id), Number(c.n ?? 0));
+    // Os comentários são lidos ao abrir a lista; o feed traz só a contagem (post sem linha = 0 comentários).
+    if (!comRes.error && Array.isArray(comRes.data)) {
+      commentCountsOk = true;
+      for (const c of comRes.data as Row[]) commentCounts.set(String(c.post_id), Number(c.n ?? 0));
+    }
   }
 
   const hidden = await fetchHiddenHouseIds();
-  const commenters = new Map<string, User>();
   const posts: Post[] = [];
   for (const row of data as Row[]) {
     const owner = one(row.houses)?.owner_id;
     if (!owner || hidden.has(String(row.house_id))) continue;
-    const comments = ((row.post_comments as Row[]) ?? [])
-      .slice()
-      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-      .map((c) => {
-        const pr = one(c.profiles);
-        if (pr && pr.account_type !== "casa" && !commenters.has(c.user_id)) {
-          const person: PersonalUser = {
-            id: String(c.user_id),
-            type: "personal",
-            name: pr.display_name,
-            email: "",
-            password: "",
-            avatar: pr.avatar_url || avatarFallback(pr.display_name),
-            city: pr.city ?? "",
-            state: pr.state ?? "",
-            country: "Brasil",
-            createdAt: c.created_at,
-          };
-          commenters.set(c.user_id, person);
-        }
-        return { id: String(c.id), userId: String(c.user_id), text: String(c.text), createdAt: String(c.created_at), ...(c.hidden_by_house === true ? { hidden: true } : {}) };
-      });
     posts.push({
       id: String(row.id),
       houseId: String(owner),
@@ -134,13 +118,48 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
       kind: row.kind,
       likes: ((row.post_likes as Row[]) ?? []).map((l) => String(l.user_id)),
       likeCount: counts.get(String(row.id)),
-      comments,
+      comments: [],
+      commentsLoaded: false,
+      ...(commentCountsOk ? { commentCount: commentCounts.get(String(row.id)) ?? 0 } : {}),
       ...(row.edited_at ? { editedAt: String(row.edited_at) } : {}),
       ...(row.comments_off === true ? { commentsOff: true } : {}),
       createdAt: String(row.created_at),
     });
   }
-  return { posts, commenters: Array.from(commenters.values()) };
+  return { posts, commenters: [] };
+}
+
+/** Lê os comentários de uma publicação (ao abrir a lista). Devolve null se não conseguiu; as regras de leitura do banco valem. */
+export async function fetchPostComments(postId: string): Promise<{ comments: Post["comments"]; commenters: User[] } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("post_comments")
+    .select("id, user_id, text, created_at, hidden_by_house, profiles(display_name, avatar_url, account_type, city, state)")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true })
+    .limit(500);
+  if (error || !data) return null;
+  const commenters = new Map<string, User>();
+  const comments = (data as Row[]).map((c) => {
+    const pr = one(c.profiles);
+    if (pr && pr.account_type !== "casa" && !commenters.has(String(c.user_id))) {
+      const person: PersonalUser = {
+        id: String(c.user_id),
+        type: "personal",
+        name: pr.display_name,
+        email: "",
+        password: "",
+        avatar: pr.avatar_url || avatarFallback(pr.display_name),
+        city: pr.city ?? "",
+        state: pr.state ?? "",
+        country: "Brasil",
+        createdAt: String(c.created_at),
+      };
+      commenters.set(String(c.user_id), person);
+    }
+    return { id: String(c.id), userId: String(c.user_id), text: String(c.text), createdAt: String(c.created_at), ...(c.hidden_by_house === true ? { hidden: true } : {}) };
+  });
+  return { comments, commenters: Array.from(commenters.values()) };
 }
 
 /** Card estilizado de uma linha do banco (ou nada, se for o card normal ou os dados não forem confiáveis). */
