@@ -38,6 +38,35 @@ export function houseTarget(tab, role) {
 export function houseReviewsPath(role, ownerUserId) {
   return role !== "equipe" && typeof ownerUserId === "string" && ownerUserId.length > 0 ? `/casa/${encodeURIComponent(ownerUserId)}?aba=avaliacoes` : null;
 }
+/**
+ * Destino exato de cada pendência. `ownerUserId` é o id da CONTA da titular (a página da casa e o app inteiro usam esse id, não o id interno da casa).
+ * Equipe nunca vai para telas da titular (página da casa, início, planos): só para o atendimento.
+ */
+export function houseDestination(item, role, ownerUserId) {
+  if (!item || typeof item !== "object") return null;
+  const staff = role === "equipe";
+  const me = typeof ownerUserId === "string" && ownerUserId.length > 0 ? encodeURIComponent(ownerUserId) : null;
+  switch (item.kind) {
+    case "conversa_sem_resposta":
+    case "assunto_da_assistente":
+      return staff ? { path: "/atendimento?aba=chat", label: "Conversas" } : { path: "/mensagens", label: "Conversas" };
+    case "pedido_para_iniciar":
+    case "atendimento_passou":
+      return staff ? { path: "/atendimento?aba=orders", label: "Pedidos" } : me ? { path: `/casa/${me}?aba=servicos`, label: "Pedidos da casa" } : null;
+    case "reembolso_da_casa":
+      return staff || !me ? null : { path: `/casa/${me}?aba=servicos`, label: "Reembolsos da casa" };
+    case "avaliacao_sem_resposta":
+      return staff || !me ? null : { path: `/casa/${me}?aba=avaliacoes`, label: "Avaliações" };
+    case "fatura":
+      return staff ? null : { path: typeof item.refId === "string" && UUID.test(item.refId) ? `/planos?foco=${item.refId}` : "/planos", label: "Fatura" };
+    case "conta_de_recebimento":
+      return staff ? null : { path: "/?foco=recebimento", label: "Conta de recebimento" };
+    default: {
+      const t = houseTarget(item.tab, role);
+      return t && t.path ? t : null;
+    }
+  }
+}
 const PRIORITIES = ["alta", "normal"];
 const TABS = ["atendimento", "pedidos", "mensalidades", "moderacao", "suporte", "cobranca", "cadastro", "assistente", "avaliacoes"];
 const str = (v) => (typeof v === "string" ? v : "");

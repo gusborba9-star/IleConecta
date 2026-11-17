@@ -1,7 +1,7 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import HouseIndicatorsCard from "@/components/house/HouseIndicatorsCard";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Headset, Send, Trash2 } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Textarea } from "@/components/base";
@@ -260,7 +260,12 @@ function Stats() {
 export default function Atendimento() {
   const { currentUser, isRemoteAuth } = useApp();
   const [link, setLink] = useState<StaffLink | null | undefined>(undefined);
-  const [tab, setTab] = useState<string>("");
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<string>(params.get("aba") ?? "");
+  const wanted = params.get("aba");
+  useEffect(() => {
+    if (wanted) setTab(wanted);
+  }, [wanted]);
 
   useEffect(() => {
     if (!isRemoteAuth) return;
