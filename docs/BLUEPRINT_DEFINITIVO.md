@@ -478,6 +478,8 @@ Regras aprovadas em 12/11/2026 (registro em §33.1):
 
 Comissões, assinaturas, vagas adicionais, créditos de IA, destaques, impulsionamentos e outros serviços aprovados.
 
+- **Decisão do proprietário (16/11/2026): não haverá produto, plano nem white label para federações religiosas.** A filiação a uma federação é escolha da casa e acontece fora da plataforma; criar um canal próprio poderia afastar casas. Nenhuma funcionalidade de federação entra no escopo (nem selo de filiação, nem página de federação, nem cobrança de anuidades). Reabrir só por nova decisão do proprietário.
+
 ## 18.5 Cobrança da plataforma às casas e inadimplência
 
 Aprovado em 12/11/2026 (registro em §33.1). Vale para planos, vagas adicionais, destaque, impulsionamento e créditos de IA.
