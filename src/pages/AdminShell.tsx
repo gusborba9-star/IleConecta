@@ -1,3 +1,4 @@
+import AdminHouseTimelineCard from "@/components/admin/AdminHouseTimelineCard";
 import { useFocusRow } from "@/hooks/useFocusRow";
 import { useSearchParams } from "react-router-dom";
 import { BarChart3, FileText, History, LifeBuoy, RotateCcw, Settings, Users } from "lucide-react";
@@ -53,7 +54,7 @@ export default function AdminShell() {
         {(current === "visao" || current === "config" || current === "historico") && <Admin section={current as AdminSection} />}
         {current === "reembolsos" && <AdminRefunds />}
         {current === "suporte" && <AdminSupport />}
-        {current === "usuarios" && <AdminUsers />}
+        {current === "usuarios" && <><AdminHouseTimelineCard /><AdminUsers /></>}
         {current === "docs" && <AdminDocs />}
       </div>
     </div>

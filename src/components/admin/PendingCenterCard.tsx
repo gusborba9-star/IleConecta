@@ -80,6 +80,7 @@ export default function PendingCenterCard() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}{i.overdue ? ` · prioridade ${PRIORITY_LABELS[i.priority].toLowerCase()}` : ""}</span>
                       {target && <Button size="sm" variant="outline" onClick={() => setParams(Object.fromEntries(new URLSearchParams(adminPath(target.section, FOCUS_KINDS.has(i.kind) ? i.refId : null).slice(1))))}>Resolver em {target.label}</Button>}
+                      {i.houseId && <Button size="sm" variant="ghost" onClick={() => setParams({ s: "usuarios", casa: i.houseId as string })}>Linha do tempo da casa</Button>}
                     </div>
                   </li>
                 );
