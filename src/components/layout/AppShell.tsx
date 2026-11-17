@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopBar from "./TopBar";
 import SideNav from "./SideNav";
@@ -85,7 +85,7 @@ export default function AppShell() {
     };
   }, [isRemoteAuth, userId]);
 
-  if (lock) return <LockedLayout gate={lock} plan={lockPlan}><Outlet /></LockedLayout>;
+  if (lock) return <LockedLayout gate={lock} plan={lockPlan}><Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense></LockedLayout>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -101,7 +101,7 @@ export default function AppShell() {
         </aside>
         <main className="min-w-0">
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
-          {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Outlet />}
+          {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
         </main>
         {!isRemoteAuth && (
           <aside className="hidden lg:block sticky top-20 self-start">

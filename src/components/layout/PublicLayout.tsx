@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { LogoMark } from "@/components/brand/Logo";
 import { useApp } from "@/contexts/AppContext";
@@ -20,7 +21,7 @@ export default function PublicLayout() {
         </div>
       </header>
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-6">
-        <Outlet />
+        <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>
       </main>
       <Footer />
     </div>
