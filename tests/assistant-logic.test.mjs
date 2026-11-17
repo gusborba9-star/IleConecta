@@ -16,6 +16,8 @@ import {
   toChatMessages,
   hasGuaranteeTalk,
   stripGuaranteeTalk,
+  resolveModels,
+  DEFAULT_MODELS,
 } from "../supabase/functions/assistant-chat/logic.js";
 
 const assistantOn = {
@@ -273,4 +275,31 @@ test("créditos de IA: a franquia do mês vem primeiro; passada ela, só segue c
   assert.equal(checkGate({ ...base, plan: "gratis", usedThisMonth: 40, creditBalance: 999 }), null, "grátis com pacote atende");
   assert.equal(checkGate({ ...base, assistant: { enabled: false }, usedThisMonth: 500, creditBalance: 9 }), "assistente_desativada", "assistente desligada continua barrando");
   assert.equal(checkGate({ ...base, usedThisMonth: 500, creditBalance: 9, usedByUserInWindow: 999 }), "muitas_mensagens", "limite por usuário continua valendo");
+});
+
+test("respostas em andamento entram na conta (limite por pessoa, franquia e crédito) e valores estranhos não liberam nada", () => {
+  const ok = { plan: "base", assistant: assistantOn, usedThisMonth: 0, usedByUserInWindow: 0 };
+  assert.equal(checkGate({ ...ok, inflightUser: USER_RATE.maxReplies - 1 }), null);
+  assert.equal(checkGate({ ...ok, inflightUser: USER_RATE.maxReplies }), "muitas_mensagens");
+  assert.equal(checkGate({ ...ok, usedByUserInWindow: 10, inflightUser: 10 }), "muitas_mensagens");
+  assert.equal(checkGate({ ...ok, usedThisMonth: 95, inflightHouse: 4 }), null, "a última vaga da franquia");
+  assert.equal(checkGate({ ...ok, usedThisMonth: 95, inflightHouse: 5 }), "cota_mensal", "a franquia já está toda reservada");
+  // passada a franquia, cada resposta em andamento já 'pega' um crédito
+  assert.equal(checkGate({ ...ok, usedThisMonth: 100, creditBalance: 2, inflightHouse: 1 }), null);
+  assert.equal(checkGate({ ...ok, usedThisMonth: 100, creditBalance: 2, inflightHouse: 2 }), "cota_mensal");
+  assert.equal(checkGate({ ...ok, usedThisMonth: 98, creditBalance: 2, inflightHouse: 3 }), null, "2 da franquia + 1 de 2 créditos");
+  assert.equal(checkGate({ ...ok, usedThisMonth: 98, creditBalance: 2, inflightHouse: 4 }), "cota_mensal");
+  // Grátis só com pacote: o saldo é dividido entre as respostas em andamento
+  assert.equal(checkGate({ ...ok, plan: "gratis", creditBalance: 3, inflightHouse: 2 }), null);
+  assert.equal(checkGate({ ...ok, plan: "gratis", creditBalance: 3, inflightHouse: 3 }), "plano_sem_assistente");
+  // valores inválidos não abrem brecha nem quebram
+  for (const v of [-5, NaN, null, undefined, "x"]) assert.equal(checkGate({ ...ok, inflightHouse: v, inflightUser: v }), null);
+  assert.equal(checkGate({ ...ok, assistant: { ...assistantOn, enabled: false }, inflightHouse: 3 }), "assistente_desativada");
+});
+
+test("o modelo da assistente só vale se estiver na lista da plataforma", () => {
+  assert.deepEqual(resolveModels(null), DEFAULT_MODELS);
+  assert.deepEqual(resolveModels("anthropic/claude-opus-caro"), DEFAULT_MODELS);
+  assert.deepEqual(resolveModels(DEFAULT_MODELS[1]), [DEFAULT_MODELS[1], DEFAULT_MODELS[0]]);
+  assert.notEqual(resolveModels(null), DEFAULT_MODELS, "devolve cópia, nunca a lista compartilhada");
 });

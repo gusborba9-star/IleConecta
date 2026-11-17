@@ -19,6 +19,14 @@ export const MAX_REPLY_CHARS = 1500;
 export const DEFAULT_MODELS = ["anthropic/claude-haiku-5.5", "openai/gpt-6-luna"];
 /** Modelos que raciocinam antes de responder: o raciocínio gasta o mesmo limite de tamanho da resposta. */
 export const REASONING_MODELS = ["anthropic/claude-haiku-5.5", "openai/gpt-6-luna"];
+/**
+ * Modelos que a assistente pode usar. A coluna assistants.model (que só a administração grava) é aceita apenas se estiver na lista da plataforma;
+ * qualquer outro valor é ignorado. Evita que um nome de modelo caro, vindo de fora, passe a ser cobrado da plataforma.
+ */
+export function resolveModels(assistantModel, allowed = DEFAULT_MODELS) {
+  const m = typeof assistantModel === "string" ? assistantModel.trim() : "";
+  return m && allowed.includes(m) ? [m, ...DEFAULT_MODELS.filter((x) => x !== m)] : [...DEFAULT_MODELS];
+}
 
 /**
  * Parâmetros de geração por modelo. Nos que raciocinam: raciocínio baixo (rápido e barato), limite maior para
@@ -227,14 +235,23 @@ export function cleanReply(raw) {
     .slice(0, MAX_REPLY_CHARS);
 }
 
-/** Retorna null se pode responder, ou o código do bloqueio. */
-/** creditBalance: respostas compradas ainda válidas. A franquia do mês vem primeiro; passada ela, a assistente segue enquanto houver crédito. */
-export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null, creditBalance = 0 }) {
+/**
+ * Retorna null se pode responder, ou o código do bloqueio.
+ * creditBalance: respostas compradas ainda válidas. A franquia do mês vem primeiro; passada ela, a assistente segue enquanto houver crédito.
+ * inflightHouse / inflightUser: respostas já em andamento (reservadas e ainda não gravadas). Entram na conta como se já estivessem gravadas,
+ * e as que passam da franquia já "pegam" um crédito: assim, pedidos simultâneos não furam o limite nem gastam o mesmo crédito duas vezes.
+ */
+export function checkGate({ plan, assistant, usedThisMonth, usedByUserInWindow, matrix = null, creditBalance = 0, inflightHouse = 0, inflightUser = 0 }) {
   const limits = planLimits(plan, matrix);
-  if (limits.monthlyReplies === 0 && !(Number(creditBalance) > 0)) return "plano_sem_assistente";
+  const ih = Math.max(0, Number(inflightHouse) || 0);
+  const iu = Math.max(0, Number(inflightUser) || 0);
+  const used = Number(usedThisMonth) + ih;
+  // créditos que as respostas em andamento já vão gastar: só as que passam da franquia (o uso já gravado acima da franquia já saiu do saldo)
+  const credits = Number(creditBalance) - (Math.max(0, used - limits.monthlyReplies) - Math.max(0, Number(usedThisMonth) - limits.monthlyReplies));
+  if (limits.monthlyReplies === 0 && !(credits > 0)) return "plano_sem_assistente";
   if (!assistant || !assistant.enabled) return "assistente_desativada";
-  if (usedThisMonth >= limits.monthlyReplies && !(Number(creditBalance) > 0)) return "cota_mensal";
-  if (usedByUserInWindow >= USER_RATE.maxReplies) return "muitas_mensagens";
+  if (used >= limits.monthlyReplies && !(credits > 0)) return "cota_mensal";
+  if (Number(usedByUserInWindow) + iu >= USER_RATE.maxReplies) return "muitas_mensagens";
   return null;
 }
 
