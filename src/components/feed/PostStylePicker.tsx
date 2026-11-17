@@ -4,11 +4,10 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/base";
 import StyledPostBody from "@/components/feed/StyledPostBody";
 import { CARD_MODES, CARD_TEXT_MAX, type CardMode } from "@/lib/postCardCore";
-import { prepareCardImage, type PreparedCardImage } from "@/lib/postImages";
+import { prepareCardImage } from "@/lib/postImages";
+import type { StyleDraft } from "@/components/feed/postStyleDraft";
 import { toast } from "sonner";
 
-export interface StyleDraft { mode: CardMode; image: PreparedCardImage | null; ack: boolean }
-export const EMPTY_STYLE: StyleDraft = { mode: "normal", image: null, ack: false };
 
 /**
  * Escolha do card da publicação (normal, imagem no card todo, imagem em parte) com prévia ao vivo.
