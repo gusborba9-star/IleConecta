@@ -10,6 +10,7 @@ import { cn, timeAgo } from "@/lib/utils";
 import RitualCard from "./RitualCard";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
+import { toast } from "sonner";
 
 export default function PostCard({ post }: { post: Post }) {
   const { users, currentUser, toggleLike, commentPost, rituals, isRemoteAuth } = useApp();
@@ -24,6 +25,25 @@ export default function PostCard({ post }: { post: Post }) {
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
   const canBoost = isRemoteAuth && !!currentUser && currentUser.type === "commercial" && post.houseId === currentUser.id && post.kind !== "story" && isFeatureOn(config, "boost", currentUser.id);
   const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
+
+  // Compartilhar: o link abre o feed já nesta publicação (quem não tem conta entra primeiro). Celular usa o menu de compartilhar; no computador copia o link.
+  const share = async () => {
+    const url = `${window.location.origin}/comunidade?post=${post.id}`;
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: `${author?.name ?? "Publicação"} no Ilê Conecta`, url });
+        return;
+      }
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // a pessoa fechou o menu: não é erro
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado.");
+    } catch {
+      toast.error("Não foi possível copiar o link.");
+    }
+  };
 
   return (
     <Card className="lift overflow-hidden">
@@ -87,7 +107,7 @@ export default function PostCard({ post }: { post: Post }) {
       <div className="px-2 pb-2 border-t border-border grid grid-cols-3">
         <ActionBtn active={liked} onClick={() => toggleLike(post.id)} icon={Heart} label="Curtir" activeClass="text-primary" />
         <ActionBtn onClick={() => setShowComments((v) => !v)} icon={MessageCircle} label="Comentar" />
-        <ActionBtn icon={Share2} label="Compartilhar indisponível" disabled />
+        <ActionBtn onClick={() => void share()} icon={Share2} label="Compartilhar" />
       </div>
 
       {showComments && (
@@ -158,14 +178,13 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? "Compartilhamento ainda não está implementado" : undefined}
       className={cn(
-        "h-11 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold hover:bg-muted transition",
+        "h-11 min-w-0 rounded-xl flex items-center justify-center gap-1.5 px-1 text-sm font-semibold whitespace-nowrap hover:bg-muted transition disabled:opacity-50",
         active ? activeClass : "text-muted-foreground"
       )}
     >
-      <Icon className={cn("h-4 w-4", active ? "fill-current" : "")} />
-      {label}
+      <Icon className={cn("h-4 w-4 shrink-0", active ? "fill-current" : "")} />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
