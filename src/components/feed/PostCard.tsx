@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2, Pencil, MessageCircleOff, EyeOff, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
@@ -13,12 +13,14 @@ import { isFeatureOn } from "@/lib/platformConfig";
 import { toast } from "sonner";
 
 export default function PostCard({ post }: { post: Post }) {
-  const { users, currentUser, toggleLike, commentPost, deletePost, rituals, isRemoteAuth } = useApp();
+  const { users, currentUser, toggleLike, commentPost, deletePost, editPost, setCommentsOff, setCommentHidden, rituals, isRemoteAuth } = useApp();
   const { config } = usePlatformConfig();
   const [text, setText] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [menu, setMenu] = useState<"closed" | "open" | "confirm">("closed");
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const author = users.find((u) => u.id === post.houseId);
   const houseAuthor = author?.type === "commercial" ? author : null;
@@ -37,6 +39,38 @@ export default function PostCard({ post }: { post: Post }) {
     setMenu("closed");
     toast.error(err);
   };
+
+  const textLimit = post.card ? 400 : 2000;
+  const saveEdit = async () => {
+    if (editing === null || saving) return;
+    const clean = editing.trim();
+    if (!clean) return void toast.error("Escreva o texto da publicação.");
+    if (clean.length > textLimit) return void toast.error(post.card ? "No card o texto pode ter até 400 caracteres." : "O texto pode ter até 2000 caracteres.");
+    if (clean === post.content.trim()) return void setEditing(null);
+    setSaving(true);
+    const err = await editPost(post.id, clean);
+    setSaving(false);
+    if (err === null) {
+      setEditing(null);
+      return void toast.success("Publicação atualizada.");
+    }
+    toast.error(err);
+  };
+  const toggleCommentsOff = async () => {
+    setMenu("closed");
+    const off = !post.commentsOff;
+    const err = await setCommentsOff(post.id, off);
+    if (err === null) return void toast.success(off ? "Comentários desativados." : "Comentários ativados.");
+    toast.error(err);
+  };
+  const toggleHidden = async (commentId: string, hidden: boolean) => {
+    const err = await setCommentHidden(post.id, commentId, hidden);
+    if (err === null) return void toast.success(hidden ? "Comentário ocultado." : "Comentário visível de novo.");
+    toast.error(err);
+  };
+  // Comentário oculto: só a casa dona e quem escreveu o veem (o banco já filtra; isto cobre o modo demonstração).
+  const visibleComments = post.comments.filter((c) => !c.hidden || mine || c.userId === currentUser?.id);
+  const commentsLocked = !!post.commentsOff && !mine;
 
   // Compartilhar: o link abre o feed já nesta publicação (quem não tem conta entra primeiro). Celular usa o menu de compartilhar; no computador copia o link.
   const share = async () => {
@@ -82,7 +116,7 @@ export default function PostCard({ post }: { post: Post }) {
             )}
           </div>
           <div className="text-xs text-muted-foreground">
-            {isHouse ? `${houseAuthor!.city} · ${houseAuthor!.category}` : "Cliente"} · {timeAgo(post.createdAt)}
+            {isHouse ? `${houseAuthor!.city} · ${houseAuthor!.category}` : "Cliente"} · {timeAgo(post.createdAt)}{post.editedAt && <span> · editado</span>}
           </div>
         </div>
         {canBoost && (
@@ -95,6 +129,12 @@ export default function PostCard({ post }: { post: Post }) {
             </button>
             {menu === "open" && (
               <div role="menu" className="absolute right-0 top-10 z-10 w-52 rounded-xl border border-border bg-card p-1 shadow-card">
+                <button type="button" role="menuitem" onClick={() => { setEditing(post.content); setMenu("closed"); }} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
+                  <Pencil className="h-4 w-4" aria-hidden /> Editar texto
+                </button>
+                <button type="button" role="menuitem" onClick={() => void toggleCommentsOff()} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
+                  <MessageCircleOff className="h-4 w-4" aria-hidden /> {post.commentsOff ? "Ativar comentários" : "Desativar comentários"}
+                </button>
                 <button type="button" role="menuitem" onClick={() => setMenu("confirm")} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold text-destructive hover:bg-muted">
                   <Trash2 className="h-4 w-4" aria-hidden /> Excluir publicação
                 </button>
@@ -109,6 +149,26 @@ export default function PostCard({ post }: { post: Post }) {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={deleting} onClick={() => setMenu("closed")}>Cancelar</Button>
             <Button variant="danger" size="sm" disabled={deleting} onClick={() => void remove()}>{deleting ? "Excluindo…" : "Excluir"}</Button>
+          </div>
+        </div>
+      )}
+
+      {mine && editing !== null && (
+        <div className="mx-4 mb-3 space-y-2">
+          <textarea
+            aria-label="Editar texto da publicação"
+            value={editing}
+            onChange={(e) => setEditing(e.target.value)}
+            rows={4}
+            className="w-full rounded-xl border border-input bg-card p-3 text-[15px] outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+          />
+          <div className="flex items-center gap-2">
+            <span className={cn("text-xs", editing.length > textLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>{editing.length}/{textLimit}</span>
+            {post.card && <span className="text-xs text-muted-foreground">A imagem e as letras do card não mudam.</span>}
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" size="sm" disabled={saving} onClick={() => setEditing(null)}>Cancelar</Button>
+              <Button size="sm" disabled={saving || !editing.trim() || editing.length > textLimit} onClick={() => void saveEdit()}>{saving ? "Salvando…" : "Salvar"}</Button>
+            </div>
           </div>
         </div>
       )}
@@ -133,30 +193,39 @@ export default function PostCard({ post }: { post: Post }) {
 
       <div className="px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>{post.likeCount ?? post.likes.length} curtidas</span>
-        <button onClick={() => setShowComments((v) => !v)}>{post.comments.length} comentários</button>
+        <button onClick={() => setShowComments((v) => !v)}>{visibleComments.length} comentários</button>
       </div>
 
       <div className="px-2 pb-2 border-t border-border grid grid-cols-3">
         <ActionBtn active={liked} onClick={() => toggleLike(post.id)} icon={Heart} label="Curtir" activeClass="text-primary" />
-        <ActionBtn onClick={() => setShowComments((v) => !v)} icon={MessageCircle} label="Comentar" />
+        <ActionBtn onClick={() => setShowComments((v) => !v)} icon={MessageCircle} label={commentsLocked ? "Comentários" : "Comentar"} />
         <ActionBtn onClick={() => void share()} icon={Share2} label="Compartilhar" />
       </div>
 
       {showComments && (
         <div className="px-4 py-3 border-t border-border space-y-3 bg-muted/40">
-          {post.comments.map((c) => {
+          {visibleComments.map((c) => {
             const u = users.find((x) => x.id === c.userId);
             return (
-              <div key={c.id} className="flex gap-2">
+              <div key={c.id} className={cn("flex gap-2", c.hidden && "opacity-60")}>
                 <Avatar src={u?.avatar} name={u?.name ?? "Participante"} size={32} />
-                <div className="bg-card rounded-2xl px-3 py-2 border border-border pillow">
+                <div className="bg-card rounded-2xl px-3 py-2 border border-border pillow min-w-0">
                   <div className="text-xs font-semibold">{u?.name ?? "Participante"}</div>
-                  <div className="text-sm">{c.text}</div>
+                  <div className="text-sm break-words">{c.text}</div>
+                  {c.hidden && mine && <div className="text-xs text-muted-foreground mt-1">Oculto para o público</div>}
+                  {mine && c.userId !== currentUser?.id && (
+                    <button type="button" onClick={() => void toggleHidden(c.id, !c.hidden)} className="mt-1 min-h-8 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+                      {c.hidden ? <Eye className="h-3.5 w-3.5" aria-hidden /> : <EyeOff className="h-3.5 w-3.5" aria-hidden />} {c.hidden ? "Mostrar" : "Ocultar"}
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
-          <div className="flex gap-2">
+          {post.commentsOff && (
+            <p className="text-xs text-muted-foreground">{mine ? "Você desativou os comentários: só a sua casa pode comentar aqui." : "A casa desativou os comentários desta publicação."}</p>
+          )}
+          {!commentsLocked && <div className="flex gap-2">
             <Avatar src={currentUser?.avatar} name={currentUser?.name} size={32} />
             <div className="flex-1 flex gap-2">
               <input
@@ -184,7 +253,7 @@ export default function PostCard({ post }: { post: Post }) {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </div>}
         </div>
       )}
     </Card>

@@ -21,6 +21,9 @@ import {
   remoteCreatePost,
   remoteSetLike,
   remoteDeletePost,
+  remoteEditPostText,
+  remoteSetCommentsOff,
+  remoteSetCommentHidden,
 } from "@/lib/remoteData";
 import { exposeState } from "@/lib/dataSource";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
@@ -57,6 +60,12 @@ interface AppState {
   /** Exclui a publicação (só a casa dona). Devolve null se saiu, ou a mensagem do motivo. */
   deletePost: (postId: string) => Promise<string | null>;
   commentPost: (postId: string, text: string) => void;
+  /** Edita o texto da publicação (só a casa dona). Devolve null se salvou, ou a mensagem do motivo. */
+  editPost: (postId: string, text: string) => Promise<string | null>;
+  /** Liga/desliga os comentários novos da publicação (só a casa dona). */
+  setCommentsOff: (postId: string, off: boolean) => Promise<string | null>;
+  /** Oculta/mostra um comentário na publicação da casa (não apaga). */
+  setCommentHidden: (postId: string, commentId: string, hidden: boolean) => Promise<string | null>;
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
   applyHighlight: (scope: "local" | "cidade" | "estado" | "pais", days: number) => void;
@@ -284,6 +293,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const mine = posts.find((p) => p.id === postId);
       if (!mine || mine.houseId !== currentUser.id) return generic;
       setPosts((prev) => prev.filter((p) => p.id !== postId));
+      return null;
+    },
+    async editPost(postId, text) {
+      const generic = "Não foi possível salvar agora. Tente novamente.";
+      const clean = text.trim();
+      if (!currentUser) return generic;
+      if (!clean) return "Escreva o texto da publicação.";
+      const stamp = new Date().toISOString();
+      if (isRemoteId(postId)) {
+        const current = remotePosts.find((p) => p.id === postId);
+        if (!current || current.houseId !== currentUser.id) return generic;
+        const res = await remoteEditPostText(postId, clean);
+        if ("error" in res) return res.error;
+        setRemotePosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content: clean, editedAt: res.editedAt } : p)));
+        return null;
+      }
+      const mine = posts.find((p) => p.id === postId);
+      if (!mine || mine.houseId !== currentUser.id) return generic;
+      setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content: clean, editedAt: stamp } : p)));
+      return null;
+    },
+    async setCommentsOff(postId, off) {
+      const generic = "Não foi possível salvar agora. Tente novamente.";
+      if (!currentUser) return generic;
+      if (isRemoteId(postId)) {
+        const current = remotePosts.find((p) => p.id === postId);
+        if (!current || current.houseId !== currentUser.id) return generic;
+        const err = await remoteSetCommentsOff(postId, off);
+        if (err === null) setRemotePosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentsOff: off } : p)));
+        return err;
+      }
+      const mine = posts.find((p) => p.id === postId);
+      if (!mine || mine.houseId !== currentUser.id) return generic;
+      setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentsOff: off } : p)));
+      return null;
+    },
+    async setCommentHidden(postId, commentId, hidden) {
+      const generic = "Não foi possível salvar agora. Tente novamente.";
+      if (!currentUser) return generic;
+      const flip = (p: Post): Post => (p.id === postId ? { ...p, comments: p.comments.map((c) => (c.id === commentId ? { ...c, hidden } : c)) } : p);
+      if (isRemoteId(postId)) {
+        const current = remotePosts.find((p) => p.id === postId);
+        if (!current || current.houseId !== currentUser.id) return generic;
+        const err = await remoteSetCommentHidden(commentId, hidden);
+        if (err === null) setRemotePosts((prev) => prev.map(flip));
+        return err;
+      }
+      const mine = posts.find((p) => p.id === postId);
+      if (!mine || mine.houseId !== currentUser.id) return generic;
+      setPosts((prev) => prev.map(flip));
       return null;
     },
     toggleLike(postId) {

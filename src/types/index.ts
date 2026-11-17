@@ -57,7 +57,13 @@ export interface Post {
     userId: string;
     text: string;
     createdAt: string;
+    /** A casa ocultou este comentário: só ela e quem escreveu o veem. */
+    hidden?: boolean;
   }[];
+  /** Data da última edição do texto (a publicação mostra "editado"). */
+  editedAt?: string;
+  /** A casa desativou novos comentários nesta publicação. */
+  commentsOff?: boolean;
   createdAt: string;
 }
 
