@@ -311,8 +311,9 @@ Deno.serve(async (req) => {
       } catch (_e2) { /* segue com a primeira resposta e o corte abaixo */ }
       reply = stripGuaranteeTalk(reply);
     }
-  } catch (_e) {
-    // Não consome cota quando o provedor falha.
+  } catch (e) {
+    // Não consome cota quando o provedor falha. A falha vai para a Saúde da plataforma (sem texto da conversa: só o código do provedor).
+    try { await admin.rpc("log_system_event", { p_kind: "ia_falha", p_source: "assistant-chat", p_detail: e instanceof Error ? e.message : "falha desconhecida" }); } catch { /* sem registro */ }
     return json(502, { error: "falha_ia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
   } finally {
     clearTimeout(timer);
@@ -330,6 +331,9 @@ Deno.serve(async (req) => {
         clientName: me?.display_name, assistantName: assistant?.display_name, houseName: house.name,
       })}\n\n${reply}`;
     }
+  }
+  if (!reply) {
+    try { await admin.rpc("log_system_event", { p_kind: "ia_falha", p_source: "assistant-chat", p_detail: "resposta vazia do modelo" }); } catch { /* sem registro */ }
   }
   if (!reply) return json(502, { error: "resposta_vazia", conversation_id: conversationId, message: "Não consegui responder agora. Tente novamente em instantes." });
 

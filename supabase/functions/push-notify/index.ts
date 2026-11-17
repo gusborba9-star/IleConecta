@@ -36,6 +36,8 @@ Deno.serve(async (req) => {
   });
 
   let ok = 0;
+  let outras = 0;
+  let ultimaFalha = "";
   const dead: string[] = [];
   await Promise.all(subs.map(async (s) => {
     try {
@@ -44,8 +46,11 @@ Deno.serve(async (req) => {
     } catch (e) {
       const code = (e as { statusCode?: number })?.statusCode;
       if (code === 404 || code === 410) dead.push(s.id as string);
+      else { outras++; ultimaFalha = `envio do push falhou (${code ?? "sem código"})`; }
     }
   }));
   if (dead.length) await admin.from("push_subscriptions").delete().in("id", dead);
+  // aparelho que sumiu (404/410) é normal; qualquer outra falha do envio aparece na Saúde da plataforma
+  if (outras > 0) { try { await admin.rpc("log_system_event", { p_kind: "funcao_erro", p_source: "push-notify", p_detail: ultimaFalha }); } catch { /* sem registro */ } }
   return json(200, { sent: ok, removed: dead.length });
 });

@@ -10,6 +10,11 @@ const SB_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const STRIPE_SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const admin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
 
+// Registra uma falha inesperada para o painel "Saúde da plataforma" (nunca atrapalha a resposta).
+async function logFalha(source: string, detail: string) {
+  try { await admin.rpc("log_system_event", { p_kind: "funcao_erro", p_source: source, p_detail: detail }); } catch { /* sem registro */ }
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-push-secret",
@@ -81,6 +86,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     if (e instanceof SupportError) return json({ error: e.code, message: e.message }, e.status);
     console.error("support-admin", e instanceof Error ? e.message : e);
+    await logFalha("support-admin", e instanceof Error ? e.message : String(e));
     return json({ error: "erro_interno" }, 500);
   }
 });

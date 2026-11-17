@@ -927,3 +927,5 @@ Antes de qualquer execução no Ilê Conecta:
 - **Desempenho no celular (Fase 6, 17/11/2026):** as telas são carregadas por rota (só entrada, feed e página inicial da casa vão no pacote principal); a primeira carga caiu cerca de 33%. A tarifa do Stripe de mensalidade de membro passa a entrar no livro-caixa da casa (`taxa_provedor`), como nas demais compras cliente→casa. Detalhes em `docs/governanca/TESTE_DE_CARGA_FASE6.md`.
 
 - **Custo da IA (Fase 6, 17/11/2026):** cada resposta da assistente é reservada no banco antes de chamar o modelo e conta na franquia, no saldo de créditos e no limite por pessoa mesmo com pedidos simultâneos. O modelo de IA é definido pela plataforma (a casa não escolhe). Detalhes em `docs/governanca/TESTE_DE_CARGA_FASE6.md`.
+
+- **Observabilidade (Fase 6, 17/11/2026):** erros do app (sem identificar a pessoa), falhas de IA e de funções do servidor são registrados por 30 dias; o dono vê o cartão Saúde da plataforma e recebe alertas no sino (e push) quando uma rotina agendada falha ou para, ou quando há pico de erros. Detalhes, limites e ações externas em `docs/governanca/OBSERVABILIDADE_FASE6.md`.
