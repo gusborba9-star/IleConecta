@@ -14,10 +14,10 @@ const LIST = () => [
   post(THEIRS, OTHER_HID, OTHER_OWNER, "Post de outra casa"),
   post(OFF, HID, OWNER, "Post sem comentários", { comments_off: true, edited_at: "2026-11-17T12:00:00Z" }),
 ];
-const setup = (page, { type = "casa", id = OWNER, onPatch, onHide } = {}) => api(page, {
+const setup = (page, { type = "casa", id = OWNER, onPatch, onHide, locks = () => [] } = {}) => api(page, {
   rest: { profiles: profile(type, id), legal_consents: consents, houses: [mkHouse(HID, OWNER, "Casa Axé"), mkHouse(OTHER_HID, OTHER_OWNER, "Outra Casa")],
     posts: (body, calls, req) => (req?.method === "PATCH" ? (onPatch ? onPatch(body, req) : [{ id: "x", edited_at: "2026-11-17T13:00:00Z" }]) : LIST()) },
-  rpc: { post_like_counts: [], house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
+  rpc: { post_like_counts: [], my_post_text_locks: () => locks(), house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
 });
 const patches = (calls) => calls.filter((c) => c.kind === "rest" && c.name === "posts" && c.method === "PATCH");
 const more = (page, id) => page.locator(`#post-${id}`).getByRole("button", { name: "Mais opções da publicação" });
@@ -177,5 +177,51 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     await expect(card).toContainText("Comentário visível");
     await expect(card).not.toContainText("Comentário oculto");
     await expect(card.getByRole("button", { name: "Ocultar" })).toHaveCount(0);
+  });
+
+  test("impulsionado com a correção disponível: menu 'Corrigir texto (1 vez)' e aviso com o horário", async ({ page }) => {
+    const until = new Date(Date.now() + 40 * 60000).toISOString();
+    await setup(page, { locks: () => [{ post_id: MINE, state: "correcao", until }] });
+    await page.goto("/comunidade");
+    await more(page, MINE).click();
+    await page.getByRole("menuitem", { name: "Corrigir texto (1 vez)" }).click();
+    await expect(page.locator(`#post-${MINE}`)).toContainText("você pode corrigir o texto uma única vez");
+    await expect(page.locator(`#post-${MINE}`)).toContainText("Depois ele fica travado");
+    await more(page, CARD).click();
+    await expect(page.getByRole("menuitem", { name: "Editar texto" })).toBeVisible(); // post sem impulsionamento segue livre
+  });
+
+  test("depois de usar a correção, o menu perde a edição (o banco diz que travou)", async ({ page }) => {
+    let used = false;
+    await setup(page, { locks: () => [{ post_id: MINE, state: used ? "travado" : "correcao", until: used ? null : new Date(Date.now() + 40 * 60000).toISOString() }], onPatch: () => { used = true; return [{ id: "x", edited_at: "2026-11-17T13:00:00Z" }]; } });
+    await page.goto("/comunidade");
+    await more(page, MINE).click(); await page.getByRole("menuitem", { name: "Corrigir texto (1 vez)" }).click();
+    await page.getByLabel("Editar texto da publicação").fill("Corrigido");
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByText("Publicação atualizada.")).toBeVisible();
+    await more(page, MINE).click();
+    await expect(page.getByRole("menuitem", { name: /texto/i })).toHaveCount(0);
+    await expect(page.getByText("Texto travado durante o impulsionamento.")).toBeVisible();
+  });
+
+  test("texto travado: só restam desativar comentários e excluir; nada de editar", async ({ page }) => {
+    await setup(page, { locks: () => [{ post_id: MINE, state: "travado", until: null }] });
+    await page.goto("/comunidade");
+    await more(page, MINE).click();
+    await expect(page.getByRole("menuitem")).toHaveCount(2);
+    await expect(page.getByRole("menuitem", { name: "Desativar comentários" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Excluir publicação" })).toBeVisible();
+    await expect(page.getByText("Texto travado durante o impulsionamento.")).toBeVisible();
+  });
+
+  test("banco recusa a edição por trava (tela desatualizada): mostra o motivo e não troca o texto", async ({ page }) => {
+    await setup(page, { locks: () => [{ post_id: MINE, state: "correcao", until: new Date(Date.now() + 600000).toISOString() }], onPatch: () => ({ status: 400, body: { message: "Esta publicação está impulsionada. O texto só pode ser corrigido uma vez, na primeira hora depois de contratar; agora ele fica travado até o impulsionamento terminar." } }) });
+    await page.goto("/comunidade");
+    await more(page, MINE).click(); await page.getByRole("menuitem", { name: "Corrigir texto (1 vez)" }).click();
+    await page.getByLabel("Editar texto da publicação").fill("Tentativa");
+    await page.getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByText(/só pode ser corrigido uma vez/).first()).toBeVisible();
+    await page.getByRole("button", { name: "Cancelar" }).click();
+    await expect(page.locator(`#post-${MINE}`)).toContainText("Meu post");
   });
 });

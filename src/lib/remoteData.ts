@@ -192,6 +192,20 @@ export async function remoteDeletePost(postId: string, cardPath?: string): Promi
   return null;
 }
 
+export type TextLock = { state: "correcao" | "travado"; until?: string };
+
+/** Posts da própria casa que estão impulsionados e o que ainda se pode fazer com o texto (a regra é do banco; aqui só se mostra). */
+export async function fetchMyPostTextLocks(): Promise<Map<string, TextLock>> {
+  const out = new Map<string, TextLock>();
+  if (!supabase) return out;
+  const { data, error } = await supabase.rpc("my_post_text_locks");
+  if (error || !Array.isArray(data)) return out;
+  for (const r of data as Row[]) {
+    if (r.state === "correcao" || r.state === "travado") out.set(String(r.post_id), { state: r.state, ...(r.until ? { until: String(r.until) } : {}) });
+  }
+  return out;
+}
+
 const EDIT_GENERIC = "Não foi possível salvar agora. Tente novamente.";
 /** Só mensagens escritas pelas regras do banco (em português, feitas para a pessoa ler) passam para a tela. */
 const EDIT_MSG = /^(Escreva o texto|Posts com a cara|Letras com a sua|Esta publicação está impulsionada|No Plano Grátis|Os comentários desta|Você só pode cuidar|Conta suspensa)/;

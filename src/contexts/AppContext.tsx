@@ -22,6 +22,7 @@ import {
   remoteSetLike,
   remoteDeletePost,
   remoteEditPostText,
+  fetchMyPostTextLocks,
   remoteSetCommentsOff,
   remoteSetCommentHidden,
 } from "@/lib/remoteData";
@@ -119,9 +120,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refreshRemote = async () => {
     if (!isSupabaseConfigured) return;
-    const [houses, feed] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts()]);
+    const [houses, feed, locks] = await Promise.all([fetchRemoteHouses(), fetchRemotePosts(), fetchMyPostTextLocks()]);
     setRemoteHouses(houses);
-    setRemotePosts(feed.posts);
+    setRemotePosts(feed.posts.map((p) => (locks.has(p.id) ? { ...p, textLock: locks.get(p.id) } : p)));
     setRemoteCommenters(feed.commenters);
   };
 
@@ -306,7 +307,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!current || current.houseId !== currentUser.id) return generic;
         const res = await remoteEditPostText(postId, clean);
         if ("error" in res) return res.error;
-        setRemotePosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content: clean, editedAt: res.editedAt } : p)));
+        // a correção única pode ter sido usada agora: pergunta de novo ao banco o que ainda é permitido
+        const locks = await fetchMyPostTextLocks();
+        setRemotePosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content: clean, editedAt: res.editedAt, textLock: locks.get(postId) } : p)));
         return null;
       }
       const mine = posts.find((p) => p.id === postId);
