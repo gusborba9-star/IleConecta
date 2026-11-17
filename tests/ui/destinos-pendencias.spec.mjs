@@ -7,11 +7,12 @@ const profile = { id: OWNER, account_type: "casa", display_name: "Casa Teste", a
 const houseRow = { id: HOUSE_ROW_ID, owner_id: OWNER, name: "Casa Teste", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } };
 
 test("experimento: a página da casa abre pelo id da conta e não pelo id interno", async ({ page }) => {
-  await api(page, { rest: { profiles: profile, houses: [houseRow] } });
+  const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }]; // sem o aceite, o app mostra a tela de Termos no lugar da página
+  await api(page, { rest: { profiles: profile, houses: [houseRow], legal_consents: consents } });
   await page.goto(`/casa/${OWNER}`);
   await expect(page.getByText("Casa Teste").first()).toBeVisible();
   const p2 = await page.context().newPage();
-  await api(p2, { rest: { profiles: profile, houses: [houseRow] } });
+  await api(p2, { rest: { profiles: profile, houses: [houseRow], legal_consents: consents } });
   await p2.goto(`/casa/${HOUSE_ROW_ID}`);
   await expect(p2.getByText("Casa indisponível")).toBeVisible();
 });
