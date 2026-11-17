@@ -1,4 +1,4 @@
-# Política de retenção e exclusão de conta (rascunho para validação jurídica)
+# Política de retenção e exclusão de conta (validada pelo advogado em 17/11/2026)
 
 Decisão do proprietário; **um advogado deve confirmar prazos e base legal antes da publicação nos Termos/Privacidade**.
 
@@ -12,9 +12,21 @@ Decisão do proprietário; **um advogado deve confirmar prazos e base legal ante
 |---|---|---|
 | Pagamentos, reembolsos, livro-caixa, aceites dos Termos (sem textos livres) | 5 anos | Administrador |
 | **Identidade retida** (nome do perfil, e-mail, tipo de conta, nomes das casas) para identificar o autor de aceites/transações | 5 anos, depois nome e e-mail são apagados | Somente administrador; cada consulta exige motivo e fica registrada |
-| Chamados | 12 meses após decisão (24 se houver conflito/prova) | Administrador; partes veem só o seu lado |
+| Chamados e denúncias, com as mensagens | **24 meses após o encerramento**, para todos (resposta do advogado, 17/11/2026; migration 0151) | Administrador; partes veem só o seu lado |
 | Mensagens apagadas pelo autor (texto original) | 30 dias; **24 meses enquanto houver chamado aberto sobre a conversa** | Somente administrador, em caso de conflito |
 
 ## Observações
 - O nome do perfil **não é identidade civil verificada**; a plataforma não coleta CPF/nome legal. A identidade de pagamento fica no Stripe.
 - Os Termos e a tela de abertura de chamado devem informar: o painel vê as últimas 30 mensagens da conversa (inclusive apagadas) e dados do pedido.
+
+## Tabela completa validada pelo advogado (17/11/2026) e como o sistema cumpre cada prazo
+| Dado | Prazo | Como o sistema cumpre |
+|---|---|---|
+| Registros de acesso (IP, data e hora) | 6 meses (Marco Civil, art. 15) | **Lacuna a fechar:** o app ainda não grava esse registro (ver Roadmap, pendências) |
+| Financeiro, pagamentos, estornos, fiscal | 5 anos | Nunca apagados antes; anonimização preserva as linhas |
+| Aceites dos Termos e e-mail de conta excluída | até 5 anos | `deleted_account_identity` (rotina `purge_deleted_identities`) |
+| Chamados, denúncias e mensagens | 24 meses após encerrar | `admin_support_decide` (0151) + `purge_support_cases` diário |
+| Histórico de atendimento da casa e auditoria da equipe | 12 meses | `handoff_events` e `staff_audit` (rotinas diárias) |
+| Mensagens excluídas pelo usuário | 30 dias | `message_archive` (rotina diária) |
+| Conversas com a assistente de suporte | 3 dias | `purge_conecta_calls` (rotina diária) |
+| Cliques e visualizações brutos de impulsionamento | 24 horas | `promo_events` limpa a cada ciclo de `promotions_tick`; ficam só os totais diários |
