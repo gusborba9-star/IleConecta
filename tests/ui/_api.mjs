@@ -4,7 +4,9 @@ export const SESSION = { access_token: "aaa.bbb.ccc", refresh_token: "r", token_
 export const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
 
 /** API simulada: `rpc[name]` devolve o corpo (ou {status, body}); registra as chamadas. */
-export async function api(page, { rpc = {}, rest = {}, fn = {} } = {}) {
+export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {} } = {}) {
+  // Quem é administrador nos testes antigos é o dono, salvo se o teste disser outra coisa (módulos de acesso, 0138).
+  const rpc = rpcIn.is_admin === true && !("admin_my_access" in rpcIn) ? { ...rpcIn, admin_my_access: { admin: true, owner: true, perms: [] } } : rpcIn;
   const calls = [];
   await page.addInitScript((s) => { try { localStorage.setItem("sb-sb-auth-token", JSON.stringify(s)); } catch { /* sem storage */ } }, SESSION);
   await page.route("http://sb.test/**", async (route) => {

@@ -54,7 +54,7 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   calendar: "Calendário religioso da casa (celebrações e obrigações)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
-const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações", ver_linha_do_tempo_da_casa: "Abriu a linha do tempo de uma casa", billing_enroll: "Cobrança automática: casa inscrita", billing_unenroll: "Cobrança automática: casa removida", billing_cancel: "Cobrança automática: cancelada", billing_holiday: "Cobrança automática: pausa", billing_reactivate: "Cobrança automática: reativada", promo_limit: "Limite de divulgação", price_announce: "Reajuste de preços anunciado", price_cancel: "Reajuste de preços cancelado" };
+const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações", ver_linha_do_tempo_da_casa: "Abriu a linha do tempo de uma casa", admins: "Equipe da administração", billing_enroll: "Cobrança automática: casa inscrita", billing_unenroll: "Cobrança automática: casa removida", billing_cancel: "Cobrança automática: cancelada", billing_holiday: "Cobrança automática: pausa", billing_reactivate: "Cobrança automática: reativada", promo_limit: "Limite de divulgação", price_announce: "Reajuste de preços anunciado", price_cancel: "Reajuste de preços cancelado" };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -62,7 +62,7 @@ export type AdminSection = "visao" | "config" | "historico";
 
 export default function Admin({ section = "visao" }: { section?: AdminSection }) {
   const { isRemoteAuth } = useApp();
-  const { config, isAdmin, reload } = usePlatformConfig();
+  const { config, isAdmin, reload, can } = usePlatformConfig();
   const [draft, setDraft] = useState<PlatformConfig>(() => clone(config));
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
@@ -172,6 +172,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       ))}
 
       {section === "config" && <>
+      {can("dono") && <>
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Funcionalidades</h2>
         {FEATURE_KEYS.map((k) => {
@@ -233,32 +234,34 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
       </Card>
 
-      <PlanMatrixCard />
-      <PromoLimitsCard />
+      </>}
+      {can("dono") && <PlanMatrixCard />}
+      {can("dono") && <PromoLimitsCard />}
 
-      <HousePlansCard />
-      <StaffAuditCard />
+      {can("dono") && <HousePlansCard />}
+      {can("indicadores") && <StaffAuditCard />}
 
-      <ReturningAccountsCard />
+      {can("comunicacao") && <ReturningAccountsCard />}
 
-      <ReportedReviewsCard />
+      {can("moderacao") && <ReportedReviewsCard />}
 
-      <ChatReportsCard />
-      <AdminModerationCard />
+      {can("moderacao") && <ChatReportsCard />}
+      {can("moderacao") && <AdminModerationCard />}
 
-      <AdminAnnounceCard />
-      <AdminTaxIdCard />
+      {can("comunicacao") && <AdminAnnounceCard />}
+      {can("dono") && <AdminTaxIdCard />}
 
-      <FinancePanelCard />
+      {can("indicadores") && <FinancePanelCard />}
 
-      <BillingAdminCard />
-      <PriceChangeCard />
+      {can("dono") && <BillingAdminCard />}
+      {can("dono") && <PriceChangeCard />}
 
-      <FeeRulesCard />
+      {can("dono") && <FeeRulesCard />}
 
-      <PaymentLimitCard />
+      {can("dono") && <PaymentLimitCard />}
 
-      <AssistantEvalCard />
+      {can("dono") && <AssistantEvalCard />}
+      {can("dono") && <>
 
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Alcance por região</h2>
@@ -327,6 +330,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         ))}
         <Button onClick={() => save("pricing")} disabled={saving !== null}>{saving === "pricing" ? "Salvando…" : "Salvar preços"}</Button>
       </Card>
+      </>}
       </>}
 
       {section === "historico" && <Card className="p-5">

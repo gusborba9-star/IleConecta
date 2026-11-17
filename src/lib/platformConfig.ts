@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_CONFIG, sanitizeConfig, type PlatformConfig } from "@/lib/platformConfigCore";
 import { readAudit, type AuditEntry } from "@/lib/auditCore";
+import { readAccess, NO_ACCESS, type AdminAccess } from "@/lib/adminAccessCore";
 
 export * from "@/lib/platformConfigCore";
 
@@ -18,6 +19,13 @@ export async function fetchIsAdmin(): Promise<boolean> {
   if (!supabase) return false;
   const { data, error } = await supabase.rpc("is_admin");
   return !error && data === true;
+}
+
+/** O que esta conta pode na administração (dono, módulos). Quem decide de verdade é o banco; isto só ajusta a tela. */
+export async function fetchAdminAccess(): Promise<AdminAccess> {
+  if (!supabase) return NO_ACCESS;
+  const { data, error } = await supabase.rpc("admin_my_access");
+  return error ? NO_ACCESS : readAccess(data);
 }
 
 export async function saveSetting(key: "features" | "pricing" | "scopes" | "payment_limits" | "referral" | "plan_matrix" | "billing_config" | "billing_prices", value: object): Promise<boolean> {

@@ -43,6 +43,7 @@ async function serve(page, o = {}) {
         case "request_account_deletion": s.status = { ...s.status, exclusao: { id: "d1", executa_em: "2026-11-18T10:00:00Z" } }; return json(route, "d1");
         case "cancel_account_deletion": s.status = { ...s.status, exclusao: null }; return json(route, null);
         case "is_admin": return json(route, s.admin);
+        case "admin_my_access": return json(route, { admin: s.admin === true, owner: s.admin === true, perms: [] });
         case "admin_support_queue": return json(route, s.queue);
         case "admin_support_dossier": return json(route, s.dossier);
         default: return json(route, null);
