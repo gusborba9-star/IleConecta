@@ -10,3 +10,6 @@ export function cronState(c: CronRow, now?: number): "ok" | "falhando" | "parada
 export const CRON_STATE_TEXT: Record<string, string>;
 export function ago(iso: string | null | undefined, now?: number): string;
 export function megabytes(b: number): string;
+export const CRON_DESCRIPTIONS: Record<string, string>;
+export function cronDescription(name: string): string;
+export function cronWhen(schedule: string): string;

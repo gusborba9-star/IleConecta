@@ -87,6 +87,10 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
       await expect(cron.locator("li")).toHaveCount(3);
       await expect(cron.locator("li").nth(1)).toContainText("falhando agora");
       await expect(cron.locator("li").nth(2)).toContainText("nunca rodou");
+      await expect(cron.locator("li").nth(0)).toContainText("Confere e conclui os reembolsos pendentes com a Stripe.");
+      await expect(cron.locator("li").nth(0)).toContainText("Roda a cada 10 minutos");
+      await expect(cron.locator("li").nth(1)).toContainText("Devolve a casa ao plano anterior");
+      await expect(cron.locator("li").nth(2)).toContainText("Roda todo dia às 00:30 (Brasília)");
       await expect(page.getByText(/Banco: 27 MB · 7 conexões/)).toBeVisible();
       await noHScroll(page);
     });

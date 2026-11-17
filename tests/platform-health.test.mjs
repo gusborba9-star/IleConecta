@@ -47,3 +47,29 @@ test("formatação", () => {
   assert.equal(ago("lixo", now), "—"); assert.equal(ago(null, now), "—");
   assert.equal(megabytes(27 * 1048576), "27 MB"); assert.equal(megabytes("x"), "0 MB");
 });
+
+test("rotinas: descrição em português e 'quando roda'", async () => {
+  const { CRON_DESCRIPTIONS, cronDescription, cronWhen } = await import("../src/lib/platformHealthCore.js");
+  assert.equal(cronWhen("* * * * *"), "a cada minuto");
+  assert.equal(cronWhen("*/10 * * * *"), "a cada 10 minutos");
+  assert.equal(cronWhen("5 * * * *"), "de hora em hora (no minuto 5)");
+  assert.equal(cronWhen("0 11 * * *"), "todo dia às 08:00 (Brasília)");
+  assert.equal(cronWhen("35 9 * * *"), "todo dia às 06:35 (Brasília)");
+  assert.equal(cronWhen("30 3 * * *"), "todo dia às 00:30 (Brasília)");
+  assert.equal(cronWhen("0 0 1 * *"), "");
+  assert.equal(cronWhen(undefined), "");
+  assert.equal(cronDescription("nao-existe"), "");
+  for (const k of ["expire-stale-holds", "refund-sweep", "purge-system-events", "health-check", "run-account-deletions"]) assert.ok(cronDescription(k).length > 20, k);
+  assert.ok(Object.values(CRON_DESCRIPTIONS).every((t) => /^[A-ZÀ-Ú]/.test(t) && t.endsWith(".")));
+});
+
+test("toda rotina agendada nas migrations tem descrição em português (rotina nova sem texto falha aqui)", async () => {
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const { cronDescription } = await import("../src/lib/platformHealthCore.js");
+  const dir = new URL("../supabase/migrations/", import.meta.url);
+  const names = new Set();
+  for (const f of readdirSync(dir)) for (const m of readFileSync(new URL(f, dir), "utf8").matchAll(/cron\.schedule\(\s*'([a-z0-9-]+)'/g)) names.add(m[1]);
+  assert.ok(names.size >= 18, `achou ${names.size} rotinas`);
+  const sem = [...names].filter((n) => !cronDescription(n));
+  assert.deepEqual(sem, []);
+});
