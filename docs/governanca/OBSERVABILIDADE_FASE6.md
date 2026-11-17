@@ -41,3 +41,11 @@ A rotina `health-check` roda a cada 10 minutos e avisa **uma vez por problema a 
 - Se o próprio `health-check` parasse, ninguém seria avisado: por isso o cartão mostra o estado dele como o das demais rotinas, e o monitor externo (item 1) cobre o resto.
 - Erros do app só são relatados com a pessoa logada (a tela de login sem conta não relata).
 - Falha de pagamento "esperada" (cartão recusado, divergência) não conta como erro de função: é situação do usuário, não da plataforma.
+
+
+## Ações do dono no painel (0157)
+
+- **Rodar agora:** em cada rotina da lista segura (expire-stale-holds, handoff-remind, promotions-tick, member-dues-daily, plan-trial-revert, platform-billing-tick, platform-billing-sweep, platform-cancel-apply, platform-price-apply, refund-sweep, health-check). Roda exatamente o comando do agendador, lido do `cron.job`; do chamador vem só o nome, que precisa estar na lista. Fora da lista de propósito: `purge-*` e `run-account-deletions` (nada se apaga fora de hora). Só o dono; uma vez por minuto por rotina e no máximo 60 por hora; cada uso fica em `routine_runs` (30 dias).
+- **Quando usar:** alerta "rotina falhou" ou "parou" que parece oscilação (Stripe, Supabase, rede). Se falhar de novo, é defeito: o painel mostra o motivo e a correção é do Claude.
+- **Já vi:** marca o alerta como visto sem apagar; volta a "novo" se o aviso for reenviado depois de 6 h.
+- **Detalhe:** alertas e erros frequentes abrem com "quem resolve" e os passos (por exemplo, conferir saldo e limite da chave na OpenRouter, ou eventos falhando na Stripe).
