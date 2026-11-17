@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { subscribeLive } from "@/lib/live";
 import { refundCancelled } from "@/lib/payments";
 
 export type OrderStatus =
@@ -119,10 +120,5 @@ export const remindNextStage = (id: string) => call("remind_next_stage", { p_ord
 export const payNextStage = (id: string) => call("pay_next_stage", { p_order: id });
 
 export function subscribeOrders(onChange: () => void): () => void {
-  if (!supabase) return () => {};
-  const client = supabase;
-  const channel = client.channel(`orders-${Math.random().toString(36).slice(2)}`).on("postgres_changes", { event: "*", schema: "public", table: "service_orders" }, onChange).subscribe();
-  return () => {
-    void client.removeChannel(channel);
-  };
+  return subscribeLive("orders", onChange);
 }
