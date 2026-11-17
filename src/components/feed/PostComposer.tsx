@@ -8,6 +8,7 @@ import PostStylePicker from "@/components/feed/PostStylePicker";
 import { EMPTY_STYLE, type StyleDraft } from "@/components/feed/postStyleDraft";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { toColumn, validateDraft } from "@/lib/postCardCore";
+import { fitToMode, scrimPctFor } from "@/lib/postLettersCore";
 import { removeCardImage, uploadCardImage } from "@/lib/postImages";
 
 export default function PostComposer() {
@@ -43,7 +44,7 @@ export default function PostComposer() {
         content: text.trim(),
         kind: "geral",
         image: col ? undefined : image || undefined,
-        card: col && style.image ? { style: col, image: style.image.previewUrl, scrimPct: style.image.scrimPct } : undefined,
+        card: col && style.image ? { style: col, image: style.image.previewUrl, scrimPct: col === "total" ? scrimPctFor(style.image.brightness, style.letters.color) : style.image.scrimPct, letters: fitToMode(style.letters, col) } : undefined,
       },
       cardPath ? { cardPath } : undefined
     );

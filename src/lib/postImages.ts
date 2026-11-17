@@ -8,8 +8,10 @@ export interface PreparedCardImage {
   blob: Blob;
   /** Endereço temporário só para a prévia; solte com URL.revokeObjectURL quando não precisar mais. */
   previewUrl: string;
-  /** Força do fundo escuro atrás do texto, em %, de 35 a 85. */
+  /** Força do fundo escuro atrás do texto branco, em %, de 35 a 85. */
   scrimPct: number;
+  /** Brilho do ponto mais claro da foto (0 a 255): com ele o véu é recalculado quando a casa escolhe outra cor de letra. */
+  brightness: number;
 }
 
 /** Lê a foto escolhida, reduz, mede o brilho e prepara o envio. Nada vai para o servidor aqui. */
@@ -34,7 +36,7 @@ export async function prepareCardImage(file: File): Promise<{ ok: true; image: P
     const blob = (await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.85)))
       ?? (await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85)));
     if (!blob) return { ok: false, error: "Não foi possível ler essa imagem. Tente outra." };
-    return { ok: true, image: { blob, previewUrl: URL.createObjectURL(blob), scrimPct: Math.round(scrimAlpha(brightness) * 100) } };
+    return { ok: true, image: { blob, previewUrl: URL.createObjectURL(blob), scrimPct: Math.round(scrimAlpha(brightness) * 100), brightness } };
   } catch {
     return { ok: false, error: "Não foi possível ler essa imagem. Tente outra." };
   }

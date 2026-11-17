@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/base";
 import StyledPostBody from "@/components/feed/StyledPostBody";
+import LettersPicker from "@/components/feed/LettersPicker";
+import { fitToMode, scrimPctFor } from "@/lib/postLettersCore";
 import { CARD_MODES, CARD_TEXT_MAX, type CardMode } from "@/lib/postCardCore";
 import { prepareCardImage } from "@/lib/postImages";
 import type { StyleDraft } from "@/components/feed/postStyleDraft";
@@ -29,7 +31,7 @@ export default function PostStylePicker({ value, onChange, text, allowed, houseN
     if (value.image) URL.revokeObjectURL(value.image.previewUrl);
     onChange({ ...value, image: r.image });
   };
-  const setMode = (mode: CardMode) => onChange({ ...value, mode });
+  const setMode = (mode: CardMode) => onChange({ ...value, mode, letters: fitToMode(value.letters, mode) });
   const styled = value.mode !== "normal";
 
   return (
@@ -65,12 +67,13 @@ export default function PostStylePicker({ value, onChange, text, allowed, houseN
             <div className="space-y-1">
               <div className="text-xs font-semibold text-muted-foreground">Prévia: assim vai aparecer no feed, de {houseName}</div>
               <div className="rounded-xl overflow-hidden border border-border" data-testid="card-preview">
-                <StyledPostBody text={text.trim() || "O texto da sua publicação aparece aqui."} card={{ style: value.mode as "total" | "parcial", image: value.image.previewUrl, scrimPct: value.image.scrimPct }} />
+                <StyledPostBody text={text.trim() || "O texto da sua publicação aparece aqui."} card={{ style: value.mode as "total" | "parcial", image: value.image.previewUrl, scrimPct: value.mode === "total" ? scrimPctFor(value.image.brightness, value.letters.color) : value.image.scrimPct, letters: value.letters }} />
               </div>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">Escolha uma foto (JPG, PNG ou WebP, até 5 MB) para ver a prévia.</p>
           )}
+          {value.image && <LettersPicker mode={value.mode} value={value.letters} onChange={(letters) => onChange({ ...value, letters })} />}
           <label className="flex items-start gap-2 text-sm min-h-11">
             <input type="checkbox" className="mt-1 h-4 w-4" checked={value.ack} onChange={(e) => onChange({ ...value, ack: e.target.checked })} />
             <span>Tenho o direito de usar esta imagem (foto minha, da casa ou com autorização de quem a fez).</span>
