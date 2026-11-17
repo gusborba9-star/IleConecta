@@ -47,7 +47,7 @@ export interface Post {
   content: string;
   image?: string;
   /** Card estilizado (Profissional/Premium): modo, imagem da plataforma e força do fundo atrás do texto (%). */
-  card?: { style: "total" | "parcial"; image: string; scrimPct: number; letters?: import("@/lib/postLettersCore").Letters };
+  card?: { style: "total" | "parcial"; image: string; path?: string; scrimPct: number; letters?: import("@/lib/postLettersCore").Letters };
   kind: "trabalho" | "ritual" | "buzios" | "story" | "geral";
   ritualId?: string;
   likes: string[]; // user ids visíveis (o banco só mostra as próprias curtidas; a dona da casa vê todas)

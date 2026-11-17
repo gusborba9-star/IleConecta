@@ -5,7 +5,7 @@ import { fetchFollowSummary } from "@/lib/follows";
 import { fetchReviewSummary } from "@/lib/reviews";
 import { fromColumn } from "@/lib/postCardCore";
 import { fitToMode, lettersFromRow, lettersToColumns, type Letters } from "@/lib/postLettersCore";
-import { cardImageUrl } from "@/lib/postImages";
+import { cardImageUrl, removeCardImage } from "@/lib/postImages";
 
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=1600&h=600&fit=crop";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -148,7 +148,7 @@ function readCard(row: Row): Post["card"] {
   const image = cardImageUrl(row.card_image_path);
   if (!image) return undefined;
   const pct = Number(row.card_scrim);
-  return { style, image, scrimPct: Number.isFinite(pct) ? Math.min(85, Math.max(35, Math.round(pct))) : 55, letters: fitToMode(lettersFromRow(row), style) };
+  return { style, image, path: row.card_image_path, scrimPct: Number.isFinite(pct) ? Math.min(85, Math.max(35, Math.round(pct))) : 55, letters: fitToMode(lettersFromRow(row), style) };
 }
 
 /** Cria a publicação da casa logada. Devolve o post salvo ou null se o servidor recusar. */
@@ -171,12 +171,23 @@ export async function remoteCreatePost(
     houseId: ownerId,
     content: input.content,
     image: input.image,
-    card: input.card ? { style: input.card.style, image: cardImageUrl(input.card.path) ?? "", scrimPct: input.card.scrimPct, letters: fitToMode(input.card.letters, input.card.style) } : undefined,
+    card: input.card ? { style: input.card.style, image: cardImageUrl(input.card.path) ?? "", path: input.card.path, scrimPct: input.card.scrimPct, letters: fitToMode(input.card.letters, input.card.style) } : undefined,
     kind: input.kind,
     likes: [],
     comments: [],
     createdAt: String(data.created_at),
   };
+}
+
+/** Exclui a publicação da casa (curtidas e comentários saem junto) e, se tinha foto de card, apaga a foto do armazenamento. Devolve null se saiu ou a mensagem do motivo. */
+export async function remoteDeletePost(postId: string, cardPath?: string): Promise<string | null> {
+  if (!supabase) return "Não foi possível excluir agora. Tente novamente.";
+  const { data, error } = await supabase.from("posts").delete().eq("id", postId).select("id");
+  if (error) return /^Esta publicação está impulsionada/.test(error.message ?? "") ? error.message : "Não foi possível excluir agora. Tente novamente.";
+  // a regra do banco só deixa a dona apagar: se nada foi apagado, a publicação continua (não finge sucesso)
+  if (!data || data.length === 0) return "Não foi possível excluir agora. Tente novamente.";
+  if (cardPath) await removeCardImage(cardPath);
+  return null;
 }
 
 export async function remoteSetLike(postId: string, userId: string, liked: boolean): Promise<boolean> {

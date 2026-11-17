@@ -101,7 +101,7 @@ export default function PostComposer() {
                 <Image className="h-4 w-4" /> Foto
               </Button>
               )}
-              {isHouse && (
+              {isHouse && !isRemoteAuth && (
                 <>
                   <Button variant="ghost" size="sm" disabled title="Publicação de rituais ainda não está disponível no protótipo">
                     <Sparkles className="h-4 w-4 text-gold" /> Ritual indisponível

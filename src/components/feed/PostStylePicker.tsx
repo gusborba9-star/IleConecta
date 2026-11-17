@@ -73,7 +73,7 @@ export default function PostStylePicker({ value, onChange, text, allowed, houseN
           ) : (
             <p className="text-xs text-muted-foreground">Escolha uma foto (JPG, PNG ou WebP, até 5 MB) para ver a prévia.</p>
           )}
-          {value.image && <LettersPicker mode={value.mode} value={value.letters} onChange={(letters) => onChange({ ...value, letters })} />}
+          <LettersPicker mode={value.mode} value={value.letters} onChange={(letters) => onChange({ ...value, letters })} />
           <label className="flex items-start gap-2 text-sm min-h-11">
             <input type="checkbox" className="mt-1 h-4 w-4" checked={value.ack} onChange={(e) => onChange({ ...value, ack: e.target.checked })} />
             <span>Tenho o direito de usar esta imagem (foto minha, da casa ou com autorização de quem a fez).</span>

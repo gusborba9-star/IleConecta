@@ -13,11 +13,11 @@ export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {}, storageOk
     const req = route.request(); const url = new URL(req.url());
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
     let body = null; try { body = req.postDataJSON(); } catch { /* sem corpo */ }
-    const send = (v) => { const o = typeof v === "function" ? v(body, calls) : v; const r = o && typeof o === "object" && "status" in o && "body" in o ? o : { status: 200, body: o }; return route.fulfill({ status: r.status, headers: { ...CORS, "content-type": "application/json" }, body: JSON.stringify(r.body) }); };
+    const send = (v) => { const o = typeof v === "function" ? v(body, calls, { method: req.method(), search: url.search }) : v; const r = o && typeof o === "object" && "status" in o && "body" in o ? o : { status: 200, body: o }; return route.fulfill({ status: r.status, headers: { ...CORS, "content-type": "application/json" }, body: JSON.stringify(r.body) }); };
     const m = url.pathname.match(/\/rest\/v1\/rpc\/(.+)$/);
     if (m) { calls.push({ kind: "rpc", name: m[1], body }); return send(rpc[m[1]] ?? null); }
     const t = url.pathname.match(/\/rest\/v1\/(.+)$/);
-    if (t) { calls.push({ kind: "rest", name: t[1], body }); const v = rest[t[1]] ?? []; return send(req.headers()["accept"]?.includes("vnd.pgrst.object") ? (Array.isArray(v) ? v[0] ?? null : v) : v); }
+    if (t) { calls.push({ kind: "rest", name: t[1], body, method: req.method(), search: url.search }); const v = rest[t[1]] ?? []; return send(req.headers()["accept"]?.includes("vnd.pgrst.object") ? (Array.isArray(v) ? v[0] ?? null : v) : v); }
     const f = url.pathname.match(/\/functions\/v1\/(.+)$/);
     if (f) { calls.push({ kind: "fn", name: f[1], body }); return send(fn[f[1]] ?? {}); }
     const st = url.pathname.match(/\/storage\/v1\/object\/(.+)$/);

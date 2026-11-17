@@ -20,8 +20,9 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
     const calls = await setup(page, "intermediario");
     await page.goto("/comunidade");
     await page.getByLabel("Texto da publicação").fill("Hoje tem gira. Axé!");
-    await expect(page.getByTestId("letters-picker")).toHaveCount(0); // só depois de escolher o card e a foto
+    await expect(page.getByTestId("letters-picker")).toHaveCount(0); // card normal: sem letras
     await radio(page, "Imagem no card todo").click();
+    await expect(page.getByTestId("letters-picker")).toBeVisible(); // aparece assim que escolhe o card com imagem, mesmo antes da foto
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#ffffff"));
     const prev = page.getByTestId("card-preview");
     await expect(page.getByTestId("letters-picker")).toBeVisible();
