@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
 import { Button, Card } from "@/components/base";
@@ -20,6 +21,14 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   const [seats, setSeats] = useState<SeatRefunds | null>(null);
   const [promos, setPromos] = useState<MyPromo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const box = useRef<HTMLDetailsElement>(null);
+  const { hash } = useLocation();
+  // O caminho vindo da exclusão de uma publicação (/planos#pedidos) chega com a seção já aberta.
+  useEffect(() => {
+    if (hash !== "#pedidos" || !box.current) return;
+    box.current.open = true;
+    box.current.scrollIntoView({ block: "start" });
+  }, [hash]);
 
   useEffect(() => {
     if (!isRemoteAuth) return;
@@ -86,7 +95,7 @@ export default function OrdersCard({ refreshKey = 0, onChanged }: { refreshKey?:
   const empty = seatItems.length === 0 && seatHistory.length === 0 && promos.length === 0 && refunds.items.length === 0 && refunds.history.length === 0 && !planOffer && planHistory.length === 0 && !plan?.cancelled && !returningNote;
   return (
     <Card className="p-5">
-      <details>
+      <details id="pedidos" ref={box}>
         <summary className="flex cursor-pointer items-center gap-2 list-none">
           <ClipboardList className="h-5 w-5 shrink-0 text-forest" aria-hidden />
           <h2 className="font-display font-bold text-lg">Pedidos e validações</h2>

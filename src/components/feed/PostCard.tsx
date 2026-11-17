@@ -5,7 +5,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2, Pencil, MessageCircleOff, EyeOff, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
 import RitualCard from "./RitualCard";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -13,11 +13,12 @@ import { isFeatureOn } from "@/lib/platformConfig";
 import { toast } from "sonner";
 
 export default function PostCard({ post }: { post: Post }) {
-  const { users, currentUser, toggleLike, commentPost, deletePost, editPost, setCommentsOff, setCommentHidden, rituals, isRemoteAuth } = useApp();
+  const { users, currentUser, toggleLike, commentPost, deletePost, editPost, setCommentsOff, setCommentHidden, refreshRemote, rituals, isRemoteAuth } = useApp();
+  const nav = useNavigate();
   const { config } = usePlatformConfig();
   const [text, setText] = useState("");
   const [showComments, setShowComments] = useState(false);
-  const [menu, setMenu] = useState<"closed" | "open" | "confirm">("closed");
+  const [menu, setMenu] = useState<"closed" | "open" | "checking" | "confirm">("closed");
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,15 @@ export default function PostCard({ post }: { post: Post }) {
     toast.error(err);
   };
 
+  // Antes de mostrar o caminho para excluir um post impulsionado, pergunta de novo ao banco (o reembolso pode ter sido concluído enquanto a casa estava em outra tela).
+  const askDelete = async () => {
+    if (!post.deleteInfo) return void setMenu("confirm");
+    setMenu("checking");
+    await refreshRemote();
+    setMenu("confirm");
+  };
+  const di = post.deleteInfo;
+  const deadlineText = di?.deadline ? new Date(di.deadline).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
   const textLimit = post.card ? 400 : 2000;
   const saveEdit = async () => {
     if (editing === null || saving) return;
@@ -138,7 +148,7 @@ export default function PostCard({ post }: { post: Post }) {
                 <button type="button" role="menuitem" onClick={() => void toggleCommentsOff()} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
                   <MessageCircleOff className="h-4 w-4" aria-hidden /> {post.commentsOff ? "Ativar comentários" : "Desativar comentários"}
                 </button>
-                <button type="button" role="menuitem" onClick={() => setMenu("confirm")} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold text-destructive hover:bg-muted">
+                <button type="button" role="menuitem" onClick={() => void askDelete()} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold text-destructive hover:bg-muted">
                   <Trash2 className="h-4 w-4" aria-hidden /> Excluir publicação
                 </button>
               </div>
@@ -146,12 +156,25 @@ export default function PostCard({ post }: { post: Post }) {
           </div>
         )}
       </div>
+      {mine && menu === "checking" && <p role="status" className="mx-4 mb-3 text-sm text-muted-foreground">Verificando o impulsionamento…</p>}
       {mine && menu === "confirm" && (
         <div role="alertdialog" aria-label="Confirmar exclusão" className="mx-4 mb-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3 space-y-2">
-          <p className="text-sm"><strong>Excluir esta publicação?</strong> As curtidas e os comentários dela também serão apagados. Isso não pode ser desfeito.</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={deleting} onClick={() => setMenu("closed")}>Cancelar</Button>
-            <Button variant="danger" size="sm" disabled={deleting} onClick={() => void remove()}>{deleting ? "Excluindo…" : "Excluir"}</Button>
+          {!di && <p className="text-sm"><strong>Excluir esta publicação?</strong> As curtidas e os comentários dela também serão apagados. Isso não pode ser desfeito.</p>}
+          {di?.state === "reembolsavel" && (
+            <p className="text-sm"><strong>Esta publicação está impulsionada.</strong> Antes de excluir, peça o reembolso dos dias de impulsionamento que ainda não começaram, em Pedidos e validações{deadlineText ? ` (disponível até ${deadlineText})` : " (até 7 dias depois da compra)"}. Os dias que já começaram não são devolvidos. Quando o reembolso for concluído, volte aqui para excluir.</p>
+          )}
+          {di?.state === "reembolso_pendente" && <p className="text-sm"><strong>O reembolso está sendo concluído.</strong> Volte em alguns minutos para excluir a publicação.</p>}
+          {di?.state === "aguardar" && <p className="text-sm"><strong>Esta publicação está impulsionada</strong> e só poderá ser excluída quando o impulsionamento terminar.</p>}
+          {di?.state === "liberado" && (
+            <p className="text-sm"><strong>Excluir esta publicação?</strong> O reembolso foi concluído. Os dias de impulsionamento que já começaram foram pagos e não são devolvidos: eles param quando a publicação sai do ar. As curtidas e os comentários também serão apagados. Isso não pode ser desfeito. Se preferir, mantenha a publicação até esses dias acabarem.</p>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            {(!di || di.state === "liberado" || di.state === "reembolsavel") && (
+              <Button variant="outline" size="sm" disabled={deleting} onClick={() => setMenu("closed")}>{di?.state === "liberado" ? "Manter até o fim" : "Cancelar"}</Button>
+            )}
+            {di?.state === "reembolsavel" && <Button size="sm" onClick={() => nav("/planos#pedidos")}>Ir para Pedidos e validações</Button>}
+            {(di?.state === "reembolso_pendente" || di?.state === "aguardar") && <Button variant="outline" size="sm" onClick={() => setMenu("closed")}>Entendi</Button>}
+            {(!di || di.state === "liberado") && <Button variant="danger" size="sm" disabled={deleting} onClick={() => void remove()}>{deleting ? "Excluindo…" : di ? "Excluir agora" : "Excluir"}</Button>}
           </div>
         </div>
       )}
