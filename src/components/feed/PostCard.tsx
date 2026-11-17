@@ -129,9 +129,12 @@ export default function PostCard({ post }: { post: Post }) {
             </button>
             {menu === "open" && (
               <div role="menu" className="absolute right-0 top-10 z-10 w-52 rounded-xl border border-border bg-card p-1 shadow-card">
-                <button type="button" role="menuitem" onClick={() => { setEditing(post.content); setMenu("closed"); }} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
-                  <Pencil className="h-4 w-4" aria-hidden /> Editar texto
-                </button>
+                {post.textLock?.state !== "travado" && (
+                  <button type="button" role="menuitem" onClick={() => { setEditing(post.content); setMenu("closed"); }} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
+                    <Pencil className="h-4 w-4" aria-hidden /> {post.textLock ? "Corrigir texto (1 vez)" : "Editar texto"}
+                  </button>
+                )}
+                {post.textLock?.state === "travado" && <p className="px-3 py-2 text-xs text-muted-foreground">Texto travado durante o impulsionamento.</p>}
                 <button type="button" role="menuitem" onClick={() => void toggleCommentsOff()} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold hover:bg-muted">
                   <MessageCircleOff className="h-4 w-4" aria-hidden /> {post.commentsOff ? "Ativar comentários" : "Desativar comentários"}
                 </button>
@@ -162,9 +165,14 @@ export default function PostCard({ post }: { post: Post }) {
             rows={4}
             className="w-full rounded-xl border border-input bg-card p-3 text-[15px] outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className={cn("text-xs", editing.length > textLimit ? "text-destructive font-semibold" : "text-muted-foreground")}>{editing.length}/{textLimit}</span>
             {post.card && <span className="text-xs text-muted-foreground">A imagem e as letras do card não mudam.</span>}
+            {post.textLock?.state === "correcao" && (
+              <span className="basis-full text-xs text-muted-foreground">
+                Publicação impulsionada: você pode corrigir o texto uma única vez{post.textLock.until ? `, até ${new Date(post.textLock.until).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}. Depois ele fica travado até o impulsionamento terminar.
+              </span>
+            )}
             <div className="ml-auto flex gap-2">
               <Button variant="outline" size="sm" disabled={saving} onClick={() => setEditing(null)}>Cancelar</Button>
               <Button size="sm" disabled={saving || !editing.trim() || editing.length > textLimit} onClick={() => void saveEdit()}>{saving ? "Salvando…" : "Salvar"}</Button>

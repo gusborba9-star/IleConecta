@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import PromoList from "@/components/promo/PromoList";
 import { buyPromotion } from "@/lib/promotions";
 import type { PromoScopeKey } from "@/lib/promotionsCore";
+import StyledPostBody from "@/components/feed/StyledPostBody";
 import { useChargeReturn } from "@/lib/useChargeReturn";
 import { fetchServices, type Service } from "@/lib/services";
 import { fetchHouseRituals, type RealRitual } from "@/lib/rituals";
@@ -26,8 +27,10 @@ export default function Boost() {
   const [services, setServices] = useState<Service[]>([]);
   const [rituals, setRituals] = useState<RealRitual[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [item, setItem] = useState(() => params.get("item") ?? "");
+  const [item, setItemRaw] = useState(() => params.get("item") ?? "");
+  const setItem = (v: string) => { setItemRaw(v); setReviewed(false); };
   const [busy, setBusy] = useState(false);
+  const [reviewed, setReviewed] = useState(false);
   const [tick, setTick] = useState(0);
   const load = useCallback(() => {
     if (!isRemoteAuth || !isHouse || !ownerId) return;
@@ -49,6 +52,7 @@ export default function Boost() {
     ...posts.filter((x) => x.houseId === ownerId && x.kind !== "story").slice(0, 30).map((x) => ({ key: `post:${x.id}`, label: `Publicação · ${x.content.replace(/\s+/g, " ").slice(0, 50)}`, maxDays: 90 })),
   ], [services, rituals, posts, ownerId]);
   const chosen = options.find((o) => o.key === item) ?? null;
+  const chosenPost = chosen?.key.startsWith("post:") ? posts.find((x) => x.id === chosen.key.slice(5)) ?? null : null;
 
   if (!currentUser || currentUser.type !== "commercial") {
     return (
@@ -104,6 +108,21 @@ export default function Boost() {
           {chosen && chosen.maxDays < 1 ? (
             <Card className="p-5 text-sm text-muted-foreground">Este ritual acontece em menos de um dia inteiro, então já não dá para impulsionar.</Card>
           ) : chosen ? (
+            <>
+            {chosenPost && (
+              <Card className="p-5 space-y-3">
+                <h2 className="font-display font-bold text-lg">Revise antes de contratar</h2>
+                <p className="text-sm text-muted-foreground">É assim que a publicação vai rodar. Depois de contratar, imagem e letras não mudam até o impulsionamento terminar, e o texto só pode ser corrigido uma vez, na primeira hora.</p>
+                <div className="rounded-xl border border-border overflow-hidden">
+                  {chosenPost.card ? <StyledPostBody text={chosenPost.content} card={chosenPost.card} /> : <div className="p-4 text-[15px] leading-relaxed whitespace-pre-wrap">{chosenPost.content}</div>}
+                  {!chosenPost.card && chosenPost.image && <img src={chosenPost.image} alt="" className="w-full max-h-[320px] object-cover" />}
+                </div>
+                <label className="flex items-start gap-2 text-sm min-h-11">
+                  <input type="checkbox" checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} className="mt-1 h-4 w-4" />
+                  <span>Revisei o texto e a imagem. Quero impulsionar a publicação exatamente assim.</span>
+                </label>
+              </Card>
+            )}
             <PromoPicker
               key={chosen.key}
               scopes={scopes}
@@ -115,6 +134,7 @@ export default function Boost() {
                 onBuy: async (scope, days, authorized) => {
                   if (scope === "exterior") return;
                   const [t, id] = chosen.key.split(":");
+                  if (chosenPost && !reviewed) return void toast.error("Revise a publicação e marque a confirmação antes de contratar.");
                   setBusy(true);
                   const r = await buyPromotion({ kind: "boost", scope: scope as PromoScopeKey, days, itemType: t as "service" | "event" | "post", itemId: id, authorized });
                   setBusy(false);
@@ -122,6 +142,7 @@ export default function Boost() {
                 },
               }}
             />
+            </>
           ) : null}
           <PromoList kind="boost" refreshKey={tick} title="Seus impulsionamentos" />
         </>

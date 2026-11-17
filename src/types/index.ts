@@ -62,6 +62,8 @@ export interface Post {
   }[];
   /** Data da última edição do texto (a publicação mostra "editado"). */
   editedAt?: string;
+  /** Só para a casa dona de post impulsionado: uma correção de texto na primeira hora ("correcao") ou texto travado ("travado"). */
+  textLock?: { state: "correcao" | "travado"; until?: string };
   /** A casa desativou novos comentários nesta publicação. */
   commentsOff?: boolean;
   createdAt: string;
