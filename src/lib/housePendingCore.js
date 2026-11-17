@@ -49,7 +49,9 @@ export function houseDestination(item, role, ownerUserId) {
   switch (item.kind) {
     case "conversa_sem_resposta":
     case "assunto_da_assistente":
-      return staff ? { path: "/atendimento?aba=chat", label: "Conversas" } : { path: "/mensagens", label: "Conversas" };
+      if (staff) return { path: typeof item.refId === "string" && UUID.test(item.refId) ? `/atendimento?aba=chat&conversa=${item.refId}` : "/atendimento?aba=chat", label: "Conversa" };
+      // /mensagens/:id usa o id da PESSOA da conversa (não o da conversa); sem ele, abre a lista
+      return typeof item.personId === "string" && UUID.test(item.personId) ? { path: `/mensagens/${item.personId}`, label: "Conversa" } : { path: "/mensagens", label: "Conversas" };
     case "pedido_para_iniciar":
     case "atendimento_passou":
       return staff ? { path: "/atendimento?aba=orders", label: "Pedidos" } : me ? { path: `/casa/${me}?aba=servicos`, label: "Pedidos da casa" } : null;
@@ -99,6 +101,7 @@ export function readHousePending(raw) {
       priority: PRIORITIES.includes(i.priority) ? i.priority : "normal",
       dueAt: typeof i.due_at === "string" ? i.due_at : null, overdue: i.overdue === true, since: typeof i.since === "string" ? i.since : null,
       tab: TABS.includes(i.tab) ? i.tab : null,
+      personId: typeof i.person_id === "string" && UUID.test(i.person_id) ? i.person_id : null,
     }));
   const counts = {};
   if (raw.counts && typeof raw.counts === "object") for (const [k, v] of Object.entries(raw.counts)) if (k in HOUSE_KIND_LABELS) counts[k] = int(v);

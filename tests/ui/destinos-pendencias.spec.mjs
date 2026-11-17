@@ -17,11 +17,12 @@ test("experimento: a página da casa abre pelo id da conta e não pelo id intern
 });
 
 const item = (kind, n, tab, o = {}) => ({ kind, ref_id: U(100 + n), title: `Item ${kind}`, detail: "", priority: "normal", due_at: null, overdue: false, since: null, tab, ...o });
+const PERSON = U(77), CONV = U(88);
 const KINDS = [
   ["pedido_para_iniciar", "pedidos"], ["reembolso_da_casa", "pedidos"], ["avaliacao_sem_resposta", "avaliacoes"],
   ["conta_de_recebimento", "cadastro"], ["fatura", "cobranca"], ["conversa_sem_resposta", "atendimento"],
 ];
-const PEND = { house_id: HOUSE_ROW_ID, house_name: "Casa Teste", role: "titular", total: KINDS.length, overdue: 0, counts: Object.fromEntries(KINDS.map(([k]) => [k, 1])), items: KINDS.map(([k, t], i) => item(k, i, t)), to_pay: { charges: [{ id: U(105), kind: "vaga_adicional", description: "Vaga adicional", amount_cents: 3990, due_date: "2026-12-17", status: "pendente", pix_discount_cents: 400, overdue: false }] } };
+const PEND = { house_id: HOUSE_ROW_ID, house_name: "Casa Teste", role: "titular", total: KINDS.length, overdue: 0, counts: Object.fromEntries(KINDS.map(([k]) => [k, 1])), items: KINDS.map(([k, t], i) => item(k, i, t, k === "conversa_sem_resposta" ? { ref_id: CONV, person_id: PERSON } : {})), to_pay: { charges: [{ id: U(105), kind: "vaga_adicional", description: "Vaga adicional", amount_cents: 3990, due_date: "2026-12-17", status: "pendente", pix_discount_cents: 400, overdue: false }] } };
 
 test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)", () => {
   const setup = async (page) => api(page, {
@@ -64,18 +65,19 @@ test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)
     await pay.getByRole("button", { name: /Abrir fatura/ }).first().click();
     await expect(page).toHaveURL(new RegExp(`/planos\\?foco=${U(105)}`));
   });
-  test("conversa sem resposta abre as conversas", async ({ page }) => {
-    await setup(page);
+  test("conversa sem resposta abre a conversa EXATA com a pessoa (id da pessoa, não o da conversa)", async ({ page }) => {
+    const calls = await setup(page);
     await go(page, "conversa_sem_resposta");
-    await expect(page).toHaveURL(/\/mensagens$/);
+    await expect(page).toHaveURL(new RegExp(`/mensagens/${PERSON}$`));
+    await expect.poll(() => calls.filter((c) => c.name === "open_conversation").map((c) => c.body.p_other)).toContain(PERSON);
   });
 });
 
 test("equipe: pedido e conversa abrem a aba certa do Atendimento; nada leva a telas da titular", async ({ page }) => {
-  const STAFF = { role: "equipe", house_id: HOUSE_ROW_ID, house_name: "Casa Teste", total: 2, overdue: 0, counts: { pedido_para_iniciar: 1, conversa_sem_resposta: 1, reembolso_da_casa: 1 }, items: [item("pedido_para_iniciar", 1, "pedidos"), item("conversa_sem_resposta", 2, "atendimento"), item("reembolso_da_casa", 3, "pedidos")], to_pay: null };
+  const STAFF = { role: "equipe", house_id: HOUSE_ROW_ID, house_name: "Casa Teste", total: 2, overdue: 0, counts: { pedido_para_iniciar: 1, conversa_sem_resposta: 1, reembolso_da_casa: 1 }, items: [item("pedido_para_iniciar", 1, "pedidos"), item("conversa_sem_resposta", 2, "atendimento", { ref_id: CONV }), item("reembolso_da_casa", 3, "pedidos")], to_pay: null };
   await api(page, {
     rest: { profiles: { ...profile, account_type: "pessoa" }, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-5", accepted_at: "2026-11-01T10:00:00Z" }] },
-    rpc: { house_pending_center: STAFF, my_staff_house: [{ house_id: HOUSE_ROW_ID, house_name: "Casa Teste", owner_id: U(9), staff_name: "Ana", perms: ["chat_read", "orders", "members"] }] },
+    rpc: { staff_conversations: [{ conversation_id: CONV, other_id: PERSON, other_name: "Ana Cliente", last_text: "oi", last_at: "2026-11-16T10:00:00Z" }], staff_messages: [{ id: U(5), sender_id: PERSON, text: "Preciso de ajuda", created_at: "2026-11-16T10:00:00Z", from_assistant: false }], house_pending_center: STAFF, my_staff_house: [{ house_id: HOUSE_ROW_ID, house_name: "Casa Teste", owner_id: U(9), staff_name: "Ana", perms: ["chat_read", "orders", "members"] }] },
   });
   await page.goto("/atendimento");
   await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
@@ -84,6 +86,7 @@ test("equipe: pedido e conversa abrem a aba certa do Atendimento; nada leva a te
   await expect(page).toHaveURL(/\/atendimento\?aba=orders/);
   await expect(page.getByRole("tab", { name: "Pedidos" })).toHaveAttribute("aria-selected", "true");
   await page.locator("li").filter({ hasText: "Item conversa_sem_resposta" }).getByRole("button", { name: /^Abrir/ }).click();
-  await expect(page).toHaveURL(/\/atendimento\?aba=chat/);
+  await expect(page).toHaveURL(new RegExp(`/atendimento\\?aba=chat&conversa=${CONV}`));
   await expect(page.getByRole("tab", { name: "Conversas" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Preciso de ajuda")).toBeVisible(); // a conversa pedida já abre aberta
 });

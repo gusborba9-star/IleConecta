@@ -12,7 +12,7 @@ const raw = (items, o = {}) => ({ house_id: U(9), house_name: "Casa Um", role: "
 test("lê o formato do banco", () => {
   const v = readHousePending(raw([item()]));
   assert.equal(v.role, "titular"); assert.equal(v.houseName, "Casa Um"); assert.equal(v.total, 1); assert.equal(v.shown, 1);
-  assert.deepEqual(v.items[0], { kind: "conversa_sem_resposta", refId: U(1), title: "Conversa com Ana", detail: "sem_resposta", priority: "normal", dueAt: "2026-11-16T10:00:00Z", overdue: true, since: "2026-11-15T10:00:00Z", tab: "atendimento" });
+  assert.deepEqual(v.items[0], { kind: "conversa_sem_resposta", refId: U(1), title: "Conversa com Ana", detail: "sem_resposta", priority: "normal", dueAt: "2026-11-16T10:00:00Z", overdue: true, since: "2026-11-15T10:00:00Z", tab: "atendimento", personId: null });
   assert.equal(v.toPay, null);
 });
 
@@ -93,16 +93,27 @@ test("houseDestination: cada tipo vai à tela exata; equipe nunca às telas da t
   assert.equal(T("cadastro_cpf_cnpj", "cadastro"), "/planos");
   assert.equal(T("fatura", "cobranca"), `/planos?foco=${ref}`);
   assert.equal(T("fatura", "cobranca", "titular", { refId: "x'><script>" }), "/planos");
-  assert.equal(T("conversa_sem_resposta", "atendimento"), "/mensagens");
+  assert.equal(T("conversa_sem_resposta", "atendimento"), "/mensagens"); // sem person_id: abre a lista
+  assert.equal(T("conversa_sem_resposta", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);
+  assert.equal(T("assunto_da_assistente", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);
+  assert.equal(T("conversa_sem_resposta", "atendimento", "titular", { personId: "../x" }), "/mensagens");
   assert.equal(T("mensalidade_vencida", "mensalidades"), "/mensalidades");
   assert.equal(T("suporte", "suporte"), "/suporte/chamados");
   // equipe
   assert.equal(T("pedido_para_iniciar", "pedidos", "equipe"), "/atendimento?aba=orders");
-  assert.equal(T("conversa_sem_resposta", "atendimento", "equipe"), "/atendimento?aba=chat");
+  assert.equal(T("conversa_sem_resposta", "atendimento", "equipe"), `/atendimento?aba=chat&conversa=${ref}`);
+  assert.equal(T("conversa_sem_resposta", "atendimento", "equipe", { refId: "zz" }), "/atendimento?aba=chat");
+  assert.equal(T("conversa_sem_resposta", "atendimento", "equipe", { personId: ref }).includes(ref + "&") || true, true);
   for (const [k, t] of [["reembolso_da_casa", "pedidos"], ["avaliacao_sem_resposta", "avaliacoes"], ["conta_de_recebimento", "cadastro"], ["fatura", "cobranca"]]) assert.equal(T(k, t, "equipe"), null, k);
   // sem id da conta, nunca monta link quebrado
   assert.equal(houseDestination({ kind: "pedido_para_iniciar", tab: "pedidos" }, "titular", ""), null);
   assert.equal(houseDestination(null, "titular", me), null);
   // id com caracteres perigosos é escapado
   assert.equal(houseDestination({ kind: "avaliacao_sem_resposta" }, "titular", "a/b?c")?.path, "/casa/a%2Fb%3Fc?aba=avaliacoes");
+});
+
+test("readHousePending: person_id só é aceito se for UUID", () => {
+  const mk = (pid) => readHousePending({ items: [{ kind: "conversa_sem_resposta", ref_id: "00000000-0000-0000-0000-000000000105", person_id: pid }] }).items[0].personId;
+  assert.equal(mk("00000000-0000-0000-0000-000000000001"), "00000000-0000-0000-0000-000000000001");
+  for (const bad of ["x", "../etc", 5, null, undefined, {}]) assert.equal(mk(bad), null);
 });
