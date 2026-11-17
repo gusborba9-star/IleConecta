@@ -22,7 +22,7 @@ Decisão do proprietário; **um advogado deve confirmar prazos e base legal ante
 ## Tabela completa validada pelo advogado (17/11/2026) e como o sistema cumpre cada prazo
 | Dado | Prazo | Como o sistema cumpre |
 |---|---|---|
-| Registros de acesso (IP, data e hora) | 6 meses (Marco Civil, art. 15) | **Lacuna a fechar:** o app ainda não grava esse registro (ver Roadmap, pendências) |
+| Registros de acesso (IP, data e hora) | 6 meses (Marco Civil, art. 15) | `access_logs` (0152): conta, IP, data e hora ao abrir o app conectado; só o servidor lê; `purge_access_logs` diário. Sem navegador nem aparelho |
 | Financeiro, pagamentos, estornos, fiscal | 5 anos | Nunca apagados antes; anonimização preserva as linhas |
 | Aceites dos Termos e e-mail de conta excluída | até 5 anos | `deleted_account_identity` (rotina `purge_deleted_identities`) |
 | Chamados, denúncias e mensagens | 24 meses após encerrar | `admin_support_decide` (0151) + `purge_support_cases` diário |

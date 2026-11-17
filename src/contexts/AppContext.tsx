@@ -29,6 +29,7 @@ import {
   remoteSetCommentHidden,
 } from "@/lib/remoteData";
 import { exposeState } from "@/lib/dataSource";
+import { registerAccess } from "@/lib/access";
 import { mergeFeedComments, withLoadedComments, withNewComment } from "@/lib/postCommentsCore";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
 import {
@@ -141,8 +142,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const remoteUserId = remoteUser?.id ?? null;
   useEffect(() => {
-    if (remoteUserId) void refreshRemote();
-    else {
+    if (remoteUserId) {
+      void refreshRemote();
+      void registerAccess();
+    } else {
       setRemoteHouses([]);
       setRemotePosts([]);
       setRemoteCommenters([]);
