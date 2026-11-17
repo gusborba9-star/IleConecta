@@ -21,4 +21,9 @@ for (const [nm, f] of [["funções", hashes], ["colunas de live_pings", cols], [
 await A.c.query(rd("../migrations/0149_retirar_tabelas_do_tempo_real.sql"));
 for (const k of ["roda inteiro", "pode rodar de novo"]) { try { await B.c.query(rd("../rollout/passo-315.sql")); ok(`passo 315 ${k}`, true); } catch (e) { ok(`passo 315 ${k}`, false, e.message); } }
 { const a = await pub(A.c), b = await pub(B.c); ok("passo 315: tempo real idêntico ao da migration 0149", JSON.stringify(a) === JSON.stringify(b), `${a} vs ${b}`); }
+// passo 316 = migration 0150
+const fn = async (c) => (await c.query(`select p.proname||'('||pg_get_function_identity_arguments(p.oid)||')='||md5(regexp_replace(regexp_replace(p.prosrc,'--[^\\n]*','','g'),'\\s','','g'))||p.prosecdef::text||coalesce(p.proconfig::text,'')||has_function_privilege('anon',p.oid,'execute')::text||has_function_privilege('authenticated',p.oid,'execute')::text x from pg_proc p where p.proname='post_comment_counts'`)).rows.map((r) => r.x);
+await A.c.query(rd("../migrations/0150_contagem_de_comentarios_do_feed.sql"));
+for (const k of ["roda inteiro", "pode rodar de novo"]) { try { await B.c.query(rd("../rollout/passo-316.sql")); ok(`passo 316 ${k}`, true); } catch (e) { ok(`passo 316 ${k}`, false, e.message); } }
+{ const a = await fn(A.c), b = await fn(B.c); ok("passo 316: função idêntica à da migration 0150", a.length === 1 && JSON.stringify(a) === JSON.stringify(b), `${a} vs ${b}`); }
 process.exit(bad ? 1 : 0);

@@ -1,5 +1,5 @@
 import StyledPostBody from "@/components/feed/StyledPostBody";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
@@ -11,9 +11,10 @@ import RitualCard from "./RitualCard";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 import { toast } from "sonner";
+import { shownCommentCount, visibleComments as pickVisibleComments } from "@/lib/postCommentsCore";
 
 export default function PostCard({ post }: { post: Post }) {
-  const { users, currentUser, toggleLike, commentPost, deletePost, editPost, setCommentsOff, setCommentHidden, refreshRemote, rituals, isRemoteAuth } = useApp();
+  const { users, currentUser, toggleLike, commentPost, deletePost, editPost, setCommentsOff, setCommentHidden, refreshRemote, loadComments, rituals, isRemoteAuth } = useApp();
   const nav = useNavigate();
   const { config } = usePlatformConfig();
   const [text, setText] = useState("");
@@ -79,7 +80,17 @@ export default function PostCard({ post }: { post: Post }) {
     toast.error(err);
   };
   // Comentário oculto: só a casa dona e quem escreveu o veem (o banco já filtra; isto cobre o modo demonstração).
-  const visibleComments = post.comments.filter((c) => !c.hidden || mine || c.userId === currentUser?.id);
+  const who = { mine, userId: currentUser?.id };
+  const visibleComments = pickVisibleComments(post, who);
+  const commentTotal = shownCommentCount(post, who);
+  // Comentários sob demanda (post real): o feed traz só a contagem; a lista é lida ao abrir (e de novo se a contagem mudou).
+  const [commentsState, setCommentsState] = useState<"idle" | "loading" | "error">("idle");
+  const needsLoad = post.commentsLoaded === false;
+  useEffect(() => {
+    if (!showComments || !needsLoad || commentsState !== "idle") return;
+    setCommentsState("loading");
+    void loadComments(post.id).then((ok) => setCommentsState(ok ? "idle" : "error"));
+  }, [showComments, needsLoad, commentsState, post.id, loadComments]);
   const commentsLocked = !!post.commentsOff && !mine;
 
   // Compartilhar: o link abre o feed já nesta publicação (quem não tem conta entra primeiro). Celular usa o menu de compartilhar; no computador copia o link.
@@ -224,7 +235,7 @@ export default function PostCard({ post }: { post: Post }) {
 
       <div className="px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>{post.likeCount ?? post.likes.length} curtidas</span>
-        <button onClick={() => setShowComments((v) => !v)}>{visibleComments.length} comentários</button>
+        <button onClick={() => setShowComments((v) => !v)}>{commentTotal === undefined ? "Comentários" : commentTotal === 1 ? "1 comentário" : `${commentTotal} comentários`}</button>
       </div>
 
       <div className="px-2 pb-2 border-t border-border grid grid-cols-3">
@@ -235,6 +246,13 @@ export default function PostCard({ post }: { post: Post }) {
 
       {showComments && (
         <div className="px-4 py-3 border-t border-border space-y-3 bg-muted/40">
+          {needsLoad && commentsState !== "error" && visibleComments.length === 0 && <p className="text-xs text-muted-foreground" role="status">Carregando comentários…</p>}
+          {needsLoad && commentsState === "error" && (
+            <p className="text-xs text-muted-foreground" role="alert">
+              Não foi possível carregar os comentários.{" "}
+              <button type="button" className="font-semibold underline" onClick={() => setCommentsState("idle")}>Tentar de novo</button>
+            </p>
+          )}
           {visibleComments.map((c) => {
             const u = users.find((x) => x.id === c.userId);
             return (
@@ -274,6 +292,7 @@ export default function PostCard({ post }: { post: Post }) {
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label="Enviar comentário"
                 onClick={() => {
                   if (text.trim()) {
                     commentPost(post.id, text.trim());

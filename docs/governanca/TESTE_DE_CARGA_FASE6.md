@@ -26,11 +26,11 @@ Banco local com todas as migrations (0001–0147) e dados simulados em `scripts/
 ## O que foi achado e corrigido (migration 0148, passos 313–314)
 1. **Feed sem índice por data:** o banco lia todas as publicações e aplicava a regra de visibilidade em cada uma para mostrar as 50 mais novas; o custo crescia com o número de posts. Índice `posts_created_idx`.
 2. **Tempo real sem filtro:** o app ouvia mensagens, pedidos, reservas e reembolsos sem filtro, e o servidor de tempo real conferia a permissão de todos os conectados a cada mudança. Agora cada pessoa ouve só a própria linha de `live_pings` (um aviso por assunto, sem conteúdo); gatilhos de instrução (uma vez por operação, mesmo com 50 mensagens) avisam só os envolvidos e nunca derrubam a operação principal. A retirada das tabelas antigas do tempo real é a migration 0149 (passo 315), a rodar depois do app novo no ar.
-3. **Presença a cada 15 s:** medida em 0,4 ms por chamada (~36 por segundo no pico = cerca de 1% de um núcleo). **Não foi alterada**: o ganho não justifica mexer na regra de 35 s da casa online.
+3. **Comentários do feed sob demanda (migration 0150, passo 316; aprovado pelo proprietário):** o feed trazia todos os comentários de cada post (10 posts de 300 comentários = 633 KB e 178 ms). Agora traz só a contagem (6 KB e 10 ms) e a lista é lida ao abrir (2 ms para 300 comentários), com "Carregando", erro com "Tentar de novo", contagem que sobe ao comentar e leitura nova se a contagem mudar. A contagem respeita a regra de leitura (comentário oculto só conta para a casa e para quem escreveu).
+4. **Presença a cada 15 s:** medida em 0,4 ms por chamada (~36 por segundo no pico = cerca de 1% de um núcleo). **Não foi alterada**: o ganho não justifica mexer na regra de 35 s da casa online.
 
 ## Riscos que dependem de decisão ou de ação do proprietário
 - **Plano gratuito do Supabase** (pausa por inatividade, sem backup diário, 200 conexões simultâneas de tempo real): migrar para o Pro antes do lançamento (decisão do proprietário, 17/11/2026).
-- **Comentários no feed:** o feed traz todos os comentários de cada post. Com posts de centenas de comentários o feed passa de 1 MB. Proposta: trazer só a contagem e carregar os comentários ao abrir (a tela já os mostra recolhidos). Aguardando decisão.
 
 ## Ainda por medir
 Tempo real e plano de produção só se validam em produção depois do Pro; dia de mensalidade (4.000 confirmações do Stripe no mesmo dia); reserva simultânea da mesma vaga; carga de imagens e Core Web Vitals no celular; custo e latência da IA.

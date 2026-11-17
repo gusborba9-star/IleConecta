@@ -9,15 +9,16 @@ const mkHouse = (id, owner, name) => ({ id, owner_id: owner, name, category: "Te
 const cm = (id, text, hidden = false, user = CLIENT) => ({ id, user_id: user, text, created_at: "2026-11-17T11:00:00Z", hidden_by_house: hidden, profiles: { display_name: "Cliente Ana", avatar_url: null, account_type: "cliente", city: "Salvador", state: "BA" } });
 const post = (id, hid, owner, text, o = {}) => ({ id, house_id: hid, kind: "geral", content: text, image_url: null, card_style: null, card_image_path: null, card_scrim: 55, edited_at: null, comments_off: false, created_at: "2026-11-17T10:00:00Z", houses: { owner_id: owner }, post_likes: [], post_comments: [], ...o });
 const LIST = () => [
-  post(MINE, HID, OWNER, "Meu post", { post_comments: [cm(U(701), "Comentário visível"), cm(U(702), "Comentário oculto", true)] }),
+  post(MINE, HID, OWNER, "Meu post"),
   post(CARD, HID, OWNER, "Post com foto", { card_style: "total", card_image_path: `${OWNER}/a.webp` }),
   post(THEIRS, OTHER_HID, OTHER_OWNER, "Post de outra casa"),
   post(OFF, HID, OWNER, "Post sem comentários", { comments_off: true, edited_at: "2026-11-17T12:00:00Z" }),
 ];
 const setup = (page, { type = "casa", id = OWNER, onPatch, onHide, locks = () => [] } = {}) => api(page, {
   rest: { profiles: profile(type, id), legal_consents: consents, houses: [mkHouse(HID, OWNER, "Casa Axé"), mkHouse(OTHER_HID, OTHER_OWNER, "Outra Casa")],
+    post_comments: [cm(U(701), "Comentário visível"), cm(U(702), "Comentário oculto", true)],
     posts: (body, calls, req) => (req?.method === "PATCH" ? (onPatch ? onPatch(body, req) : [{ id: "x", edited_at: "2026-11-17T13:00:00Z" }]) : LIST()) },
-  rpc: { post_like_counts: [], my_post_text_locks: () => locks(), house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
+  rpc: { post_like_counts: [], post_comment_counts: [{ post_id: MINE, n: type === "casa" ? 2 : 1 }], my_post_text_locks: () => locks(), house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
 });
 const patches = (calls) => calls.filter((c) => c.kind === "rest" && c.name === "posts" && c.method === "PATCH");
 const more = (page, id) => page.locator(`#post-${id}`).getByRole("button", { name: "Mais opções da publicação" });
@@ -137,7 +138,7 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     await setup(page);
     await page.goto("/comunidade");
     const card = page.locator(`#post-${OFF}`);
-    await card.getByRole("button", { name: /comentários/i }).last().click();
+    await card.getByRole("button", { name: /comentário/i }).last().click();
     await expect(card).toContainText("Você desativou os comentários");
     await expect(card.getByPlaceholder("Escreva um comentário...")).toBeVisible();
   });
@@ -146,7 +147,7 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     const calls = await setup(page);
     await page.goto("/comunidade");
     const card = page.locator(`#post-${MINE}`);
-    await card.getByRole("button", { name: /comentários/ }).first().click();
+    await card.getByRole("button", { name: /comentário/ }).first().click();
     await expect(card).toContainText("Comentário visível");
     await expect(card).toContainText("Comentário oculto");
     await expect(card).toContainText("Oculto para o público");
@@ -163,7 +164,7 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     await setup(page, { onHide: () => ({ status: 400, body: { message: "Você só pode cuidar dos comentários das publicações da sua casa." } }) });
     await page.goto("/comunidade");
     const card = page.locator(`#post-${MINE}`);
-    await card.getByRole("button", { name: /comentários/ }).first().click();
+    await card.getByRole("button", { name: /comentário/ }).first().click();
     await card.getByRole("button", { name: "Ocultar" }).click();
     await expect(page.getByText("Você só pode cuidar dos comentários")).toBeVisible();
     await expect(card.getByRole("button", { name: "Ocultar" })).toHaveCount(1);
@@ -173,7 +174,7 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     await setup(page, { type: "cliente", id: U(77) });
     await page.goto("/comunidade");
     const card = page.locator(`#post-${MINE}`);
-    await card.getByRole("button", { name: /comentários/ }).first().click();
+    await card.getByRole("button", { name: /comentário/ }).first().click();
     await expect(card).toContainText("Comentário visível");
     await expect(card).not.toContainText("Comentário oculto");
     await expect(card.getByRole("button", { name: "Ocultar" })).toHaveCount(0);
