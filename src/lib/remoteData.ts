@@ -83,7 +83,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, profiles(display_name, avatar_url, account_type, city, state))"
+      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, edited_at, comments_off, created_at, houses(owner_id), post_likes(user_id), post_comments(id, user_id, text, created_at, hidden_by_house, profiles(display_name, avatar_url, account_type, city, state))"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -123,7 +123,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
           };
           commenters.set(c.user_id, person);
         }
-        return { id: String(c.id), userId: String(c.user_id), text: String(c.text), createdAt: String(c.created_at) };
+        return { id: String(c.id), userId: String(c.user_id), text: String(c.text), createdAt: String(c.created_at), ...(c.hidden_by_house === true ? { hidden: true } : {}) };
       });
     posts.push({
       id: String(row.id),
@@ -135,6 +135,8 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
       likes: ((row.post_likes as Row[]) ?? []).map((l) => String(l.user_id)),
       likeCount: counts.get(String(row.id)),
       comments,
+      ...(row.edited_at ? { editedAt: String(row.edited_at) } : {}),
+      ...(row.comments_off === true ? { commentsOff: true } : {}),
       createdAt: String(row.created_at),
     });
   }
@@ -188,6 +190,36 @@ export async function remoteDeletePost(postId: string, cardPath?: string): Promi
   if (!data || data.length === 0) return "Não foi possível excluir agora. Tente novamente.";
   if (cardPath) await removeCardImage(cardPath);
   return null;
+}
+
+const EDIT_GENERIC = "Não foi possível salvar agora. Tente novamente.";
+/** Só mensagens escritas pelas regras do banco (em português, feitas para a pessoa ler) passam para a tela. */
+const EDIT_MSG = /^(Escreva o texto|Posts com a cara|Letras com a sua|Esta publicação está impulsionada|No Plano Grátis|Os comentários desta|Você só pode cuidar|Conta suspensa)/;
+const editMessage = (m: string | undefined) => (m && EDIT_MSG.test(m) ? m : EDIT_GENERIC);
+
+/** Edita o texto da publicação da casa. Devolve a data da edição ou a mensagem do motivo. */
+export async function remoteEditPostText(postId: string, content: string): Promise<{ editedAt: string } | { error: string }> {
+  if (!supabase) return { error: EDIT_GENERIC };
+  const { data, error } = await supabase.from("posts").update({ content }).eq("id", postId).select("id, edited_at");
+  if (error) return { error: editMessage(error.message) };
+  // a regra do banco só deixa a dona editar: se nada mudou, não finge sucesso
+  if (!data || data.length === 0) return { error: EDIT_GENERIC };
+  return { editedAt: String(data[0].edited_at ?? new Date().toISOString()) };
+}
+
+/** Liga/desliga os comentários novos da publicação. Devolve null se salvou ou a mensagem do motivo. */
+export async function remoteSetCommentsOff(postId: string, off: boolean): Promise<string | null> {
+  if (!supabase) return EDIT_GENERIC;
+  const { data, error } = await supabase.from("posts").update({ comments_off: off }).eq("id", postId).select("id");
+  if (error) return editMessage(error.message);
+  return !data || data.length === 0 ? EDIT_GENERIC : null;
+}
+
+/** Oculta ou mostra de novo um comentário na publicação da casa. Devolve null se salvou ou a mensagem do motivo. */
+export async function remoteSetCommentHidden(commentId: string, hidden: boolean): Promise<string | null> {
+  if (!supabase) return EDIT_GENERIC;
+  const { error } = await supabase.rpc("house_set_comment_hidden", { p_comment: commentId, p_hidden: hidden });
+  return error ? editMessage(error.message) : null;
 }
 
 export async function remoteSetLike(postId: string, userId: string, liked: boolean): Promise<boolean> {
