@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
@@ -31,6 +31,13 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
     };
   }, [ownerId, refresh]);
 
+  // `?foco=recebimento`: vem da central de pendências; só leva o cartão para a vista.
+  const [params] = useSearchParams();
+  const focused = params.get("foco") === "recebimento";
+  useEffect(() => {
+    if (focused && on) document.getElementById("recebimento")?.scrollIntoView({ block: "center" });
+  }, [focused, on]);
+
   if (!on) return null;
 
   const go = async () => {
@@ -44,6 +51,7 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
 
   const ready = status?.chargesEnabled;
   return (
+    <div id="recebimento" data-focused={focused ? "true" : undefined} className={focused ? "rounded-2xl ring-2 ring-gold/60" : undefined}>
     <Card className="p-5 border-gold/50">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display font-bold text-lg">Recebimento pela plataforma</h2>
@@ -59,5 +67,6 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
       {!ready && <Button className="mt-3" disabled={busy || !termsOk} onClick={() => void go()}>{busy ? "Abrindo…" : status?.registered ? "Continuar cadastro" : "Cadastrar recebimento"}</Button>}
       {status?.registered && !ready && <Button className="mt-3 ml-2" variant="outline" onClick={() => void refresh()}>Atualizar situação</Button>}
     </Card>
+    </div>
   );
 }

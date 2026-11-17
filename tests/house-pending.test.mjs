@@ -1,5 +1,5 @@
 // Central de pendências da casa: leitura defensiva, destinos por papel e coerência com o SQL (0130).
-import { houseReviewsPath } from "../src/lib/housePendingCore.js";
+import { houseReviewsPath, houseDestination } from "../src/lib/housePendingCore.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -79,4 +79,30 @@ test("avaliação sem resposta abre a página da casa pelo id da conta da titula
   assert.equal(houseReviewsPath("equipe", "f847527a-266e-494d-9163-80736aeedae5"), null);
   assert.equal(houseReviewsPath("titular", null), null); assert.equal(houseReviewsPath("titular", ""), null); assert.equal(houseReviewsPath("titular", undefined), null);
   assert.equal(houseReviewsPath("titular", "a/b?x"), "/casa/a%2Fb%3Fx?aba=avaliacoes");
+});
+
+test("houseDestination: cada tipo vai à tela exata; equipe nunca às telas da titular", async () => {
+  const { houseDestination } = await import("../src/lib/housePendingCore.js");
+  const me = "00000000-0000-0000-0000-000000000001", ref = "00000000-0000-0000-0000-000000000105";
+  const T = (kind, tab, role = "titular", o = {}) => houseDestination({ kind, tab, refId: ref, ...o }, role, me)?.path ?? null;
+  assert.equal(T("pedido_para_iniciar", "pedidos"), `/casa/${me}?aba=servicos`);
+  assert.equal(T("atendimento_passou", "pedidos"), `/casa/${me}?aba=servicos`);
+  assert.equal(T("reembolso_da_casa", "pedidos"), `/casa/${me}?aba=servicos`);
+  assert.equal(T("avaliacao_sem_resposta", "avaliacoes"), `/casa/${me}?aba=avaliacoes`);
+  assert.equal(T("conta_de_recebimento", "cadastro"), "/?foco=recebimento");
+  assert.equal(T("cadastro_cpf_cnpj", "cadastro"), "/planos");
+  assert.equal(T("fatura", "cobranca"), `/planos?foco=${ref}`);
+  assert.equal(T("fatura", "cobranca", "titular", { refId: "x'><script>" }), "/planos");
+  assert.equal(T("conversa_sem_resposta", "atendimento"), "/mensagens");
+  assert.equal(T("mensalidade_vencida", "mensalidades"), "/mensalidades");
+  assert.equal(T("suporte", "suporte"), "/suporte/chamados");
+  // equipe
+  assert.equal(T("pedido_para_iniciar", "pedidos", "equipe"), "/atendimento?aba=orders");
+  assert.equal(T("conversa_sem_resposta", "atendimento", "equipe"), "/atendimento?aba=chat");
+  for (const [k, t] of [["reembolso_da_casa", "pedidos"], ["avaliacao_sem_resposta", "avaliacoes"], ["conta_de_recebimento", "cadastro"], ["fatura", "cobranca"]]) assert.equal(T(k, t, "equipe"), null, k);
+  // sem id da conta, nunca monta link quebrado
+  assert.equal(houseDestination({ kind: "pedido_para_iniciar", tab: "pedidos" }, "titular", ""), null);
+  assert.equal(houseDestination(null, "titular", me), null);
+  // id com caracteres perigosos é escapado
+  assert.equal(houseDestination({ kind: "avaliacao_sem_resposta" }, "titular", "a/b?c")?.path, "/casa/a%2Fb%3Fc?aba=avaliacoes");
 });

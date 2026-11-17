@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchHousePending } from "@/lib/housePending";
-import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseReviewsPath, houseTarget, type HousePendingView } from "@/lib/housePendingCore.js";
+import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseDestination, type HousePendingView } from "@/lib/housePendingCore.js";
 import { kindLabel, shortDate } from "@/lib/platformBillingCore.js";
 import { formatBRL } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
@@ -73,8 +73,7 @@ export default function HousePendingCard() {
               ) : (
                 <ul className="space-y-2">
                   {items.map((i) => {
-                    const target = houseTarget(i.tab, view.role);
-                    const path = target ? (target.path ?? houseReviewsPath(view.role, currentUser?.id)) : null;
+                    const target = houseDestination(i, view.role, currentUser?.id);
                     return (
                       <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
                         <div className="flex flex-wrap items-center gap-2">
@@ -84,7 +83,7 @@ export default function HousePendingCard() {
                         <p className="break-words">{i.title}</p>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}</span>
-                          {target && path && <Button size="sm" variant="outline" onClick={() => nav(path)}>Abrir {target.label}</Button>}
+                          {target && <Button size="sm" variant="outline" onClick={() => nav(target.path)}>Abrir {target.label}</Button>}
                         </div>
                       </li>
                     );
@@ -103,7 +102,7 @@ export default function HousePendingCard() {
               <ul className="space-y-1.5">
                 {toPay.charges.map((c) => (
                   <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="min-w-0 break-words">{kindLabel(c.kind)} · vence {shortDate(c.dueDate)}{c.overdue ? " (vencida)" : ""}</span>
+                    <button type="button" className="min-w-0 break-words text-left underline-offset-2 hover:underline" aria-label={`Abrir fatura: ${kindLabel(c.kind)}`} onClick={() => nav(`/planos?foco=${encodeURIComponent(c.id)}`)}>{kindLabel(c.kind)} · vence {shortDate(c.dueDate)}{c.overdue ? " (vencida)" : ""}</button>
                     <span className="text-right">
                       {formatBRL(c.amountCents / 100)}
                       {c.pixDiscountCents > 0 && <span className="block text-xs text-forest">no Pix: {formatBRL((c.amountCents - c.pixDiscountCents) / 100)}</span>}
@@ -111,7 +110,7 @@ export default function HousePendingCard() {
                   </li>
                 ))}
               </ul>
-              <Button size="sm" variant="outline" onClick={() => nav("/planos")}>Ver faturas e pagar</Button>
+              <Button size="sm" variant="outline" onClick={() => nav(toPay.charges.length === 1 ? `/planos?foco=${encodeURIComponent(toPay.charges[0].id)}` : "/planos")}>{toPay.charges.length === 1 ? "Abrir fatura e pagar" : "Ver faturas e pagar"}</Button>
             </section>
           )}
         </>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
@@ -11,6 +12,13 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
   const { isRemoteAuth } = useApp();
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  // `?foco=<id da fatura>`: vem da central de pendências; só rola até a fatura e a destaca (não paga nada sozinho).
+  const [params] = useSearchParams();
+  const focus = params.get("foco");
+  useEffect(() => {
+    if (!focus || !rows.some((r) => r.id === focus)) return;
+    document.getElementById(`fatura-${focus}`)?.scrollIntoView({ block: "center" });
+  }, [focus, rows]);
 
   useEffect(() => {
     if (!isRemoteAuth) return;
@@ -43,7 +51,7 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
       <h2 className="font-display font-bold text-lg">Faturas da plataforma</h2>
       <ul className="mt-3 divide-y divide-border">
         {rows.map((r) => (
-          <li key={r.id} className="py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <li key={r.id} id={`fatura-${r.id}`} data-focused={focus === r.id ? "true" : undefined} className={`py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm${focus === r.id ? " rounded-lg bg-gold/10 px-2 ring-2 ring-gold/50" : ""}`}>
             <span className="flex-1 min-w-40">{r.description ?? kindLabel(r.kind)}</span>
             <span className="text-xs text-muted-foreground">vence {shortDate(r.dueDate)}</span>
             <span className="font-semibold">{formatCents(r.amountCents)}</span>

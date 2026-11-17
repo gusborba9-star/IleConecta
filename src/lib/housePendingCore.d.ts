@@ -8,3 +8,5 @@ export interface ToPayCharge { id: string; kind: string; description: string; am
 export interface HousePendingView { houseId: string | null; houseName: string | null; role: "titular" | "equipe"; total: number; overdue: number; shown: number; counts: Record<string, number>; items: HousePendingItem[]; toPay: { totalCents: number; count: number; charges: ToPayCharge[] } | null }
 export function readHousePending(raw: unknown): HousePendingView;
 export function houseReviewsPath(role: "titular" | "equipe", ownerUserId: string | null | undefined): string | null;
+
+export function houseDestination(item: { kind: string; tab?: string | null }, role: string, ownerUserId?: string | null): { path: string; label: string } | null;

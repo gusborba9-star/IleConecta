@@ -93,7 +93,7 @@ export default function Boost() {
             <h2 className="font-display font-bold text-lg">O que você quer impulsionar?</h2>
             <p className="text-sm text-muted-foreground mt-1">Escolha um serviço, ritual ou publicação. Cada um tem o seu próprio impulso: novos dias do mesmo item e alcance entram ao final do atual.</p>
             {loaded && options.length === 0 ? (
-              <p className="mt-3 text-sm">Você ainda não tem serviço ativo, ritual publicado ou publicação. <Button variant="outline" size="sm" className="ml-2" onClick={() => nav("/painel")}>Ir ao painel</Button></p>
+              <p className="mt-3 text-sm">Você ainda não tem serviço ativo, ritual publicado ou publicação. <Button variant="outline" size="sm" className="ml-2" onClick={() => nav("/")}>Ir ao painel</Button></p>
             ) : (
               <select aria-label="Item a impulsionar" className="mt-3 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm" value={chosen?.key ?? ""} onChange={(e) => setItem(e.target.value)}>
                 <option value="">Escolha…</option>
