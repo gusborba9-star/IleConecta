@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
+import { focusRow } from "@/lib/focusCore.js";
 import { supabase } from "@/lib/supabase";
 import { fetchHouseTimeline } from "@/lib/houseTimeline";
 import { EVENT_LABELS, eventDetail, filterEvents, mergeEvents, readHouseParam, type HouseTimelineView } from "@/lib/houseTimelineCore.js";
@@ -121,7 +122,7 @@ export default function AdminHouseTimelineCard() {
           ) : (
             <ol className="space-y-2" aria-label="Eventos">
               {events.map((e) => (
-                <li key={`${e.kind}-${e.refId}-${e.at}`} className="rounded-xl border border-border p-3 text-sm space-y-0.5 pillow">
+                <li key={`${e.kind}-${e.refId}-${e.at}`} {...focusRow(e.refId)} className="rounded-xl border border-border p-3 text-sm space-y-0.5 pillow">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold">{EVENT_LABELS[e.kind]}</span>
                     <span className="text-xs text-muted-foreground">{when(e.at)}</span>
