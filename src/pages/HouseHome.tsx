@@ -7,6 +7,7 @@ import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
+import SocialNoticesCard from "@/components/house/SocialNoticesCard";
 import DiscreetModeCard from "@/components/profile/DiscreetModeCard";
 import ReferralCard from "@/components/house/ReferralCard";
 import HouseKpis from "@/components/house/HouseKpis";
@@ -139,6 +140,7 @@ export default function HouseHome() {
       <ShareHouseCard />
       <ReferralCard />
       <AssistantReportCard />
+      <SocialNoticesCard />
       <QuietHoursCard />
       <DiscreetModeCard />
     </div>

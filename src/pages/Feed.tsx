@@ -5,9 +5,8 @@ import PostCard from "@/components/feed/PostCard";
 import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useEffect } from "react";
-import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { Star } from "lucide-react";
 import { usePromoRanking } from "@/lib/usePromoRanking";
 import { rankFeed } from "@/lib/promotionsCore";
@@ -18,6 +17,10 @@ import type { Post } from "@/types";
 export default function Feed() {
   const { posts, refreshRemote, isRemoteAuth } = useApp();
   const promo = usePromoRanking(isRemoteAuth);
+  // Link de um aviso (curtida/comentário): abre o feed já na publicação, destacada por alguns segundos.
+  const [params] = useSearchParams();
+  const wanted = params.get("post");
+  const [flash, setFlash] = useState<string | null>(null);
 
   // Traz publicações novas de outras casas ao abrir o feed.
   useEffect(() => {
@@ -32,6 +35,17 @@ export default function Feed() {
     feedItems.push({ kind: "post", data: r.post, tag: r.tag });
     if (i === 1) feedItems.push({ kind: "promo" });
   });
+
+  const found = wanted ? posts.some((p) => p.id === wanted) : false;
+  useEffect(() => {
+    if (!wanted || !found) return;
+    const el = document.getElementById(`post-${wanted}`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFlash(wanted);
+    const t = window.setTimeout(() => setFlash(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [wanted, found]);
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
@@ -55,7 +69,8 @@ export default function Feed() {
 
       {feedItems.map((item, idx) =>
         item.kind === "post" ? (
-          <PromoTrack key={item.data.id} promoId={item.tag === "destaque" ? promo.idByOwner.get(item.data.houseId) : item.tag === "promovido" ? promo.idByItem.get(item.data.id) : undefined}>
+          <div key={item.data.id} id={`post-${item.data.id}`} data-flash={flash === item.data.id ? "1" : undefined} className={flash === item.data.id ? "rounded-3xl ring-2 ring-gold ring-offset-2 transition" : undefined}>
+          <PromoTrack promoId={item.tag === "destaque" ? promo.idByOwner.get(item.data.houseId) : item.tag === "promovido" ? promo.idByItem.get(item.data.id) : undefined}>
             {item.tag && (
               <div className="mb-1 flex items-center gap-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-gold-ink">
                 {item.tag === "destaque" ? <><Star className="h-3 w-3" aria-hidden /> Em destaque</> : "Promovido"}
@@ -63,6 +78,7 @@ export default function Feed() {
             )}
             <PostCard post={item.data} />
           </PromoTrack>
+          </div>
         ) : <PromotedBanner key={idx} />
       )}
     </div>

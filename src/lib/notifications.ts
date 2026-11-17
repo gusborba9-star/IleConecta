@@ -20,13 +20,17 @@ export async function markAllRead(): Promise<void> {
   await supabase.from("notifications").update({ read: true }).eq("read", false);
 }
 
-/** Avisa quando chegar notificação nova para esta pessoa. Devolve a função de cancelar. */
-export function subscribeNotifications(userId: string, onChange: () => void): () => void {
+/** Avisa quando chegar notificação nova para esta pessoa (onChange) ou quando um aviso ainda não lido for atualizado, como curtidas que se agrupam (onRefresh, sem som). Devolve a função de cancelar. */
+export function subscribeNotifications(userId: string, onChange: () => void, onRefresh?: () => void): () => void {
   if (!supabase) return () => {};
   const client = supabase;
   const channel = client
     .channel(`notifications-${userId}-${Math.random().toString(36).slice(2)}`)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, onChange)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, (payload) => {
+      // só avisos que seguem não lidos (agrupamento); marcar como lido não precisa recarregar
+      if ((payload.new as { read?: boolean } | null)?.read === false) onRefresh?.();
+    })
     .subscribe();
   return () => {
     void client.removeChannel(channel);
