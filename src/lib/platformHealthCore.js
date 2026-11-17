@@ -48,6 +48,51 @@ export function cronState(c, now = Date.now()) {
 
 export const CRON_STATE_TEXT = { ok: "ok", falhando: "falhando agora", parada: "parada", desligada: "desligada", ainda_nao_rodou: "ainda não rodou", falhou_antes: "falhou nas últimas 24 h" };
 
+/** O que cada rotina agendada faz, em português simples (o painel mostra logo abaixo do nome). */
+export const CRON_DESCRIPTIONS = {
+  "expire-stale-holds": "Libera as vagas reservadas que não foram pagas a tempo, para outra pessoa poder comprar.",
+  "handoff-remind": "Lembra a casa de responder quando a assistente passou uma conversa para o atendimento humano e o cliente está esperando.",
+  "health-check": "Confere esta própria tela (erros, rotinas e banco) e avisa você no sino quando algo quebra.",
+  "member-dues-daily": "Gera e confere as mensalidades dos membros das casas que vencem no dia.",
+  "plan-trial-revert": "Devolve a casa ao plano anterior quando acaba o período de teste de um plano.",
+  "platform-billing-sweep": "Confere com a Stripe as cobranças dos planos das casas, para pegar qualquer pagamento que tenha escapado.",
+  "platform-billing-tick": "Emite as faturas dos planos das casas, marca as vencidas, avisa e recalcula suspensões.",
+  "platform-cancel-apply": "Aplica os cancelamentos de plano agendados cuja data chegou.",
+  "platform-price-apply": "Aplica as mudanças de preço de plano agendadas cuja data chegou.",
+  "promotions-tick": "Liga, avisa e encerra os destaques e impulsionamentos conforme início e fim.",
+  "purge-access-logs": "Limpeza de privacidade: apaga os registros de acesso antigos, conforme a política de retenção.",
+  "purge-conecta-calls": "Limpeza de privacidade: apaga o registro de uso da assistente Conecta depois do prazo.",
+  "purge-deleted-identities": "Limpeza de privacidade: apaga de vez os dados de identidade de contas excluídas depois do prazo.",
+  "purge-expired-files": "Limpeza: apaga do armazenamento os arquivos que já passaram do prazo de guarda.",
+  "purge-handoff-events": "Limpeza de privacidade: apaga o histórico de passagens para atendimento humano com mais de 12 meses.",
+  "purge-live-pings": "Limpeza: apaga os sinais de presença das lives com mais de 30 dias.",
+  "purge-message-archive": "Limpeza de privacidade: apaga o arquivo de mensagens cujo prazo de guarda terminou.",
+  "purge-staff-audit": "Limpeza de privacidade: apaga o registro de ações da equipe cujo prazo de guarda terminou.",
+  "purge-support-cases": "Limpeza de privacidade: apaga os chamados de suporte encerrados depois do prazo.",
+  "purge-system-events": "Limpeza: apaga os erros registrados nesta tela depois de 30 dias e o histórico antigo das rotinas.",
+  "refund-sweep": "Confere e conclui os reembolsos pendentes com a Stripe.",
+  "run-account-deletions": "Executa as exclusões de conta que as pessoas pediram, quando o prazo chega.",
+};
+
+export const cronDescription = (name) => CRON_DESCRIPTIONS[name] ?? "";
+
+const pad = (n) => String(n).padStart(2, "0");
+
+/** "Quando roda", em português, a partir da expressão do pg_cron (UTC). Horário mostrado em Brasília (UTC-3). */
+export function cronWhen(schedule) {
+  const m = /^(\*|\*\/(\d+)|(\d+)) (\*|\*\/(\d+)|(\d+)) \* \* \*$/.exec(String(schedule ?? "").trim());
+  if (!m) return "";
+  const [, minRaw, minStep, minFix, hourRaw, hourStep, hourFix] = m;
+  if (minRaw === "*" && hourRaw === "*") return "a cada minuto";
+  if (minStep && hourRaw === "*") return `a cada ${minStep} minutos`;
+  if (minFix !== undefined && hourRaw === "*") return Number(minFix) === 0 ? "de hora em hora" : `de hora em hora (no minuto ${Number(minFix)})`;
+  if (minFix !== undefined && hourFix !== undefined) {
+    const h = (Number(hourFix) + 21) % 24;
+    return `todo dia às ${pad(h)}:${pad(Number(minFix))} (Brasília)`;
+  }
+  return "";
+}
+
 export function ago(isoStr, now = Date.now()) {
   const t = Date.parse(isoStr ?? "");
   if (Number.isNaN(t)) return "—";
