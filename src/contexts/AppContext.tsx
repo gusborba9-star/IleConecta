@@ -20,6 +20,7 @@ import {
   remoteAddComment,
   remoteCreatePost,
   remoteSetLike,
+  remoteDeletePost,
 } from "@/lib/remoteData";
 import { exposeState } from "@/lib/dataSource";
 import { canReserveDemoRitual, canSendDemoMessage, mergeDemoMessage, normalizeDemoEmail } from "@/lib/demoState";
@@ -53,6 +54,8 @@ interface AppState {
   refreshRemote: () => Promise<void>;
   addStory: (story: Omit<Story, "id" | "createdAt">) => Story;
   toggleLike: (postId: string) => void;
+  /** Exclui a publicação (só a casa dona). Devolve null se saiu, ou a mensagem do motivo. */
+  deletePost: (postId: string) => Promise<string | null>;
   commentPost: (postId: string, text: string) => void;
   buyRitual: (ritualId: string) => Purchase | null;
   applyBoost: (level: "cidade" | "estado" | "pais", days: number) => void;
@@ -267,6 +270,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const s: Story = { ...story, id: uid("s"), createdAt: new Date().toISOString() };
       setStories((prev) => [s, ...prev]);
       return s;
+    },
+    async deletePost(postId) {
+      const generic = "Não foi possível excluir agora. Tente novamente.";
+      if (!currentUser) return generic;
+      if (isRemoteId(postId)) {
+        const current = remotePosts.find((p) => p.id === postId);
+        if (!current || current.houseId !== currentUser.id) return generic;
+        const err = await remoteDeletePost(postId, current.card?.path);
+        if (err === null) setRemotePosts((prev) => prev.filter((p) => p.id !== postId));
+        return err;
+      }
+      const mine = posts.find((p) => p.id === postId);
+      if (!mine || mine.houseId !== currentUser.id) return generic;
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      return null;
     },
     toggleLike(postId) {
       if (!currentUser) return;

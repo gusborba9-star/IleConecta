@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
@@ -13,10 +13,12 @@ import { isFeatureOn } from "@/lib/platformConfig";
 import { toast } from "sonner";
 
 export default function PostCard({ post }: { post: Post }) {
-  const { users, currentUser, toggleLike, commentPost, rituals, isRemoteAuth } = useApp();
+  const { users, currentUser, toggleLike, commentPost, deletePost, rituals, isRemoteAuth } = useApp();
   const { config } = usePlatformConfig();
   const [text, setText] = useState("");
   const [showComments, setShowComments] = useState(false);
+  const [menu, setMenu] = useState<"closed" | "open" | "confirm">("closed");
+  const [deleting, setDeleting] = useState(false);
 
   const author = users.find((u) => u.id === post.houseId);
   const houseAuthor = author?.type === "commercial" ? author : null;
@@ -25,6 +27,16 @@ export default function PostCard({ post }: { post: Post }) {
   const ritual = post.ritualId ? rituals.find((r) => r.id === post.ritualId) : null;
   const canBoost = isRemoteAuth && !!currentUser && currentUser.type === "commercial" && post.houseId === currentUser.id && post.kind !== "story" && isFeatureOn(config, "boost", currentUser.id);
   const authorPath = isHouse ? `/casa/${author?.id}` : author?.id === currentUser?.id ? "/perfil" : undefined;
+
+  const mine = !!currentUser && currentUser.type === "commercial" && currentUser.id === post.houseId && post.kind !== "story";
+  const remove = async () => {
+    setDeleting(true);
+    const err = await deletePost(post.id);
+    setDeleting(false);
+    if (err === null) return void toast.success("Publicação excluída.");
+    setMenu("closed");
+    toast.error(err);
+  };
 
   // Compartilhar: o link abre o feed já nesta publicação (quem não tem conta entra primeiro). Celular usa o menu de compartilhar; no computador copia o link.
   const share = async () => {
@@ -76,10 +88,30 @@ export default function PostCard({ post }: { post: Post }) {
         {canBoost && (
           <Link to={`/impulsionar?item=post:${post.id}`} className="shrink-0 rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10">Impulsionar</Link>
         )}
-        <button disabled title="Mais opções ainda não estão implementadas" className="h-8 w-8 rounded-full grid place-items-center text-muted-foreground disabled:opacity-50">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        {mine && (
+          <div className="relative shrink-0">
+            <button type="button" aria-label="Mais opções da publicação" aria-expanded={menu !== "closed"} onClick={() => setMenu((m) => (m === "closed" ? "open" : "closed"))} className="h-11 w-11 -mr-2 -mt-2 rounded-full grid place-items-center text-muted-foreground hover:bg-muted">
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+            {menu === "open" && (
+              <div role="menu" className="absolute right-0 top-10 z-10 w-52 rounded-xl border border-border bg-card p-1 shadow-card">
+                <button type="button" role="menuitem" onClick={() => setMenu("confirm")} className="w-full min-h-11 rounded-lg px-3 flex items-center gap-2 text-sm font-semibold text-destructive hover:bg-muted">
+                  <Trash2 className="h-4 w-4" aria-hidden /> Excluir publicação
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+      {mine && menu === "confirm" && (
+        <div role="alertdialog" aria-label="Confirmar exclusão" className="mx-4 mb-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+          <p className="text-sm"><strong>Excluir esta publicação?</strong> As curtidas e os comentários dela também serão apagados. Isso não pode ser desfeito.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={deleting} onClick={() => setMenu("closed")}>Cancelar</Button>
+            <Button variant="danger" size="sm" disabled={deleting} onClick={() => void remove()}>{deleting ? "Excluindo…" : "Excluir"}</Button>
+          </div>
+        </div>
+      )}
 
       {post.card ? (
         <StyledPostBody text={post.content} card={post.card} />
