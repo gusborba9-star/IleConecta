@@ -173,7 +173,7 @@ Frentes:
 Critério de saída:
 - Metas quantitativas definidas a partir de baseline.
 - Testes de carga e monitoramento.
-- Plano de rollback e resposta a incidentes.
+- Plano de rollback e resposta a incidentes. ✅ (17/11/2026: `PLANO_DE_REVERSAO_E_INCIDENTES.md`)
 
 ## 4. Priorização
 
@@ -353,6 +353,7 @@ Autorizada pelo proprietário em 2026-11-12. Cada item abaixo só passa a "fecha
 | 70 | **Fase 6: interruptor de emergência** (17/11/2026; migration 0160, passo 329). Só o dono, no painel (Visão geral): duas chaves, **assistente (IA)** e **pagamentos**. Ligada, a função de borda recusa NOVAS operações do módulo com mensagem de manutenção em português (padrão ou escrita pelo dono, até 200 caracteres) e o app mostra uma faixa de aviso a todos (confere ao abrir, ao voltar à aba e a cada 60 s). Pagamentos desligados NÃO bloqueia webhooks do Stripe, rotinas de conferência, consulta de estado nem reembolsos. Falha segura: configuração ilegível ou inválida não bloqueia nada. Só a função `admin_set_maintenance` (dono) grava; fica na auditoria. Testes: `verify_0160` (18), `tests/maintenance.test.mjs`, UI `interruptor-de-emergencia` (inclui axe). |
 | 71 | **Saúde mostra a manutenção ligada** (17/11/2026; migration 0161, passo 330). O card Saúde da plataforma ganha a linha "Manutenção ligada: pagamentos, há X" (status em atenção) e a conferência automática (a cada 10 min) abre o alerta `manutencao_ligada` e avisa o dono no sino se ficar ligada por mais de 1 h (reenvio só após 6 h; desligar limpa o alerta). Dados com formato inválido não derrubam a conferência. Testes: `verify_0161` (17), `platform-health.test.mjs`, UI saúde (17). |
 | 72 | **Interruptor: sem cobrança automática em manutenção** (17/11/2026). Achado do proprietário na revisão: com Pagamentos em manutenção a conferência da plataforma ainda cobrava cartões salvos. Agora `sweep` recebe `skipAuto` quando a chave está ligada (o resto da conferência segue). Texto do card esclarece o que para e o que continua. **Decisão do proprietário (17/11/2026):** não congelar vencimento nem tolerância; a manutenção é curta (cerca de 1 hora, corrigida por mim) e não afeta faturas de vencimento por dia. O alerta de 1 hora (item 71) cobre o caso de a manutenção se prolongar. |
+| 73 | **Plano de reversão e resposta a incidentes** (17/11/2026). Documento `PLANO_DE_REVERSAO_E_INCIDENTES.md`: gravidade, primeiros 5 minutos, reversão por camada (site, funções, banco, Stripe, chaves), quem faz o quê, cenários e lacunas (backup depende do Supabase Pro, monitor externo, MFA). | Fase 6 | Concluído |
 | 6 | Alinhamento da página de planos: textos sem o nome de teste "Lara" (a casa dá o nome da assistente) e foto opcional da assistente, só em plano com assistente | fechado no banco (passos 109–112); telas no merge | migration 0092; verify_0092 (35 verificações); verify_rollout_109; 413 testes |
 
 Ideias futuras registradas (não fazem parte da Fase 4; só entram com decisão do proprietário):
