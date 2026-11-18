@@ -355,6 +355,39 @@ test.describe("biblioteca de músicas no painel", () => {
     expect(calls.find((c) => c.name === "admin_music_meta").body).toMatchObject({ p_id: U(201), p_style: "jazz", p_vocal: true, p_license_kind: "cc0" });
   });
 
+
+  test("ao escolher o MP3, título e autor vêm do próprio arquivo (sem apagar o que já foi digitado)", async ({ page }) => {
+    await open(page);
+    const ss = (n) => [(n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f];
+    const fr = (id, text) => { const body = [3, ...Buffer.from(text, "utf8")]; return [...Buffer.from(id), ...ss(body.length), 0, 0, ...body]; };
+    const frames = [...fr("TIT2", "Parabéns Alegre"), ...fr("TPE1", "Sascha Ende")];
+    const buffer = Buffer.concat([Buffer.from([0x49, 0x44, 0x33, 4, 0, 0, ...ss(frames.length)]), Buffer.from(frames), Buffer.alloc(2048, 1)]);
+    await page.locator("input[type=file]").setInputFiles({ name: "faixa-123.mp3", mimeType: "audio/mpeg", buffer });
+    await expect(page.getByLabel("Título", { exact: true }).first()).toHaveValue("Parabéns Alegre");
+    await expect(page.getByLabel("Autor(a)")).toHaveValue("Sascha Ende");
+    await page.getByLabel("Título", { exact: true }).first().fill("Meu título");
+    await page.locator("input[type=file]").setInputFiles({ name: "outra.mp3", mimeType: "audio/mpeg", buffer });
+    await expect(page.getByLabel("Título", { exact: true }).first()).toHaveValue("Meu título");
+  });
+
+  test("MP3 sem etiqueta: campos ficam vazios, sem erro", async ({ page }) => {
+    await open(page);
+    await page.locator("input[type=file]").setInputFiles(mp3("sem-tag.mp3", 3000));
+    await expect(page.getByLabel("Título", { exact: true }).first()).toHaveValue("");
+    await expect(page.getByLabel("Autor(a)")).toHaveValue("");
+  });
+
+  test("faixa ligada com licença incompleta: alerta no topo e aviso na faixa; completa, some", async ({ page }) => {
+    await open(page, admin({ admin_music_list: state({ tracks: [track(1, { license_kind: "cc_by", license_url: "https://creativecommons.org/licenses/by/4.0/" }), track(2, { active: true, license_date: null })] }) }));
+    await expect(page.getByTestId("license-alert")).toContainText("1 faixa ligada está com a licença incompleta");
+    await expect(page.getByText("Licença incompleta: falta tipo de licença, link da licença, data da conferência.")).toHaveCount(1);
+    await expect(page.getByText(/Licença incompleta:/)).toHaveCount(1); // a faixa 1 está completa
+  });
+  test("tudo completo: sem alerta", async ({ page }) => {
+    await open(page, admin({ admin_music_list: state({ tracks: [track(1, { license_kind: "cc0", license_url: "https://creativecommons.org/publicdomain/zero/1.0/" })] }) }));
+    await expect(page.getByTestId("license-alert")).toHaveCount(0);
+  });
+
   test("texto hostil nos campos da faixa aparece como texto", async ({ page }) => {
     await open(page, admin({ admin_music_list: state({ tracks: [track(1, { title: "<img src=x onerror=window.__xss=1>", license_note: "<script>window.__xss=1</script>", source_url: "javascript:window.__xss=1" })] }) }));
     await expect(page.getByText("<img src=x onerror=window.__xss=1>")).toBeVisible();
