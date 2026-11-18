@@ -1,5 +1,5 @@
 // Desenha os ícones do app (PNG e ICO) por código, sem dependências.
-// Roda sozinho antes de `dev` e `build` (ver package.json). Marca: quatro folhas em cruz, rede e nó central.
+// Roda sozinho antes de `dev` e `build` (ver package.json). Marca: arco (a porta da casa) e o ponto (quem chega).
 import { writeFileSync, mkdirSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
@@ -23,18 +23,15 @@ const rot = (pts, deg) => {
   return pts.map(([x, y]) => [x * c - y * s, x * s + y * c]);
 };
 function shapes() {
+  // Emblema simplificado (arco + ponto), recentrado: o arco ocupa y 262-86-18 .. 392+18, centro em 284.
   const strokes = []; // { pts, w, color }
   const dots = []; // { x, y, r, color }
-  const tips = [];
-  for (const a of [-45, 45, 135, 225]) {
-    const top = bez([0, 0], [34.76, -53.72], [113.76, -45.662], [158, 0]);
-    const bottom = bez([158, 0], [113.76, 45.662], [34.76, 53.72], [0, 0]);
-    strokes.push({ pts: rot([...top, ...bottom], a), w: 14, color: GOLD });
-    tips.push(rot([[158, 0]], a)[0]);
-  }
-  strokes.push({ pts: [...tips, tips[0]], w: 5.6, color: [158, 135, 70] });
-  for (const [x, y] of tips) dots.push({ x, y, r: 14.7, color: GOLD });
-  dots.push({ x: 0, y: 0, r: 23.8, color: LIGHT });
+  const arc = Array.from({ length: 41 }, (_, i) => {
+    const t = Math.PI + (Math.PI * i) / 40;
+    return [86 * Math.cos(t), 262 - 284 + 86 * Math.sin(t)];
+  });
+  strokes.push({ pts: [[-86, 392 - 284], ...arc, [86, 392 - 284]], w: 36, color: GOLD });
+  dots.push({ x: 0, y: 312 - 284, r: 40, color: LIGHT });
   return { strokes, dots };
 }
 

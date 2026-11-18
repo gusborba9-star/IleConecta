@@ -48,10 +48,11 @@ export default function Login() {
       <div className="relative hidden lg:block overflow-hidden">
         <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 20% 10%, #1B6A50 0%, #0E3B2C 48%, #07231A 100%)" }} />
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "28px 28px" }} />
-        <GoldMark size={620} className="absolute -right-32 -top-24 opacity-[0.14] pointer-events-none" />
+        <GoldMark size={620} ring className="absolute -right-32 -top-24 opacity-[0.14] pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-10 text-white">
           <div className="max-w-md space-y-3">
+            <GoldMark size={150} ring className="mb-4" />
             <div className="text-xs tracking-[0.3em] uppercase text-gold">Ilê Conecta</div>
             <h1 className="font-display font-bold text-4xl leading-tight">Aproximando caminhos, respeitando tradições.</h1>
             <p className="text-white/80">
@@ -64,7 +65,7 @@ export default function Login() {
         <div className="relative lg:hidden overflow-hidden px-6 pt-10 pb-14 text-center text-white" style={{ background: "linear-gradient(160deg, #14543F 0%, #0F3B2D 100%)" }}>
           <GoldMark size={260} className="absolute -right-16 -top-12 opacity-[0.12] pointer-events-none" />
           <div className="relative flex flex-col items-center gap-2">
-            <LogoMark size={64} />
+            <GoldMark size={104} ring />
             <div className="font-display font-bold text-3xl">Ilê Conecta</div>
             <p className="text-sm text-white/85 max-w-xs">Aproximando caminhos, respeitando tradições.</p>
           </div>

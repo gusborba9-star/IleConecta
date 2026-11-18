@@ -1,47 +1,57 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-/** Marca do Ilê Conecta: quatro folhas em cruz ligadas por uma rede, com um nó no centro.
- *  Esmeralda no tema claro e dourada no escuro (troca sozinha com o tema). */
+/** Emblema do Ilê Conecta: um arco (a porta da casa, o "ilê"), a pessoa que chega (o ponto) e três pontos ligados (a rede de casas).
+ *  Neutro de propósito: não remete a nenhuma linha específica. Esmeralda no tema claro e dourado no escuro (troca sozinho com o tema).
+ *  Até ~56 px usa a versão simplificada (arco grosso e ponto), que continua legível em tamanho pequeno. */
+const ARCH = "M170 392V262a86 86 0 0 1 172 0v130";
 function BareMark({ size = 36, ring = false, gold = false, className }: { size?: number; ring?: boolean; gold?: boolean; className?: string }) {
   const gid = useId().replace(/:/g, "");
-  const sw = ring ? 11 : 14;
-  const tips = [-45, 45, 135, 225].map((a) => [256 + 158 * Math.cos((a * Math.PI) / 180), 256 + 158 * Math.sin((a * Math.PI) / 180)]);
-  const w = 158 * 0.34;
-  const drawing = (stroke: string, dot: string) => (
-    <>
-      {ring && <circle cx="256" cy="256" r="214" fill="none" stroke={stroke} strokeWidth={sw * 0.7} />}
-      <g fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round">
-        <path d={`M${tips.map((t) => `${t[0].toFixed(1)} ${t[1].toFixed(1)}`).join("L")}Z`} strokeWidth={sw * 0.4} opacity={0.7} />
-        <g strokeWidth={sw}>
-          {[-45, 45, 135, 225].map((a) => (
-            <g key={a} transform={`translate(256 256) rotate(${a})`}>
-              <path d={`M0 0C${158 * 0.22} ${-w} ${158 * 0.72} ${-w * 0.85} 158 0C${158 * 0.72} ${w * 0.85} ${158 * 0.22} ${w} 0 0Z`} />
-            </g>
-          ))}
+  const simple = size < 56;
+  const drawing = (stroke: string, dot: string) =>
+    simple ? (
+      <>
+        {ring && <circle cx="256" cy="256" r="222" fill="none" stroke={stroke} strokeWidth="16" />}
+        <path d={ARCH} fill="none" stroke={stroke} strokeWidth="36" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="256" cy="312" r="40" fill={dot} />
+      </>
+    ) : (
+      <>
+        {ring && (
+          <>
+            <circle cx="256" cy="256" r="222" fill="none" stroke={stroke} strokeWidth="7" />
+            <circle cx="256" cy="256" r="204" fill="none" stroke={stroke} strokeWidth="2.5" opacity={0.7} />
+          </>
+        )}
+        <path d={ARCH} fill="none" stroke={stroke} strokeWidth="20" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M158 150Q256 96 354 150" fill="none" stroke={stroke} strokeWidth="4" strokeLinecap="round" />
+        <g fill={stroke}>
+          <circle cx="158" cy="150" r="13" />
+          <circle cx="256" cy="121" r="17" />
+          <circle cx="354" cy="150" r="13" />
         </g>
-      </g>
-      <g fill={stroke}>{tips.map((t, i) => <circle key={i} cx={t[0]} cy={t[1]} r={sw * 1.05} />)}</g>
-      <circle cx="256" cy="256" r={sw * 1.7} fill={dot} />
-    </>
-  );
-  const viewBox = ring ? "0 0 512 512" : "70 70 372 372";
+        <circle cx="256" cy="318" r="30" fill={dot} />
+      </>
+    );
+  // Sem círculo, recorta junto ao arco (simples: arco e ponto; completo: inclui os três pontos).
+  const viewBox = ring ? "0 0 512 512" : simple ? "122 150 268 268" : "96 96 320 320";
   const goldSvg = (cls: string) => (
     <svg width={size} height={size} viewBox={viewBox} role="img" aria-label="Ilê Conecta" className={cls}>
       <defs>
         <linearGradient id={`g${gid}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#F4DC92" />
-          <stop offset="1" stopColor="#C99A2E" />
+          <stop offset="0" stopColor="#F3DD9A" />
+          <stop offset=".5" stopColor="#D9AE4A" />
+          <stop offset="1" stopColor="#A97C24" />
         </linearGradient>
       </defs>
-      {drawing(`url(#g${gid})`, "#FFF3C4")}
+      {drawing(`url(#g${gid})`, `url(#g${gid})`)}
     </svg>
   );
   if (gold) return goldSvg(cn("shrink-0", className));
   return (
     <>
       <svg width={size} height={size} viewBox={viewBox} role="img" aria-label="Ilê Conecta" className={cn("dark:hidden shrink-0", className)}>
-        {drawing("#0E3B2C", "#C99A2E")}
+        {drawing("#0E3B2C", "#B98A2C")}
       </svg>
       {goldSvg(cn("hidden dark:block shrink-0", className))}
     </>
@@ -49,13 +59,15 @@ function BareMark({ size = 36, ring = false, gold = false, className }: { size?:
 }
 
 /** Marca dourada solta, para fundos escuros (ex.: painel da tela de entrada). */
-export function GoldMark({ size = 36, className }: { size?: number; className?: string }) {
-  return <BareMark size={size} gold className={className} />;
+export function GoldMark({ size = 36, ring = false, className }: { size?: number; ring?: boolean; className?: string }) {
+  return <BareMark size={size} gold ring={ring} className={className} />;
 }
 
-/** Marca dentro de um círculo esmeralda com a folha dourada (igual ao ícone do app). Use `bare` para a marca solta. */
+/** Marca dentro de um círculo esmeralda com o emblema dourado (igual ao ícone do app). Use `bare` para a marca solta. */
 export function LogoMark({ size = 36, ring = false, bare = false, className }: { size?: number; ring?: boolean; bare?: boolean; className?: string }) {
   if (bare || ring) return <BareMark size={size} ring={ring} className={className} />;
+  // Grande o bastante: emblema completo (círculo duplo, rede e arco), sem o disco de fundo.
+  if (size >= 72) return <BareMark size={size} ring className={className} />;
   return (
     <span
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full ring-1 ring-[#C99A2E]/45 shadow-card", className)}
