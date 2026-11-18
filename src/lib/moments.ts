@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { reportClientError } from "@/lib/clientErrors";
 import { rememberPlanGuard } from "@/lib/planGuard";
-import { extFor, isVideoType, momentPath, normalizeFeed, safeFilePath, MAX_VIDEO_SECONDS, type MomentGroup } from "@/lib/momentsCore";
+import { extFor, isVideoType, momentPath, normalizeFeed, normalizeStats, safeFilePath, MAX_VIDEO_SECONDS, type MomentGroup, type MomentStats } from "@/lib/momentsCore";
 
 const BUCKET = "moments";
 
@@ -111,4 +111,38 @@ export async function reportMoment(id: string, reason: string): Promise<MomentRe
   if (!error) return { ok: true };
   const m = error.message ?? "";
   return { ok: false, error: /^(Muitas denúncias|Momento indisponível|Você não pode denunciar)/.test(m) ? m : "Não foi possível enviar a denúncia agora." };
+}
+
+/** Conta uma visualização (cada pessoa uma vez; a própria casa não conta). Silencioso: nunca atrapalha quem assiste. */
+export function recordMomentView(id: string) {
+  if (!supabase) return;
+  void supabase.rpc("moment_view", { p_story: id }).then(() => undefined, () => undefined);
+}
+
+const FRIENDLY = /^(Entre na sua conta|Você não pode curtir|Não foi possível curtir|Não foi possível comentar|Sua conta está suspensa|Momento indisponível|Escreva o comentário|O comentário pode|Muitos comentários|Você já comentou|Use o chat)/;
+const msgOf = (m: string | undefined, fallback: string) => (m && FRIENDLY.test(m) ? m : fallback);
+
+export async function setMomentLike(id: string, on: boolean): Promise<MomentResult> {
+  if (!supabase) return { ok: false, error: "Curtir exige a conta real." };
+  const { error } = await supabase.rpc("moment_like", { p_story: id, p_on: on });
+  return error ? { ok: false, error: msgOf(error.message, "Não foi possível curtir agora.") } : { ok: true };
+}
+
+export async function sendMomentComment(id: string, body: string): Promise<MomentResult> {
+  if (!supabase) return { ok: false, error: "Comentar exige a conta real." };
+  const { error } = await supabase.rpc("moment_comment", { p_story: id, p_body: body });
+  return error ? { ok: false, error: msgOf(error.message, "Não foi possível comentar agora.") } : { ok: true };
+}
+
+/** Só a casa dona: visualizações, curtidas e comentários com o nome de quem fez. */
+export async function fetchMomentStats(id: string): Promise<MomentStats | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("moment_stats", { p_story: id });
+  return error ? null : normalizeStats(data);
+}
+
+export async function deleteMomentComment(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc("moment_comment_delete", { p_comment: id });
+  return !error;
 }

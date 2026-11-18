@@ -164,3 +164,108 @@ test.describe("momentos das casas", () => {
     expect(b.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
   });
 });
+
+test.describe("momentos: curtir, comentar e visualizações", () => {
+  const stats = { views: 12, likes: 2, comments_count: 1,
+    likers: [{ user_id: U(21), name: "Ana Souza", avatar: null, at: iso(5) }, { user_id: U(22), name: "Beto Lima", avatar: null, at: iso(9) }],
+    comments: [{ id: U(31), user_id: U(21), name: "Ana Souza", avatar: null, body: "Axé, que lindo! 🙏", at: iso(4) }] };
+  const mine = [{ ...feed[0], owner_id: ME, name: "Minha Casa", items: [{ ...feed[0].items[0], views: 12, likes: 2, comments: 1 }] }];
+
+  test("cliente: abrir conta uma visualização; curtir chama o banco e vira 'Descurtir'", async ({ page }) => {
+    const calls = await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const v = page.getByTestId("moment-viewer");
+    await expect(v).toBeVisible();
+    await expect.poll(() => calls.some((x) => x.kind === "rpc" && x.name === "moment_view" && x.body.p_story === U(101))).toBe(true);
+    await v.getByRole("button", { name: "Curtir", exact: true }).click();
+    await expect(v.getByRole("button", { name: "Descurtir" })).toHaveAttribute("aria-pressed", "true");
+    expect(calls.find((x) => x.kind === "rpc" && x.name === "moment_like").body).toEqual({ p_story: U(101), p_on: true });
+    await v.getByRole("button", { name: "Descurtir" }).click();
+    await expect(v.getByRole("button", { name: "Curtir", exact: true })).toBeVisible();
+  });
+
+  test("se o banco recusar a curtida, o coração volta e aparece o motivo", async ({ page }) => {
+    await setup(page, "cliente", null, { rpc: { moment_like: { status: 400, body: { code: "P0001", message: "Não foi possível curtir este momento." } } } });
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    await page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true }).click();
+    await expect(page.getByText("Não foi possível curtir este momento.")).toBeVisible();
+    await expect(page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true })).toBeVisible();
+  });
+
+  test("comentar: digitar não troca de momento (setas), pausa, e enviar chama o banco e avisa que só a casa vê", async ({ page }) => {
+    const calls = await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const v = page.getByTestId("moment-viewer");
+    const input = v.getByLabel("Comentar neste momento");
+    await input.click();
+    await input.fill("Que lindo, axé! 🙏");
+    await page.keyboard.press("ArrowLeft"); await page.keyboard.press("ArrowRight");
+    await expect(v.getByText("Gira de hoje às 19h")).toBeVisible(); // continua no mesmo momento
+    await v.getByRole("button", { name: "Enviar comentário" }).click();
+    await expect(page.getByText("Comentário enviado. Só a casa vê.")).toBeVisible();
+    expect(calls.find((x) => x.kind === "rpc" && x.name === "moment_comment").body).toEqual({ p_story: U(101), p_body: "Que lindo, axé! 🙏" });
+    await expect(input).toHaveValue("");
+  });
+
+  test("comentário recusado mostra o motivo e mantém o texto", async ({ page }) => {
+    await setup(page, "cliente", null, { rpc: { moment_comment: { status: 400, body: { code: "P0001", message: "Muitos comentários hoje. Tente novamente amanhã." } } } });
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const input = page.getByTestId("moment-viewer").getByLabel("Comentar neste momento");
+    await input.fill("oi");
+    await input.press("Enter");
+    await expect(page.getByText("Muitos comentários hoje. Tente novamente amanhã.")).toBeVisible();
+    await expect(input).toHaveValue("oi");
+  });
+
+  test("a casa vê o olho, o coração e os comentários com números e abre a atividade com os nomes", async ({ page }) => {
+    const calls = await setup(page, "casa", "base", { rpc: { moments_feed: mine, moment_stats: stats } });
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const v = page.getByTestId("moment-viewer");
+    await expect(v.getByLabel("Comentar neste momento")).toHaveCount(0); // a casa não comenta o próprio momento
+    const btn = v.getByRole("button", { name: /Ver atividade: 12 visualizações, 2 curtidas, 1 comentários/ });
+    await expect(btn).toBeVisible();
+    await expect.poll(() => calls.some((x) => x.name === "moment_view")).toBe(false);
+    await btn.click();
+    const p = page.getByRole("dialog", { name: "Atividade do momento" });
+    await expect(p.getByText("12 pessoas viram")).toBeVisible();
+    await expect(p.getByText("Beto Lima")).toBeVisible();
+    await expect(p.getByText("Axé, que lindo! 🙏")).toBeVisible();
+    await p.getByRole("button", { name: "Apagar" }).click();
+    await expect(p.getByText("Axé, que lindo! 🙏")).toHaveCount(0);
+    expect(calls.find((x) => x.name === "moment_comment_delete").body).toEqual({ p_comment: U(31) });
+  });
+
+  test("a casa responde: 'Responder' leva ao chat com a pessoa", async ({ page }) => {
+    await setup(page, "casa", "base", { rpc: { moments_feed: mine, moment_stats: stats } });
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    await page.getByTestId("moment-viewer").getByRole("button", { name: /Ver atividade/ }).click();
+    await page.getByRole("dialog", { name: "Atividade do momento" }).getByRole("button", { name: "Responder" }).click();
+    await expect(page).toHaveURL(new RegExp(`/mensagens/${U(21)}`));
+  });
+
+  test("acessibilidade (axe) do campo de comentar e da atividade da casa", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const a = await new AxeBuilder({ page }).include('[data-testid="moment-viewer"]').withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze();
+    expect(a.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
+    await noHScroll(page);
+  });
+  test("acessibilidade (axe) do painel de atividade", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await setup(page, "casa", "base", { rpc: { moments_feed: mine, moment_stats: stats } });
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    await page.getByTestId("moment-viewer").getByRole("button", { name: /Ver atividade/ }).click();
+    await expect(page.getByRole("dialog", { name: "Atividade do momento" })).toBeVisible();
+    const a = await new AxeBuilder({ page }).include('[aria-label="Atividade do momento"]').withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze();
+    expect(a.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
+  });
+});

@@ -1,7 +1,7 @@
 import type { PlanCaps } from "@/lib/planMatrixCore";
 export type MomentKind = "image" | "video";
 export interface MomentLink { kind: "service" | "event"; id: string; title: string }
-export interface MomentItem { id: string; kind: MomentKind; url: string; poster: string | null; caption: string | null; createdAt: string; expiresAt: string; duration: number | null; link: MomentLink | null }
+export interface MomentItem { id: string; kind: MomentKind; url: string; poster: string | null; caption: string | null; createdAt: string; expiresAt: string; duration: number | null; link: MomentLink | null; liked: boolean; views: number | null; likes: number | null; comments: number | null }
 export interface MomentGroup { ownerId: string; houseId: string; name: string; slug: string; avatar?: string; followed: boolean; items: MomentItem[] }
 export declare const IMAGE_SECONDS: number;
 export declare const MAX_VIDEO_SECONDS: number;
@@ -28,3 +28,8 @@ export declare function parseSeen(raw: string | null | undefined): Set<string>;
 export declare function serializeSeen(seen: Set<string>, liveIds?: string[]): string;
 export declare function timeAgoPt(iso: string, now?: number): string;
 export declare function expiresInPt(iso: string, now?: number): string;
+export const COMMENT_MAX: number;
+export interface MomentPerson { userId: string; name: string; avatar?: string; at: string }
+export interface MomentComment extends MomentPerson { id: string; body: string }
+export interface MomentStats { views: number; likes: number; commentsCount: number; likers: MomentPerson[]; comments: MomentComment[] }
+export function normalizeStats(raw: unknown): MomentStats;

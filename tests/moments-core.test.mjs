@@ -95,3 +95,27 @@ test("momentPath aceita o nome aleatório que a tela gera (12 caracteres) e recu
   assert.equal(momentPath(u, "a1b2c3d4e5f6", "webp"), `${u}/a1b2c3d4e5f6.webp`);
   assert.equal(momentPath(u, "a1b2c3d4e5f6g", "webp"), null);
 });
+
+test("normalizeFeed: curtida minha e contagens (só vêm para a casa; nulo para os outros; lixo vira nulo)", async () => {
+  const { normalizeFeed } = await import("../src/lib/momentsCore.js");
+  const u = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
+  const mk = (extra) => [{ owner_id: u(1), house_id: u(2), name: "C", slug: "c", items: [{ id: u(3), kind: "image", path: `${u(1)}/a1b2c3d4e5f6.webp`, created_at: "x", expires_at: "y", ...extra }] }];
+  const a = normalizeFeed(mk({ liked: true, views: 7, likes: 2, comments: 1 }))[0].items[0];
+  assert.deepEqual([a.liked, a.views, a.likes, a.comments], [true, 7, 2, 1]);
+  const b = normalizeFeed(mk({ views: null, likes: null, comments: null }))[0].items[0];
+  assert.deepEqual([b.liked, b.views, b.likes, b.comments], [false, null, null, null]);
+  const c = normalizeFeed(mk({ liked: "sim", views: -3, likes: "abc", comments: 2.9 }))[0].items[0];
+  assert.deepEqual([c.liked, c.views, c.likes, c.comments], [false, null, null, 2]);
+});
+
+test("normalizeStats: aceita o formato do banco, descarta lixo e limita o texto", async () => {
+  const { normalizeStats } = await import("../src/lib/momentsCore.js");
+  const u = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
+  const s = normalizeStats({ views: 3, likes: 1, comments_count: 2,
+    likers: [{ user_id: u(1), name: "Ana", avatar: "https://x.test/a.png", at: "t" }, { user_id: "nao-uuid", name: "X" }],
+    comments: [{ id: u(9), user_id: u(2), name: "", body: "y".repeat(500), at: "t", avatar: "http://inseguro" }, { id: "ruim", user_id: u(3), body: "z" }] });
+  assert.equal(s.views, 3); assert.equal(s.commentsCount, 2);
+  assert.equal(s.likers.length, 1); assert.equal(s.likers[0].name, "Ana");
+  assert.equal(s.comments.length, 1); assert.equal(s.comments[0].body.length, 300); assert.equal(s.comments[0].name, "Alguém"); assert.equal(s.comments[0].avatar, undefined);
+  assert.deepEqual(normalizeStats(null), { views: 0, likes: 0, commentsCount: 0, likers: [], comments: [] });
+});
