@@ -44,7 +44,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col">
-    <div className="flex-1 grid lg:grid-cols-2">
+    <main className="flex-1 grid lg:grid-cols-2">
       <div className="relative hidden lg:block overflow-hidden">
         <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 20% 10%, #1B6A50 0%, #0E3B2C 48%, #07231A 100%)" }} />
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "28px 28px" }} />
@@ -116,7 +116,7 @@ export default function Login() {
         </Card>
         </div>
       </div>
-    </div>
+    </main>
     <Footer />
     </div>
   );

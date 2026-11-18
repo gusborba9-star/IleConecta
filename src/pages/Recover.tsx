@@ -28,7 +28,7 @@ export function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center p-4">
+    <main className="min-h-screen grid place-items-center p-4">
       <Card className="w-full max-w-md p-6 space-y-4">
         <h1 className="font-display font-bold text-2xl">Recuperar acesso</h1>
         {sent ? (
@@ -43,7 +43,7 @@ export function ForgotPassword() {
         <Link to="/login" className="text-sm text-primary font-semibold hover:underline">Voltar para entrar</Link>
         <p className="text-xs text-muted-foreground">Sem acesso ao e-mail? Abra um chamado depois de entrar ou escreva para o suporte (página Suporte).</p>
       </Card>
-    </div>
+    </main>
   );
 }
 
@@ -77,7 +77,7 @@ export function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center p-4">
+    <main className="min-h-screen grid place-items-center p-4">
       <Card className="w-full max-w-md p-6 space-y-4">
         <h1 className="font-display font-bold text-2xl">Nova senha</h1>
         {ready === null && <p className="text-sm text-muted-foreground">Conferindo o link…</p>}
@@ -95,6 +95,6 @@ export function ResetPassword() {
           </form>
         )}
       </Card>
-    </div>
+    </main>
   );
 }

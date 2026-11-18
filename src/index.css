@@ -16,6 +16,7 @@
     --muted-foreground: 24 17% 36%;
 
     --primary: 10 75% 43%;
+    --primary-ink: 10 75% 43%; /* cor do texto em destaque: no tema claro é a própria cor primária */
     --primary-foreground: 40 40% 98%;
 
     --secondary: 33 24% 89%;
@@ -58,7 +59,9 @@
     --muted: 22 16% 16%;
     --muted-foreground: 30 12% 66%;
 
-    --primary: 12 72% 52%;
+    /* contraste (WCAG AA 4,5:1): botão com texto claro e texto em destaque sobre fundo escuro usam tons diferentes */
+    --primary: 12 72% 46%;
+    --primary-ink: 12 72% 62%;
     --primary-foreground: 40 40% 98%;
 
     --secondary: 22 14% 18%;
@@ -215,3 +218,8 @@
 }
 @keyframes foco-pulse { 0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); } 100% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); } }
 @media (prefers-reduced-motion: reduce) { [data-focused="true"] { animation: none; } }
+
+/* Acessibilidade (contraste): no tema escuro o texto em cor primária usa um tom mais claro (--primary-ink); o fundo de botão segue em --primary. */
+@layer utilities {
+  .dark .text-primary { color: hsl(var(--primary-ink)); }
+}

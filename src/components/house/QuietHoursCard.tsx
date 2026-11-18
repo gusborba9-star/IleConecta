@@ -52,13 +52,13 @@ export default function QuietHoursCard() {
         <input type="checkbox" disabled={saving} checked={prefs.on} onChange={(e) => void save({ ...prefs, on: e.target.checked })} />
         Ativar Não perturbe
       </label>
-      <div className={`flex flex-wrap items-center gap-2 text-sm ${prefs.on ? "" : "opacity-50"}`}>
+      <div className={`flex flex-wrap items-center gap-2 text-sm`}>
         <span>Das</span>
-        <select aria-label="Início" disabled={!prefs.on || saving} className="h-10 rounded-md border border-input bg-background px-2" value={prefs.start} onChange={(e) => void save({ ...prefs, start: Number(e.target.value) })}>
+        <select aria-label="Início" disabled={!prefs.on || saving} className="h-10 rounded-md border border-input bg-background px-2 disabled:opacity-50" value={prefs.start} onChange={(e) => void save({ ...prefs, start: Number(e.target.value) })}>
           {HOURS.map((h) => <option key={h} value={h}>{h}h</option>)}
         </select>
         <span>às</span>
-        <select aria-label="Fim" disabled={!prefs.on || saving} className="h-10 rounded-md border border-input bg-background px-2" value={prefs.end} onChange={(e) => void save({ ...prefs, end: Number(e.target.value) })}>
+        <select aria-label="Fim" disabled={!prefs.on || saving} className="h-10 rounded-md border border-input bg-background px-2 disabled:opacity-50" value={prefs.end} onChange={(e) => void save({ ...prefs, end: Number(e.target.value) })}>
           {HOURS.map((h) => <option key={h} value={h}>{h}h</option>)}
         </select>
         <span className="text-xs text-muted-foreground">(horário de Brasília)</span>

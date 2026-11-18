@@ -66,7 +66,7 @@ export default function TopBar() {
           </div>
         </div>
 
-        <nav className="flex-1 flex justify-center items-center gap-1">
+        <nav aria-label="Principal" className="flex-1 flex justify-center items-center gap-1">
           <TopIcon to="/" icon={Home} label="Início" />
           <TopIcon to="/descobrir" icon={Compass} label="Casas" />
           <TopIcon to="/rituais" icon={Sparkles} label="Rituais" />

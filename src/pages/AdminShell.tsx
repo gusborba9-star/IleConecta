@@ -48,7 +48,7 @@ export default function AdminShell() {
             aria-current={current === id ? "page" : undefined}
             className={cn(
               "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 min-h-11 text-sm font-semibold text-left transition",
-              current === id ? "bg-primary/15 text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]" : "text-muted-foreground hover:bg-muted"
+              current === id ? "bg-primary/15 text-foreground font-semibold shadow-[inset_2px_0_0_hsl(var(--primary))]" : "text-muted-foreground hover:bg-muted"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" /> {label}

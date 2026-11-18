@@ -28,7 +28,7 @@ export default function SideNav() {
             </>
           )}
           {g.title && <div className={cn("px-3 pb-1 text-xs uppercase tracking-widest", isHouse ? "text-[#E3BF5A]" : "text-muted-foreground")}>{g.title}</div>}
-          <nav className="flex flex-col gap-1">
+          <nav aria-label={g.title || (i === 0 ? "Menu principal" : `Menu ${i + 1}`)} className="flex flex-col gap-1">
             {g.items.map((it) => <NavItem key={it.to + it.label} {...it} dark={isHouse} />)}
           </nav>
         </Card>

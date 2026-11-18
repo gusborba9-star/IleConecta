@@ -1,3 +1,4 @@
+import RouteTitle from "@/components/layout/RouteTitle";
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AppShell from "@/components/layout/AppShell";
@@ -83,6 +84,7 @@ export default function App() {
     <ConfirmProvider>
     <TelaComErro>
     <Suspense fallback={<TelaCarregando />}>
+    <RouteTitle />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

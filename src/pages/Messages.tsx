@@ -43,9 +43,9 @@ export default function Messages() {
 
   return (
     <Card className="overflow-hidden h-[calc(100vh-6rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className="border-r border-border overflow-y-auto">
+      <aside aria-label="Conversas" className="border-r border-border overflow-y-auto">
         <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
-          <h2 className="font-display font-bold text-lg">Mensagens</h2>
+          <h1 className="font-display font-bold text-lg">Mensagens</h1>
         </div>
         {myConvos.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma conversa ainda.</div>}
         {myConvos.map((c) => {

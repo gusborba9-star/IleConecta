@@ -1,3 +1,4 @@
+import SkipLink from "./SkipLink";
 import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopBar from "./TopBar";
@@ -89,6 +90,7 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SkipLink />
       <TopBar />
       {!isRemoteAuth && (
         <div role="status" className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
@@ -96,15 +98,15 @@ export default function AppShell() {
         </div>
       )}
       <div className={`flex-1 mx-auto w-full max-w-[1440px] px-3 md:px-6 py-4 grid grid-cols-1 gap-6 ${isRemoteAuth ? "lg:grid-cols-[240px_minmax(0,1fr)]" : "lg:grid-cols-[240px_minmax(0,1fr)_320px]"}`}>
-        <aside className="hidden lg:block sticky top-20 self-start">
+        <aside aria-label="Menu lateral" className="hidden lg:block sticky top-20 self-start">
           <SideNav />
         </aside>
-        <main className="min-w-0">
+        <main id="conteudo" tabIndex={-1} className="min-w-0 outline-none">
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
           {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
         </main>
         {!isRemoteAuth && (
-          <aside className="hidden lg:block sticky top-20 self-start">
+          <aside aria-label="Complementos" className="hidden lg:block sticky top-20 self-start">
             <RightRail />
           </aside>
         )}

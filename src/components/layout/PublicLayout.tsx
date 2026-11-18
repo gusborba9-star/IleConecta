@@ -1,3 +1,4 @@
+import SkipLink from "./SkipLink";
 import { Suspense } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { LogoMark } from "@/components/brand/Logo";
@@ -9,6 +10,7 @@ export default function PublicLayout() {
   const { currentUser } = useApp();
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SkipLink />
       <header className="border-b border-border bg-card/80">
         <div className="mx-auto max-w-3xl px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-lg">
@@ -20,7 +22,7 @@ export default function PublicLayout() {
           </Link>
         </div>
       </header>
-      <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-6">
+      <main id="conteudo" tabIndex={-1} className="flex-1 mx-auto w-full max-w-3xl px-4 py-6 outline-none">
         <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>
       </main>
       <Footer />
