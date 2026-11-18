@@ -13,6 +13,7 @@ import { readSeen, saveSeen } from "@/lib/momentsSeen";
 /** Carrossel de momentos no topo do feed. Só casas publicam (a partir do Essencial); cliente só assiste. */
 export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?: string[] }) {
   const { currentUser, isRemoteAuth, stories, users } = useApp();
+  const [broken, setBroken] = useState<Record<string, boolean>>({});
   const isHouse = currentUser?.type === "commercial";
   const { caps } = useOwnerPlan(isHouse ? currentUser?.id : null);
   const [remote, setRemote] = useState<MomentGroup[] | null>(null);
@@ -86,9 +87,10 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
                 key={g.ownerId} type="button" data-testid="moment-card"
                 aria-label={`Ver momentos de ${g.name}${done ? " (já vistos)" : ""}`}
                 onClick={() => setOpen({ gi, ii: startIndex(g, seen) })}
-                className="relative shrink-0 w-32 h-52 rounded-2xl overflow-hidden shadow-card text-left focus-visible:ring-2 focus-visible:ring-ring bg-muted"
-                style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.72)), url("${thumb}")`, backgroundSize: "cover", backgroundPosition: "center" }}
+                className="relative shrink-0 w-32 h-52 rounded-2xl overflow-hidden shadow-card text-left focus-visible:ring-2 focus-visible:ring-ring bg-[#0b2a1f]"
               >
+                {!broken[thumb] && <img src={thumb} alt="" aria-hidden loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken((b) => ({ ...b, [thumb]: true }))} />}
+                <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/5 from-40% to-black/70" />
                 <span className={`absolute top-2 left-2 rounded-full ${done ? "ring-2 ring-white/60" : "ring-2 ring-gold"} ring-offset-1 ring-offset-black/30`}>
                   <Avatar src={g.avatar} name={g.name} size={34} />
                 </span>
