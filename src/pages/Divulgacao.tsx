@@ -209,8 +209,8 @@ export default function Divulgacao() {
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Cartão para postar</h2>
         {!active ? <p className="text-sm text-muted-foreground">Crie um link e o cartão com o QR code aparece aqui, pronto para postar.</p> : (
-          <div className="grid gap-4 md:grid-cols-[240px_1fr] items-start">
-            <canvas ref={canvas} className="w-full max-w-[240px] rounded-2xl ring-1 ring-gold/50 shadow-card" aria-label="Prévia do cartão de divulgação" />
+          <div className="grid gap-4 md:grid-cols-[300px_1fr] items-start">
+            <canvas ref={canvas} className="w-full max-w-[300px] mx-auto md:mx-0 rounded-2xl ring-1 ring-gold/50 shadow-card" aria-label="Prévia do cartão de divulgação" />
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Cartão do link <strong>{active.label}</strong>, no tamanho de publicação. Quem apontar a câmera chega à sua casa.</p>
               <div>

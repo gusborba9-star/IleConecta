@@ -1,3 +1,4 @@
+import { reportClientError } from "@/lib/clientErrors";
 import type { AccountType, HouseUser, PersonalUser, User } from "@/types";
 import { supabase } from "@/lib/supabase";
 
@@ -156,6 +157,8 @@ export async function remoteUpdateProfile(userId: string, patch: Partial<User>):
     if (error) {
       ok = false;
       console.warn("Ilê Conecta: não foi possível salvar o perfil.", error.message);
+      // falha inesperada de salvamento aparece em "Saúde da plataforma" (o relato não identifica a pessoa)
+      reportClientError(new Error(`salvar perfil falhou (${error.code ?? "sem código"}): ${error.message}`));
     }
   }
 
@@ -170,6 +173,7 @@ export async function remoteUpdateProfile(userId: string, patch: Partial<User>):
     if (error) {
       ok = false;
       console.warn("Ilê Conecta: não foi possível salvar a casa.", error.message);
+      reportClientError(new Error(`salvar casa falhou (${error.code ?? "sem código"}): ${error.message}`));
     }
   }
   return ok;
