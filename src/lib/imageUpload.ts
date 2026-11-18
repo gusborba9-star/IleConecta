@@ -1,3 +1,4 @@
+import { reportClientError } from "@/lib/clientErrors";
 import { supabase } from "@/lib/supabase";
 
 export type ImageKind = "avatar" | "cover" | "assistant";
@@ -61,7 +62,10 @@ export async function uploadProfileImage(userId: string, kind: ImageKind, file: 
     cacheControl: "31536000",
     upsert: false,
   });
-  if (error) return { error: "Não foi possível enviar a imagem agora. Tente novamente." };
+  if (error) {
+    reportClientError(new Error(`envio de imagem falhou (${bucket}): ${error.message}`));
+    return { error: "Não foi possível enviar a imagem agora. Tente novamente." };
+  }
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return { url: data.publicUrl, path };
 }
