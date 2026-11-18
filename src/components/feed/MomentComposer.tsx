@@ -124,11 +124,15 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="rounded-2xl overflow-hidden bg-black h-64 grid place-items-center">
+            <div className="relative mx-auto h-80 aspect-[9/16] rounded-2xl overflow-hidden bg-black" aria-label="Como vai aparecer">
+              {!isVideoType(file.type) && <img src={file.previewUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover scale-110 blur-2xl opacity-60" />}
               {isVideoType(file.type)
-                ? <video src={file.previewUrl} className="h-full w-full object-contain" controls muted playsInline aria-label="Prévia do vídeo" />
-                : <img src={file.previewUrl} alt="Prévia do momento" className="h-full w-full object-contain" />}
+                ? <video src={file.previewUrl} className="absolute inset-0 h-full w-full object-contain" controls muted playsInline aria-label="Prévia do vídeo" />
+                : <img src={file.previewUrl} alt="Prévia do momento" className="absolute inset-0 h-full w-full object-contain" />}
+              {!isVideoType(file.type) && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />}
+              {!isVideoType(file.type) && caption.trim() && <p className="absolute inset-x-2 bottom-2 text-white text-xs font-medium leading-snug drop-shadow-md break-words">{caption.trim()}</p>}
             </div>
+            <p className="text-center text-xs text-muted-foreground">Assim as pessoas vão ver: a foto inteira, sem cortes, e a legenda embaixo.</p>
             <Button variant="outline" size="sm" onClick={reset} disabled={busy}>Trocar arquivo</Button>
             <div>
               <label htmlFor="moment-caption" className="text-sm font-semibold">Legenda (opcional)</label>
