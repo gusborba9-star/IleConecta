@@ -174,11 +174,18 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { gesture.current = null; setHolding(false); }}
       >
         {item.kind === "video" ? (
+          <>
+          {item.poster && <img src={item.poster} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover scale-110 blur-2xl opacity-60" draggable={false} />}
           <video key={item.id} ref={videoRef} src={item.url} poster={item.poster ?? undefined} className="absolute inset-0 h-full w-full object-contain" autoPlay playsInline muted={muted} preload="auto"
             onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration > 0) setProgress(Math.min(1, v.currentTime / Math.min(v.duration, 30))); }}
             onEnded={next} onError={() => setFailed(true)} aria-label={item.caption ?? `Vídeo de ${group.name}`} />
+          </>
         ) : (
-          <img key={item.id} src={item.url} alt={item.caption ?? `Momento de ${group.name}`} className="absolute inset-0 h-full w-full object-contain" draggable={false} onError={() => setFailed(true)} />
+          <>
+            {/* fundo desfocado com a própria foto: qualquer formato preenche a tela, como no Facebook */}
+            <img src={item.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover scale-110 blur-2xl opacity-60" draggable={false} />
+            <img key={item.id} src={item.url} alt={item.caption ?? `Momento de ${group.name}`} className="absolute inset-0 h-full w-full object-contain" draggable={false} onError={() => setFailed(true)} />
+          </>
         )}
         {failed && (
           <div className="absolute inset-0 grid place-items-center text-center text-white/90 p-6">
@@ -186,7 +193,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
           </div>
         )}
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
 
         <div className="absolute top-2 inset-x-2 flex gap-1" aria-hidden>
           {group.items.map((it, k) => (
@@ -197,9 +204,9 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
         </div>
 
         <div className="absolute top-5 inset-x-3 flex items-center gap-2 text-white" data-nogesture>
-          <Avatar src={group.avatar} name={group.name} size={36} />
+          <Avatar src={group.avatar} name={group.name} size={40} />
           <div className="min-w-0 flex-1">
-            <div className="font-semibold text-sm truncate drop-shadow">{group.name}</div>
+            <div className="font-bold text-base truncate drop-shadow-md">{group.name}</div>
             <div className="text-[11px] text-white/80">{timeAgoPt(item.createdAt)} · some em {expiresInPt(item.expiresAt)}</div>
           </div>
           {item.kind === "video" && (
@@ -223,7 +230,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
         </div>
 
         <div className="absolute inset-x-0 bottom-0 p-4 space-y-3 text-white" data-nogesture>
-          {item.caption && <p className="text-sm leading-snug drop-shadow whitespace-pre-line break-words">{item.caption}</p>}
+          {item.caption && <p className="text-base leading-snug font-medium drop-shadow-md whitespace-pre-line break-words">{item.caption}</p>}
           <div className="flex flex-wrap gap-2">
             {item.link && (
               <Button size="sm" variant="secondary" onClick={goLink}>{item.link.kind === "event" ? "Ver ritual" : "Ver serviço"}: {item.link.title.slice(0, 28)} <ChevronRight className="h-4 w-4" /></Button>
