@@ -16,6 +16,7 @@ export const CAP_NUMBERS = {
   limit_services: [0, 1000, "Serviços ativos (0 = sem limite)"],
   limit_rituals: [0, 1000, "Rituais ativos (0 = sem limite)"],
   limit_posts_month: [0, 1000, "Publicações por mês (0 = sem limite)"],
+  moments_per_day: [0, 50, "Momentos por dia (0 = a casa não publica momentos)"],
 };
 /** Ferramentas liga/desliga por plano: rótulo no painel. */
 export const CAP_FLAGS = {
@@ -28,18 +29,19 @@ export const CAP_FLAGS = {
   campaign_insights_full: "Todos os assuntos e serviços mais procurados",
   ritual_video: "Vídeo de 30 s nos registros do ritual",
   styled_posts: "Posts com a cara da sua casa (foto de fundo, letras com a sua identidade e texto legível)",
+  moment_video: "Vídeo de 30 s nos momentos",
 };
 export const CAP_NUMBER_KEYS = Object.keys(CAP_NUMBERS);
 export const CAP_FLAG_KEYS = Object.keys(CAP_FLAGS);
 
 export const DEFAULT_PLAN_MATRIX = {
   caps: {
-    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false },
-    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false },
-    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true },
-    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true },
+    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, moments_per_day: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
+    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 3, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
+    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 5, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true, moment_video: false },
+    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 10, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true, moment_video: true },
   },
-  // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month} viram o número do plano na hora de mostrar.
+  // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month}, {moments_per_day} viram o número do plano na hora de mostrar.
   // "feature" esconde o item até o interruptor do painel ser ligado (aparece sozinho, como novidade).
   copy: {
     gratis: {
@@ -63,6 +65,7 @@ export const DEFAULT_PLAN_MATRIX = {
         { text: "Até {quick_replies} respostas rápidas para o chat", feature: null },
         { text: "Você escolhe vender pela plataforma ou combinar direto com o cliente", feature: null },
         { text: "Datas públicas na agenda da casa", feature: null },
+        { text: "Momentos no topo do feed: até {moments_per_day} por dia, visíveis por 24 horas", feature: null },
       ],
     },
     intermediario: {
@@ -90,6 +93,7 @@ export const DEFAULT_PLAN_MATRIX = {
         { text: "Até {quick_replies} respostas rápidas para o chat", feature: null },
         { text: "{included_seats} acesso de equipe incluso, para quem ajuda a cuidar da casa", feature: null },
         { text: "Vídeo de 30 segundos nos registros dos rituais", feature: "ritual_video" },
+        { text: "Momentos em vídeo de até 30 segundos, além das fotos (até {moments_per_day} por dia)", feature: null },
       ],
     },
   },
@@ -164,6 +168,7 @@ const COMPARE_NUMBERS = [
   ["limit_services", "Serviços ativos", "all"],
   ["limit_rituals", "Rituais ativos", "all"],
   ["limit_posts_month", "Publicações por mês", "all"],
+  ["moments_per_day", "Momentos por dia (24 h no ar)", "none"],
   ["assistant_replies", "Respostas da assistente por mês", "none"],
   ["quick_replies", "Respostas rápidas", "none"],
   ["campaign_links", "Links de divulgação", "none"],
@@ -177,6 +182,7 @@ const COMPARE_FLAGS = [
   ["campaign_insights_full", "Assuntos e serviços mais procurados"],
   ["assistant_discount", "Assistente com desconto (se a casa liberar)"],
   ["ritual_video", "Vídeo de 30 s nos registros do ritual"],
+  ["moment_video", "Vídeo de 30 s nos momentos"],
 ];
 
 /** Linhas da tabela "Compare os planos": cada célula é um texto pronto ("Sem limite", "—", número ou "Incluído"). Nunca "undefined". */

@@ -1,5 +1,5 @@
 import { useApp } from "@/contexts/AppContext";
-import StoryRail from "@/components/feed/StoryRail";
+import MomentsRail from "@/components/feed/MomentsRail";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
 import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
@@ -60,7 +60,7 @@ export default function Feed() {
           <h2 className="font-display font-bold text-xl">Momentos das casas</h2>
           <Link to="/descobrir" className="text-xs text-primary font-semibold hover:underline">ver todas</Link>
         </div>
-        <StoryRail />
+        <MomentsRail highlightOwners={promo.highlightOwners} />
       </div>
 
       {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}

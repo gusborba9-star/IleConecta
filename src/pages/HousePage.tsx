@@ -19,6 +19,10 @@ import CalendarTab from "@/components/calendar/CalendarTab";
 import { fetchHouseCalendar, type CalendarItem } from "@/lib/calendar";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
+import MomentViewer from "@/components/feed/MomentViewer";
+import { fetchMomentGroups } from "@/lib/moments";
+import { isGroupSeen, startIndex, type MomentGroup } from "@/lib/momentsCore";
+import { readSeen, saveSeen } from "@/lib/momentsSeen";
 
 type Tab = "feed" | "servicos" | "rituais" | "calendario" | "avaliacoes" | "assistente" | "sobre";
 const TAB_LABEL: Record<Tab, string> = { feed: "Publicações", servicos: "Serviços", rituais: "Rituais", calendario: "Calendário", avaliacoes: "Avaliações", assistente: "Assistente", sobre: "Sobre" };
@@ -40,6 +44,17 @@ export default function HousePage() {
   const realHouse = isRemoteAuth && isRemoteId(id ?? "");
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const calendarOn = realHouse && isFeatureOn(config, "calendar", id ?? "");
+  // Momentos no ar desta casa: o avatar ganha o aro dourado e abre o visualizador.
+  const [momentGroup, setMomentGroup] = useState<MomentGroup | null>(null);
+  const [momentOpen, setMomentOpen] = useState(false);
+  const [momentSeen, setMomentSeen] = useState<Set<string>>(readSeen);
+  useEffect(() => {
+    setMomentGroup(null);
+    if (!realHouse || !id) return;
+    let alive = true;
+    void fetchMomentGroups().then((gs) => alive && setMomentGroup(gs.find((g) => g.ownerId === id) ?? null));
+    return () => { alive = false; };
+  }, [id, realHouse]);
   const loadCalendar = useCallback(() => {
     if (!calendarOn || !id) return setCalendar([]);
     void fetchHouseCalendar(id).then((c) => setCalendar(c.enabled ? c.items : []));
@@ -103,7 +118,13 @@ export default function HousePage() {
         </div>
         <div className="relative z-10 px-4 sm:px-6 pb-5">
           <div className="-mt-12 sm:-mt-14 w-fit rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60">
-            <Avatar src={house.avatar} name={house.name} size={96} />
+            {momentGroup ? (
+              <button type="button" onClick={() => setMomentOpen(true)} aria-label={`Ver os momentos de ${house.name}`} className={cn("rounded-full ring-2 ring-offset-2 ring-offset-card focus-visible:outline-none focus-visible:ring-4", isGroupSeen(momentGroup, momentSeen) ? "ring-border" : "ring-gold")}>
+                <Avatar src={house.avatar} name={house.name} size={96} />
+              </button>
+            ) : (
+              <Avatar src={house.avatar} name={house.name} size={96} />
+            )}
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <h1 className="font-display font-bold text-2xl md:text-3xl leading-tight">{house.name}</h1>
@@ -179,6 +200,10 @@ export default function HousePage() {
       </Card>
 
       {isOwn && <EditProfileModal open={editing} onClose={() => setEditing(false)} />}
+      {momentOpen && momentGroup && (
+        <MomentViewer groups={[momentGroup]} start={{ gi: 0, ii: startIndex(momentGroup, momentSeen) }} viewerId={currentUser?.id} onClose={() => setMomentOpen(false)}
+          onSeen={(sid) => setMomentSeen((prev) => { if (prev.has(sid)) return prev; const n = new Set(prev); n.add(sid); saveSeen(n, [...n]); return n; })} />
+      )}
       {isOwn && hasServices && <HouseRefundCases ownerId={house.id} />}
 
       <div className="mt-4 space-y-4">
