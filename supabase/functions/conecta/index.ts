@@ -2,6 +2,7 @@
 // Quem fala é sempre identificado pelo JWT; a assistente só lê a PRÓPRIA conta e não escreve nada (exceto o aviso de risco de vida, feito com a identidade da pessoa).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ConectaError, runConecta } from "./core.js";
+import { maintenanceFor } from "./maintenance.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +33,11 @@ Deno.serve(async (req) => {
   const user = auth?.user;
   if (!user) return json(401, { error: "nao_autenticado" });
   const admin = createClient(url, service, { auth: { persistSession: false } });
+
+  const { data: mrow, error: merr } = await admin.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+  if (merr) console.error("maintenance_read", merr.message);
+  const maint = merr ? null : maintenanceFor(mrow?.value, "assistant");
+  if (maint) return json(503, { error: "manutencao", message: maint });
 
   let body: { message?: unknown; history?: unknown } = {};
   try { body = await req.json(); } catch { return json(400, { error: "json_invalido" }); }

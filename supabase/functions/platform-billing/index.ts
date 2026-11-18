@@ -10,6 +10,7 @@ import { ChargeStateError, ProviderError, createRegistry } from "./provider.js";
 import { createStripeAdapter } from "./stripeAdapter.js";
 import { createStore } from "./store.js";
 import * as core from "./core.js";
+import { maintenanceFor } from "./maintenance.js";
 import { CREDIT_PACKS, creditPurchaseError, PROMO_ITEMS, PROMO_KINDS, PROMO_SCOPES, promoPurchaseError } from "./logic.js";
 
 const SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
@@ -60,6 +61,13 @@ Deno.serve(async (req) => {
     const user = await userOf(req);
     if (!user) return fail("Entre na sua conta.", 401);
     const input = (await req.json().catch(() => ({}))) as Obj;
+    // Interruptor de emergência: só começos de cobrança; reembolsos, conferência e ajustes do cartão salvo seguem funcionando.
+    if (["pay", "buy_credits", "buy_promo", "card_setup", "reactivate", "subscribe", "upgrade", "seat"].includes(String(input.action))) {
+      const { data: mrow, error: merr } = await admin.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+      if (merr) console.error("maintenance_read", merr.message);
+      const m = merr ? null : maintenanceFor(mrow?.value, "payments");
+      if (m) return fail(m, 503, "manutencao");
+    }
     if (input.action === "buy_credits") {
       // Compra de pacote de créditos: o banco valida (plano com assistente, casa em dia, preço do painel) e reaproveita a fatura aberta.
       const pack = String(input.pack ?? "");

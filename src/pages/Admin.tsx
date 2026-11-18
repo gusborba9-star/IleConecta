@@ -39,6 +39,7 @@ import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import PendingCenterCard from "@/components/admin/PendingCenterCard";
 import PlatformHealthCard from "@/components/admin/PlatformHealthCard";
+import MaintenanceCard from "@/components/admin/MaintenanceCard";
 import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
@@ -55,7 +56,7 @@ const FEATURE_LABEL: Record<FeatureKey, string> = {
   calendar: "Calendário religioso da casa (celebrações e obrigações)",
 };
 const STATE_LABEL: Record<FeatureState, string> = { off: "Desligado", beta: "Teste (casas escolhidas)", on: "Ligado para todos" };
-const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações", ver_linha_do_tempo_da_casa: "Abriu a linha do tempo de uma casa", admins: "Equipe da administração", billing_enroll: "Cobrança automática: casa inscrita", billing_unenroll: "Cobrança automática: casa removida", billing_cancel: "Cobrança automática: cancelada", billing_holiday: "Cobrança automática: pausa", billing_reactivate: "Cobrança automática: reativada", promo_limit: "Limite de divulgação", price_announce: "Reajuste de preços anunciado", price_cancel: "Reajuste de preços cancelado" };
+const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", maintenance: "Interruptor de emergência", pricing: "Preços", scopes: "Alcance por região", house_plan: "Plano de casa", payment_limits: "Teto por pagamento", referral: "Indique e ganhe", review_moderation: "Moderação de avaliações", ver_linha_do_tempo_da_casa: "Abriu a linha do tempo de uma casa", admins: "Equipe da administração", billing_enroll: "Cobrança automática: casa inscrita", billing_unenroll: "Cobrança automática: casa removida", billing_cancel: "Cobrança automática: cancelada", billing_holiday: "Cobrança automática: pausa", billing_reactivate: "Cobrança automática: reativada", promo_limit: "Limite de divulgação", price_announce: "Reajuste de preços anunciado", price_cancel: "Reajuste de preços cancelado" };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -118,6 +119,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
       {section === "visao" && <PendingCenterCard />}
       {section === "visao" && can("dono") && <PlatformHealthCard />}
+      {section === "visao" && can("dono") && <MaintenanceCard />}
       {section === "visao" && <AdminIndicatorsCard />}
 
       {section === "visao" && (!metrics ? (

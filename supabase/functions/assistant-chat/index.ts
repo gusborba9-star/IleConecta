@@ -24,6 +24,7 @@ import {
   windowStartISO,
 } from "./logic.js";
 import { evalModel, runAll } from "./evalCore.js";
+import { maintenanceFor } from "./maintenance.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -113,14 +114,19 @@ Deno.serve(async (req) => {
   if (!house) return json(404, { error: "casa_nao_encontrada" });
 
   // As quatro leituras abaixo só dependem da casa: vão juntas (uma ida ao banco em vez de quatro em fila).
-  const [{ data: featRow }, { data: billingLevel, error: billingErr }, { data: planMatrix }, { data: assistant }] = await Promise.all([
+  const [{ data: featRow }, { data: maintRow }, { data: billingLevel, error: billingErr }, { data: planMatrix }, { data: assistant }] = await Promise.all([
     admin.from("platform_settings").select("value").eq("key", "features").maybeSingle(),
+    admin.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle(),
     admin.rpc("house_billing_level", { h: house.id }),
     admin.rpc("plan_matrix"), // sempre uma matriz válida; se a leitura falhar, valem os valores iniciais
     admin.from("assistants")
       .select("enabled, display_name, instructions, business_hours, can_sell, can_discount, max_discount_percent, model, profile")
       .eq("house_id", house.id).maybeSingle(),
   ]);
+
+  // Interruptor de emergência do dono: manutenção da assistente, antes de qualquer custo.
+  const maint = maintenanceFor(maintRow?.value, "assistant");
+  if (maint) return json(503, { error: "manutencao", message: maint });
 
   // Interruptor do painel admin: desligado (ou em teste para outras casas) bloqueia antes de qualquer custo.
   if (!featureEnabled(featRow?.value, "assistant", house.owner_id)) {
