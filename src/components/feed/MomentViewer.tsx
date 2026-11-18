@@ -41,6 +41,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
   const item = group?.items[pos.ii];
   const paused = holding || menu || reporting || typing || panel;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const gesture = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null);
   const holdTimer = useRef<number | null>(null);
@@ -85,6 +86,15 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
     if (paused) v.pause();
     else void v.play().catch(() => { v.muted = true; setMuted(true); void v.play().catch(() => undefined); });
   }, [paused, item?.id]);
+
+  // música da foto: toca com o momento; pausa quando o momento pausa; se o aparelho não deixar tocar, o botão de som fica como "desligado"
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (paused || muted || failed) a.pause();
+    else void a.play().catch((e: unknown) => { if ((e as { name?: string })?.name === "NotAllowedError") setMuted(true); }); // só o bloqueio do aparelho silencia; interromper ao trocar de momento não é erro
+    return () => a.pause(); // fechar o visualizador ou trocar de momento nunca deixa música tocando
+  }, [paused, muted, failed, item?.id]);
 
   // carrega antes a próxima foto
   useEffect(() => {
@@ -226,6 +236,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
             <img key={item.id} src={item.url} alt={item.caption ?? `Momento de ${group.name}`} className="absolute inset-0 h-full w-full object-contain" draggable={false} onError={() => setFailed(true)} />
           </>
         )}
+        {item.music && <audio key={item.id} ref={audioRef} src={item.music.url} loop preload="auto" aria-hidden />}
         {failed && (
           <div className="absolute inset-0 grid place-items-center text-center text-white/90 p-6">
             <div><p className="font-semibold">Não foi possível carregar este momento.</p><Button data-nogesture variant="secondary" size="sm" className="mt-3" onClick={next}>Seguir</Button></div>
@@ -247,8 +258,9 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
           <div className="min-w-0 flex-1">
             <div className="font-bold text-base truncate drop-shadow-md">{group.name}</div>
             <div className="text-[11px] text-white/80">{timeAgoPt(item.createdAt)} · some em {expiresInPt(item.expiresAt)}</div>
+            {item.music && <div className="text-[11px] text-white/90 truncate" data-testid="moment-music">♪ {item.music.title}{item.music.author ? ` — ${item.music.author}` : ""}</div>}
           </div>
-          {item.kind === "video" && (
+          {(item.kind === "video" || item.music) && (
             <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Ligar o som" : "Desligar o som"} className="h-9 w-9 grid place-items-center rounded-full bg-black/35 hover:bg-black/55">
               {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>

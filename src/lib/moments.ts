@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { reportClientError } from "@/lib/clientErrors";
 import { rememberPlanGuard } from "@/lib/planGuard";
-import { extFor, isVideoType, momentPath, normalizeFeed, normalizeStats, safeFilePath, MAX_VIDEO_SECONDS, type MomentGroup, type MomentStats } from "@/lib/momentsCore";
+import { extFor, isVideoType, momentPath, normalizeFeed, normalizeMusicCatalog, normalizeStats, safeFilePath, safeMusicPath, MAX_VIDEO_SECONDS, type MomentGroup, type MomentMusic, type MomentStats } from "@/lib/momentsCore";
 
 const BUCKET = "moments";
 
@@ -11,12 +11,26 @@ export function momentUrl(path: string): string | undefined {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+/** Endereço público de uma música da biblioteca (bucket `music`, só nome no formato esperado). */
+export function musicUrl(path: string): string | undefined {
+  if (!supabase || !safeMusicPath(path)) return undefined;
+  return supabase.storage.from("music").getPublicUrl(path).data.publicUrl;
+}
+
+/** Faixas que a casa pode escolher. Vazio se a música está desligada ou não há faixas. */
+export async function fetchMusicCatalog(): Promise<MomentMusic[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("music_catalog");
+  if (error) return [];
+  return normalizeMusicCatalog(data, musicUrl);
+}
+
 /** Momentos no ar, agrupados por casa. Sem conta real ou com erro: lista vazia (o carrossel só some, nada quebra). */
 export async function fetchMomentGroups(): Promise<MomentGroup[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("moments_feed", { p_limit: 40 });
   if (error) return [];
-  return normalizeFeed(data, momentUrl);
+  return normalizeFeed(data, momentUrl, musicUrl);
 }
 
 export interface MyMoment { id: string; kind: "image" | "video"; createdAt: string; expiresAt: string; hidden: boolean; mediaPath: string | null; posterPath: string | null }
@@ -76,7 +90,7 @@ async function removeFiles(paths: (string | null)[]) {
 export interface MomentResult { ok: boolean; error?: string }
 export interface PublishInput {
   ownerId: string; houseId: string; blob: Blob; type: string; poster?: Blob | null; duration?: number | null;
-  caption?: string; link?: { kind: "service" | "event"; id: string } | null;
+  caption?: string; link?: { kind: "service" | "event"; id: string } | null; musicId?: string | null;
 }
 /** Envia o arquivo e cria o momento. Se o banco recusar (plano, limite do dia), apaga o que enviou e devolve o motivo. */
 export async function publishMoment(i: PublishInput): Promise<MomentResult> {
@@ -93,6 +107,7 @@ export async function publishMoment(i: PublishInput): Promise<MomentResult> {
     house_id: i.houseId, media_path: mediaPath, poster_path: posterPath,
     duration_s: video ? Math.max(1, Math.min(MAX_VIDEO_SECONDS + 1, Math.ceil(i.duration ?? 0))) : null,
     caption: i.caption?.trim() || null, link_kind: i.link?.kind ?? null, link_id: i.link?.id ?? null,
+    music_id: !video && i.musicId ? i.musicId : null,
   });
   if (error) {
     await removeFiles([mediaPath, posterPath]);
