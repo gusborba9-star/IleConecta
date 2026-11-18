@@ -8,6 +8,8 @@ Este diretório contém a documentação de autoridade do produto e suas regras 
 - `ROADMAP.md`: sequência de trabalho, dependências, prioridades e critérios de saída.
 - `PROTOCOLO_EXECUCAO_AUDITORIA.md`: regras para ordens, execução, evidências e validação.
 - `REGRAS_DE_TRABALHO_DO_EXECUTOR.md`: padrão obrigatório de confronto da própria criação (fragilidades e vulnerabilidades), melhorias e validação antes de merge/push.
+- `MAPA_TECNICO.md`: mapa do sistema (infraestrutura, código, banco, funções, como mudar, testar e diagnosticar); começar por aqui numa conversa nova.
+- `PLANO_DE_REVERSAO_E_INCIDENTES.md`: reversão por camada e resposta a incidentes.
 - `MATRIZ_CAPACIDADES_PERMISSOES.md`: modelo de capacidades, planos, configurações e autorizações.
 - `../comercial/REGRAS_FINANCEIRAS.md`: preços e regras financeiras aprovadas, além de pendências.
 - `../legal/README.md`: localização e política de exposição dos documentos jurídicos.
