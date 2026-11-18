@@ -30,6 +30,7 @@ import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
 import PromoLimitsCard from "@/components/admin/PromoLimitsCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import AdminModerationCard from "@/components/admin/AdminModerationCard";
+import MomentReportsCard from "@/components/admin/MomentReportsCard";
 import AdminAnnounceCard from "@/components/admin/AdminAnnounceCard";
 import AdminTaxIdCard from "@/components/admin/AdminTaxIdCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
@@ -251,6 +252,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
       {can("moderacao") && <ChatReportsCard />}
       {can("moderacao") && <AdminModerationCard />}
+      {can("moderacao") && <MomentReportsCard />}
 
       {can("comunicacao") && <AdminAnnounceCard />}
       {can("dono") && <AdminTaxIdCard />}

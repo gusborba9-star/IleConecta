@@ -1,0 +1,166 @@
+// Momentos das casas (17/11/2026): carrossel no feed, visualizador em tela cheia, publicar (Essencial: foto; Premium: foto e vídeo), denunciar.
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { api, U, noHScroll } from "./_api.mjs";
+
+const ME = U(1), CASA_A = U(11), CASA_B = U(12), HID = U(60);
+const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
+const house = (plan) => ({ id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan, created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } });
+const now = Date.now();
+const iso = (minAgo) => new Date(now - minAgo * 60000).toISOString();
+const feed = [
+  { owner_id: CASA_A, house_id: U(61), name: "Casa de Oxum", slug: "casa-de-oxum", avatar: null, followed: true, items: [
+    { id: U(101), kind: "image", path: `${CASA_A}/a.jpg`, poster: null, caption: "Gira de hoje às 19h", created_at: iso(30), expires_at: iso(-1410), duration: null, link_kind: null, link_id: null, link_title: null },
+    { id: U(102), kind: "video", path: `${CASA_A}/v.mp4`, poster: `${CASA_A}/p.jpg`, caption: null, created_at: iso(10), expires_at: iso(-1430), duration: 12, link_kind: "event", link_id: U(70), link_title: "Ritual de abertura" } ] },
+  { owner_id: CASA_B, house_id: U(62), name: "Ilê Axé Omolu", slug: "ile-axe-omolu", avatar: null, followed: false, items: [
+    { id: U(103), kind: "image", path: `${CASA_B}/b.jpg`, poster: null, caption: null, created_at: iso(300), expires_at: iso(-1140), duration: null, link_kind: null, link_id: null, link_title: null } ] },
+];
+// 1 pixel PNG para as imagens do bucket (a API simulada devolve JSON para qualquer arquivo)
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+const setup = async (page, type, plan, extra = {}) => {
+  const calls = await api(page, {
+    rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house(plan)] : [], stories: [], services: [], events: [], posts: [], ...(extra.rest ?? {}) },
+    rpc: { moments_feed: feed, report_moment: "ok", report_client_error: true, ...(extra.rpc ?? {}) },
+  });
+  await page.route("**/storage/v1/object/public/moments/**", (r) => r.fulfill({ status: 200, contentType: "image/png", body: PNG }));
+  return calls;
+};
+const png = (name = "foto.png") => ({ name, mimeType: "image/png", buffer: PNG });
+
+test.describe("momentos das casas", () => {
+  test("cliente: vê o carrossel (seguidas primeiro), sem 'Criar momento'; abre em tela cheia e navega", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    const cards = page.getByTestId("moment-card");
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toHaveAttribute("aria-label", /Casa de Oxum/);
+    await expect(page.getByRole("button", { name: /Criar momento/ })).toHaveCount(0);
+    await expect(page.getByText("Momento indisponível")).toHaveCount(0);
+    await cards.first().click();
+    const v = page.getByRole("dialog", { name: "Momentos de Casa de Oxum" });
+    await expect(v).toBeVisible();
+    await expect(v.getByText("Gira de hoje às 19h")).toBeVisible();
+    await expect(v.getByRole("button", { name: "Falar com a casa" })).toBeVisible();
+    await expect(v.getByText(/há 30 min/)).toBeVisible();
+    await page.keyboard.press("ArrowRight"); // vídeo, ligado a um ritual
+    await expect(v.getByRole("button", { name: /Ver ritual: Ritual de abertura/ })).toBeVisible();
+    await page.keyboard.press("ArrowLeft");
+    await expect(v.getByText("Gira de hoje às 19h")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("moment-viewer")).toHaveCount(0);
+    await expect(cards.first()).toHaveAttribute("aria-label", /já vistos|Casa de Oxum/);
+  });
+
+  test("avançar até o fim passa para a próxima casa e fecha no último", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const v = page.getByTestId("moment-viewer");
+    await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("dialog", { name: "Momentos de Ilê Axé Omolu" })).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await expect(v).toHaveCount(0);
+  });
+
+  test("tocar no lado direito avança e no esquerdo volta", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const v = page.getByTestId("moment-viewer");
+    const box = await v.locator("> div").boundingBox();
+    await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5);
+    await expect(v.getByRole("button", { name: /Ver ritual/ })).toBeVisible();
+    await page.mouse.click(box.x + box.width * 0.1, box.y + box.height * 0.5);
+    await expect(v.getByText("Gira de hoje às 19h")).toBeVisible();
+  });
+
+  test("o botão 'voltar' do celular fecha o visualizador sem sair do feed", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    await expect(page.getByTestId("moment-viewer")).toBeVisible();
+    await page.goBack();
+    await expect(page.getByTestId("moment-viewer")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/comunidade/);
+  });
+
+  test("denunciar: escolhe o motivo e o banco recebe a denúncia", async ({ page }) => {
+    const calls = await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").nth(1).click();
+    await page.getByRole("button", { name: "Mais opções" }).click();
+    await page.getByRole("menuitem", { name: "Denunciar" }).click();
+    await page.getByRole("button", { name: "Enviar denúncia" }).click();
+    await expect(page.getByText("Escolha o motivo.")).toBeVisible();
+    await page.getByLabel("Golpe ou fraude").check();
+    await page.getByRole("button", { name: "Enviar denúncia" }).click();
+    await expect(page.getByText(/Denúncia enviada/)).toBeVisible();
+    const c = calls.find((x) => x.kind === "rpc" && x.name === "report_moment");
+    expect(c.body).toEqual({ p_story: U(103), p_reason: "golpe" });
+  });
+
+  test("casa no Grátis: vê o convite para o Essencial, não o botão de criar", async ({ page }) => {
+    await setup(page, "casa", "gratis");
+    await page.goto("/comunidade");
+    await expect(page.getByRole("link", { name: /Momentos a partir do plano Essencial/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Criar momento/ })).toHaveCount(0);
+  });
+
+  test("casa Essencial: só foto; publica e o momento vai para o banco com os campos certos", async ({ page }) => {
+    const calls = await setup(page, "casa", "base", { rest: { services: [{ id: U(80), title: "Jogo de búzios" }] } });
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    const input = page.locator("#moment-file");
+    await expect(input).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    await expect(page.getByText(/Premium/)).toBeVisible();
+    await input.setInputFiles({ name: "clip.mp4", mimeType: "video/mp4", buffer: Buffer.from("x") });
+    await expect(page.getByText(/disponíveis no plano Premium/)).toBeVisible();
+    await input.setInputFiles(png());
+    await expect(page.getByAltText("Prévia do momento")).toBeVisible();
+    await page.getByLabel("Legenda (opcional)").fill("Hoje tem gira!");
+    await page.getByLabel(/Ligar a um serviço/).selectOption({ label: "Serviço: Jogo de búzios" });
+    await page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true }).click();
+    await expect(page.getByText(/Momento publicado/)).toBeVisible();
+    const up = calls.find((x) => x.kind === "storage" && /^moments\//.test(x.name));
+    expect(up.method).toBe("POST");
+    expect(up.name).toMatch(new RegExp(`^moments/${ME}/[a-z0-9]+\\.(webp|jpg)$`));
+    const ins = calls.find((x) => x.kind === "rest" && x.name.startsWith("stories") && x.method === "POST");
+    expect(ins.body).toMatchObject({ house_id: HID, caption: "Hoje tem gira!", link_kind: "service", link_id: U(80), duration_s: null, poster_path: null });
+    expect(ins.body.media_path).toMatch(new RegExp(`^${ME}/[a-z0-9]+\\.(webp|jpg)$`));
+  });
+
+  test("casa Premium: aceita vídeo no seletor", async ({ page }) => {
+    await setup(page, "casa", "maximo");
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    await expect(page.locator("#moment-file")).toHaveAttribute("accept", /video\/mp4/);
+    await expect(page.getByText("Escolher foto ou vídeo (até 30 s)")).toBeVisible();
+  });
+
+  test("se o banco recusar (limite do dia), mostra o motivo, apaga o arquivo enviado e não publica", async ({ page }) => {
+    const calls = await setup(page, "casa", "base", { rest: { stories: (body) => (body ? { status: 400, body: { code: "P0001", message: "Você chegou ao limite de 3 momento(s) por dia do seu plano." } } : []) } });
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    await page.locator("#moment-file").setInputFiles(png());
+    await page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true }).click();
+    await expect(page.getByText(/limite de 3 momento/).first()).toBeVisible();
+    await expect.poll(() => calls.some((x) => x.kind === "storage" && x.method === "DELETE")).toBe(true);
+    await expect(page.getByText(/Momento publicado/)).toHaveCount(0);
+  });
+
+  test("acessibilidade (axe) do carrossel e do visualizador, e sem rolagem horizontal no celular", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await expect(page.getByTestId("moment-card")).toHaveCount(2);
+    await noHScroll(page);
+    const a = await new AxeBuilder({ page }).include('[aria-label="Momentos das casas"]').withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze();
+    expect(a.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
+    await page.getByTestId("moment-card").first().click();
+    await expect(page.getByTestId("moment-viewer")).toBeVisible();
+    const b = await new AxeBuilder({ page }).include('[data-testid="moment-viewer"]').withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze();
+    expect(b.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
+  });
+});

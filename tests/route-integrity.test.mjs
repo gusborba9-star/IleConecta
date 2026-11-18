@@ -44,6 +44,6 @@ test("ids em /casa/ e /mensagens/ nunca vêm do id interno da casa (house_id/hou
 test("conjunto de expressões de id usadas em /casa/ e /mensagens/ é o revisado (novo uso exige revisão)", () => {
   const exprs = new Set();
   for (const f of files) for (const m of readFileSync(f, "utf8").matchAll(/\/(?:casa|mensagens)\/\$\{([^}]*)\}/g)) exprs.add(m[1]);
-  const reviewed = new Set(["item.personId", "house.id", "me", "h.id", "ownerId", "r.ownerId", "o.houseOwnerId", "house?.id", "house.ownerId", "ritual.houseId", "otherId", "oid", "c.otherId", "userId ?? \"\"", "user.id", "peer.id", "other.id", "m.ownerId", "i.houseOwnerId", "encodeURIComponent(ownerUserId)", "currentUser?.id", "currentUser.id", "author?.id"]);
+  const reviewed = new Set(["item.personId", "house.id", "me", "h.id", "ownerId", "r.ownerId", "o.houseOwnerId", "house?.id", "house.ownerId", "ritual.houseId", "otherId", "oid", "c.otherId", "userId ?? \"\"", "user.id", "peer.id", "other.id", "m.ownerId", "i.houseOwnerId", "encodeURIComponent(ownerUserId)", "currentUser?.id", "currentUser.id", "author?.id", "group.ownerId"]);
   assert.deepEqual([...exprs].filter((e) => !reviewed.has(e)), []);
 });

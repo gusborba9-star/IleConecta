@@ -402,6 +402,8 @@ Toda operação valida identidade, vínculo com casa, permissão específica, es
 
 Feed contempla publicações de casas, fotos/vídeos, textos, conteúdo informativo, atividades, eventos e conteúdo impulsionado identificado.
 
+**Momentos (decisão do proprietário, 17/11/2026):** as casas publicam momentos curtos (foto, e vídeo de até 30 segundos no Premium) que aparecem em um carrossel grande no topo do feed e como aro no avatar do perfil da casa; tocar abre em tela cheia, no formato vertical, com barras de progresso, passando de um momento para o outro e de uma casa para a próxima. Só as casas publicam, a partir do plano **Essencial**; clientes só assistem (e podem falar com a casa ou denunciar). O momento fica **visível por 24 horas**; o **arquivo é apagado do armazenamento em 48 horas** (denúncia aberta, ou resolvida há menos de 90 dias, segura o arquivo como prova). Ordem do carrossel: casas que a pessoa segue, depois casas em destaque. A casa pode ligar o momento a um serviço ou ritual dela. Limites por plano na matriz de planos (iniciais: Essencial 3/dia, Profissional 5/dia, Premium 10/dia; vídeo só Premium), editáveis pelo proprietário no painel. Três denúncias de pessoas diferentes escondem o momento até a administração decidir.
+
 Interações, conforme configuração e moderação: curtir, comentar, compartilhar, salvar, seguir casa, abrir perfil e iniciar conversa.
 
 Conteúdos temporários devem respeitar privacidade, moderação, direitos de imagem, regras de publicação e expiração/retensão de mídia.

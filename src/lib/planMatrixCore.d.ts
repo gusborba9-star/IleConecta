@@ -1,6 +1,6 @@
 import type { HousePlanId } from "@/lib/platformConfigCore";
-export type CapNumberKey = "assistant_replies" | "campaign_links" | "campaign_card_styles" | "quick_replies" | "included_seats" | "limit_services" | "limit_rituals" | "limit_posts_month";
-export type CapFlagKey = "assistant_sells" | "assistant_discount" | "chat_media" | "members_area" | "calendar_full" | "campaign_daily_count" | "campaign_insights_full" | "ritual_video" | "styled_posts";
+export type CapNumberKey = "assistant_replies" | "campaign_links" | "campaign_card_styles" | "quick_replies" | "included_seats" | "limit_services" | "limit_rituals" | "limit_posts_month" | "moments_per_day";
+export type CapFlagKey = "assistant_sells" | "assistant_discount" | "chat_media" | "members_area" | "calendar_full" | "campaign_daily_count" | "campaign_insights_full" | "ritual_video" | "styled_posts" | "moment_video";
 export type PlanCaps = Record<CapNumberKey, number> & Record<CapFlagKey, boolean>;
 export interface Benefit { text: string; feature: string | null }
 export interface PlanCopy { tagline: string; benefits: Benefit[] }

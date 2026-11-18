@@ -54,7 +54,7 @@ export default function PlanMatrixCard() {
         <h2 className="font-display font-bold text-lg">Planos: ferramentas, limites e textos</h2>
         <p className="text-sm text-muted-foreground">
           É daqui que o banco, a assistente e a página de planos leem o que cada plano inclui. Nos textos, escreva {"{assistant_replies}"}, {"{campaign_links}"},{" "}
-          {"{campaign_card_styles}"}, {"{quick_replies}"}, {"{included_seats}"}, {"{limit_services}"}, {"{limit_rituals}"} ou {"{limit_posts_month}"} para o número do plano aparecer sozinho. Um item ligado a uma ferramenta só aparece na
+          {"{campaign_card_styles}"}, {"{quick_replies}"}, {"{included_seats}"}, {"{limit_services}"}, {"{limit_rituals}"}, {"{limit_posts_month}"} ou {"{moments_per_day}"} para o número do plano aparecer sozinho. Um item ligado a uma ferramenta só aparece na
           página de planos quando o interruptor dela está ligado (e entra com a marca "Novo"). Preços ficam em outro cartão.
         </p>
       </div>
