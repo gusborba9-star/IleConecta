@@ -13,6 +13,7 @@ const relator = criarRelator({
 
 export function reportClientError(err: unknown) {
   try {
+    if ((window as unknown as { __ileReloading?: boolean }).__ileReloading) return; // página recarregando por versão nova
     relator(err, typeof window !== "undefined" ? window.location.pathname : "");
   } catch {
     /* relatar nunca atrapalha o app */

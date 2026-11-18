@@ -32,7 +32,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
       const h = users.find((u) => u.id === s.houseId);
       if (h?.type !== "commercial") continue;
       const g = by.get(h.id) ?? { ownerId: h.id, houseId: h.id, name: h.name, slug: "", avatar: h.avatar, followed: false, items: [] };
-      g.items.push({ id: s.id, kind: "image", url: s.image, poster: null, caption: s.caption ?? null, createdAt: s.createdAt, expiresAt: new Date(Date.parse(s.createdAt) + 24 * 3600e3).toISOString(), duration: null, link: null });
+      g.items.push({ id: s.id, kind: "image", url: s.image, poster: null, caption: s.caption ?? null, createdAt: s.createdAt, expiresAt: new Date(Date.parse(s.createdAt) + 24 * 3600e3).toISOString(), duration: null, link: null, liked: false, views: null, likes: null, comments: null });
       by.set(h.id, g);
     }
     return [...by.values()];

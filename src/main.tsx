@@ -18,6 +18,7 @@ window.addEventListener("vite:preloadError", (ev) => {
     return;
   }
   ev.preventDefault();
+  (window as unknown as { __ileReloading?: boolean }).__ileReloading = true; // o erro "reading default" que sobra é só da tela antiga: não relatar
   window.location.reload();
 });
 window.addEventListener("load", () => {

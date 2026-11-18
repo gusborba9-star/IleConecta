@@ -58,6 +58,8 @@ export function itemSeconds(item) {
 }
 
 /** Aceita qualquer coisa vinda do banco e devolve grupos válidos (item ou casa estranha some; nunca quebra a tela). */
+const count = (v) => (v === null || v === undefined || !Number.isFinite(Number(v)) || Number(v) < 0 ? null : Math.floor(Number(v)));
+
 export function normalizeFeed(raw, urlFor = (p) => p) {
   const out = [];
   for (const g of Array.isArray(raw) ? raw : []) {
@@ -77,6 +79,9 @@ export function normalizeFeed(raw, urlFor = (p) => p) {
         createdAt: str(i.created_at, 40), expiresAt: str(i.expires_at, 40),
         duration: Number.isFinite(Number(i.duration)) ? Number(i.duration) : null,
         link: linkOk ? { kind: i.link_kind, id: String(i.link_id), title: str(i.link_title, 100) } : null,
+        liked: i.liked === true,
+        // contagens: só vêm para a casa dona do momento (para os outros o banco manda nulo)
+        views: count(i.views), likes: count(i.likes), comments: count(i.comments),
       });
     }
     if (items.length === 0) continue;
@@ -151,3 +156,16 @@ export function expiresInPt(iso, now = Date.now()) {
   if (m < 60) return `${m} min`;
   return `${Math.ceil(m / 60)} h`;
 }
+
+/** Resposta de `moment_stats` (só a casa recebe): contagens, quem curtiu e comentários, com nome. Aceita só o formato esperado. */
+export function normalizeStats(raw) {
+  const r = isRec(raw) ? raw : {};
+  const n = (v) => count(v) ?? 0;
+  const who = (x) => isRec(x) && UUID.test(String(x.user_id));
+  return {
+    views: n(r.views), likes: n(r.likes), commentsCount: n(r.comments_count),
+    likers: (Array.isArray(r.likers) ? r.likers : []).filter(who).map((x) => ({ userId: String(x.user_id), name: str(x.name, 60) || "Alguém", avatar: typeof x.avatar === "string" && /^https:\/\//.test(x.avatar) ? x.avatar : undefined, at: str(x.at, 40) })),
+    comments: (Array.isArray(r.comments) ? r.comments : []).filter((x) => who(x) && UUID.test(String(x.id))).map((x) => ({ id: String(x.id), userId: String(x.user_id), name: str(x.name, 60) || "Alguém", avatar: typeof x.avatar === "string" && /^https:\/\//.test(x.avatar) ? x.avatar : undefined, body: str(x.body, COMMENT_MAX), at: str(x.at, 40) })),
+  };
+}
+export const COMMENT_MAX = 300;
