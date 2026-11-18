@@ -28,7 +28,7 @@ Obs.: o `README.md` da raiz é antigo (protótipo); valem os documentos acima.
 - Marca: `src/components/brand/Logo.tsx`, `scripts/build-icons.mjs` (gera ícones antes de dev/build), `public/brand/`.
 
 ## 4. Banco (Supabase)
-- 164 migrations em `supabase/migrations/NNNN_*.sql`, **só para frente** e idempotentes. 127 tabelas em `public`, **todas com RLS**.
+- 165 migrations em `supabase/migrations/NNNN_*.sql`, **só para frente** e idempotentes. 127 tabelas em `public`, **todas com RLS**.
 - Funções SQL sensíveis são `SECURITY DEFINER` com `set search_path = public`; permissões de dono via `admin_can('dono')`; configurações em `platform_settings` (leitura pública, escrita só por função). Auditoria administrativa em `admin_audit`.
 - Áreas de tabelas: contas/casas (`profiles`, `houses`, `house_*`), conversas (`conversations`, `messages`, `conversation_handoff`), agenda/reservas (`reservations`, `house_availability`, `schedule_proposals`), eventos/rituais, posts/feed, **momentos** (`stories`, `moment_reports`, `moment_views`, `moment_likes`, `moment_comments`, `moment_publish_log`; bucket `moments`, sem acesso direto às tabelas de interação: só por funções), serviços e pedidos, **pagamentos da casa** (`payments`, `payouts`, `ledger_entries`, `refund_*`, `stripe_events`), **cobrança da plataforma** (`platform_*`, `house_billing_*`, `house_card_on_file`), assistente/créditos (`assistants`, `ai_credit_*`, `assistant_*`, `conecta_calls`), suporte (`support_*`), moderação, equipe (`house_staff*`), observabilidade (`system_events`, `health_alerts`, `routine_runs`).
 - **Arquivos (Storage):** `avatars`, `covers`, `post-images` (públicos); `chat-files`, `ritual-records`, `report-evidence` (privados).
