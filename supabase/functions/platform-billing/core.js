@@ -417,7 +417,7 @@ export async function autoCharge({ registry, store, nowMs = Date.now(), limit = 
 
 // ---------- rotina diária ----------
 /** Emite/avisa/suspende (banco), confere no provedor o que ficou sem resposta e completa a tarifa dos pagamentos já feitos. */
-export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), log = console }) {
+export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), log = console, skipAuto = false }) {
   const out = { tick: null, promo: null, auto: null, refunds: null, checked: 0, settled: 0, fees: 0, errors: [] };
   try {
     out.tick = await store.tick();
@@ -436,7 +436,8 @@ export async function sweep({ registry, store, limit = 50, nowMs = Date.now(), l
     out.errors.push(`refund: ${msg(e)}`);
   }
   try {
-    out.auto = await autoCharge({ registry, store, nowMs, log });
+    // Pagamentos em manutenção (interruptor de emergência): não cobra cartões salvos automaticamente; o resto da conferência segue.
+    out.auto = skipAuto ? { skipped: "manutencao", due: 0, approved: 0, declined: 0, pending: 0, errors: [] } : await autoCharge({ registry, store, nowMs, log });
     for (const x of out.auto.errors) out.errors.push(`auto: ${x}`);
   } catch (e) {
     out.errors.push(`auto: ${msg(e)}`);
