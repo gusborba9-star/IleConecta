@@ -1,3 +1,4 @@
+import MaintenanceBanner from "./MaintenanceBanner";
 import SkipLink from "./SkipLink";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -24,6 +25,7 @@ export default function LockedLayout({ gate, plan, children }: { gate: AccountGa
         <Brand size={32} subtitle={false} compact />
         <Button variant="ghost" size="sm" onClick={() => void logout()}><LogOut className="h-4 w-4 mr-1.5" aria-hidden />Sair</Button>
       </header>
+      <MaintenanceBanner />
       <main id="conteudo" tabIndex={-1} className="flex-1 mx-auto w-full max-w-3xl px-3 md:px-6 py-4 outline-none">
         {open ? (
           <>

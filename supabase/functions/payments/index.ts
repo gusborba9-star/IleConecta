@@ -11,6 +11,7 @@ import { CheckoutStateError, DivergenceError, ProviderError, createRegistry } fr
 import { createStripeAdapter } from "./stripeAdapter.js";
 import { createStore, PAYMENT_COLS } from "./store.js";
 import * as core from "./core.js";
+import { maintenanceFor } from "./maintenance.js";
 
 const SECRET = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
@@ -222,6 +223,13 @@ async function webhook(req: Request) {
   return json(r.body, r.status);
 }
 
+/** Mensagem de manutenção dos pagamentos, ou null. Falha de leitura não bloqueia (falha segura). */
+async function maintenanceMessage(): Promise<string | null> {
+  const { data, error } = await admin.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+  if (error) { console.error("maintenance_read", error.message); return null; }
+  return maintenanceFor(data?.value, "payments");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return fail("Método não permitido.", 405);
@@ -232,6 +240,11 @@ Deno.serve(async (req) => {
     const user = await userOf(req);
     if (!user) return fail("Entre na sua conta.", 401);
     const input = (await req.json().catch(() => ({}))) as Obj;
+    // Interruptor de emergência: só começos de pagamento; consulta de estado, conferência e reembolso seguem funcionando.
+    if (input.action === "onboard" || input.action === "checkout") {
+      const m = await maintenanceMessage();
+      if (m) return fail(m, 503);
+    }
     switch (input.action) {
       case "onboard": return await onboard(user.id, user.email);
       case "status": return await refreshStatus(user.id);

@@ -16,6 +16,7 @@ import { fetchMyAssistant } from "@/lib/assistant";
 import type { AccountGate } from "@/lib/accountGateCore";
 import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 import Footer from "./Footer";
+import MaintenanceBanner from "./MaintenanceBanner";
 
 export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
@@ -92,6 +93,7 @@ export default function AppShell() {
     <div className="min-h-screen flex flex-col">
       <SkipLink />
       <TopBar />
+      <MaintenanceBanner />
       {!isRemoteAuth && (
         <div role="status" className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
           Ambiente de demonstração: contas, mensagens, reservas e impulsionamentos usam dados locais neste navegador. Não há autenticação server-side, sincronização entre usuários ou cobrança real.
