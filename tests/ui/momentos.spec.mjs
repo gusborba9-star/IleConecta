@@ -118,6 +118,7 @@ test.describe("momentos das casas", () => {
     await input.setInputFiles({ name: "clip.mp4", mimeType: "video/mp4", buffer: Buffer.from("x") });
     await expect(page.getByText(/disponíveis no plano Premium/)).toBeVisible();
     await input.setInputFiles(png());
+    await page.getByRole("dialog", { name: "Editar momento" }).getByRole("button", { name: "Concluir" }).click();
     await expect(page.getByAltText("Prévia do momento")).toBeVisible();
     await page.getByLabel("Legenda (opcional)").fill("Hoje tem gira!");
     await page.getByLabel(/Ligar a um serviço/).selectOption({ label: "Serviço: Jogo de búzios" });
@@ -144,6 +145,7 @@ test.describe("momentos das casas", () => {
     await page.goto("/comunidade");
     await page.getByRole("button", { name: /Criar momento/ }).click();
     await page.locator("#moment-file").setInputFiles(png());
+    await page.getByRole("dialog", { name: "Editar momento" }).getByRole("button", { name: "Concluir" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true }).click();
     await expect(page.getByText(/limite de 3 momento/).first()).toBeVisible();
     await expect.poll(() => calls.some((x) => x.kind === "storage" && x.method === "DELETE")).toBe(true);
@@ -283,6 +285,7 @@ test.describe("momentos: limite por dia conta o publicado", () => {
     await page.getByRole("button", { name: /Criar momento/ }).click();
     await expect(page.getByText(/chegou ao limite de momentos de hoje/)).toBeVisible();
     await page.locator("#moment-file").setInputFiles(png());
+    await page.getByRole("dialog", { name: "Editar momento" }).getByRole("button", { name: "Concluir" }).click();
     await expect(page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true })).toBeDisabled();
   });
 });

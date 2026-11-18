@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ImagePlus, Video } from "lucide-react";
+import { Camera, ImagePlus, Pencil, Video } from "lucide-react";
 import { Button, Modal, Textarea } from "@/components/base";
 import { CAPTION_MAX, MAX_VIDEO_SECONDS, canPostVideo, isVideoType, remainingToday, validateMomentFile } from "@/lib/momentsCore";
 import { fetchHouseId, fetchLinkChoices, fetchMyMoments, fetchPublishedToday, publishMoment, type LinkChoice } from "@/lib/moments";
 import { toastSaveError } from "@/lib/planGuard";
 import type { PlanCaps } from "@/lib/planMatrixCore";
+import type { EditState } from "@/components/feed/MomentEditor";
+// o editor (fontes, desenho) só é baixado quando a casa escolhe uma foto
+const MomentEditor = lazy(() => import("@/components/feed/MomentEditor"));
 
 interface Prepared { blob: Blob; type: string; previewUrl: string; poster?: Blob; duration?: number }
 
@@ -58,6 +61,10 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const [original, setOriginal] = useState<Blob | null>(null); // foto reduzida, antes das edições
+  const [editing, setEditing] = useState(false);
+  const [editState, setEditState] = useState<EditState | null>(null);
   const video = canPostVideo(caps);
 
   useEffect(() => {
@@ -75,7 +82,7 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
   }, [open, ownerId, caps]);
 
   useEffect(() => () => { if (file) URL.revokeObjectURL(file.previewUrl); }, [file]);
-  const reset = () => { setFile(null); setCaption(""); setLinkKey(""); };
+  const reset = () => { setFile(null); setOriginal(null); setEditing(false); setEditState(null); setCaption(""); setLinkKey(""); };
   const close = () => { if (busy) return; reset(); onClose(); };
 
   const pick = async (f: File | undefined) => {
@@ -88,13 +95,14 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
         const v = await readVideo(f);
         if (!v) return toast.error("Não foi possível ler esse vídeo. Tente outro.");
         if (v.duration > MAX_VIDEO_SECONDS + 0.5) return toast.error("O vídeo pode ter até 30 segundos.");
+        setOriginal(null); setEditState(null);
         setFile({ blob: f, type: f.type, previewUrl: URL.createObjectURL(f), poster: v.poster, duration: v.duration });
       } else {
         const b = await shrinkPhoto(f);
         if (!b) return toast.error("Não foi possível ler essa foto. Tente outra.");
-        setFile({ blob: b, type: b.type, previewUrl: URL.createObjectURL(b) });
+        setFile(null); setEditState(null); setOriginal(b); setEditing(true); // a foto passa pelo editor antes da prévia
       }
-    } finally { setReading(false); if (input.current) input.current.value = ""; }
+    } finally { setReading(false); if (input.current) input.current.value = ""; if (camera.current) camera.current.value = ""; }
   };
 
   const publish = async () => {
@@ -109,7 +117,15 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
   };
 
   return (
-    <Modal open={open} onClose={close} title="Novo momento" maxWidth="max-w-md">
+    <>
+    {open && editing && original && (
+      <Suspense fallback={<div role="status" className="fixed inset-0 z-[80] bg-neutral-950 text-white flex items-center justify-center text-sm">Abrindo o editor…</div>}>
+      <MomentEditor blob={original} initial={editState}
+        onCancel={() => { setEditing(false); if (!file) setOriginal(null); }}
+        onDone={(out, st) => { setEditState(st); setFile({ blob: out, type: out.type, previewUrl: URL.createObjectURL(out) }); setEditing(false); }} />
+      </Suspense>
+    )}
+    <Modal open={open && !editing} onClose={close} title="Novo momento" maxWidth="max-w-md">
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Fica no ar por 24 horas, no topo do feed de quem segue a sua casa.
@@ -121,6 +137,10 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
             <label htmlFor="moment-file" className="flex flex-col items-center justify-center gap-2 h-48 rounded-2xl border-2 border-dashed border-border bg-muted/30 cursor-pointer text-sm font-semibold hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
               {video ? <Video className="h-6 w-6 text-primary" aria-hidden /> : <ImagePlus className="h-6 w-6 text-primary" aria-hidden />}
               {reading ? "Lendo o arquivo…" : video ? "Escolher foto ou vídeo (até 30 s)" : "Escolher uma foto"}
+            </label>
+            <input ref={camera} type="file" className="sr-only" id="moment-camera" accept="image/*" capture="environment" onChange={(e) => void pick(e.target.files?.[0])} />
+            <label htmlFor="moment-camera" className="mt-2 flex items-center justify-center gap-2 h-11 rounded-2xl border border-border text-sm font-semibold cursor-pointer hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
+              <Camera className="h-4 w-4 text-primary" aria-hidden />Tirar uma foto agora
             </label>
             {!video && <p className="text-xs text-muted-foreground mt-2">Momentos em vídeo (até 30 segundos) fazem parte do plano Premium.</p>}
           </div>
@@ -134,8 +154,11 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
               {!isVideoType(file.type) && <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />}
               {!isVideoType(file.type) && caption.trim() && <p className="absolute inset-x-2 bottom-2 text-white text-xs font-medium leading-snug drop-shadow-md break-words">{caption.trim()}</p>}
             </div>
-            <p className="text-center text-xs text-muted-foreground">Assim as pessoas vão ver: a foto inteira, sem cortes, e a legenda embaixo.</p>
-            <Button variant="outline" size="sm" onClick={reset} disabled={busy}>Trocar arquivo</Button>
+            <p className="text-center text-xs text-muted-foreground">Assim as pessoas vão ver. Toque em "Editar foto" para enquadrar, escrever sobre a imagem e usar emojis.</p>
+            <div className="flex flex-wrap gap-2">
+              {original && !isVideoType(file.type) && <Button variant="outline" size="sm" onClick={() => setEditing(true)} disabled={busy}><Pencil className="h-4 w-4" aria-hidden /> Editar foto</Button>}
+              <Button variant="outline" size="sm" onClick={reset} disabled={busy}>Trocar arquivo</Button>
+            </div>
             <div>
               <label htmlFor="moment-caption" className="text-sm font-semibold">Legenda (opcional)</label>
               <Textarea id="moment-caption" value={caption} maxLength={CAPTION_MAX} rows={2} onChange={(e) => setCaption(e.target.value)} placeholder="Uma frase curta" />
@@ -159,5 +182,6 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
         {left === 0 && <p className="text-xs text-destructive">Você chegou ao limite de momentos de hoje. Amanhã libera de novo, ou veja os planos para publicar mais.</p>}
       </div>
     </Modal>
+    </>
   );
 }
