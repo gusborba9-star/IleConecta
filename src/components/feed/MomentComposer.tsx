@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { ImagePlus, Video } from "lucide-react";
 import { Button, Modal, Textarea } from "@/components/base";
 import { CAPTION_MAX, MAX_VIDEO_SECONDS, canPostVideo, isVideoType, remainingToday, validateMomentFile } from "@/lib/momentsCore";
-import { fetchHouseId, fetchLinkChoices, fetchMyMoments, publishMoment, type LinkChoice } from "@/lib/moments";
+import { fetchHouseId, fetchLinkChoices, fetchMyMoments, fetchPublishedToday, publishMoment, type LinkChoice } from "@/lib/moments";
 import { toastSaveError } from "@/lib/planGuard";
 import type { PlanCaps } from "@/lib/planMatrixCore";
 
@@ -67,9 +67,9 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
       const hid = await fetchHouseId(ownerId);
       if (!alive || !hid) return;
       setHouseId(hid);
-      const [mine, links] = await Promise.all([fetchMyMoments(hid), fetchLinkChoices(hid)]);
+      const [mine, links, published] = await Promise.all([fetchMyMoments(hid), fetchLinkChoices(hid), fetchPublishedToday(hid)]);
       if (!alive) return;
-      setLeft(remainingToday(caps, mine.length)); setChoices(links);
+      setLeft(remainingToday(caps, published ?? mine.length)); setChoices(links);
     })();
     return () => { alive = false; };
   }, [open, ownerId, caps]);

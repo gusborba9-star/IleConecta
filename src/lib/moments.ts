@@ -37,6 +37,13 @@ export async function fetchMyMoments(houseId: string): Promise<MyMoment[]> {
   return data.map((r) => ({ id: r.id as string, kind: r.media_kind === "video" ? "video" : "image", createdAt: r.created_at as string, expiresAt: r.expires_at as string, hidden: r.hidden_at != null, mediaPath: (r.media_path as string | null) ?? null, posterPath: (r.poster_path as string | null) ?? null }));
 }
 
+/** Quantos momentos a casa já publicou nas últimas 24 h (apagar não devolve a vaga). Nulo se não der para saber. */
+export async function fetchPublishedToday(houseId: string): Promise<number | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("moments_published_today", { p_house: houseId });
+  return error || typeof data !== "number" || !Number.isFinite(data) || data < 0 ? null : Math.floor(data);
+}
+
 export interface LinkChoice { kind: "service" | "event"; id: string; title: string }
 
 /** Serviços ativos e rituais publicados da casa, para ligar ao momento. */

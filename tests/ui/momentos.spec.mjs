@@ -269,3 +269,20 @@ test.describe("momentos: curtir, comentar e visualizações", () => {
     expect(a.violations.map((x) => x.id + ": " + x.nodes.map((n) => n.target).join(","))).toEqual([]);
   });
 });
+
+test.describe("momentos: limite por dia conta o publicado", () => {
+  test("a vaga vem do registro de publicações (apagar não devolve): 2 publicados no Essencial = sobra 1", async ({ page }) => {
+    await setup(page, "casa", "base", { rpc: { moments_published_today: 2 } });
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    await expect(page.getByText(/ainda pode publicar/)).toContainText("1 momento");
+  });
+  test("3 publicados no Essencial: avisa o limite e trava o botão", async ({ page }) => {
+    await setup(page, "casa", "base", { rpc: { moments_published_today: 3 } });
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    await expect(page.getByText(/chegou ao limite de momentos de hoje/)).toBeVisible();
+    await page.locator("#moment-file").setInputFiles(png());
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true })).toBeDisabled();
+  });
+});
