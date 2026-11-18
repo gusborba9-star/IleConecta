@@ -57,7 +57,7 @@ export default function HouseMembers() {
   }
 
   if (planLoading) return <div className="h-40" aria-busy />;
-  if (!caps?.members_area) return <div className="space-y-4 pb-16 lg:pb-4"><PremiumShowcase kind="members" /></div>;
+  if (!caps?.members_area) return <div className="space-y-4 pb-16 lg:pb-4"><h1 className="sr-only">Membros</h1><PremiumShowcase kind="members" /></div>;
 
   const act = async (fn: () => Promise<string | null>, ok: string) => {
     const err = await fn();

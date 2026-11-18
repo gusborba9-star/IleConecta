@@ -159,7 +159,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
           <Card className="p-5">
             <h2 className="font-display font-bold text-lg mb-2">Onde estão os usuários</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Tabela, role para o lado para ver tudo" tabIndex={0}>
               <table className="w-full text-sm">
                 <thead><tr className="text-left font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground"><th className="py-1 pr-3">País</th><th className="pr-3">Estado</th><th className="pr-3">Cidade</th><th className="pr-3">Contas</th><th>Casas</th></tr></thead>
                 <tbody>

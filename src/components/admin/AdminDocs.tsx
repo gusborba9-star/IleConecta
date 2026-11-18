@@ -36,7 +36,7 @@ function Block({ b }: { b: DocBlock }): ReactNode {
     );
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div className="overflow-x-auto rounded-xl border border-border" role="region" aria-label="Documentos, role para o lado para ver tudo" tabIndex={0}>
       <table className="w-full text-sm">
         <thead className="bg-muted/50"><tr>{b.head.map((h, i) => <th key={i} className="px-3 py-2 text-left font-semibold align-top"><Inline text={h} /></th>)}</tr></thead>
         <tbody>

@@ -16,7 +16,7 @@ export default function PlanCompare({ mine, userId }: { mine: HousePlanId | null
     <Card className="p-4 sm:p-6">
       <h2 className="font-display font-bold text-xl">Compare os planos</h2>
       <p className="text-sm text-muted-foreground mt-1">Veja lado a lado o que cada plano inclui.</p>
-      <div className="mt-4 overflow-x-auto -mx-4 sm:mx-0">
+      <div className="mt-4 overflow-x-auto -mx-4 sm:mx-0" role="region" aria-label="Comparação de planos, role para o lado para ver tudo" tabIndex={0}>
         <table className="w-full min-w-[560px] border-collapse text-sm">
           <thead>
             <tr>

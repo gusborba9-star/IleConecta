@@ -36,7 +36,7 @@ export default function Highlights() {
   if (!currentUser || currentUser.type !== "commercial") {
     return (
       <Card className="p-8 text-center">
-        <div className="font-display text-2xl mb-2">Área exclusiva das casas</div>
+        <h1 className="font-display text-2xl mb-2">Área exclusiva das casas</h1>
         <p className="text-muted-foreground mb-4">Apenas contas de casa podem contratar destaques.</p>
         <Button onClick={() => nav("/")}>Voltar ao feed</Button>
       </Card>

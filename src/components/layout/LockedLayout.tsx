@@ -1,3 +1,4 @@
+import SkipLink from "./SkipLink";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
@@ -18,11 +19,12 @@ export default function LockedLayout({ gate, plan, children }: { gate: AccountGa
   const open = isLockedOpenPath(pathname);
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SkipLink />
       <header className="border-b border-border/60 bg-card/80 px-4 py-3 flex items-center justify-between">
         <Brand size={32} subtitle={false} compact />
         <Button variant="ghost" size="sm" onClick={() => void logout()}><LogOut className="h-4 w-4 mr-1.5" aria-hidden />Sair</Button>
       </header>
-      <main className="flex-1 mx-auto w-full max-w-3xl px-3 md:px-6 py-4">
+      <main id="conteudo" tabIndex={-1} className="flex-1 mx-auto w-full max-w-3xl px-3 md:px-6 py-4 outline-none">
         {open ? (
           <>
             <Link to="/" className="inline-block mb-3 text-sm text-primary hover:underline">← Voltar para a conta</Link>

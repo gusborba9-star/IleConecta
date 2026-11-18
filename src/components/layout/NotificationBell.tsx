@@ -70,6 +70,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   const unread = items.filter((n) => !n.read).length;
 
+  // Esc fecha a lista de notificações (teclado)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const toggle = () => {
     const next = !open;
     setOpen(next);
@@ -91,7 +99,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
       {open && (
         <>
           <button aria-label="Fechar notificações" className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
-          <div className="fixed inset-x-3 top-[4.25rem] sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 z-50 sm:w-80 bg-card border border-border rounded-2xl shadow-altar overflow-hidden animate-fade-in">
+          <div role="region" aria-label="Notificações" className="fixed inset-x-3 top-[4.25rem] sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 z-50 sm:w-80 bg-card border border-border rounded-2xl shadow-altar overflow-hidden animate-fade-in">
             <div className="px-4 py-3 border-b border-border font-semibold text-sm">Notificações</div>
             <div className="max-h-[60vh] overflow-y-auto">
               {items.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma notificação ainda.</div>}

@@ -47,7 +47,7 @@ export default function MoreSheet({ open, onClose, onLogout, groups, isAdmin, us
         {groups.map((g, i) => (
           <div key={i} className="mt-3 px-3">
             {g.title && <div className="px-3 pb-1 text-xs uppercase tracking-widest text-muted-foreground">{g.title}</div>}
-            <nav className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
+            <nav aria-label="Mais opções" className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
               {g.items.map((it) => (
                 <NavLink
                   key={it.to + it.label}

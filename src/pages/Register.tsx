@@ -63,26 +63,26 @@ export default function Register() {
 
   if (pendingEmail) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center space-y-3">
-          <div className="font-display font-bold text-xl">Confirme seu e-mail</div>
+          <h1 className="font-display font-bold text-xl">Confirme seu e-mail</h1>
           <p className="text-sm text-muted-foreground">
             Enviamos um link para <strong>{pendingEmail}</strong>. Abra o e-mail, confirme e volte para entrar.
           </p>
           <Link to="/login" className="text-primary font-semibold hover:underline text-sm">Ir para o login</Link>
         </Card>
-      </div>
+      </main>
     );
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-    <div className="flex-1 flex items-center justify-center p-4">
+    <main className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-6 sm:p-8 shadow-altar">
         <div className="flex items-center gap-3 mb-6">
           <LogoMark size={48} />
           <div>
-            <div className="font-display font-bold text-xl">Criar conta</div>
+            <h1 className="font-display font-bold text-xl">Criar conta</h1>
             <div className="text-xs text-muted-foreground">Escolha o tipo de conta</div>
             {!isRemoteAuth && (
               <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">Protótipo local: use dados fictícios. Não informe senhas reais; a conta não é criada em um servidor.</p>
@@ -142,11 +142,11 @@ export default function Register() {
           {isRemoteAuth && (
             <p className="md:col-span-2 text-xs text-muted-foreground">
               Na primeira entrada você lê e aceita os{" "}
-              <Link to={`/sobre/${type === "commercial" ? "termos-da-casa" : "termos-do-cliente"}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              <Link to={`/sobre/${type === "commercial" ? "termos-da-casa" : "termos-do-cliente"}`} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">
                 {type === "commercial" ? "Termos de Uso da Casa Espiritual" : "Termos de Uso"}
               </Link>{" "}
               e a{" "}
-              <Link to="/sobre/privacidade-lgpd" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</Link>
+              <Link to="/sobre/privacidade-lgpd" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Política de Privacidade</Link>
               , uma única vez.
             </p>
           )}
@@ -156,7 +156,7 @@ export default function Register() {
           </div>
         </form>
       </Card>
-    </div>
+    </main>
     <Footer />
     </div>
   );

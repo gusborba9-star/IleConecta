@@ -244,9 +244,9 @@ export default function RealMessages() {
   return (
     <div ref={rootRef} className="scroll-mt-20">
     <Card className="overflow-hidden sticky top-[4.5rem] h-[calc(100dvh-5.5rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className={cn("border-r border-border overflow-y-auto", otherId && "hidden md:block")}>
+      <aside aria-label="Conversas" className={cn("border-r border-border overflow-y-auto", otherId && "hidden md:block")}>
         <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
-          <h2 className="font-display font-bold text-lg">Mensagens</h2>
+          <h1 className="font-display font-bold text-lg">Mensagens</h1>
         </div>
         {convos.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma conversa ainda. Abra a página de uma casa e toque em Chat.</div>}
         {convos.map((c) => (
