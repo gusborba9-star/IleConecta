@@ -3,11 +3,44 @@ import { toast } from "sonner";
 import { Pause, Play, Trash2 } from "lucide-react";
 import { Button, Card, Input } from "@/components/base";
 import { musicUrl } from "@/lib/moments";
-import { MUSIC_MAX_BYTES } from "@/lib/momentsCore";
-import { addTrack, deleteTrack, fetchMusicAdmin, setMusicEnabled, setTrackActive, updateTrack, type MusicAdminState, type MusicFields, type MusicRow } from "@/lib/musicAdmin";
+import { MUSIC_LICENSES, MUSIC_MAX_BYTES, MUSIC_OCCASIONS, MUSIC_STYLES } from "@/lib/momentsCore";
+import { EMPTY_FIELDS, addTrack, deleteTrack, fetchMusicAdmin, setMusicEnabled, setTrackActive, updateTrack, type MusicAdminState, type MusicFields, type MusicRow } from "@/lib/musicAdmin";
 
-const EMPTY: MusicFields = { title: "", author: "", source: "", license: "", licenseDate: "" };
+const EMPTY: MusicFields = EMPTY_FIELDS;
 const mb = (b: number) => `${(b / 1048576).toFixed(b >= 10485760 ? 0 : 1)} MB`;
+
+
+/** Estilo, ocasiões, voz e licença (usado ao cadastrar e ao editar). */
+function MetaFields({ v, set, id }: { v: MusicFields; set: (f: (x: MusicFields) => MusicFields) => void; id: string }) {
+  const toggleOcc = (k: string) => set((x) => ({ ...x, occasions: x.occasions.includes(k) ? x.occasions.filter((o) => o !== k) : x.occasions.length >= 5 ? x.occasions : [...x.occasions, k] }));
+  const sel = "mt-1 h-11 w-full rounded-[14px] border border-border bg-card px-3 text-sm font-normal";
+  return (
+    <div className="space-y-3">
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="block text-sm font-semibold">Estilo
+          <select aria-label="Estilo da faixa" className={sel} value={v.style} onChange={(e) => set((x) => ({ ...x, style: e.target.value }))}><option value="">Sem estilo</option>{Object.entries(MUSIC_STYLES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        </label>
+        <label className="block text-sm font-semibold">Tipo de licença
+          <select aria-label="Tipo de licença" className={sel} value={v.licenseKind} onChange={(e) => set((x) => ({ ...x, licenseKind: e.target.value }))}><option value="">Não informado</option>{Object.entries(MUSIC_LICENSES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        </label>
+      </div>
+      <fieldset>
+        <legend className="text-sm font-semibold">Ocasiões (até 5)</legend>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {Object.entries(MUSIC_OCCASIONS).map(([k, l]) => (
+            <label key={k} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm cursor-pointer ${v.occasions.includes(k) ? "border-primary bg-primary/10 font-semibold" : "border-border"}`}>
+              <input type="checkbox" className="sr-only" checked={v.occasions.includes(k)} onChange={() => toggleOcc(k)} aria-label={id ? `${l} (${id.slice(0, 4)})` : l} />{l}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" className="h-5 w-5" checked={v.vocal} onChange={(e) => set((x) => ({ ...x, vocal: e.target.checked }))} />Tem voz cantada</label>
+      <label className="block text-sm font-semibold">Link da licença (https://…)
+        <Input className="mt-1 font-normal" value={v.licenseUrl} maxLength={300} inputMode="url" onChange={(e) => set((x) => ({ ...x, licenseUrl: e.target.value }))} />
+      </label>
+    </div>
+  );
+}
 
 /** Biblioteca de músicas dos Momentos (só o proprietário). Faixas livres de direitos, cadastradas por você. */
 export default function MusicLibraryCard() {
@@ -40,7 +73,7 @@ export default function MusicLibraryCard() {
     const r = await addTrack(file, f);
     setBusy(false);
     if (!r.ok) return void toast.error(r.error ?? "Não foi possível cadastrar.");
-    toast.success("Música cadastrada e já disponível para as casas.");
+    if (r.error) toast.error(r.error); else toast.success("Música cadastrada e já disponível para as casas.");
     setFile(null); setF(EMPTY); if (input.current) input.current.value = ""; await load();
   };
   const toggleAll = async (on: boolean) => { if (await setMusicEnabled(on)) { toast.success(on ? "Música ligada para todas as casas." : "Música desligada para todas as casas."); await load(); } else toast.error("Não foi possível alterar agora."); };
@@ -51,7 +84,7 @@ export default function MusicLibraryCard() {
   if (st === "loading") return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Carregando…</p></Card>;
   if (!st) return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Não foi possível carregar agora.</p></Card>;
   const pct = st.max_total_bytes ? Math.min(100, Math.round((st.total_bytes / st.max_total_bytes) * 100)) : 0;
-  const field = (k: keyof MusicFields, label: string, props: React.ComponentProps<typeof Input> = {}) => (
+  const field = (k: "title" | "author" | "source" | "license" | "licenseDate", label: string, props: React.ComponentProps<typeof Input> = {}) => (
     <label className="block text-sm font-semibold">{label}<Input className="mt-1 font-normal" value={f[k]} onChange={(e) => setF((x) => ({ ...x, [k]: e.target.value }))} {...props} /></label>
   );
 
@@ -87,7 +120,8 @@ export default function MusicLibraryCard() {
           {field("source", "Link de onde baixou (https://…)", { maxLength: 300, inputMode: "url" })}
           {field("licenseDate", "Data da conferência da licença", { type: "date" })}
         </div>
-        {field("license", "Observação da licença (ex.: Pixabay Content License)", { maxLength: 300 })}
+        {field("license", "Observação da licença (ex.: CC BY 4.0, baixado do ENDE)", { maxLength: 300 })}
+        <MetaFields v={f} set={setF} id="" />
         <Button onClick={() => void add()} disabled={!file || busy || !f.title.trim() || !f.author.trim()}>{busy ? "Enviando…" : "Cadastrar música"}</Button>
       </div>
 
@@ -103,6 +137,7 @@ export default function MusicLibraryCard() {
               </div>
               <label className="flex items-center gap-2 text-xs font-semibold shrink-0"><input type="checkbox" role="switch" checked={t.active} onChange={() => void toggle(t)} aria-label={`Faixa ${t.title} ligada`} className="h-5 w-5" />{t.active ? "Ligada" : "Desligada"}</label>
             </div>
+            {(t.style || t.occasions?.length > 0 || t.vocal) && <p className="text-xs text-muted-foreground">{[t.style ? MUSIC_STYLES[t.style] : null, ...(t.occasions ?? []).map((o) => MUSIC_OCCASIONS[o]), t.vocal ? "Com voz" : "Instrumental"].filter(Boolean).join(" · ")}</p>}
             {(t.source_url || t.license_note) && <p className="text-xs text-muted-foreground break-words">{t.license_note}{t.source_url && <> · <a href={t.source_url} target="_blank" rel="noopener noreferrer" className="underline">fonte</a></>}</p>}
             {editing === t.id ? (
               <div className="grid sm:grid-cols-2 gap-2">
@@ -111,11 +146,12 @@ export default function MusicLibraryCard() {
                 <Input aria-label="Link da fonte" value={draft.source} maxLength={300} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} />
                 <Input aria-label="Data da licença" type="date" value={draft.licenseDate} onChange={(e) => setDraft((d) => ({ ...d, licenseDate: e.target.value }))} />
                 <Input className="sm:col-span-2" aria-label="Observação da licença" value={draft.license} maxLength={300} onChange={(e) => setDraft((d) => ({ ...d, license: e.target.value }))} />
+                <div className="sm:col-span-2"><MetaFields v={draft} set={setDraft} id={t.id} /></div>
                 <div className="sm:col-span-2 flex gap-2"><Button size="sm" onClick={() => void save(t.id)} disabled={!draft.title.trim() || !draft.author.trim()}>Salvar</Button><Button size="sm" variant="outline" onClick={() => setEditing(null)}>Cancelar</Button></div>
               </div>
             ) : (
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => { setEditing(t.id); setDraft({ title: t.title, author: t.author, source: t.source_url ?? "", license: t.license_note ?? "", licenseDate: t.license_date ?? "" }); }}>Editar</Button>
+                <Button size="sm" variant="outline" onClick={() => { setEditing(t.id); setDraft({ title: t.title, author: t.author, source: t.source_url ?? "", license: t.license_note ?? "", licenseDate: t.license_date ?? "", style: t.style ?? "", occasions: t.occasions ?? [], vocal: t.vocal === true, licenseKind: t.license_kind ?? "", licenseUrl: t.license_url ?? "" }); }}>Editar</Button>
                 <Button size="sm" variant="outline" onClick={() => void del(t)}><Trash2 className="h-4 w-4" aria-hidden /> {confirmDel === t.id ? "Confirmar: apagar" : "Apagar"}</Button>
               </div>
             )}

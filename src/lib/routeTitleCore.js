@@ -2,7 +2,7 @@
 const EXATOS = {
   "/": "Início", "/login": "Entrar", "/register": "Criar conta", "/recuperar-senha": "Recuperar acesso", "/redefinir-senha": "Nova senha",
   "/comunidade": "Comunidade", "/descobrir": "Casas", "/rituais": "Rituais", "/perfil": "Meu perfil", "/mensagens": "Mensagens", "/impulsionar": "Impulsionar",
-  "/destaques": "Destaques", "/planos": "Planos", "/atividade": "Atividade", "/suporte": "Suporte", "/suporte/chamados": "Meus chamados", "/termos": "Termos e normas",
+  "/destaques": "Destaques", "/planos": "Planos", "/atividade": "Atividade", "/suporte": "Suporte", "/suporte/chamados": "Meus chamados", "/termos": "Termos e normas", "/creditos-de-audio": "Créditos de áudio",
   "/moderacao": "Moderação", "/painel/membros": "Membros", "/divulgacao": "Divulgação", "/equipe": "Equipe", "/atendimento": "Atendimento", "/mensalidades": "Mensalidades",
   "/pessoas": "Pessoas", "/admin": "Administração", "/pagamento/retorno": "Pagamento", "/pagamento/conta": "Pagamento",
 };

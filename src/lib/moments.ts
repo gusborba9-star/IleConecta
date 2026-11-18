@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { reportClientError } from "@/lib/clientErrors";
 import { rememberPlanGuard } from "@/lib/planGuard";
-import { extFor, isVideoType, momentPath, normalizeFeed, normalizeMusicCatalog, normalizeStats, safeFilePath, safeMusicPath, MAX_VIDEO_SECONDS, type MomentGroup, type MomentMusic, type MomentStats } from "@/lib/momentsCore";
+import { extFor, isVideoType, momentPath, normalizeFeed, normalizeMusicCatalog, normalizeMusicCredits, normalizeStats, safeFilePath, safeMusicPath, MAX_VIDEO_SECONDS, type MomentGroup, type MomentMusic, type MomentStats, type MusicCredit } from "@/lib/momentsCore";
 
 const BUCKET = "moments";
 
@@ -23,6 +23,12 @@ export async function fetchMusicCatalog(): Promise<MomentMusic[]> {
   const { data, error } = await supabase.rpc("music_catalog");
   if (error) return [];
   return normalizeMusicCatalog(data, musicUrl);
+}
+
+export async function fetchMusicCredits(): Promise<MusicCredit[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("music_credits");
+  return error ? [] : normalizeMusicCredits(data);
 }
 
 /** Momentos no ar, agrupados por casa. Sem conta real ou com erro: lista vazia (o carrossel só some, nada quebra). */

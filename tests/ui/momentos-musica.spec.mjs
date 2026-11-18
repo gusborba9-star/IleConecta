@@ -142,11 +142,93 @@ test.describe("escolher a música ao publicar", () => {
   });
 });
 
+
+test.describe("filtros do seletor de música", () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+  const tr = (n, extra) => ({ id: U(400 + n), title: `Faixa ${n}`, author: `Autor ${n}`, path: `abcd1234ef${String(n).padStart(2, "0")}.mp3`, style: null, occasions: [], vocal: false, ...extra });
+  const big = [tr(1, { title: "Parabéns Alegre", style: "pop", occasions: ["aniversario", "festa"], vocal: true }), tr(2, { title: "Brisa Calma", style: "ambiente", occasions: ["calma"] }), tr(3, { style: "pop", occasions: ["romantica"], vocal: true }), tr(4), tr(5), tr(6), tr(7, { style: "jazz", occasions: ["festa"] })];
+  const photo = async (page) => { const b64 = await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 300; c.height = 200; c.getContext("2d").fillRect(0, 0, 300, 200); return c.toDataURL("image/png").split(",")[1]; }); return { name: "f.png", mimeType: "image/png", buffer: Buffer.from(b64, "base64") }; };
+  const toPreview = async (page) => { await page.goto("/comunidade"); await page.getByRole("button", { name: /Criar momento/ }).click(); await page.locator("#moment-file").setInputFiles(await photo(page)); await page.getByRole("dialog", { name: "Editar momento" }).getByRole("button", { name: "Concluir" }).click(); };
+
+  test("catálogo grande: filtros por estilo, ocasião, voz e busca; só mostra opções que existem", async ({ page }) => {
+    await setup(page, "casa", { catalog: big });
+    await toPreview(page);
+    const f = page.getByTestId("music-filters"); await expect(f).toBeVisible();
+    await expect(f.getByLabel("Estilo da música").locator("option")).toHaveText(["Todos os estilos", "Pop", "Jazz", "Ambiente"]);
+    await expect(f.getByLabel("Ocasião da música").locator("option")).toHaveText(["Todas as ocasiões", "Romântica", "Festa", "Aniversário", "Calma"]);
+    const sel = page.getByLabel("Música (opcional)");
+    await f.getByLabel("Ocasião da música").selectOption("festa");
+    await expect(sel.locator("option")).toHaveText(["Sem música", "Parabéns Alegre — Autor 1 (com voz)", "Faixa 7 — Autor 7"]);
+    await f.getByLabel("Voz").selectOption("sem");
+    await expect(sel.locator("option")).toHaveText(["Sem música", "Faixa 7 — Autor 7"]);
+    await f.getByLabel("Voz").selectOption("");
+    await f.getByLabel("Ocasião da música").selectOption("");
+    await f.getByLabel("Estilo da música").selectOption("pop");
+    await expect(sel.locator("option")).toHaveCount(3);
+    await f.getByLabel("Estilo da música").selectOption("");
+    await f.getByLabel("Buscar música").fill("PARABENS");
+    await expect(sel.locator("option")).toHaveText(["Sem música", "Parabéns Alegre — Autor 1 (com voz)"]);
+    await f.getByLabel("Buscar música").fill("zzz");
+    await expect(page.getByText("Nenhuma música com esses filtros.")).toBeVisible();
+    await noHScroll(page);
+  });
+
+  test("a faixa já escolhida continua na lista mesmo se o filtro a esconder; vai no momento", async ({ page }) => {
+    const calls = await setup(page, "casa", { catalog: big });
+    await toPreview(page);
+    const sel = page.getByLabel("Música (opcional)");
+    await sel.selectOption({ label: "Brisa Calma — Autor 2" });
+    await page.getByLabel("Estilo da música").selectOption("jazz");
+    await expect(sel.locator("option")).toHaveText(["Sem música", "Brisa Calma — Autor 2", "Faixa 7 — Autor 7"]);
+    await page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true }).click();
+    await expect(page.getByText(/Momento publicado/)).toBeVisible();
+    expect(calls.find((x) => x.kind === "rest" && x.name.startsWith("stories") && x.method === "POST").body.music_id).toBe(U(402));
+  });
+
+  test("catálogo pequeno: sem filtros, só a lista", async ({ page }) => {
+    await setup(page, "casa", { catalog: big.slice(0, 3) });
+    await toPreview(page);
+    await expect(page.getByLabel("Música (opcional)")).toBeVisible();
+    await expect(page.getByTestId("music-filters")).toHaveCount(0);
+  });
+});
+
+test.describe("créditos de áudio", () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+  const credits = [
+    { title: "Brisa", author: "Ana", source_url: "https://ende.app/x", license_kind: "cc_by", license_url: "https://creativecommons.org/licenses/by/4.0/", license_note: null },
+    { title: "<img src=x onerror=window.__xss=1>", author: "Beto", source_url: "javascript:window.__xss=1", license_kind: null, license_url: "http://x.com", license_note: "Nota <b>x</b>" },
+  ];
+  test("lista título, autor, licença e fonte com links seguros; texto hostil não executa; sem violações", async ({ page }) => {
+    await setup(page, "cliente", { extra: { rpc: { music_credits: credits } } });
+    await page.goto("/creditos-de-audio");
+    await expect(page.getByRole("heading", { name: "Créditos de áudio" })).toBeVisible();
+    const list = page.getByTestId("audio-credits");
+    await expect(list.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
+    await expect(list.getByRole("link", { name: "Fonte" })).toHaveCount(1);
+    await expect(list.getByRole("link", { name: "Fonte" })).toHaveAttribute("href", "https://ende.app/x");
+    await expect(list).toContainText("<img src=x onerror=window.__xss=1>");
+    await expect(list).toContainText("Nota <b>x</b>");
+    expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+    await noHScroll(page);
+    const r = await new AxeBuilder({ page }).include("[data-testid=audio-credits]").analyze();
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+  test("sem músicas: mensagem clara; e a tela de Termos aponta para os créditos", async ({ page }) => {
+    await setup(page, "cliente", { extra: { rpc: { music_credits: [] } } });
+    await page.goto("/creditos-de-audio");
+    await expect(page.getByText("Nenhuma música disponível no momento.")).toBeVisible();
+    await page.goto("/termos");
+    await page.getByRole("link", { name: "Ver os créditos" }).click();
+    await expect(page).toHaveURL(/creditos-de-audio/);
+  });
+});
+
 test.describe("biblioteca de músicas no painel", () => {
   test.use({ viewport: { width: 375, height: 800 } });
   const track = (n, extra = {}) => ({ id: U(200 + n), title: `Faixa ${n}`, author: "Autora", source_url: "https://pixabay.com/music/x", license_note: "Pixabay Content License", license_date: "2026-11-10", path: `abcd1234efg${n}.mp3`, size_bytes: 3145728, active: true, created_at: "2026-11-17T10:00:00Z", uses: 2, ...extra });
   const state = (extra = {}) => ({ enabled: false, max_total_bytes: 524288000, total_bytes: 6291456, max_count: 300, tracks: [track(1), track(2, { active: false, uses: 0 })], ...extra });
-  const admin = (extra = {}) => ({ rest: { profiles: { ...profile("pessoa"), display_name: "Admin" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [], admin_music_list: state(), admin_music_set_enabled: null, admin_music_set_active: null, admin_music_add: U(300), admin_music_update: null, admin_music_delete: "abcd1234efg2.mp3", ...extra } });
+  const admin = (extra = {}) => ({ rest: { profiles: { ...profile("pessoa"), display_name: "Admin" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [], admin_music_list: state(), admin_music_set_enabled: null, admin_music_set_active: null, admin_music_add: U(300), admin_music_update: null, admin_music_meta: null, admin_music_delete: "abcd1234efg2.mp3", ...extra } });
   const open = async (page, a = admin()) => { const calls = await api(page, a); await page.route("**/storage/v1/object/public/music/**", (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: wav })); await page.goto("/admin?s=config"); await expect(page.getByRole("heading", { name: "Biblioteca de músicas" })).toBeVisible(); return calls; };
   const mp3 = (name = "faixa.mp3", size = 2048) => ({ name, mimeType: "audio/mpeg", buffer: Buffer.alloc(size, 1) });
 
@@ -226,6 +308,51 @@ test.describe("biblioteca de músicas no painel", () => {
     await expect(page.getByText("Faixa apagada.")).toBeVisible();
     expect(calls.find((c) => c.name === "admin_music_delete").body).toEqual({ p_id: U(202) });
     await expect.poll(() => calls.some((c) => c.kind === "storage" && c.method === "DELETE" && c.body?.prefixes?.includes("abcd1234efg2.mp3"))).toBe(true);
+  });
+
+
+  test("cadastrar e editar: estilo, ocasiões, voz e licença vão para o banco; mais de 5 ocasiões não deixa marcar", async ({ page }) => {
+    const calls = await open(page);
+    await page.locator("input[type=file]").setInputFiles(mp3());
+    await page.getByLabel("Título", { exact: true }).first().fill("Parabéns");
+    await page.getByLabel("Autor(a)").fill("Ana");
+    const card = page.getByTestId("music-library");
+    const add = card.locator("div.border-dashed");
+    await add.getByLabel("Estilo da faixa").selectOption("pop");
+    await add.getByLabel("Tipo de licença").selectOption("cc_by");
+    await add.getByLabel("Link da licença (https://…)").fill("https://creativecommons.org/licenses/by/4.0/");
+    await add.getByLabel("Tem voz cantada").check();
+    for (const o of ["Romântica", "Festa", "Aniversário", "Cerimônia", "Calma"]) await add.getByLabel(o, { exact: true }).check({ force: true });
+    await add.getByLabel("Passeio", { exact: true }).click({ force: true });
+    await expect(add.getByLabel("Passeio", { exact: true })).not.toBeChecked(); // o 6º não entra
+    await page.getByRole("button", { name: "Cadastrar música" }).click();
+    await expect(page.getByText(/Música cadastrada/)).toBeVisible();
+    const meta = calls.find((c) => c.name === "admin_music_meta").body;
+    expect(meta).toEqual({ p_id: U(300), p_style: "pop", p_occasions: ["romantica", "festa", "aniversario", "cerimonia", "calma"], p_vocal: true, p_license_kind: "cc_by", p_license_url: "https://creativecommons.org/licenses/by/4.0/" });
+  });
+
+  test("link de licença sem https é recusado antes de enviar", async ({ page }) => {
+    const calls = await open(page);
+    await page.locator("input[type=file]").setInputFiles(mp3());
+    await page.getByLabel("Título", { exact: true }).first().fill("T"); await page.getByLabel("Autor(a)").fill("A");
+    await page.getByLabel("Link da licença (https://…)").first().fill("javascript:alert(1)");
+    await page.getByRole("button", { name: "Cadastrar música" }).click();
+    await expect(page.getByText("O link da licença precisa começar com https://").first()).toBeVisible();
+    expect(calls.some((c) => c.kind === "storage" || c.name === "admin_music_add")).toBe(false);
+  });
+
+  test("a lista mostra estilo, ocasiões e voz; editar abre os campos já preenchidos", async ({ page }) => {
+    const calls = await open(page, admin({ admin_music_list: state({ tracks: [track(1, { style: "pop", occasions: ["festa"], vocal: true, license_kind: "cc0", license_url: "https://creativecommons.org/publicdomain/zero/1.0/" })] }) }));
+    await expect(page.getByText("Pop · Festa · Com voz")).toBeVisible();
+    await page.getByRole("button", { name: "Editar" }).click();
+    const li = page.getByRole("listitem").filter({ hasText: "Faixa 1" });
+    await expect(li.getByLabel("Estilo da faixa")).toHaveValue("pop");
+    await expect(li.getByLabel("Tipo de licença")).toHaveValue("cc0");
+    await expect(li.getByLabel("Tem voz cantada")).toBeChecked();
+    await li.getByLabel("Estilo da faixa").selectOption("jazz");
+    await li.getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByText("Faixa atualizada.")).toBeVisible();
+    expect(calls.find((c) => c.name === "admin_music_meta").body).toMatchObject({ p_id: U(201), p_style: "jazz", p_vocal: true, p_license_kind: "cc0" });
   });
 
   test("texto hostil nos campos da faixa aparece como texto", async ({ page }) => {

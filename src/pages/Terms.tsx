@@ -109,6 +109,12 @@ export default function Terms() {
         </Card>
       )}
 
+      <Card className="p-5">
+        <h2 className="font-display font-bold text-lg mb-1">Créditos de áudio</h2>
+        <p className="text-sm text-muted-foreground mb-2">Autoria e licença das músicas oferecidas nos Momentos.</p>
+        <Link to="/creditos-de-audio" className="text-sm font-semibold text-primary hover:underline">Ver os créditos</Link>
+      </Card>
+
       {GROUPS.map((g) => {
         const pages = g.slugs.map((s) => INFO_PAGES.find((p) => p.slug === s)).filter((p) => p !== undefined);
         return (

@@ -6,7 +6,7 @@ import { CAPTION_MAX, MAX_VIDEO_SECONDS, canPostVideo, isVideoType, remainingTod
 import { fetchHouseId, fetchLinkChoices, fetchMusicCatalog, fetchMyMoments, fetchPublishedToday, publishMoment, type LinkChoice } from "@/lib/moments";
 import { toastSaveError } from "@/lib/planGuard";
 import type { PlanCaps } from "@/lib/planMatrixCore";
-import type { MomentMusic } from "@/lib/momentsCore";
+import { MUSIC_OCCASIONS, MUSIC_STYLES, filterMusic, type MomentMusic } from "@/lib/momentsCore";
 import type { EditState } from "@/components/feed/MomentEditor";
 // o editor (fontes, desenho) só é baixado quando a casa escolhe uma foto
 const MomentEditor = lazy(() => import("@/components/feed/MomentEditor"));
@@ -69,8 +69,12 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
   const [catalog, setCatalog] = useState<MomentMusic[]>([]);
   const [musicId, setMusicId] = useState("");
   const [listening, setListening] = useState(false);
+  const [mf, setMf] = useState({ style: "", occasion: "", voice: "" as "" | "com" | "sem", q: "" });
   const audio = useRef<HTMLAudioElement | null>(null);
   const video = canPostVideo(caps);
+  const shown = (() => { const l = filterMusic(catalog, mf); const sel = catalog.find((c) => c.id === musicId); return sel && !l.some((c) => c.id === sel.id) ? [sel, ...l] : l; })();
+  const styles = Object.keys(MUSIC_STYLES).filter((k) => catalog.some((c) => c.style === k));
+  const occasions = Object.keys(MUSIC_OCCASIONS).filter((k) => catalog.some((c) => c.occasions.includes(k)));
 
   useEffect(() => {
     if (!open) return;
@@ -103,7 +107,7 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
     void a.play().then(() => setListening(true)).catch(() => setListening(false));
   };
   useEffect(() => () => { if (file) URL.revokeObjectURL(file.previewUrl); }, [file]);
-  const reset = () => { stopAudio(); setMusicId(""); setFile(null); setOriginal(null); setEditing(false); setEditState(null); setCaption(""); setLinkKey(""); };
+  const reset = () => { stopAudio(); setMusicId(""); setMf({ style: "", occasion: "", voice: "", q: "" }); setFile(null); setOriginal(null); setEditing(false); setEditState(null); setCaption(""); setLinkKey(""); };
   const close = () => { if (busy) return; reset(); onClose(); };
 
   const pick = async (f: File | undefined) => {
@@ -188,13 +192,28 @@ export default function MomentComposer({ open, onClose, ownerId, caps, onPublish
             {catalog.length > 0 && !isVideoType(file.type) && (
               <div>
                 <label htmlFor="moment-music" className="text-sm font-semibold">Música (opcional)</label>
-                <div className="mt-1 flex gap-2">
+                {catalog.length > 6 && (
+                  <div className="mt-1 grid grid-cols-2 gap-2" data-testid="music-filters">
+                    <select aria-label="Estilo da música" value={mf.style} onChange={(e) => setMf((x) => ({ ...x, style: e.target.value }))} className="h-10 rounded-[14px] border border-border bg-card px-2 text-sm">
+                      <option value="">Todos os estilos</option>{styles.map((k) => <option key={k} value={k}>{MUSIC_STYLES[k]}</option>)}
+                    </select>
+                    <select aria-label="Ocasião da música" value={mf.occasion} onChange={(e) => setMf((x) => ({ ...x, occasion: e.target.value }))} className="h-10 rounded-[14px] border border-border bg-card px-2 text-sm">
+                      <option value="">Todas as ocasiões</option>{occasions.map((k) => <option key={k} value={k}>{MUSIC_OCCASIONS[k]}</option>)}
+                    </select>
+                    <select aria-label="Voz" value={mf.voice} onChange={(e) => setMf((x) => ({ ...x, voice: e.target.value as "" | "com" | "sem" }))} className="h-10 rounded-[14px] border border-border bg-card px-2 text-sm">
+                      <option value="">Com ou sem voz</option><option value="com">Com voz</option><option value="sem">Só instrumental</option>
+                    </select>
+                    <input type="search" aria-label="Buscar música" placeholder="Buscar título ou autor" value={mf.q} maxLength={60} onChange={(e) => setMf((x) => ({ ...x, q: e.target.value }))} className="h-10 rounded-[14px] border border-border bg-card px-3 text-sm min-w-0" />
+                  </div>
+                )}
+                <div className="mt-2 flex gap-2">
                   <select id="moment-music" value={musicId} onChange={(e) => { stopAudio(); setMusicId(e.target.value); }} className="flex-1 min-w-0 h-11 rounded-[14px] border border-border bg-card px-3 text-sm">
                     <option value="">Sem música</option>
-                    {catalog.map((c) => <option key={c.id} value={c.id}>{c.title}{c.author ? ` — ${c.author}` : ""}</option>)}
+                    {shown.map((c) => <option key={c.id} value={c.id}>{c.title}{c.author ? ` — ${c.author}` : ""}{c.vocal ? " (com voz)" : ""}</option>)}
                   </select>
                   <button type="button" onClick={listen} disabled={!musicId} aria-label={listening ? "Parar a música" : "Ouvir a música"} className="h-11 w-11 shrink-0 rounded-[14px] border border-border grid place-items-center disabled:opacity-40">{listening ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}</button>
                 </div>
+                {catalog.length > 6 && shown.filter((c) => c.id !== musicId).length === 0 && <p className="text-xs text-muted-foreground mt-1">Nenhuma música com esses filtros.</p>}
                 {musicId && <p className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1"><Music className="h-3 w-3" aria-hidden /> Toca enquanto a foto aparece. Quem assiste pode silenciar.</p>}
               </div>
             )}

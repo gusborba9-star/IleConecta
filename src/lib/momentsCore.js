@@ -78,11 +78,34 @@ export const musicExt = (file) => {
   const t = String(file?.type ?? ""); if (MUSIC_TYPES[t]) return MUSIC_TYPES[t];
   const e = String(file?.name ?? "").toLowerCase().split(".").pop(); return ["mp3", "m4a", "ogg"].includes(e) ? e : null;
 };
+/** Estilos e ocasiões (18/11/2026): o banco só confere o formato do código; os nomes e a lista moram aqui, para crescer sem mexer no banco. */
+export const MUSIC_STYLES = { pop: "Pop", rock: "Rock", mpb: "MPB", sertanejo: "Sertanejo", samba: "Samba e pagode", forro: "Forró", jazz: "Jazz", classico: "Clássico", eletronica: "Eletrônica", folk: "Folk e acústico", mundo: "Música do mundo", ambiente: "Ambiente" };
+export const MUSIC_OCCASIONS = { romantica: "Romântica", festa: "Festa", aniversario: "Aniversário", cerimonia: "Cerimônia", calma: "Calma", passeio: "Passeio", familia: "Família", natal: "Natal", alegre: "Alegre" };
+export const MUSIC_LICENSES = { cc0: "CC0 (domínio público)", cc_by: "CC BY 4.0", dominio_publico: "Domínio público", outra: "Outra" };
+const knownStyle = (v) => (typeof v === "string" && Object.hasOwn(MUSIC_STYLES, v) ? v : null);
+const knownOccasions = (v) => (Array.isArray(v) ? [...new Set(v.filter((x) => typeof x === "string" && Object.hasOwn(MUSIC_OCCASIONS, x)))].slice(0, 5) : []);
 const musicOf = (m, musicUrlFor) => {
   if (!isRec(m) || !UUID.test(String(m.id))) return null;
   const path = safeMusicPath(m.path); const url = path && musicUrlFor ? musicUrlFor(path) : null;
-  return url ? { id: String(m.id), title: str(m.title, 80) || "Música", author: str(m.author, 80), url } : null;
+  return url ? { id: String(m.id), title: str(m.title, 80) || "Música", author: str(m.author, 80), url, style: knownStyle(m.style), occasions: knownOccasions(m.occasions), vocal: m.vocal === true } : null;
 };
+/** Filtra o catálogo no seletor da casa: estilo, ocasião, com voz/instrumental e busca por título ou autor (sem acento, sem maiúscula). */
+export function filterMusic(list, f = {}) {
+  const norm = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const q = norm(f.q).trim();
+  return (Array.isArray(list) ? list : []).filter((m) =>
+    (!f.style || m.style === f.style) && (!f.occasion || m.occasions.includes(f.occasion))
+    && (f.voice !== "com" || m.vocal) && (f.voice !== "sem" || !m.vocal)
+    && (!q || norm(`${m.title} ${m.author}`).includes(q)));
+}
+/** Créditos de áudio (página pública para quem está logado): só texto e links https. */
+export function normalizeMusicCredits(raw) {
+  const https = (u) => (typeof u === "string" && /^https:\/\/[^\s<>"]+$/.test(u) && u.length <= 300 ? u : null);
+  return (Array.isArray(raw) ? raw : []).filter(isRec).slice(0, 300).map((t) => ({
+    title: str(t.title, 80) || "Música", author: str(t.author, 80), source: https(t.source_url), licenseUrl: https(t.license_url),
+    license: typeof t.license_kind === "string" && Object.hasOwn(MUSIC_LICENSES, t.license_kind) ? MUSIC_LICENSES[t.license_kind] : str(t.license_note, 120),
+  }));
+}
 /** Catálogo para a casa escolher (só faixas válidas). */
 export function normalizeMusicCatalog(raw, musicUrlFor) {
   return (Array.isArray(raw) ? raw : []).map((m) => musicOf(m, musicUrlFor)).filter(Boolean).slice(0, 300);
