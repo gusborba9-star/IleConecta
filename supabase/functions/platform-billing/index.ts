@@ -56,7 +56,10 @@ Deno.serve(async (req) => {
     if (req.headers.get("x-platform-billing-secret")) {
       const { data: okSecret } = await admin.rpc("check_platform_billing_cron_secret", { p_secret: req.headers.get("x-platform-billing-secret") ?? "" });
       if (okSecret !== true) return fail("Não autorizado.", 401);
-      return json(await core.sweep({ registry, store }));
+      // Pagamentos em manutenção: a conferência segue (webhooks, reembolsos, faturas abertas), mas não cobra cartões salvos.
+      const { data: mrow, error: merr } = await admin.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+      if (merr) console.error("maintenance_read", merr.message);
+      return json(await core.sweep({ registry, store, skipAuto: !merr && maintenanceFor(mrow?.value, "payments") !== null }));
     }
     const user = await userOf(req);
     if (!user) return fail("Entre na sua conta.", 401);

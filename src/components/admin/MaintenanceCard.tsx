@@ -52,7 +52,7 @@ export default function MaintenanceCard() {
       <h2 className="font-display font-bold text-lg flex items-center gap-2"><Siren className="h-5 w-5 text-primary" /> Interruptor de emergência</h2>
       <p className="text-sm text-muted-foreground">Use quando algo estiver errado e for preciso parar um módulo enquanto o problema é corrigido. Os usuários veem um aviso de manutenção em vez de erro. Nada é apagado.</p>
       {row("assistant", "Assistente (IA)", "Assistente das casas e Conecta. Os usuários recebem o aviso no lugar da resposta.")}
-      {row("payments", "Pagamentos", "Novos pagamentos, assinaturas, créditos e impulsionamentos. Reembolsos, webhooks e conferências do Stripe seguem funcionando.")}
+      {row("payments", "Pagamentos", "Impede novos pagamentos, assinaturas, créditos e impulsionamentos e pausa a cobrança automática do cartão salvo. Quem já abriu a página do Stripe ainda consegue pagar, e o pagamento é registrado. Reembolsos, avisos (webhooks) e conferências do Stripe seguem funcionando.")}
       <div>
         <label htmlFor="maint-msg" className="text-sm font-medium">Mensagem para os usuários (opcional)</label>
         <Textarea id="maint-msg" rows={2} maxLength={200} value={state.message} onChange={(e) => setState({ ...state, message: e.target.value })}
