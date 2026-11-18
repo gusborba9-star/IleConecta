@@ -1,5 +1,11 @@
 import type { PlanCaps } from "@/lib/planMatrixCore";
-export interface MomentMusic { id: string; title: string; author: string; url: string }
+export interface MomentMusic { id: string; title: string; author: string; url: string; style: string | null; occasions: string[]; vocal: boolean }
+export interface MusicCredit { title: string; author: string; source: string | null; licenseUrl: string | null; license: string }
+export declare const MUSIC_STYLES: Record<string, string>;
+export declare const MUSIC_OCCASIONS: Record<string, string>;
+export declare const MUSIC_LICENSES: Record<string, string>;
+export declare function filterMusic(list: MomentMusic[], f?: { style?: string; occasion?: string; voice?: "" | "com" | "sem"; q?: string }): MomentMusic[];
+export declare function normalizeMusicCredits(raw: unknown): MusicCredit[];
 export type MomentKind = "image" | "video";
 export interface MomentLink { kind: "service" | "event"; id: string; title: string }
 export interface MomentItem { id: string; kind: MomentKind; url: string; poster: string | null; caption: string | null; createdAt: string; expiresAt: string; duration: number | null; link: MomentLink | null; liked: boolean; music: MomentMusic | null; views: number | null; likes: number | null; comments: number | null }

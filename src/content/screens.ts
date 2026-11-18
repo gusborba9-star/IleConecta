@@ -14,6 +14,7 @@ export const SCREENS: Screen[] = [
   { path: "/divulgacao", name: "Divulgação", what: "Divulgar a casa.", audience: "casa" },
   { path: "/impulsionar", name: "Impulsionar", what: "Impulsionar publicações ou a casa.", audience: "casa" },
   { path: "/destaques", name: "Destaques", what: "Destaques nos feeds.", audience: "casa" },
+  { path: "/creditos-de-audio", name: "Créditos de áudio", what: "Autoria e licença de cada música oferecida nos Momentos.", audience: "todos" },
   { path: "/termos", name: "Termos e normas", what: "Todos os documentos, seus aceites e a autorização de dados sensíveis.", audience: "todos" },
   { path: "/suporte", name: "Suporte", what: "Relatar ocorrência, Meus chamados, baixar meus dados e excluir a conta.", audience: "todos" },
   { path: "/suporte/chamados", name: "Meus chamados", what: "Acompanhar chamados, responder à equipe e enviar fotos ou documentos (só se você escolher).", audience: "todos" },

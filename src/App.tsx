@@ -29,6 +29,7 @@ const MyCases = lazy(() => import("@/pages/MyCases"));
 const ForgotPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ResetPassword })));
 const Terms = lazy(() => import("@/pages/Terms"));
+const AudioCredits = lazy(() => import("@/pages/AudioCredits"));
 const Moderation = lazy(() => import("@/pages/Moderation"));
 const HouseMembers = lazy(() => import("@/pages/HouseMembers"));
 const Divulgacao = lazy(() => import("@/pages/Divulgacao"));
@@ -118,6 +119,7 @@ export default function App() {
         <Route path="/suporte/chamados" element={<MyCases />} />
         <Route path="/suporte/chamados/:id" element={<MyCases />} />
         <Route path="/termos" element={<Terms />} />
+        <Route path="/creditos-de-audio" element={<AudioCredits />} />
         <Route path="/moderacao" element={<Moderation />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
         <Route path="/divulgacao" element={<Divulgacao />} />
