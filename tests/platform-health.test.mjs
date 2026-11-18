@@ -99,3 +99,17 @@ test("leitura: can_run, alerta visto e execuções manuais; lixo vira valor segu
   assert.equal(h.manualRuns[1].note.length, 200);
   assert.deepEqual(readHealth(null).manualRuns, []);
 });
+
+test("manutenção ligada: leitura segura, deixa o status em atenção e tem orientação própria", async () => {
+  const { describeAlert } = await import("../src/lib/platformHealthCore.js");
+  const base = readHealth({});
+  assert.deepEqual(base.maintenance, { assistant: false, payments: false, since: null });
+  assert.equal(overallStatus(base), "ok");
+  const on = readHealth({ maintenance: { assistant: "true", payments: true, since: "lixo" } });
+  assert.deepEqual(on.maintenance, { assistant: false, payments: true, since: null }, "só true exato conta; data inválida vira null");
+  assert.equal(overallStatus(on), "atencao");
+  const d = describeAlert("manutencao_ligada");
+  assert.match(d.title, /manutenção/i);
+  assert.equal(d.who, "voce");
+  assert.ok(d.steps.length >= 2);
+});

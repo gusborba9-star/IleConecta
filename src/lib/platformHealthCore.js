@@ -23,6 +23,7 @@ export function readHealth(raw) {
     cron,
     db: { sizeBytes: num(r.db?.size_bytes), connections: num(r.db?.connections) },
     alerts: (Array.isArray(r.alerts) ? r.alerts : []).slice(0, 50).map((a) => ({ code: txt(a?.code, 120), since: iso(a?.since), seenAt: iso(a?.seen_at) })),
+    maintenance: { assistant: r.maintenance?.assistant === true, payments: r.maintenance?.payments === true, since: iso(r.maintenance?.since) },
     manualRuns: (Array.isArray(r.manual_runs) ? r.manual_runs : []).slice(0, 5).map((m) => ({ routine: txt(m?.routine, 80), at: iso(m?.at), ok: m?.ok === true, note: txt(m?.note, 200) || null })),
   };
 }
@@ -31,7 +32,7 @@ export function readHealth(raw) {
 export function overallStatus(h) {
   const falhando = h.cron.some((c) => c.failed30 > 0);
   const erros1h = h.lastHour.erro_app + h.lastHour.ia_falha + h.lastHour.funcao_erro;
-  if (h.alerts.length > 0 || falhando) return "atencao";
+  if (h.alerts.length > 0 || falhando || h.maintenance.assistant || h.maintenance.payments) return "atencao";
   return erros1h > 0 ? "observar" : "ok";
 }
 
@@ -97,6 +98,9 @@ export function cronWhen(schedule) {
 /** Orientação em português para cada tipo de problema: quem resolve e o que fazer. who: "claude" (me chame), "voce" (ação sua), "ambos" (você confere, depois me chama). */
 export function describeAlert(code) {
   const [tipo, alvo = ""] = String(code ?? "").split(":");
+  if (tipo === "manutencao_ligada") return { title: "A manutenção está ligada há mais de 1 hora", who: "voce", routine: null, steps: [
+    "Se o problema já foi resolvido, desligue as chaves em “Interruptor de emergência” (logo abaixo desta tela).",
+    "Se ainda não foi resolvido, me chame: enquanto estiver ligada, os usuários veem o aviso de manutenção." ] };
   if (tipo === "cron_falhou") return { title: `A rotina "${alvo}" falhou`, who: "ambos", routine: alvo, steps: [
     "Toque em “Rodar agora” nessa rotina (na lista abaixo). Se foi oscilação, ela volta ao normal.",
     "Se falhar de novo, me mande um print desta tela: é defeito e eu corrijo." ] };

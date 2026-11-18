@@ -62,6 +62,13 @@ export default function PlatformHealthCard() {
             {h.alerts.length > 0 && <span className="text-xs text-muted-foreground">{h.alerts.length} alerta{h.alerts.length === 1 ? "" : "s"} em aberto</span>}
           </div>
 
+          {(h.maintenance.assistant || h.maintenance.payments) && (
+            <p role="status" className="rounded-xl border border-amber-300/70 bg-amber-100 px-3 py-2 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+              <strong>Manutenção ligada:</strong> {[h.maintenance.assistant ? "assistente" : null, h.maintenance.payments ? "pagamentos" : null].filter(Boolean).join(" e ")}
+              {h.maintenance.since ? `, ${ago(h.maintenance.since)}` : ""}. Os usuários estão vendo o aviso. Desligue no card “Interruptor de emergência” quando resolver.
+            </p>
+          )}
+
           {h.alerts.length > 0 && (
             <section aria-label="Alertas em aberto">
               <h3 className="text-sm font-semibold mb-1">Alertas em aberto</h3>

@@ -201,3 +201,20 @@ test.describe("ações do dono no cartão", () => {
     await noHScroll(page);
   });
 });
+
+test.describe("manutenção ligada aparece na saúde da plataforma", () => {
+  const sem = { ...HEALTH, last_hour: {}, last_24h: {}, top: [], alerts: [], cron: [HEALTH.cron[0]] };
+  const setup = (page, health) => api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: health } });
+  test("com manutenção: linha de aviso e status 'Precisa de atenção'; sem manutenção: nada", async ({ page }) => {
+    await setup(page, { ...sem, maintenance: { assistant: false, payments: true, since: ago(2 * 3600000) } });
+    await page.goto("/admin");
+    await expect(page.getByText("Manutenção ligada:")).toBeVisible();
+    await expect(page.getByText(/pagamentos, há 2 h/)).toBeVisible();
+    await expect(page.getByText("Precisa de atenção")).toBeVisible();
+    const p2 = await page.context().newPage();
+    await setup(p2, { ...sem, maintenance: { assistant: false, payments: false, since: null } });
+    await p2.goto("/admin");
+    await expect(p2.getByText("Tudo certo")).toBeVisible();
+    await expect(p2.getByText("Manutenção ligada:")).toHaveCount(0);
+  });
+});
