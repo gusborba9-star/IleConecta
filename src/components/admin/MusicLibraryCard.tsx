@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { Pause, Play, Trash2 } from "lucide-react";
 import { Button, Card, Input } from "@/components/base";
 import { musicUrl } from "@/lib/moments";
-import { MUSIC_LICENSES, MUSIC_MAX_BYTES, MUSIC_OCCASIONS, MUSIC_STYLES } from "@/lib/momentsCore";
+import { MUSIC_LICENSES, MUSIC_MAX_BYTES, MUSIC_OCCASIONS, MUSIC_STYLES, licenseGap } from "@/lib/momentsCore";
+import { readFileTags } from "@/lib/audioTags";
 import { EMPTY_FIELDS, addTrack, deleteTrack, fetchMusicAdmin, setMusicEnabled, setTrackActive, updateTrack, type MusicAdminState, type MusicFields, type MusicRow } from "@/lib/musicAdmin";
 
 const EMPTY: MusicFields = EMPTY_FIELDS;
@@ -67,6 +68,12 @@ export default function MusicLibraryCard() {
     void a.play().then(() => setPlaying(t.id)).catch(() => setPlaying(null));
   };
 
+  const pickFile = async (picked: File | null) => {
+    setFile(picked);
+    if (!picked) return;
+    const tags = await readFileTags(picked); // preenche só o que está vazio; você confere e corrige
+    setF((x) => ({ ...x, title: x.title.trim() ? x.title : tags.title, author: x.author.trim() ? x.author : tags.author }));
+  };
   const add = async () => {
     if (!file) return;
     setBusy(true);
@@ -83,6 +90,7 @@ export default function MusicLibraryCard() {
 
   if (st === "loading") return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Carregando…</p></Card>;
   if (!st) return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Não foi possível carregar agora.</p></Card>;
+  const incomplete = st.tracks.filter((t) => t.active && licenseGap(t).length > 0);
   const pct = st.max_total_bytes ? Math.min(100, Math.round((st.total_bytes / st.max_total_bytes) * 100)) : 0;
   const field = (k: "title" | "author" | "source" | "license" | "licenseDate", label: string, props: React.ComponentProps<typeof Input> = {}) => (
     <label className="block text-sm font-semibold">{label}<Input className="mt-1 font-normal" value={f[k]} onChange={(e) => setF((x) => ({ ...x, [k]: e.target.value }))} {...props} /></label>
@@ -104,6 +112,8 @@ export default function MusicLibraryCard() {
         <Button size="sm" variant={st.enabled ? "outline" : "primary"} onClick={() => void toggleAll(!st.enabled)}>{st.enabled ? "Desligar" : "Ligar"}</Button>
       </div>
 
+      {incomplete.length > 0 && <p role="status" data-testid="license-alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm"><strong>{incomplete.length} {incomplete.length === 1 ? "faixa ligada está" : "faixas ligadas estão"} com a licença incompleta.</strong> Complete antes de ligar a música para todas as casas (editar a faixa).</p>}
+
       <div>
         <div className="flex justify-between text-xs text-muted-foreground"><span>{st.tracks.length} de {st.max_count} faixas</span><span>{mb(st.total_bytes)} de {mb(st.max_total_bytes)} usados</span></div>
         <div className="mt-1 h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-label="Espaço usado pelas músicas" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className={`h-full ${pct >= 90 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} /></div>
@@ -112,7 +122,7 @@ export default function MusicLibraryCard() {
       <div className="rounded-lg border border-dashed border-border p-3 space-y-3">
         <h3 className="font-semibold text-sm">Cadastrar música</h3>
         <label className="block text-sm font-semibold">Arquivo (MP3, M4A ou OGG, até {mb(MUSIC_MAX_BYTES)})
-          <input ref={input} type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.m4a,.ogg" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm font-normal" />
+          <input ref={input} type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.m4a,.ogg" onChange={(e) => void pickFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm font-normal" />
         </label>
         <div className="grid sm:grid-cols-2 gap-3">
           {field("title", "Título", { maxLength: 80 })}
@@ -137,6 +147,7 @@ export default function MusicLibraryCard() {
               </div>
               <label className="flex items-center gap-2 text-xs font-semibold shrink-0"><input type="checkbox" role="switch" checked={t.active} onChange={() => void toggle(t)} aria-label={`Faixa ${t.title} ligada`} className="h-5 w-5" />{t.active ? "Ligada" : "Desligada"}</label>
             </div>
+            {licenseGap(t).length > 0 && <p className="text-xs font-semibold text-destructive">Licença incompleta: falta {licenseGap(t).join(", ")}.</p>}
             {(t.style || t.occasions?.length > 0 || t.vocal) && <p className="text-xs text-muted-foreground">{[t.style ? MUSIC_STYLES[t.style] : null, ...(t.occasions ?? []).map((o) => MUSIC_OCCASIONS[o]), t.vocal ? "Com voz" : "Instrumental"].filter(Boolean).join(" · ")}</p>}
             {(t.source_url || t.license_note) && <p className="text-xs text-muted-foreground break-words">{t.license_note}{t.source_url && <> · <a href={t.source_url} target="_blank" rel="noopener noreferrer" className="underline">fonte</a></>}</p>}
             {editing === t.id ? (

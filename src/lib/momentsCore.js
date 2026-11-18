@@ -98,6 +98,15 @@ export function filterMusic(list, f = {}) {
     && (f.voice !== "com" || m.vocal) && (f.voice !== "sem" || !m.vocal)
     && (!q || norm(`${m.title} ${m.author}`).includes(q)));
 }
+/** O que falta para a licença da faixa estar completa (o painel avisa antes de ligar a música). CC BY exige fonte e link da licença. */
+export function licenseGap(t) {
+  const miss = [];
+  if (!t || !t.license_kind) miss.push("tipo de licença");
+  if (!t?.license_url) miss.push("link da licença");
+  if (!t?.source_url) miss.push("link da fonte");
+  if (!t?.license_date) miss.push("data da conferência");
+  return miss;
+}
 /** Créditos de áudio (página pública para quem está logado): só texto e links https. */
 export function normalizeMusicCredits(raw) {
   const https = (u) => (typeof u === "string" && /^https:\/\/[^\s<>"]+$/.test(u) && u.length <= 300 ? u : null);
