@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { validateImageFile } from "@/lib/imageUpload";
 import { sampleBrightness, scrimAlpha } from "@/lib/postCardCore";
 
-const MAX_SIDE = 1600;
+const MAX_SIDE = 1280;
 
 export interface PreparedCardImage {
   blob: Blob;
@@ -33,7 +33,7 @@ export async function prepareCardImage(file: File): Promise<{ ok: true; image: P
     const tctx = t.getContext("2d", { willReadFrequently: true });
     let brightness = 255;
     if (tctx) { tctx.drawImage(canvas, 0, 0, 48, 48); brightness = sampleBrightness(tctx.getImageData(0, 0, 48, 48).data); }
-    const blob = (await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.85)))
+    const blob = (await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/webp", 0.8)))
       ?? (await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85)));
     if (!blob) return { ok: false, error: "Não foi possível ler essa imagem. Tente outra." };
     return { ok: true, image: { blob, previewUrl: URL.createObjectURL(blob), scrimPct: Math.round(scrimAlpha(brightness) * 100), brightness } };

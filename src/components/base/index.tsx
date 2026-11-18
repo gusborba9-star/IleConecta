@@ -96,7 +96,7 @@ export const Avatar: React.FC<{
       )}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
-      {src ? <img src={src} alt={name} className="h-full w-full object-cover" /> : <span>{initials(name)}</span>}
+      {src ? <img src={src} alt={name} loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span>{initials(name)}</span>}
     </div>
   );
 };

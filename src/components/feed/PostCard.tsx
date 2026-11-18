@@ -223,7 +223,7 @@ export default function PostCard({ post }: { post: Post }) {
 
       {!post.card && post.image && (
         <div className="border-t border-border">
-          <img src={post.image} alt="" className="w-full max-h-[520px] object-cover" />
+          <img src={post.image} alt="" loading="lazy" decoding="async" className="w-full max-h-[520px] object-cover" />
         </div>
       )}
 

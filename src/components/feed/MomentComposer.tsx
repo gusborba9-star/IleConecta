@@ -37,14 +37,14 @@ function readVideo(file: File): Promise<{ duration: number; poster: Blob } | nul
 async function shrinkPhoto(file: File): Promise<Blob | null> {
   try {
     const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const scale = Math.min(1, 1440 / Math.max(bmp.width, bmp.height));
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(bmp.width * scale)); c.height = Math.max(1, Math.round(bmp.height * scale));
     const ctx = c.getContext("2d");
     if (ctx) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height); } // PNG com fundo transparente não pode ficar "invisível" no cartão
     ctx?.drawImage(bmp, 0, 0, c.width, c.height);
     bmp.close();
-    return (await new Promise<Blob | null>((r) => c.toBlob(r, "image/webp", 0.82))) ?? (await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", 0.85)));
+    return (await new Promise<Blob | null>((r) => c.toBlob(r, "image/webp", 0.8))) ?? (await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", 0.85)));
   } catch { return null; }
 }
 
