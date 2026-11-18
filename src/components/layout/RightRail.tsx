@@ -55,7 +55,7 @@ export default function RightRail() {
             const rem = r.vagasTotal - r.vagasVendidas;
             return (
               <Link key={r.id} to={`/rituais/${r.id}`} className="flex items-center gap-3 -mx-1 px-1 py-1 rounded-xl hover:bg-muted transition">
-                <img src={r.cover} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                <img src={r.cover} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold truncate">{r.title}</div>
                   <div className="text-xs text-muted-foreground">

@@ -33,7 +33,7 @@ export default function StyledPostBody({ text, card }: { text: string; card: Sty
     return (
       <div data-card="parcial">
         <div className="border-y border-border bg-muted">
-          <img src={card.image} alt="" loading="lazy" className="w-full aspect-[16/9] object-cover" />
+          <img src={card.image} alt="" loading="lazy" decoding="async" className="w-full aspect-[16/9] object-cover" />
         </div>
         <div className={`px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words ${look.align ? ALIGN[look.align] : ""}`} style={textStyle(look, paper ? { background: PAPER } : {})} data-letters={look.custom ? "1" : undefined}>{text}</div>
       </div>
@@ -42,7 +42,7 @@ export default function StyledPostBody({ text, card }: { text: string; card: Sty
   const veil: CSSProperties = { background: `rgba(0,0,0,${a})` };
   return (
     <div data-card="total" className={`relative isolate overflow-hidden min-h-[300px] sm:min-h-[360px] flex ${look.pos ? POS[look.pos] : "items-end"} bg-neutral-900`}>
-      <img src={card.image} alt="" loading="lazy" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+      <img src={card.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 -z-20 h-full w-full object-cover" />
       <div aria-hidden className="absolute inset-0 -z-10" style={veil} />
       <p className={`relative w-full px-5 py-6 sm:px-7 text-[17px] sm:text-lg leading-relaxed font-medium text-white whitespace-pre-wrap break-words ${look.align ? ALIGN[look.align] : ""}`} style={textStyle(look, { textShadow: "0 1px 3px rgba(0,0,0,.65)" })} data-letters={look.custom ? "1" : undefined}>
         {text}

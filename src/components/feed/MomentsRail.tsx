@@ -89,7 +89,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
                 onClick={() => setOpen({ gi, ii: startIndex(g, seen) })}
                 className="relative shrink-0 w-32 h-52 rounded-2xl overflow-hidden shadow-card text-left focus-visible:ring-2 focus-visible:ring-ring bg-[#0b2a1f]"
               >
-                {!broken[thumb] && <img src={thumb} alt="" aria-hidden loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken((b) => ({ ...b, [thumb]: true }))} />}
+                {!broken[thumb] && <img src={thumb} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken((b) => ({ ...b, [thumb]: true }))} />}
                 <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/5 from-40% to-black/70" />
                 <span className={`absolute top-2 left-2 rounded-full ${done ? "ring-2 ring-white/60" : "ring-2 ring-gold"} ring-offset-1 ring-offset-black/30`}>
                   <Avatar src={g.avatar} name={g.name} size={34} />

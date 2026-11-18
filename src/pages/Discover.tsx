@@ -139,7 +139,7 @@ function HouseTile({ h, featured = false }: { h: HouseUser; featured?: boolean }
     <Link to={`/casa/${h.id}`} className="block group">
       <Card className="lift overflow-hidden">
         <div className="relative h-28 sm:h-32">
-          <img src={h.cover} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={h.cover} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-forest/55 via-transparent to-transparent" />
           {activeBoost ? (
             <Badge tone="gold" className="absolute top-2 right-2 backdrop-blur">

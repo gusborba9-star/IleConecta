@@ -20,7 +20,7 @@ export default function RitualCard({ ritual, compact }: { ritual: Ritual; compac
     >
       <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="relative">
-          <img src={ritual.cover} alt="" className={cn("w-full object-cover", compact ? "h-32 md:h-full" : "h-48 md:h-full")} />
+          <img src={ritual.cover} alt="" loading="lazy" decoding="async" className={cn("w-full object-cover", compact ? "h-32 md:h-full" : "h-48 md:h-full")} />
           <div className="absolute top-3 left-3 flex gap-2">
             <Badge tone="gold">Ritual</Badge>
             <Badge tone={ritual.mode === "distancia" ? "forest" : "primary"} className="capitalize">
