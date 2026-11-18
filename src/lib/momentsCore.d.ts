@@ -1,7 +1,8 @@
 import type { PlanCaps } from "@/lib/planMatrixCore";
+export interface MomentMusic { id: string; title: string; author: string; url: string }
 export type MomentKind = "image" | "video";
 export interface MomentLink { kind: "service" | "event"; id: string; title: string }
-export interface MomentItem { id: string; kind: MomentKind; url: string; poster: string | null; caption: string | null; createdAt: string; expiresAt: string; duration: number | null; link: MomentLink | null; liked: boolean; views: number | null; likes: number | null; comments: number | null }
+export interface MomentItem { id: string; kind: MomentKind; url: string; poster: string | null; caption: string | null; createdAt: string; expiresAt: string; duration: number | null; link: MomentLink | null; liked: boolean; music: MomentMusic | null; views: number | null; likes: number | null; comments: number | null }
 export interface MomentGroup { ownerId: string; houseId: string; name: string; slug: string; avatar?: string; followed: boolean; items: MomentItem[] }
 export declare const IMAGE_SECONDS: number;
 export declare const MAX_VIDEO_SECONDS: number;
@@ -17,7 +18,13 @@ export declare function extFor(type: string): string | null;
 export declare function momentPath(ownerId: string, rand: string, ext: string): string | null;
 export declare function safeFilePath(p: unknown): string | null;
 export declare function itemSeconds(item: { kind?: string; duration?: number | null }): number;
-export declare function normalizeFeed(raw: unknown, urlFor?: (path: string) => string | undefined | null): MomentGroup[];
+export declare function normalizeFeed(raw: unknown, urlFor?: (path: string) => string | undefined | null, musicUrlFor?: ((path: string) => string | undefined | null) | null): MomentGroup[];
+export declare const MUSIC_MAX_BYTES: number;
+export declare const MUSIC_TYPES: Record<string, string>;
+export declare function safeMusicPath(p: unknown): string | null;
+export declare function validateMusicFile(file: { name?: string; type?: string; size?: number } | null | undefined): string | null;
+export declare function musicExt(file: { name?: string; type?: string } | null | undefined): string | null;
+export declare function normalizeMusicCatalog(raw: unknown, musicUrlFor: (path: string) => string | undefined | null): MomentMusic[];
 export declare function isGroupSeen(group: MomentGroup, seen: Set<string>): boolean;
 export declare function startIndex(group: MomentGroup, seen: Set<string>): number;
 export declare function sortGroups(groups: MomentGroup[], opts?: { highlightOwners?: string[]; seen?: Set<string> }): MomentGroup[];

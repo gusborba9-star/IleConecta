@@ -60,7 +60,35 @@ export function itemSeconds(item) {
 /** Aceita qualquer coisa vinda do banco e devolve grupos válidos (item ou casa estranha some; nunca quebra a tela). */
 const count = (v) => (v === null || v === undefined || !Number.isFinite(Number(v)) || Number(v) < 0 ? null : Math.floor(Number(v)));
 
-export function normalizeFeed(raw, urlFor = (p) => p) {
+/** Música (18/11/2026): nome de arquivo do bucket `music` e formatos aceitos no envio. */
+export const MUSIC_MAX_BYTES = 8 * 1024 * 1024;
+export const MUSIC_TYPES = { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/ogg": "ogg" };
+const MUSIC_PATH = /^[a-z0-9]{8,32}\.(mp3|m4a|ogg)$/;
+export const safeMusicPath = (p) => (typeof p === "string" && MUSIC_PATH.test(p) ? p : null);
+/** Confere o arquivo de música antes de enviar (só o dono da plataforma envia). Devolve a recusa em português, ou null. */
+export function validateMusicFile(file) {
+  const name = String(file?.name ?? "").toLowerCase(), size = Number(file?.size) || 0;
+  const type = String(file?.type ?? "") || ({ mp3: "audio/mpeg", m4a: "audio/mp4", ogg: "audio/ogg" }[name.split(".").pop()] ?? "");
+  if (!MUSIC_TYPES[type]) return "Use um arquivo MP3, M4A ou OGG.";
+  if (size <= 0) return "Esse arquivo está vazio.";
+  if (size > MUSIC_MAX_BYTES) return "A música passa de 8 MB. Escolha uma versão menor.";
+  return null;
+}
+export const musicExt = (file) => {
+  const t = String(file?.type ?? ""); if (MUSIC_TYPES[t]) return MUSIC_TYPES[t];
+  const e = String(file?.name ?? "").toLowerCase().split(".").pop(); return ["mp3", "m4a", "ogg"].includes(e) ? e : null;
+};
+const musicOf = (m, musicUrlFor) => {
+  if (!isRec(m) || !UUID.test(String(m.id))) return null;
+  const path = safeMusicPath(m.path); const url = path && musicUrlFor ? musicUrlFor(path) : null;
+  return url ? { id: String(m.id), title: str(m.title, 80) || "Música", author: str(m.author, 80), url } : null;
+};
+/** Catálogo para a casa escolher (só faixas válidas). */
+export function normalizeMusicCatalog(raw, musicUrlFor) {
+  return (Array.isArray(raw) ? raw : []).map((m) => musicOf(m, musicUrlFor)).filter(Boolean).slice(0, 300);
+}
+
+export function normalizeFeed(raw, urlFor = (p) => p, musicUrlFor = null) {
   const out = [];
   for (const g of Array.isArray(raw) ? raw : []) {
     if (!isRec(g) || !UUID.test(String(g.owner_id)) || !Array.isArray(g.items)) continue;
@@ -80,6 +108,7 @@ export function normalizeFeed(raw, urlFor = (p) => p) {
         duration: Number.isFinite(Number(i.duration)) ? Number(i.duration) : null,
         link: linkOk ? { kind: i.link_kind, id: String(i.link_id), title: str(i.link_title, 100) } : null,
         liked: i.liked === true,
+        music: kind === "image" ? musicOf(i.music, musicUrlFor) : null,
         // contagens: só vêm para a casa dona do momento (para os outros o banco manda nulo)
         views: count(i.views), likes: count(i.likes), comments: count(i.comments),
       });
