@@ -67,6 +67,7 @@ export const CRON_DESCRIPTIONS = {
   "purge-deleted-identities": "Limpeza de privacidade: apaga de vez os dados de identidade de contas excluídas depois do prazo.",
   "purge-expired-files": "Limpeza: apaga do armazenamento os arquivos que já passaram do prazo de guarda.",
   "purge-moment-interactions": "Limpeza de privacidade: apaga curtidas, comentários e visualizações dos momentos 48 horas depois que eles expiram.",
+  "purge-moment-publish-log": "Limpeza: apaga o registro de publicações de momentos (usado só para o limite do dia) com mais de 3 dias.",
   "purge-handoff-events": "Limpeza de privacidade: apaga o histórico de passagens para atendimento humano com mais de 12 meses.",
   "purge-live-pings": "Limpeza: apaga os sinais de presença das lives com mais de 30 dias.",
   "purge-message-archive": "Limpeza de privacidade: apaga o arquivo de mensagens cujo prazo de guarda terminou.",
