@@ -72,6 +72,7 @@ export const CRON_DESCRIPTIONS = {
   "purge-live-pings": "Limpeza: apaga os sinais de presença das lives com mais de 30 dias.",
   "purge-message-archive": "Limpeza de privacidade: apaga o arquivo de mensagens cujo prazo de guarda terminou.",
   "purge-staff-audit": "Limpeza de privacidade: apaga o registro de ações da equipe cujo prazo de guarda terminou.",
+  "purge-music-license-log": "Limpeza de privacidade: apaga do registro de faixas retiradas o que já passou dos 5 anos de guarda.",
   "purge-support-cases": "Limpeza de privacidade: apaga os chamados de suporte encerrados depois do prazo.",
   "purge-system-events": "Limpeza: apaga os erros registrados nesta tela depois de 30 dias e o histórico antigo das rotinas.",
   "refund-sweep": "Confere e conclui os reembolsos pendentes com a Stripe.",

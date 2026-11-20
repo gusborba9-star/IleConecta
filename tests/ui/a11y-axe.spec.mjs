@@ -9,7 +9,7 @@ try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* 
 const ME = U(1), HID = U(60);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const casa = { ...pessoa, account_type: "casa", display_name: "Casa Axé" };
-const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }));
+const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: HID, owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "intermediario", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } };
 const rpc = { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } };
 
@@ -33,7 +33,7 @@ for (const vp of [{ n: "celular 375", width: 375, height: 740 }, { n: "computado
         const achados = [];
         for (const tela of g.telas) {
           await page.goto(tela);
-          await page.waitForTimeout(700);
+          await page.locator("h1").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(150);
           const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
           for (const v of r.violations) achados.push(`${tela} · ${v.id} (${v.impact}) ×${v.nodes.length}: ${v.nodes[0].target.join(" ")} — ${(v.nodes[0].failureSummary ?? "").split("\n")[1] ?? ""}`.slice(0, 300));
         }

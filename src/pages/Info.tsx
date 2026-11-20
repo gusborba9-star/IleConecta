@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { Card } from "@/components/base";
 import { INFO_PAGES, REVIEW_PENDING, findInfoPage } from "@/content/institutional";
 import NotFound from "@/pages/NotFound";
+import OperatorNotice from "@/components/legal/OperatorNotice";
 
 export default function Info() {
   const { slug } = useParams();
@@ -15,6 +16,7 @@ export default function Info() {
           <h1 className="font-display font-bold text-2xl mt-1">{page.title}</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">{page.summary}</p>
+        <OperatorNotice slug={page.slug} />
         {REVIEW_PENDING && <p className="text-xs text-muted-foreground mt-3">Versão preliminar, em revisão.</p>}
         <div className="mt-5 space-y-5">
           {page.sections.map((s, i) => (

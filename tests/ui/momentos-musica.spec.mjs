@@ -4,8 +4,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), CASA = U(11), HID = U(60), TRACK = U(90);
-const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
-const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = { id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "base", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } };
 const iso = (m) => new Date(Date.now() - m * 60000).toISOString();
@@ -254,7 +254,7 @@ test.describe("biblioteca de músicas no painel", () => {
   test.use({ viewport: { width: 375, height: 800 } });
   const track = (n, extra = {}) => ({ id: U(200 + n), title: `Faixa ${n}`, author: "Autora", source_url: "https://pixabay.com/music/x", license_note: "Pixabay Content License", license_date: "2026-11-10", path: `abcd1234efg${n}.mp3`, size_bytes: 3145728, active: true, created_at: "2026-11-17T10:00:00Z", uses: 2, ...extra });
   const state = (extra = {}) => ({ enabled: false, max_total_bytes: 524288000, total_bytes: 6291456, max_count: 300, tracks: [track(1), track(2, { active: false, uses: 0 })], ...extra });
-  const admin = (extra = {}) => ({ rest: { profiles: { ...profile("pessoa"), display_name: "Admin" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [], admin_music_list: state(), admin_music_set_enabled: null, admin_music_set_active: null, admin_music_add: U(300), admin_music_update: null, admin_music_meta: null, admin_music_delete: "abcd1234efg2.mp3", ...extra } });
+  const admin = (extra = {}) => ({ rest: { profiles: { ...profile("pessoa"), display_name: "Admin" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [], admin_music_list: state(), admin_music_set_enabled: null, admin_music_set_active: null, admin_music_add: U(300), admin_music_update: null, admin_music_meta: null, admin_music_proof: null, admin_music_delete: "abcd1234efg2.mp3", admin_music_log: [], ...extra } });
   const open = async (page, a = admin()) => { const calls = await api(page, a); await page.route("**/storage/v1/object/public/music/**", (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: wav })); await page.goto("/admin?s=config"); await expect(page.getByRole("heading", { name: "Biblioteca de músicas" })).toBeVisible(); return calls; };
   const mp3 = (name = "faixa.mp3", size = 2048) => ({ name, mimeType: "audio/mpeg", buffer: Buffer.alloc(size, 1) });
 
@@ -330,12 +330,73 @@ test.describe("biblioteca de músicas no painel", () => {
     expect(calls.find((c) => c.name === "admin_music_update").body).toMatchObject({ p_id: U(201), p_title: "Título novo" });
     await page.getByRole("button", { name: "Apagar" }).nth(1).click();
     expect(calls.some((c) => c.name === "admin_music_delete")).toBe(false); // primeiro toque só pede confirmação
+    await expect(page.getByRole("button", { name: "Confirmar: apagar" })).toBeDisabled(); // sem motivo não confirma
+    await page.getByLabel("Motivo da retirada").fill("  Encerrei o teste  ");
     await page.getByRole("button", { name: "Confirmar: apagar" }).click();
     await expect(page.getByText("Faixa apagada.")).toBeVisible();
-    expect(calls.find((c) => c.name === "admin_music_delete").body).toEqual({ p_id: U(202) });
+    expect(calls.find((c) => c.name === "admin_music_delete").body).toEqual({ p_id: U(202), p_reason: "Encerrei o teste" });
     await expect.poll(() => calls.some((c) => c.kind === "storage" && c.method === "DELETE" && c.body?.prefixes?.includes("abcd1234efg2.mp3"))).toBe(true);
   });
 
+
+  test("apagar: cancelar não grava nada e o motivo curto demais não confirma", async ({ page }) => {
+    const calls = await open(page);
+    await page.getByRole("button", { name: "Apagar" }).first().click();
+    await page.getByLabel("Motivo da retirada").fill("ab");
+    await expect(page.getByRole("button", { name: "Confirmar: apagar" })).toBeDisabled();
+    await page.getByRole("button", { name: "Cancelar" }).first().click();
+    await expect(page.getByLabel("Motivo da retirada")).toHaveCount(0);
+    expect(calls.some((c) => c.name === "admin_music_delete")).toBe(false);
+  });
+
+  test("onde está o print da licença: vai para o banco ao cadastrar e ao editar, e aparece na lista", async ({ page }) => {
+    const calls = await open(page, admin({ admin_music_list: state({ tracks: [track(1, { license_proof: "Drive > Licenças > faixa1.png" })] }) }));
+    await expect(page.getByText("Print da licença: Drive > Licenças > faixa1.png")).toBeVisible();
+    await page.locator("input[type=file]").setInputFiles(mp3());
+    await page.getByLabel("Título", { exact: true }).first().fill("Nova");
+    await page.getByLabel("Autor(a)").fill("Ana");
+    await page.getByLabel("Onde está o print da licença").first().fill("  Drive > nova.png ");
+    await page.getByRole("button", { name: "Cadastrar música" }).click();
+    await expect.poll(() => calls.some((c) => c.name === "admin_music_proof")).toBe(true);
+    expect(calls.find((c) => c.name === "admin_music_proof").body).toEqual({ p_id: U(300), p_proof: "Drive > nova.png" });
+    await page.getByRole("button", { name: "Editar" }).first().click();
+    await expect(page.getByLabel("Onde está o print da licença").last()).toHaveValue("Drive > Licenças > faixa1.png");
+  });
+
+  test("registro de faixas retiradas: abre sob demanda, mostra quem retirou, o motivo e o prazo, sem interpretar HTML", async ({ page }) => {
+    const log = [{ id: 7, removed_at: "2026-11-20T15:00:00Z", keep_until: "2031-11-20T15:00:00Z", by: "Dono <b>x</b>", reason: "Encerrei <img src=x onerror=window.__xss=1>", title: "Brisa", author: "Ana", source_url: "https://fonte.example/x", license_kind: "cc_by", license_url: "https://creativecommons.org/licenses/by/4.0/", license_note: "nota", license_date: "2026-11-10", license_proof: "Drive > brisa.png" }];
+    const calls = await open(page, admin({ admin_music_log: log }));
+    expect(calls.some((c) => c.name === "admin_music_log")).toBe(false); // só carrega ao abrir
+    await page.getByText("Registro de faixas retiradas (guardado por 5 anos)").click();
+    const row = page.getByTestId("removed-track");
+    await expect(row).toContainText("Brisa");
+    await expect(row).toContainText("por Dono <b>x</b>. Motivo: Encerrei <img src=x onerror=window.__xss=1>. Guardado até 20/11/2031.");
+    await expect(row).toContainText("Print da licença: Drive > brisa.png");
+    expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+    const vazio = await page.context().newPage();
+    await api(vazio, admin());
+    await vazio.goto("/admin?s=config");
+    await vazio.getByText("Registro de faixas retiradas (guardado por 5 anos)").click();
+    await expect(vazio.getByText("Nenhuma faixa foi retirada ainda.")).toBeVisible();
+  });
+
+  for (const scheme of ["light", "dark"]) {
+    test(`acessibilidade (axe): apagar com motivo, print da licença e registro aberto · ${scheme}`, async ({ page }) => {
+      test.setTimeout(90000);
+      await page.emulateMedia({ colorScheme: scheme });
+      const log = [{ id: 7, removed_at: "2026-11-20T15:00:00Z", keep_until: "2031-11-20T15:00:00Z", by: "Dono", reason: "Encerrei", title: "Brisa", author: "Ana", source_url: "https://fonte.example/x", license_kind: "cc_by", license_url: "https://creativecommons.org/licenses/by/4.0/", license_note: "nota", license_date: "2026-11-10", license_proof: "Drive > brisa.png" }];
+      await open(page, admin({ admin_music_log: log, admin_music_list: state({ tracks: [track(1, { license_proof: "Drive > faixa1.png", license_kind: "cc0", license_url: "https://creativecommons.org/publicdomain/zero/1.0/" })] }) }));
+      await page.getByRole("button", { name: "Apagar" }).first().click();
+      await page.getByText("Registro de faixas retiradas (guardado por 5 anos)").click();
+      await expect(page.getByTestId("removed-track")).toBeVisible();
+      for (const w of [320, 1280]) {
+        await page.setViewportSize({ width: w, height: 800 });
+        const r = await new AxeBuilder({ page }).include("[data-testid=music-library]").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
+        expect(r.violations.map((v) => `${v.id}: ${v.nodes[0].target.join(" ")}`)).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+      }
+    });
+  }
 
   test("cadastrar e editar: estilo, ocasiões, voz e licença vão para o banco; mais de 5 ocasiões não deixa marcar", async ({ page }) => {
     const calls = await open(page);

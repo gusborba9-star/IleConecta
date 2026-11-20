@@ -139,7 +139,10 @@
   }
   h1, h2, h3, h4 {
     @apply font-display;
+    /* WCAG 1.4.4/1.4.10: com letra a 200% uma palavra longa ("Funcionalidades") não cabe e empurraria a página; só quebra se não couber. */
+    overflow-wrap: anywhere;
   }
+  label { overflow-wrap: anywhere; }
   ::selection {
     background: hsl(var(--gold));
     color: hsl(var(--gold-foreground));

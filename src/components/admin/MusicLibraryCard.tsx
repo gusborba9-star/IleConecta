@@ -5,7 +5,7 @@ import { Button, Card, Input } from "@/components/base";
 import { musicUrl } from "@/lib/moments";
 import { MUSIC_LICENSES, MUSIC_MAX_BYTES, MUSIC_OCCASIONS, MUSIC_STYLES, licenseGap } from "@/lib/momentsCore";
 import { readFileTags } from "@/lib/audioTags";
-import { EMPTY_FIELDS, addTrack, deleteTrack, fetchMusicAdmin, setMusicEnabled, setTrackActive, updateTrack, type MusicAdminState, type MusicFields, type MusicRow } from "@/lib/musicAdmin";
+import { EMPTY_FIELDS, addTrack, deleteTrack, fetchMusicAdmin, fetchRemovedTracks, type RemovedTrack, setMusicEnabled, setTrackActive, updateTrack, type MusicAdminState, type MusicFields, type MusicRow } from "@/lib/musicAdmin";
 
 const EMPTY: MusicFields = EMPTY_FIELDS;
 const mb = (b: number) => `${(b / 1048576).toFixed(b >= 10485760 ? 0 : 1)} MB`;
@@ -25,6 +25,10 @@ function MetaFields({ v, set, id }: { v: MusicFields; set: (f: (x: MusicFields) 
           <select aria-label="Tipo de licença" className={sel} value={v.licenseKind} onChange={(e) => set((x) => ({ ...x, licenseKind: e.target.value }))}><option value="">Não informado</option>{Object.entries(MUSIC_LICENSES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
         </label>
       </div>
+      <label className="block text-sm font-semibold">Onde está o print da licença (opcional)
+        <Input className="mt-1 font-normal" aria-label="Onde está o print da licença" value={v.proof} maxLength={200} placeholder="Ex.: Drive > Licenças > brisa.png" onChange={(e) => set((x) => ({ ...x, proof: e.target.value }))} />
+        <span className="block text-xs font-normal text-muted-foreground mt-1">Guarde um print da página da licença no dia do download. Aqui fica só a indicação de onde ele está.</span>
+      </label>
       <fieldset>
         <legend className="text-sm font-semibold">Ocasiões (até 5)</legend>
         <div className="mt-1 flex flex-wrap gap-2">
@@ -53,6 +57,7 @@ export default function MusicLibraryCard() {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<MusicFields>(EMPTY);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [delReason, setDelReason] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
@@ -93,7 +98,7 @@ export default function MusicLibraryCard() {
   const toggleAll = async (on: boolean) => { if (await setMusicEnabled(on)) { toast.success(on ? "Música ligada para todas as casas." : "Música desligada para todas as casas."); await load(); } else toast.error("Não foi possível alterar agora."); };
   const toggle = async (t: MusicRow) => { if (await setTrackActive(t.id, !t.active)) await load(); else toast.error("Não foi possível alterar agora."); };
   const save = async (id: string) => { const r = await updateTrack(id, draft); if (!r.ok) return void toast.error(r.error ?? "Não foi possível salvar."); setEditing(null); toast.success("Faixa atualizada."); await load(); };
-  const del = async (t: MusicRow) => { if (confirmDel !== t.id) return void setConfirmDel(t.id); setConfirmDel(null); if (playing === t.id) { audio.current?.pause(); setPlaying(null); } if (await deleteTrack(t.id)) { toast.success("Faixa apagada."); await load(); } else toast.error("Não foi possível apagar agora."); };
+  const del = async (t: MusicRow) => { if (confirmDel !== t.id) { setDelReason(""); return void setConfirmDel(t.id); } if (delReason.trim().length < 3) return; setConfirmDel(null); if (playing === t.id) { audio.current?.pause(); setPlaying(null); } if (await deleteTrack(t.id, delReason)) { toast.success("Faixa apagada. O registro da licença fica guardado por 5 anos."); await load(); } else toast.error("Não foi possível apagar agora."); };
 
   if (st === "loading") return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Carregando…</p></Card>;
   if (!st) return <Card className="p-5"><h2 className="font-display font-bold text-lg">Biblioteca de músicas</h2><p className="text-sm text-muted-foreground mt-2">Não foi possível carregar agora.</p></Card>;
@@ -156,6 +161,7 @@ export default function MusicLibraryCard() {
             </div>
             {licenseGap(t).length > 0 && <p className="text-xs font-semibold text-destructive">Licença incompleta: falta {licenseGap(t).join(", ")}.</p>}
             {(t.style || t.occasions?.length > 0 || t.vocal) && <p className="text-xs text-muted-foreground">{[t.style ? MUSIC_STYLES[t.style] : null, ...(t.occasions ?? []).map((o) => MUSIC_OCCASIONS[o]), t.vocal ? "Com voz" : "Instrumental"].filter(Boolean).join(" · ")}</p>}
+            {t.license_proof && <p className="text-xs text-muted-foreground break-words">Print da licença: {t.license_proof}</p>}
             {(t.source_url || t.license_note) && <p className="text-xs text-muted-foreground break-words">{t.license_note}{t.source_url && <> · <a href={t.source_url} target="_blank" rel="noopener noreferrer" className="underline">fonte</a></>}</p>}
             {editing === t.id ? (
               <div className="grid sm:grid-cols-2 gap-2">
@@ -168,15 +174,45 @@ export default function MusicLibraryCard() {
                 <div className="sm:col-span-2 flex gap-2"><Button size="sm" onClick={() => void save(t.id)} disabled={!draft.title.trim() || !draft.author.trim()}>Salvar</Button><Button size="sm" variant="outline" onClick={() => setEditing(null)}>Cancelar</Button></div>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => { setEditing(t.id); setDraft({ title: t.title, author: t.author, source: t.source_url ?? "", license: t.license_note ?? "", licenseDate: t.license_date ?? "", style: t.style ?? "", occasions: t.occasions ?? [], vocal: t.vocal === true, licenseKind: t.license_kind ?? "", licenseUrl: t.license_url ?? "" }); }}>Editar</Button>
-                <Button size="sm" variant="outline" onClick={() => void del(t)}><Trash2 className="h-4 w-4" aria-hidden /> {confirmDel === t.id ? "Confirmar: apagar" : "Apagar"}</Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => { setEditing(t.id); setDraft({ title: t.title, author: t.author, source: t.source_url ?? "", license: t.license_note ?? "", licenseDate: t.license_date ?? "", style: t.style ?? "", occasions: t.occasions ?? [], vocal: t.vocal === true, licenseKind: t.license_kind ?? "", licenseUrl: t.license_url ?? "", proof: t.license_proof ?? "" }); }}>Editar</Button>
+                {confirmDel === t.id && <Input className="min-w-[12rem] flex-1" aria-label="Motivo da retirada" placeholder="Motivo da retirada (fica no registro de 5 anos)" maxLength={300} value={delReason} onChange={(e) => setDelReason(e.target.value)} />}
+                <Button size="sm" variant="outline" disabled={confirmDel === t.id && delReason.trim().length < 3} onClick={() => void del(t)}><Trash2 className="h-4 w-4" aria-hidden /> {confirmDel === t.id ? "Confirmar: apagar" : "Apagar"}</Button>
+                {confirmDel === t.id && <Button size="sm" variant="ghost" onClick={() => setConfirmDel(null)}>Cancelar</Button>}
               </div>
             )}
           </li>
         ))}
       </ul>
+      <RemovedLog />
     </Card>
     </div>
+  );
+}
+
+const dmy = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+/** Prova da licença das faixas apagadas, guardada por 5 anos (parecer do advogado, 20/11/2026). */
+function RemovedLog() {
+  const [rows, setRows] = useState<RemovedTrack[] | null | "loading">("loading");
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (open && rows === "loading") void fetchRemovedTracks().then(setRows); }, [open, rows]);
+  return (
+    <details className="text-sm" onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="cursor-pointer font-semibold">Registro de faixas retiradas (guardado por 5 anos)</summary>
+      <div className="mt-2 space-y-2">
+        {rows === "loading" && <p className="text-muted-foreground">Carregando…</p>}
+        {rows === null && <p className="text-muted-foreground">Não foi possível carregar agora.</p>}
+        {Array.isArray(rows) && rows.length === 0 && <p className="text-muted-foreground">Nenhuma faixa foi retirada ainda.</p>}
+        {Array.isArray(rows) && rows.map((r) => (
+          <div key={r.id} className="rounded-lg border border-border/70 p-3 space-y-1 break-words" data-testid="removed-track">
+            <div className="font-semibold">{r.title} <span className="font-normal text-muted-foreground">· {r.author}</span></div>
+            <div className="text-xs text-muted-foreground">Retirada em {dmy(r.removed_at)} por {r.by ?? "conta removida"}. Motivo: {r.reason}. Guardado até {dmy(r.keep_until)}.</div>
+            <div className="text-xs text-muted-foreground">{[r.license_kind ? MUSIC_LICENSES[r.license_kind] ?? r.license_kind : null, r.license_note, r.license_date ? `licença conferida em ${new Date(`${r.license_date}T12:00:00`).toLocaleDateString("pt-BR")}` : null].filter(Boolean).join(" · ") || "Licença não informada"}</div>
+            {(r.source_url || r.license_url) && <div className="text-xs text-muted-foreground">{r.source_url && <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="underline">fonte</a>}{r.source_url && r.license_url && " · "}{r.license_url && <a href={r.license_url} target="_blank" rel="noopener noreferrer" className="underline">licença</a>}</div>}
+            {r.license_proof && <div className="text-xs text-muted-foreground">Print da licença: {r.license_proof}</div>}
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }

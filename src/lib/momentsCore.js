@@ -8,6 +8,7 @@ export const REPORT_REASONS = [
   { id: "conteudo_improprio", label: "Conteúdo impróprio" },
   { id: "golpe", label: "Golpe ou fraude" },
   { id: "assedio", label: "Assédio ou desrespeito" },
+  { id: "menor", label: "Criança ou adolescente sem autorização" },
   { id: "outro", label: "Outro motivo" },
 ];
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];

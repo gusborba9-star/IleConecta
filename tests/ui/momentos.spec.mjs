@@ -4,8 +4,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), CASA_A = U(11), CASA_B = U(12), HID = U(60);
-const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
-const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = (plan) => ({ id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan, created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } });
 const now = Date.now();
@@ -101,6 +101,18 @@ test.describe("momentos das casas", () => {
     expect(c.body).toEqual({ p_story: U(103), p_reason: "golpe" });
   });
 
+  test("denúncia de criança ou adolescente sem autorização: motivo próprio, enviado ao banco", async ({ page }) => {
+    const calls = await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").nth(1).click();
+    await page.getByRole("button", { name: "Mais opções" }).click();
+    await page.getByRole("menuitem", { name: "Denunciar" }).click();
+    await page.getByLabel("Criança ou adolescente sem autorização").check();
+    await page.getByRole("button", { name: "Enviar denúncia" }).click();
+    await expect(page.getByText(/Denúncia enviada/)).toBeVisible();
+    expect(calls.find((x) => x.kind === "rpc" && x.name === "report_moment").body).toEqual({ p_story: U(103), p_reason: "menor" });
+  });
+
   test("casa no Grátis: vê o convite para o Essencial, não o botão de criar", async ({ page }) => {
     await setup(page, "casa", "gratis");
     await page.goto("/comunidade");
@@ -179,6 +191,7 @@ test.describe("momentos: curtir, comentar e visualizações", () => {
     await page.getByTestId("moment-card").first().click();
     const v = page.getByTestId("moment-viewer");
     await expect(v).toBeVisible();
+    await v.getByRole("button", { name: "Pausar momento" }).click(); // com a máquina ocupada o tempo do momento poderia passar antes do clique
     await expect.poll(() => calls.some((x) => x.kind === "rpc" && x.name === "moment_view" && x.body.p_story === U(101))).toBe(true);
     await v.getByRole("button", { name: "Curtir", exact: true }).click();
     await expect(v.getByRole("button", { name: "Descurtir" })).toHaveAttribute("aria-pressed", "true");
@@ -191,6 +204,7 @@ test.describe("momentos: curtir, comentar e visualizações", () => {
     await setup(page, "cliente", null, { rpc: { moment_like: { status: 400, body: { code: "P0001", message: "Não foi possível curtir este momento." } } } });
     await page.goto("/comunidade");
     await page.getByTestId("moment-card").first().click();
+    await page.getByTestId("moment-viewer").getByRole("button", { name: "Pausar momento" }).click();
     await page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true }).click();
     await expect(page.getByText("Não foi possível curtir este momento.")).toBeVisible();
     await expect(page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true })).toBeVisible();

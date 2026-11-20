@@ -4,7 +4,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1);
 const profile = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
 const off = { key: "maintenance", value: { assistant: false, payments: false, message: null, since: null } };
 const on = (extra = {}) => ({ key: "maintenance", value: { assistant: false, payments: true, message: null, since: "2026-11-18T01:00:00Z", ...extra } });
 const adminRpc = { is_admin: true, admin_my_access: { admin: true, owner: true, perms: [] }, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_set_maintenance: null };
@@ -76,7 +76,7 @@ test("acessibilidade (axe): faixa de aviso e card do dono, claro e escuro", asyn
     await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [on({ assistant: true })] }, rpc: adminRpc });
     for (const tela of ["/", "/admin"]) {
       await page.goto(tela);
-      await page.waitForTimeout(700);
+      await page.locator("h1").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(150);
       const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
       expect(r.violations.map((v) => `${tela} ${scheme} ${v.id}: ${v.nodes[0].target.join(" ")}`)).toEqual([]);
     }
