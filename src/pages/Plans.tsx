@@ -70,7 +70,7 @@ export default function Plans() {
   const [billingTick, setBillingTick] = useState(0);
   // Aba aberta: `?aba=meu|mudar|cobrancas`; links com fatura (`?foco=`, `?retorno=`) abrem direto em Cobranças.
   const askedTab = params.get("aba");
-  const [aba, setAba] = useState<Aba>(() => (params.get("foco") || params.get("retorno") || params.get("fatura") || params.get("cartao") ? "cobrancas" : askedTab === "mudar" || askedTab === "cobrancas" ? askedTab : "meu"));
+  const [aba, setAba] = useState<Aba>(() => (params.get("foco") || params.get("retorno") || params.get("fatura") || params.get("cartao") || window.location.hash === "#pedidos" ? "cobrancas" : askedTab === "mudar" || askedTab === "cobrancas" ? askedTab : "meu"));
   const [change, setChange] = useState<PlanChangeStatus | null>(null);
   const [target, setTarget] = useState<HousePlanId | null>(null);
   // O painel de troca fica acima dos cards: ao escolher um plano, leva a tela até ele (no celular ele ficava fora da vista).
