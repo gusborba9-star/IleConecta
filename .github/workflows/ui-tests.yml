@@ -48,8 +48,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Os testes de acessibilidade usam o axe; ele não fica no package.json de propósito.
-      - run: npm install --no-save @axe-core/playwright axe-core
+      # Playwright e axe não ficam no package.json de propósito (não entram no app); a versão é a mesma usada nos testes locais.
+      - run: npm install --no-save @playwright/test@1.63.0 @axe-core/playwright axe-core
       - run: npx playwright install --with-deps chromium
       - name: Suíte de interface
         env:
