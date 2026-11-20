@@ -370,6 +370,54 @@ test.describe("biblioteca de músicas no painel", () => {
     await expect(page.getByLabel("Título", { exact: true }).first()).toHaveValue("Meu título");
   });
 
+  const id3 = (frames) => { const ss = (n) => [(n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f]; const body = frames.flat(); return Buffer.concat([Buffer.from([0x49, 0x44, 0x33, 4, 0, 0, ...ss(body.length)]), Buffer.from(body), Buffer.alloc(2048, 1)]); };
+  const tf = (id, text) => { const body = [3, ...Buffer.from(text, "utf8")]; const n = body.length; return [...Buffer.from(id), (n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f, 0, 0, ...body]; };
+  const cm = (text) => { const body = [3, ...Buffer.from("eng"), 0, ...Buffer.from(text, "utf8")]; const n = body.length; return [...Buffer.from("COMM"), (n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f, 0, 0, ...body]; };
+  const wx = (url) => { const body = [0, 0, ...Buffer.from(url, "latin1")]; const n = body.length; return [...Buffer.from("WXXX"), (n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f, 0, 0, ...body]; };
+
+  test("MP3 do Suno: sugere licença Outra, observação com a data e dia da conferência; nada é sobrescrito", async ({ page }) => {
+    await open(page);
+    const buffer = id3([tf("TIT2", "Que a Luz"), tf("TPE1", "gusborba80"), cm("made with suno; created=2026-11-20T00:28:22Z; id=x")]);
+    await page.locator("input[type=file]").setInputFiles({ name: "suno.mp3", mimeType: "audio/mpeg", buffer });
+    await expect(page.getByLabel("Tipo de licença").first()).toHaveValue("outra");
+    await expect(page.getByLabel(/Observação da licença/)).toHaveValue("Criada na Suno em 19/11/2026");
+    await expect(page.getByLabel("Data da conferência da licença")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+    await page.getByLabel(/Observação da licença/).fill("Criada por Gustavo na Suno (plano Pro), em 19/11/2026");
+    await page.locator("input[type=file]").setInputFiles({ name: "suno2.mp3", mimeType: "audio/mpeg", buffer });
+    await expect(page.getByLabel(/Observação da licença/)).toHaveValue("Criada por Gustavo na Suno (plano Pro), em 19/11/2026");
+  });
+
+  test("MP3 do ENDE: sugere fonte e CC BY 4.0; licença não comercial só avisa e não sugere", async ({ page }) => {
+    await open(page);
+    await page.locator("input[type=file]").setInputFiles({ name: "ende.mp3", mimeType: "audio/mpeg", buffer: id3([tf("TIT2", "Brisa"), tf("TCOP", "CC BY 4.0"), wx("https://ende.app/pt/music/brisa/")]) });
+    await expect(page.getByLabel("Tipo de licença").first()).toHaveValue("cc_by");
+    await expect(page.getByLabel(/Link de onde baixou/)).toHaveValue("https://ende.app/pt/music/brisa/");
+    await page.reload(); // painel limpo
+    await page.locator("input[type=file]").setInputFiles({ name: "nc.mp3", mimeType: "audio/mpeg", buffer: id3([tf("TIT2", "Funky"), tf("TCOP", "CC BY-NC 3.0")]) });
+    await expect(page.getByText(/não serve para o app/).first()).toBeVisible();
+    await expect(page.getByLabel("Tipo de licença").first()).toHaveValue("");
+  });
+
+  test("cadastrar com a música desligada avisa que ela só aparece quando for ligada", async ({ page }) => {
+    await open(page);
+    await page.locator("input[type=file]").setInputFiles(mp3());
+    await page.getByLabel("Título", { exact: true }).first().fill("T"); await page.getByLabel("Autor(a)").fill("A");
+    await page.getByRole("button", { name: "Cadastrar música" }).click();
+    await expect(page.getByText("Música cadastrada. Ela só aparece para as casas quando a música estiver ligada.")).toBeVisible();
+  });
+  test("cadastrar com a música ligada diz que já está disponível", async ({ page }) => {
+    await open(page, admin({ admin_music_list: state({ enabled: true }) }));
+    await page.locator("input[type=file]").setInputFiles(mp3());
+    await page.getByLabel("Título", { exact: true }).first().fill("T"); await page.getByLabel("Autor(a)").fill("A");
+    await page.getByRole("button", { name: "Cadastrar música" }).click();
+    await expect(page.getByText("Música cadastrada e já disponível para as casas.")).toBeVisible();
+  });
+
+  test("faixa criada no Suno (tipo Outra com observação) não gera alerta de licença", async ({ page }) => {
+    await open(page, admin({ admin_music_list: state({ tracks: [track(1, { license_kind: "outra", license_note: "Criada por Gustavo na Suno (plano Pro), em 19/11/2026", license_url: null, source_url: null })] }) }));
+    await expect(page.getByTestId("license-alert")).toHaveCount(0);
+  });
+
   test("MP3 sem etiqueta: campos ficam vazios, sem erro", async ({ page }) => {
     await open(page);
     await page.locator("input[type=file]").setInputFiles(mp3("sem-tag.mp3", 3000));

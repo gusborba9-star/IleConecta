@@ -72,7 +72,14 @@ export default function MusicLibraryCard() {
     setFile(picked);
     if (!picked) return;
     const tags = await readFileTags(picked); // preenche só o que está vazio; você confere e corrige
-    setF((x) => ({ ...x, title: x.title.trim() ? x.title : tags.title, author: x.author.trim() ? x.author : tags.author }));
+    setF((x) => ({
+      ...x,
+      title: x.title.trim() ? x.title : tags.title, author: x.author.trim() ? x.author : tags.author,
+      source: x.source.trim() ? x.source : tags.source, licenseUrl: x.licenseUrl.trim() ? x.licenseUrl : tags.licenseUrl,
+      licenseKind: x.licenseKind ? x.licenseKind : tags.licenseKind, license: x.license.trim() ? x.license : tags.licenseNote,
+      licenseDate: x.licenseDate || new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }), // dia da conferência: hoje, você pode mudar
+    }));
+    if (tags.warning) toast.warning(tags.warning);
   };
   const add = async () => {
     if (!file) return;
@@ -80,7 +87,7 @@ export default function MusicLibraryCard() {
     const r = await addTrack(file, f);
     setBusy(false);
     if (!r.ok) return void toast.error(r.error ?? "Não foi possível cadastrar.");
-    if (r.error) toast.error(r.error); else toast.success("Música cadastrada e já disponível para as casas.");
+    if (r.error) toast.error(r.error); else toast.success(st !== "loading" && st?.enabled ? "Música cadastrada e já disponível para as casas." : "Música cadastrada. Ela só aparece para as casas quando a música estiver ligada.");
     setFile(null); setF(EMPTY); if (input.current) input.current.value = ""; await load();
   };
   const toggleAll = async (on: boolean) => { if (await setMusicEnabled(on)) { toast.success(on ? "Música ligada para todas as casas." : "Música desligada para todas as casas."); await load(); } else toast.error("Não foi possível alterar agora."); };

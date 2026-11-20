@@ -98,12 +98,14 @@ export function filterMusic(list, f = {}) {
     && (f.voice !== "com" || m.vocal) && (f.voice !== "sem" || !m.vocal)
     && (!q || norm(`${m.title} ${m.author}`).includes(q)));
 }
-/** O que falta para a licença da faixa estar completa (o painel avisa antes de ligar a música). CC BY exige fonte e link da licença. */
+/** O que falta para a licença da faixa estar completa (o painel avisa antes de ligar a música).
+ *  CC0, CC BY e domínio público pedem fonte e link da licença. "Outra" (ex.: criada por você na Suno) pede a observação da licença. */
 export function licenseGap(t) {
   const miss = [];
-  if (!t || !t.license_kind) miss.push("tipo de licença");
-  if (!t?.license_url) miss.push("link da licença");
-  if (!t?.source_url) miss.push("link da fonte");
+  const kind = t?.license_kind;
+  if (!kind) { miss.push("tipo de licença"); if (!t?.license_url) miss.push("link da licença"); if (!t?.source_url) miss.push("link da fonte"); }
+  else if (kind === "outra") { if (!String(t.license_note ?? "").trim()) miss.push("observação da licença"); }
+  else { if (!t.license_url) miss.push("link da licença"); if (!t.source_url) miss.push("link da fonte"); }
   if (!t?.license_date) miss.push("data da conferência");
   return miss;
 }
@@ -112,7 +114,8 @@ export function normalizeMusicCredits(raw) {
   const https = (u) => (typeof u === "string" && /^https:\/\/[^\s<>"]+$/.test(u) && u.length <= 300 ? u : null);
   return (Array.isArray(raw) ? raw : []).filter(isRec).slice(0, 300).map((t) => ({
     title: str(t.title, 80) || "Música", author: str(t.author, 80), source: https(t.source_url), licenseUrl: https(t.license_url),
-    license: typeof t.license_kind === "string" && Object.hasOwn(MUSIC_LICENSES, t.license_kind) ? MUSIC_LICENSES[t.license_kind] : str(t.license_note, 120),
+    license: t.license_kind === "outra" && str(t.license_note, 120) ? str(t.license_note, 120)
+      : typeof t.license_kind === "string" && Object.hasOwn(MUSIC_LICENSES, t.license_kind) ? MUSIC_LICENSES[t.license_kind] : str(t.license_note, 120),
   }));
 }
 /** Catálogo para a casa escolher (só faixas válidas). */

@@ -47,4 +47,4 @@ export interface MomentComment extends MomentPerson { id: string; body: string }
 export interface MomentStats { views: number; likes: number; commentsCount: number; likers: MomentPerson[]; comments: MomentComment[] }
 export function normalizeStats(raw: unknown): MomentStats;
 
-export declare function licenseGap(t: { license_kind?: string | null; license_url?: string | null; source_url?: string | null; license_date?: string | null } | null | undefined): string[];
+export declare function licenseGap(t: { license_kind?: string | null; license_note?: string | null; license_url?: string | null; source_url?: string | null; license_date?: string | null } | null | undefined): string[];
