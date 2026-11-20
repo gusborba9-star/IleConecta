@@ -42,6 +42,7 @@ import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
 import PendingCenterCard from "@/components/admin/PendingCenterCard";
 import PlatformHealthCard from "@/components/admin/PlatformHealthCard";
 import MaintenanceCard from "@/components/admin/MaintenanceCard";
+import OperatorCard from "@/components/admin/OperatorCard";
 import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
@@ -177,8 +178,9 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         </>
       ))}
 
-      {section === "config" && <>
+      {section === "config" && <div className="contents [overflow-wrap:anywhere] [&_select]:max-w-full [&_input]:min-w-0 [&_label]:min-w-0 [&_label>select]:w-full [&_span]:min-w-0 [&_button]:h-auto [&_button]:min-h-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center">
       {can("dono") && <>
+      <OperatorCard />
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Funcionalidades</h2>
         {FEATURE_KEYS.map((k) => {
@@ -339,7 +341,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         <Button onClick={() => save("pricing")} disabled={saving !== null}>{saving === "pricing" ? "Salvando…" : "Salvar preços"}</Button>
       </Card>
       </>}
-      </>}
+      </div>}
 
       {section === "historico" && <Card className="p-5">
         <h2 className="font-display font-bold text-lg mb-2">Histórico de alterações</h2>

@@ -86,7 +86,7 @@ export default function PlanMatrixCard() {
                 <div key={i} className="rounded-lg border p-2 space-y-2">
                   <Input aria-label={`Texto do item ${i + 1}`} maxLength={200} value={b.text} onChange={(e) => setCopy(plan, (c) => ({ ...c, benefits: c.benefits.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) }))} />
                   <div className="flex flex-wrap items-center gap-2">
-                    <select aria-label={`Quando o item ${i + 1} aparece`} className="rounded-md border bg-background px-2 py-1 text-sm" value={b.feature ?? ""}
+                    <select aria-label={`Quando o item ${i + 1} aparece`} className="min-w-0 max-w-full rounded-md border bg-background px-2 py-1 text-sm" value={b.feature ?? ""}
                       onChange={(e) => setCopy(plan, (c) => ({ ...c, benefits: c.benefits.map((x, j) => (j === i ? { ...x, feature: e.target.value || null } : x)) }))}>
                       <option value="">Sempre aparece</option>
                       {Object.entries(FEATURE_LABEL).map(([f, l]) => <option key={f} value={f}>Só com o interruptor: {l}</option>)}
@@ -103,7 +103,7 @@ export default function PlanMatrixCard() {
         </details>
       ))}
       {!textsOk && <p className="text-sm text-destructive">Preencha a frase e o texto de todos os itens (ou remova os vazios).</p>}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={save} disabled={saving || !changed || !textsOk}>{saving ? "Salvando…" : "Salvar planos"}</Button>
         <Button variant="ghost" onClick={() => setDraft(clone(saved))} disabled={!changed || saving}>Desfazer</Button>
       </div>

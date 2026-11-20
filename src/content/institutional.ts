@@ -281,6 +281,14 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Imagem de terceiros e de crianças e adolescentes",
+        paragraphs: [
+          "A casa declara possuir autorização de uso de imagem das pessoas que aparecerem em suas publicações e Momentos (fotos e vídeos de giras, festas, atendimentos e outros eventos), e responde por essas imagens.",
+          "É proibido expor crianças e adolescentes sem o consentimento específico e destacado dos pais ou responsáveis legais (Estatuto da Criança e do Adolescente e LGPD, art. 14).",
+          `Quem se reconhecer em uma imagem, ou for responsável por um menor retratado, pode pedir a retirada pelo botão de denúncia do Momento ou pelo suporte. A ${BRAND} também pode ocultar ou remover imediatamente, como medida de proteção, qualquer conteúdo em que pareça haver criança ou adolescente sem autorização, e avisa a casa em seguida.`,
+        ],
+      },
+      {
         heading: "Vedações e inexistência de garantia de resultado",
         paragraphs: [
           "É proibido prometer, divulgar ou sugerir garantia de resultado específico, prazos certos para desfechos de vida privada, saúde, reconciliação ou ganhos financeiros. Os serviços têm natureza espiritual e de convicção pessoal. A casa responde por qualquer publicidade que induza o cliente a erro.",
@@ -322,6 +330,14 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Momentos (publicações de 24 horas)",
+        paragraphs: [
+          "As fotos e os vídeos que as casas publicam em Momentos ficam visíveis por 24 (vinte e quatro) horas, e os arquivos são eliminados definitivamente dos servidores em até 48 (quarenta e oito) horas após a publicação. As curtidas e os comentários são excluídos em até 2 (dois) dias após a expiração do Momento.",
+          "A casa vê apenas o número total de visualizações, sem identificar quem viu, e o nome de quem curtiu ou comentou. Se um Momento for denunciado, os registros correspondentes podem ser mantidos por até 90 (noventa) dias após a conclusão da análise, para auditoria e exercício regular de direitos.",
+          "A base legal é a execução do contrato (exibir a publicação, as curtidas, os comentários e as métricas contratadas) e, para o conteúdo denunciado, o exercício regular de direitos.",
+        ],
+      },
+      {
         heading: "Dados sensíveis (convicção religiosa)",
         paragraphs: [
           "Ao contratar, você pode informar dados que revelam a sua convicção religiosa ou necessidades espirituais. São dados sensíveis, tratados com base no seu consentimento específico e destacado (LGPD, art. 11), somente para: permitir o agendamento e a execução do serviço; viabilizar a comunicação com a casa escolhida; e permitir a cobrança e o suporte. Eles não são compartilhados com terceiros alheios ao serviço nem usados para outras finalidades.",
@@ -346,6 +362,8 @@ export const INFO_PAGES: InfoPage[] = [
           "Histórico de atendimentos realizados pela casa e auditoria de ações da equipe: 12 (doze) meses, para controle operacional e transparência da gestão da conta;",
           "Mensagens excluídas pelo usuário: mantidas em arquivo restrito por 30 (trinta) dias por segurança e eliminadas definitivamente após esse período;",
           "Conversas com a assistente de suporte: 3 (três) dias, sendo descartadas automaticamente após esse prazo;",
+          "Registros técnicos de erro do aplicativo (sem endereço IP, e-mail ou identificador da conta): 30 (trinta) dias, sendo descartados automaticamente;",
+          "Momentos: arquivo eliminado em até 48 (quarenta e oito) horas após a publicação; curtidas e comentários em até 2 (dois) dias após a expiração; registros de Momento denunciado, até 90 (noventa) dias após a análise;",
           "Interações brutas de visualização e clique em impulsionamentos: 24 (vinte e quatro) horas, mantendo-se posteriormente apenas os totais diários consolidados e anônimos.",
         ],
       },
@@ -362,9 +380,22 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Transferência internacional de dados",
+        paragraphs: [
+          `Para viabilizar a operação tecnológica da plataforma, a ${BRAND} utiliza serviços de provedores de infraestrutura em nuvem, de processamento de pagamentos (como o Stripe) e de inteligência artificial, cujos servidores podem estar localizados fora do Brasil.`,
+          "Nesses casos, a transferência internacional de dados é necessária para a execução do serviço contratado (LGPD, art. 33, IX, combinado com o art. 7º, V) e ocorre por meio de provedores globais que adotam garantias contratuais e padrões internacionais de segurança da informação, em conformidade com o art. 33 da LGPD e com a regulamentação da ANPD.",
+        ],
+      },
+      {
+        heading: "Registros técnicos e diagnóstico de erros",
+        paragraphs: [
+          "Para monitorar a estabilidade e corrigir falhas, o sistema registra eventos técnicos de erro de funcionamento por até 30 (trinta) dias. Esses registros não carregam endereço IP, e-mail ou identificador da conta, e são descartados automaticamente após esse período.",
+        ],
+      },
+      {
         heading: "Seus direitos",
         paragraphs: [
-          "Você pode pedir acesso, correção, exclusão dos seus dados, entre outros direitos previstos em lei. Para isso, fale com o suporte.",
+          "Você pode pedir acesso, correção, exclusão dos seus dados, entre outros direitos previstos em lei. Para isso, fale com o suporte do aplicativo ou use o e-mail de atendimento indicado no início desta página, quando houver.",
         ],
       },
     ],

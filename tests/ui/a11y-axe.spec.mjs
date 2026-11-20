@@ -9,7 +9,7 @@ try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* 
 const ME = U(1), HID = U(60);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const casa = { ...pessoa, account_type: "casa", display_name: "Casa Axé" };
-const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }));
+const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: HID, owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "intermediario", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } };
 const rpc = { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } };
 

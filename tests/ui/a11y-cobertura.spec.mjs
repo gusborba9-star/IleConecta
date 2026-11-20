@@ -10,7 +10,7 @@ try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* 
 
 const ME = U(1), HID = U(60);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }));
+const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
 const rpc = { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, music_credits: [] };
 const logado = { rest: { profiles: pessoa, legal_consents: consent("termos_cliente", "dados_sensiveis"), platform_settings: [] }, rpc };
 
@@ -56,6 +56,12 @@ const TELAS_RESPONSIVAS = [
   { nome: "termos", login: logado, tela: "/termos" },
   { nome: "créditos de áudio", login: logado, tela: "/creditos-de-audio" },
   { nome: "administração", login: logado, tela: "/admin" },
+  { nome: "administração: configurações", login: logado, tela: "/admin?s=config" },
+  { nome: "administração: reembolsos", login: logado, tela: "/admin?s=reembolsos" },
+  { nome: "administração: suporte (admin)", login: logado, tela: "/admin?s=suporte" },
+  { nome: "administração: usuários", login: logado, tela: "/admin?s=usuarios" },
+  { nome: "administração: documentos", login: logado, tela: "/admin?s=docs" },
+  { nome: "administração: histórico", login: logado, tela: "/admin?s=historico" },
   { nome: "normas (institucional)", login: null, tela: "/sobre/normas-de-uso" },
 ];
 const semRolagemLateral = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
