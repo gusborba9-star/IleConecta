@@ -53,7 +53,8 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
     const r = inserts(calls)[0];
     expect(r).toMatchObject({ card_style: "total", card_font: "ritual", card_size: "g", card_color: "dourado", card_align: "centro", card_pos: "meio", card_bold: true, card_italic: false });
     expect(Object.keys(r).filter((k) => /css|style_|font_family|hex/i.test(k))).toEqual([]); // nada de estilo escrito à mão
-    expect(JSON.stringify(r)).not.toMatch(/#F5D06F|Cinzel|px/i); // só ids da lista, nunca valores de CSS
+    const { card_image_path: _ignorado, ...semCaminho } = r; // o nome do arquivo leva sufixo aleatório (pode conter "px" por acaso)
+    expect(JSON.stringify(semCaminho)).not.toMatch(/#F5D06F|Cinzel|px/i); // só ids da lista, nunca valores de CSS
   });
 
   test("trocar para o card parcial: só cores escuras, sem posição, cor clara escolhida cai; papel claro sob o texto", async ({ page }) => {
