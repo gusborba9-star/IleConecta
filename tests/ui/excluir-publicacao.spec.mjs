@@ -5,7 +5,7 @@ const OWNER = U(1), HID = U(60), OTHER_OWNER = U(2), OTHER_HID = U(61);
 const MINE = U(901), CARD = U(902), THEIRS = U(903);
 const PATH = `${OWNER}/1700000000000-abc123.webp`;
 const profile = (type) => ({ id: OWNER, account_type: type, display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
-const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
 const mkHouse = (id, owner, name) => ({ id, owner_id: owner, name, category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const post = (id, hid, owner, text, o = {}) => ({ id, house_id: hid, kind: "geral", content: text, image_url: null, card_style: null, card_image_path: null, card_scrim: 55, created_at: "2026-11-17T10:00:00Z", houses: { owner_id: owner }, post_likes: [], post_comments: [], ...o });
 const LIST = [post(MINE, HID, OWNER, "Meu post"), post(CARD, HID, OWNER, "Post com foto", { card_style: "total", card_image_path: PATH }), post(THEIRS, OTHER_HID, OTHER_OWNER, "Post de outra casa")];

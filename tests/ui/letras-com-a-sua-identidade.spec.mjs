@@ -3,7 +3,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const OWNER = U(1), HID = U(60);
 const profile = { id: OWNER, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
 const house = (plan) => ({ id: HID, owner_id: OWNER, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan, created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const setup = (page, plan, list = []) => api(page, { rest: { profiles: profile, legal_consents: consents, houses: [house(plan)], posts: (body) => (body ? { id: U(900), created_at: "2026-11-17T10:00:00Z" } : list) }, rpc: { post_like_counts: [] } });
 async function photo(page, color) {
@@ -53,7 +53,8 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
     const r = inserts(calls)[0];
     expect(r).toMatchObject({ card_style: "total", card_font: "ritual", card_size: "g", card_color: "dourado", card_align: "centro", card_pos: "meio", card_bold: true, card_italic: false });
     expect(Object.keys(r).filter((k) => /css|style_|font_family|hex/i.test(k))).toEqual([]); // nada de estilo escrito à mão
-    expect(JSON.stringify(r)).not.toMatch(/#F5D06F|Cinzel|px/i); // só ids da lista, nunca valores de CSS
+    const { card_image_path: _ignorado, ...semCaminho } = r; // o nome do arquivo leva sufixo aleatório (pode conter "px" por acaso)
+    expect(JSON.stringify(semCaminho)).not.toMatch(/#F5D06F|Cinzel|px/i); // só ids da lista, nunca valores de CSS
   });
 
   test("trocar para o card parcial: só cores escuras, sem posição, cor clara escolhida cai; papel claro sob o texto", async ({ page }) => {

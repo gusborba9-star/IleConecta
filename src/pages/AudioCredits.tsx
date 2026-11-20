@@ -13,7 +13,7 @@ export default function AudioCredits() {
     <div className="space-y-5 pb-16 lg:pb-4">
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-1"><Music className="h-5 w-5 text-primary" aria-hidden /><h1 className="font-display font-bold text-2xl">Créditos de áudio</h1></div>
-        <p className="text-sm text-muted-foreground max-w-2xl">O Ilê Conecta oferece, dentro dos Momentos, uma biblioteca de músicas sob licenças abertas (como CC0 e CC BY). Cada faixa mantém sua licença original, devendo ser observados seus respectivos termos. A plataforma pode retirar ou substituir qualquer faixa a qualquer momento.</p>
+        <p className="text-sm text-muted-foreground max-w-2xl">O Ilê Conecta oferece, dentro dos Momentos, uma biblioteca de áudios composta por faixas exclusivas da plataforma e por faixas sob licenças abertas (como CC0 e CC BY). As faixas sob licenças abertas mantêm suas licenças originais, devendo ser observados seus respectivos termos. As faixas exclusivas da plataforma não podem ser extraídas, baixadas nem usadas fora do aplicativo. Para carregar mais rápido, os arquivos foram recodificados para 128 kbps. A plataforma pode retirar ou substituir qualquer faixa a qualquer momento.</p>
       </Card>
       <Card className="p-5">
         {list === null && <p className="text-sm text-muted-foreground">Carregando…</p>}

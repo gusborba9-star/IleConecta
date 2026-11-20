@@ -273,6 +273,14 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Momentos e trilhas sonoras",
+        paragraphs: [
+          "Dentro dos Momentos, o Ilê Conecta disponibiliza uma biblioteca de áudios composta por faixas exclusivas da plataforma e por faixas sob licenças abertas (como CC0 e CC BY). As faixas sob licenças abertas mantêm suas respectivas licenças originais, e os dados de autoria e os links constam na página Créditos de Áudio.",
+          "Quanto às faixas exclusivas da plataforma, é vedada sua extração, download ou utilização fora do ambiente do aplicativo. A casa escolhe a música apenas para acompanhar o próprio Momento.",
+          "O Ilê Conecta poderá retirar ou substituir qualquer faixa da biblioteca a qualquer momento, sem aviso prévio.",
+        ],
+      },
+      {
         heading: "Vedações e inexistência de garantia de resultado",
         paragraphs: [
           "É proibido prometer, divulgar ou sugerir garantia de resultado específico, prazos certos para desfechos de vida privada, saúde, reconciliação ou ganhos financeiros. Os serviços têm natureza espiritual e de convicção pessoal. A casa responde por qualquer publicidade que induza o cliente a erro.",
