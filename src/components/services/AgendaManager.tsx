@@ -62,7 +62,7 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
     <Card className="p-5 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarDays className="h-5 w-5 text-primary" />
-        <h3 className="font-display font-bold text-lg">Agenda de atendimento</h3>
+        <h2 className="font-display font-bold text-lg">Agenda de atendimento</h2>
       </div>
       <p className="text-sm text-muted-foreground">
         Defina os dias e horários em que você atende. Nos serviços marcados com agenda (jogos, consultas, atendimentos), o cliente escolhe um desses horários e paga pela plataforma. Horários no fuso de Brasília.
@@ -92,7 +92,7 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
       </div>
 
       <div className="border-t border-border/60 pt-3 space-y-2">
-        <h4 className="font-semibold text-sm">Bloquear um horário</h4>
+        <h3 className="font-semibold text-sm">Bloquear um horário</h3>
         <p className="text-xs text-muted-foreground">Folga, viagem ou um atendimento que você combinou fora da plataforma.</p>
         {blocks.map((b) => (
           <div key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
