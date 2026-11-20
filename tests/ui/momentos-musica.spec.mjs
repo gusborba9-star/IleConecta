@@ -4,8 +4,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), CASA = U(11), HID = U(60), TRACK = U(90);
-const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
-const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = { id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "base", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } };
 const iso = (m) => new Date(Date.now() - m * 60000).toISOString();
@@ -211,6 +211,20 @@ test.describe("créditos de áudio", () => {
     { title: "Brisa", author: "Ana", source_url: "https://ende.app/x", license_kind: "cc_by", license_url: "https://creativecommons.org/licenses/by/4.0/", license_note: null },
     { title: "<img src=x onerror=window.__xss=1>", author: "Beto", source_url: "javascript:window.__xss=1", license_kind: null, license_url: "http://x.com", license_note: "Nota <b>x</b>" },
   ];
+  test("a página explica faixas exclusivas, licenças abertas e a recodificação para 128 kbps", async ({ page }) => {
+    await setup(page, "cliente", { extra: { rpc: { music_credits: [] } } });
+    await page.goto("/creditos-de-audio");
+    const t = page.getByRole("main");
+    await expect(t).toContainText("faixas exclusivas da plataforma");
+    await expect(t).toContainText("não podem ser extraídas, baixadas nem usadas fora do aplicativo");
+    await expect(t).toContainText("recodificados para 128 kbps");
+  });
+  test("Termos da Casa trazem a seção Momentos e trilhas sonoras (texto aprovado pelo advogado)", async ({ page }) => {
+    await page.goto("/sobre/termos-da-casa");
+    await expect(page.getByRole("heading", { name: "Momentos e trilhas sonoras" })).toBeVisible();
+    await expect(page.getByText("é vedada sua extração, download ou utilização fora do ambiente do aplicativo")).toBeVisible();
+    await expect(page.getByText("faixas sob licenças abertas mantêm suas respectivas licenças originais")).toBeVisible();
+  });
   test("lista título, autor, licença e fonte com links seguros; texto hostil não executa; sem violações", async ({ page }) => {
     await setup(page, "cliente", { extra: { rpc: { music_credits: credits } } });
     await page.goto("/creditos-de-audio");

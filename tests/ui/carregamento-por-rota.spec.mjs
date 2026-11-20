@@ -3,7 +3,7 @@ import { api, U } from "./_api.mjs";
 
 const OWNER = U(1);
 const profile = { id: OWNER, account_type: "cliente", display_name: "Pessoa Teste", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-11-01T10:00:00Z" };
-const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "dados_sensiveis", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "dados_sensiveis", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }];
 const setup = (page) => api(page, { rest: { profiles: profile, legal_consents: consents, houses: [], posts: [] } });
 
 test.describe("carregamento por tela", () => {

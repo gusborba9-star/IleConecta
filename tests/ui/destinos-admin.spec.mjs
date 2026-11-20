@@ -14,7 +14,7 @@ const reports = ["r1", "r2"].map((k, n) => ({ id: CASES[k], reporter_name: `Denu
 const mods = ["m1", "m2"].map((k, n) => ({ id: CASES[k], house_id: U(300 + n), house_name: `Casa ${n + 1}`, target_table: "posts", target_id: U(400 + n), reason: "promessa", excerpt: "x", status: "pendente", outcome: null, created_at: "2026-11-15T10:00:00Z", orientation_at: null, warned_at: null, deadline_at: null, hidden_at: null, contested_at: null, contest_text: null, contest_decision: null, admin_note: null, adaptation_start: null, adaptation_days: 30 }));
 
 const setup = (page) => api(page, {
-  rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }] },
+  rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }] },
   rpc: { is_admin: true, admin_pending_center: PEND, admin_support_queue: queue, admin_chat_reports: reports, admin_moderation_list: mods },
 });
 const resolve = (page, title) => page.locator("li").filter({ hasText: title }).getByRole("button", { name: /^Resolver em/ }).click();
@@ -59,7 +59,7 @@ test.describe("central da administração abre o item exato", () => {
 
   test("histórico da administração: abrir a linha do tempo de uma casa aparece com nome legível (não a chave técnica)", async ({ page }) => {
     await api(page, {
-      rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }] },
+      rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }] },
       rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_audit_feed: [{ id: 2, key: "ver_linha_do_tempo_da_casa", created_at: "2026-11-16T22:00:00Z", admin_id: null, actor: "Gustavo" }, { id: 1, key: "billing_enroll", created_at: "2026-11-16T21:00:00Z", admin_id: null, actor: "Gustavo" }] },
     });
     await page.goto("/admin?s=historico");

@@ -14,7 +14,7 @@ const PAGE2 = { ...PAGE1, to_pay: null, events: [ev(4, "moderacao"), ev(5, "casa
 const HOUSES = [{ house_id: H1, name: "Casa Um", plan: "base" }, { house_id: H2, name: "Terreiro Dois", plan: "gratis" }];
 
 const setup = (page, extra = {}) => api(page, {
-  rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-8", accepted_at: "2026-11-01T10:00:00Z" }] },
+  rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-9", accepted_at: "2026-11-01T10:00:00Z" }] },
   rpc: { is_admin: true, admin_houses_plans: HOUSES, admin_houses_seats: [], admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] },
     admin_house_timeline: (b) => (b.p_before ? PAGE2 : b.p_house === H2 ? { ...PAGE1, house: { ...PAGE1.house, id: H2, name: "Terreiro Dois" }, to_pay: null, events: [ev(9, "casa_criada")], has_more: false, next_before: null } : PAGE1), ...extra },
 });
