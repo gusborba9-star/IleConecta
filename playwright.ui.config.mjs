@@ -5,6 +5,8 @@ export default defineConfig({
   testDir: "./tests/ui",
   testMatch: "**/*.spec.mjs",
   fullyParallel: false,
+  // Os testes simulam a própria API e não dependem uns dos outros: arquivos diferentes rodam em paralelo (a máquina tem 2 núcleos).
+  workers: Number(process.env.PW_WORKERS ?? 2),
   reporter: process.env.CI ? "list" : "html",
   use: { baseURL: "http://127.0.0.1:4174", trace: "retain-on-failure", screenshot: "only-on-failure", ...devices["Desktop Chrome"], ...(process.env.PW_CHROMIUM ? { launchOptions: { executablePath: process.env.PW_CHROMIUM } } : {}) },
   webServer: {

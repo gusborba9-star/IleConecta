@@ -34,7 +34,7 @@ for (const vp of [{ n: "celular 375", width: 375, height: 740 }, { n: "computado
         const achados = [];
         for (const tela of g.telas) {
           await page.goto(tela);
-          await page.waitForTimeout(700);
+          await page.locator("h1").first().waitFor({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(150);
           const r = await new AxeBuilder({ page }).withTags(TAGS).analyze();
           for (const v of r.violations) achados.push(`${tela} · ${v.id} (${v.impact}) ×${v.nodes.length}: ${v.nodes[0].target.join(" ")} — ${(v.nodes[0].failureSummary ?? "").split("\n")[1] ?? ""}`.slice(0, 300));
         }
@@ -65,13 +65,13 @@ for (const t of TELAS_RESPONSIVAS) {
   test(`reflow 320 px sem rolagem lateral: ${t.nome}`, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     if (t.login) await api(page, t.login);
-    await page.goto(t.tela); await page.waitForTimeout(500);
+    await page.goto(t.tela); await page.locator("h1").first().waitFor({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(150);
     expect(await semRolagemLateral(page)).toBe(true);
   });
   test(`texto a 200% sem rolagem lateral nem texto cortado: ${t.nome}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     if (t.login) await api(page, t.login);
-    await page.goto(t.tela); await page.waitForTimeout(500);
+    await page.goto(t.tela); await page.locator("h1").first().waitFor({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(150);
     await page.addStyleTag({ content: "html{font-size:200% !important}" });
     await page.waitForTimeout(200);
     expect(await semRolagemLateral(page)).toBe(true);
@@ -79,7 +79,7 @@ for (const t of TELAS_RESPONSIVAS) {
   test(`espaçamento de texto (WCAG 1.4.12) não cria rolagem lateral: ${t.nome}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     if (t.login) await api(page, t.login);
-    await page.goto(t.tela); await page.waitForTimeout(500);
+    await page.goto(t.tela); await page.locator("h1").first().waitFor({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(150);
     await page.addStyleTag({ content: "*{line-height:1.5 !important;letter-spacing:.12em !important;word-spacing:.16em !important} p{margin-bottom:2em !important}" });
     await page.waitForTimeout(200);
     expect(await semRolagemLateral(page)).toBe(true);
