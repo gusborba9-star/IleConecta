@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Bot, CalendarDays, ClipboardList, Wallet, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/base";
 import { fetchHouseRituals, type RealRitual } from "@/lib/rituals";
 import { fetchHouseOrders, isOpenOrder, type ServiceOrder } from "@/lib/serviceOrders";
 import { fetchAssistantReport, type AssistantReport } from "@/lib/houseReport";
-import { formatBRL } from "@/lib/utils";
+import { cn, formatBRL } from "@/lib/utils";
+import { TONE_CLASS, type ToolTone } from "@/components/panel/toneClass";
 
 const PAID = new Set(["confirmado", "em_andamento", "concluido"]);
 
@@ -40,39 +42,28 @@ export default function HouseKpis({ ownerId }: { ownerId: string }) {
   const pct = next && next.seatsTotal > 0 ? Math.min(100, Math.round((next.taken / next.seatsTotal) * 100)) : 0;
 
   return (
-    <section aria-label="Resumo da casa" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] xl:grid-cols-4 gap-3">
-      <Link to="/pedidos?aba=historico" className="block rounded-[22px] outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] hover:-translate-y-0.5">
-        <Card className="p-4 !rounded-[22px]">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Pedidos pagos no mês</div>
-          <div className="font-display font-bold text-2xl sm:text-3xl mt-2 break-words">{formatBRL(paidCents / 100)}</div>
-          <div className="text-xs font-semibold text-forest mt-1">{paid.length} {paid.length === 1 ? "pedido" : "pedidos"}</div>
-        </Card>
-      </Link>
-      <Link to={`/casa/${ownerId}?aba=rituais`} className="block rounded-[22px] outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] hover:-translate-y-0.5">
-        <Card className="p-4 !rounded-[22px] !bg-[#FBF2DE] !border-[#AA781E]/30 dark:!bg-gold/10">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A520C] dark:text-gold">{next ? `Próximo ritual · ${new Date(next.startsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}` : "Próximo ritual"}</div>
-          <div className="font-display font-bold text-2xl sm:text-3xl mt-2 break-words">{next ? `${next.taken} de ${next.seatsTotal}` : "Nenhum"}</div>
-          {next ? (
-            <div className="mt-2 h-2 rounded-full bg-[#AA781E]/20" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Vagas preenchidas"><div className="h-2 rounded-full bg-[#C99A2E]" style={{ width: `${pct}%` }} /></div>
-          ) : (
-            <div className="text-xs text-muted-foreground mt-1">Crie um ritual para abrir vagas.</div>
-          )}
-        </Card>
-      </Link>
-      <Link to={`/pedidos`} className="block rounded-[22px] outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] hover:-translate-y-0.5">
-        <Card className="p-4 !rounded-[22px] !bg-[#FBE9E1] !border-[#B33A18]/25 dark:!bg-primary/10">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#B33A18] dark:text-primary">Pedidos em aberto</div>
-          <div className="font-display font-bold text-2xl sm:text-3xl mt-2 break-words">{open}</div>
-          <div className="text-xs text-muted-foreground mt-1">{open === 0 ? "Nada esperando você." : "Aguardando pagamento, início ou conclusão."}</div>
-        </Card>
-      </Link>
-      <Link to={`/perfil`} className="block rounded-[22px] outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] hover:-translate-y-0.5">
-        <Card className="p-4 !rounded-[22px] !border-0 text-white" style={{ background: "linear-gradient(135deg,#14543F,#0F3B2D)" }}>
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-gold">Assistente · 30 dias</div>
-          <div className="font-display font-bold text-2xl sm:text-3xl mt-2 break-words">{report ? report.clientsAttended : "—"}</div>
-          <div className="text-xs text-white/70 mt-1">{report ? `${report.assistantReplies} respostas, ${report.ordersAfterChat} pedidos depois do chat` : "Sem dados ainda."}</div>
-        </Card>
-      </Link>
+    <section aria-label="Resumo da casa" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] gap-3 xl:grid-cols-4">
+      <Kpi to="/pedidos?aba=historico" icon={Wallet} tone="ouro" label="Pago no mês" value={formatBRL(paidCents / 100)} note={`${paid.length} ${paid.length === 1 ? "pedido" : "pedidos"}`} />
+      <Kpi to={`/casa/${ownerId}?aba=rituais`} icon={CalendarDays} tone="terra" label={next ? `Próximo ritual · ${new Date(next.startsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}` : "Próximo ritual"} value={next ? `${next.taken} de ${next.seatsTotal}` : "Nenhum"}
+        note={next ? undefined : "Crie um ritual para abrir vagas."}
+        extra={next ? <div className="mt-2 h-2 rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Vagas preenchidas"><div className="h-2 rounded-full bg-[#C99A2E]" style={{ width: `${pct}%` }} /></div> : undefined} />
+      <Kpi to="/pedidos" icon={ClipboardList} tone="verde" label="Pedidos em aberto" value={String(open)} note={open === 0 ? "Nada esperando você." : "Aguardando pagamento, início ou conclusão."} />
+      <Kpi to="/perfil" icon={Bot} tone="noite" label="Assistente · 30 dias" value={report ? String(report.clientsAttended) : "—"} note={report ? `${report.assistantReplies} respostas, ${report.ordersAfterChat} pedidos depois do chat` : "Sem dados ainda."} />
     </section>
+  );
+}
+
+/** Os quatro resumos têm o mesmo molde (anel, nome, número, nota) e a mesma altura; só o anel muda de cor. */
+function Kpi({ to, icon: Icon, tone, label, value, note, extra }: { to: string; icon: LucideIcon; tone: ToolTone; label: string; value: string; note?: string; extra?: ReactNode }) {
+  return (
+    <Link to={to} className="block h-full rounded-[22px] outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] hover:-translate-y-0.5">
+      <Card className="flex h-full min-h-[10.5rem] flex-col p-4 !rounded-[22px]">
+        <span className={cn("tool-ring !h-10 !w-10 shrink-0", TONE_CLASS[tone])}><Icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden /></span>
+        <div className="mt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</div>
+        <div className="mt-1 break-words font-display text-2xl font-bold">{value}</div>
+        {extra}
+        {note && <div className="mt-auto pt-1 text-xs leading-snug text-muted-foreground">{note}</div>}
+      </Card>
+    </Link>
   );
 }

@@ -52,7 +52,7 @@ export default function HousePendingCard() {
       ) : (
         <>
           {view.total === 0 ? (
-            <p className="text-sm text-muted-foreground">Nada pendente agora.</p>
+            toPay ? null : <p className="text-sm text-muted-foreground">Nada pendente agora.</p>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2 text-sm">
