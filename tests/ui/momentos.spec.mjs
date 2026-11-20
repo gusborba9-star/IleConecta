@@ -289,3 +289,70 @@ test.describe("momentos: limite por dia conta o publicado", () => {
     await expect(page.getByRole("dialog").getByRole("button", { name: "Publicar", exact: true })).toBeDisabled();
   });
 });
+
+test.describe("teclado e foco nas janelas de tela cheia (acessibilidade)", () => {
+  // Tab e Shift+Tab ficam dentro da janela: quem navega por teclado ou leitor de tela não cai na página de trás.
+  const foraDaJanela = async (page, nome, voltas, shift) => {
+    const fora = [];
+    for (let i = 0; i < voltas; i++) {
+      await page.keyboard.press(shift ? "Shift+Tab" : "Tab");
+      const dentro = await page.evaluate((n) => { const d = document.querySelector(`[role=dialog][aria-label="${n}"]`); return Boolean(d && d.contains(document.activeElement)); }, nome);
+      if (!dentro) fora.push(i);
+    }
+    return fora;
+  };
+  test("visualizador: o foco começa dentro, Tab e Shift+Tab não escapam, e ao fechar o foco volta ao cartão", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    const card = page.getByTestId("moment-card").first();
+    await card.focus(); await page.keyboard.press("Enter");
+    const v = page.getByRole("dialog", { name: "Momentos de Casa de Oxum" });
+    await expect(v).toBeVisible();
+    expect(await page.evaluate(() => Boolean(document.querySelector("[data-testid=moment-viewer]")?.contains(document.activeElement)))).toBe(true);
+    expect(await foraDaJanela(page, "Momentos de Casa de Oxum", 25, false)).toEqual([]);
+    expect(await foraDaJanela(page, "Momentos de Casa de Oxum", 25, true)).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("moment-viewer")).toHaveCount(0);
+    await expect(card).toBeFocused();
+  });
+  test("denunciar dentro do visualizador: o foco fica preso na janela de denúncia", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    await page.getByRole("button", { name: "Mais opções" }).click();
+    await page.getByRole("menuitem", { name: /Denunciar/ }).click();
+    const rep = page.getByRole("dialog", { name: "Denunciar momento" });
+    await expect(rep).toBeVisible();
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press("Tab");
+      expect(await page.evaluate(() => Boolean(document.querySelector("[role=dialog][aria-label='Denunciar momento']")?.contains(document.activeElement)))).toBe(true);
+    }
+  });
+  test("editor de foto: Tab e Shift+Tab não escapam da janela", async ({ page }) => {
+    await setup(page, "casa", "base");
+    await page.goto("/comunidade");
+    await page.getByRole("button", { name: /Criar momento/ }).click();
+    await page.locator("#moment-file").setInputFiles(png());
+    await expect(page.getByRole("dialog", { name: "Editar momento" })).toBeVisible();
+    expect(await foraDaJanela(page, "Editar momento", 30, false)).toEqual([]);
+    expect(await foraDaJanela(page, "Editar momento", 30, true)).toEqual([]);
+  });
+  test("pausa por botão (WCAG 2.2.2): o avanço automático para, o botão anuncia o estado e continua ao reativar", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").first().click();
+    const bar = page.getByTestId("moment-progress");
+    const w = async () => Number.parseFloat(await bar.evaluate((e) => e.style.width));
+    await expect.poll(w).toBeGreaterThan(0);
+    const pausar = page.getByRole("button", { name: "Pausar momento" });
+    await expect(pausar).toHaveAttribute("aria-pressed", "false");
+    await pausar.click();
+    const continuar = page.getByRole("button", { name: "Continuar momento" });
+    await expect(continuar).toHaveAttribute("aria-pressed", "true");
+    const parado = await w();
+    await page.waitForTimeout(1200);
+    expect(await w()).toBe(parado);
+    await continuar.click();
+    await expect.poll(w).toBeGreaterThan(parado);
+  });
+});

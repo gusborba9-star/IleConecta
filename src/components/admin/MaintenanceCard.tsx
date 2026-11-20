@@ -41,7 +41,7 @@ export default function MaintenanceCard() {
   const row = (key: "assistant" | "payments", title: string, desc: string) => (
     <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer">
       <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={state[key]} onChange={(e) => setState({ ...state, [key]: e.target.checked })} />
-      <span className="min-w-0">
+      <span className="min-w-0 break-words">
         <span className="block font-semibold text-sm">{title} {saved[key] && <span className="ml-1 text-xs font-bold text-destructive">(em manutenção agora)</span>}</span>
         <span className="block text-xs text-muted-foreground">{desc}</span>
       </span>

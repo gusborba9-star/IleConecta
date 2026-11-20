@@ -700,7 +700,7 @@ Experiência consistente em celular, tablet e desktop. Requisitos: layout respon
 
 Priorizar velocidade sem sacrificar consistência ou segurança.
 
-**Acessibilidade comprovada (17/11/2026):** as telas principais passam no axe-core (WCAG 2.2 AA) em celular e computador, claro e escuro; teclado com foco visível, "Ir para o conteúdo", título por tela, menus nomeados e contraste mínimo 4,5:1 nos dois temas. Todo problema novo falha nos testes `a11y-axe` e `a11y-teclado`. Detalhes em `docs/governanca/ACESSIBILIDADE_FASE6.md`.
+**Acessibilidade comprovada (17/11/2026):** as telas principais passam no axe-core (WCAG 2.2 AA) em celular e computador, claro e escuro; teclado com foco visível, "Ir para o conteúdo", título por tela, menus nomeados e contraste mínimo 4,5:1 nos dois temas. Todo problema novo falha nos testes `a11y-axe` e `a11y-teclado`. **Cobertura ampliada (19/11/2026):** o axe também vale para páginas institucionais, 404, créditos de áudio, chamados, convites, retorno de pagamento e as 7 seções da administração; reflow em 320 px, texto a 200% e espaçamento de texto sem rolagem lateral; janelas de tela cheia dos Momentos prendem o foco e o avanço automático tem botão de pausa (WCAG 2.2.2). Detalhes em `docs/governanca/ACESSIBILIDADE_FASE6.md`.
 
 ---
 

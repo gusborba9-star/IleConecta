@@ -14,7 +14,7 @@ export default function RitualDetail() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const ritual = rituals.find((r) => r.id === id);
-  if (!ritual) return <div className="p-8 text-center">Ritual não encontrado</div>;
+  if (!ritual) return <div className="p-8 text-center space-y-3"><h1 className="font-display font-bold text-2xl">Ritual não encontrado</h1><Button onClick={() => nav("/rituais")}>Ver rituais</Button></div>;
   const house = getHouse(ritual.houseId);
   const remaining = ritual.vagasTotal - ritual.vagasVendidas;
   const pct = (ritual.vagasVendidas / ritual.vagasTotal) * 100;

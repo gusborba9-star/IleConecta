@@ -56,6 +56,8 @@ export default function AdminShell() {
         ))}
       </nav>
       <div className="min-w-0 space-y-4">
+        {/* Visão geral e Documentos já têm o próprio título principal; as outras seções ganham um só para leitor de tela. */}
+        {current !== null && current !== "visao" && current !== "docs" && <h1 className="sr-only">{SECTIONS.find((x) => x.id === current)?.label}</h1>}
         {current === null && <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Sua conta está na equipe da administração, mas ainda não recebeu nenhum módulo de acesso. Peça ao dono da plataforma.</p>}
         {(current === "visao" || current === "config" || current === "historico") && <Admin section={current as AdminSection} />}
         {current === "reembolsos" && <AdminRefunds />}

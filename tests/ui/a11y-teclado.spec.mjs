@@ -24,9 +24,9 @@ const semIndicador = async (page, max) => {
   return ruins;
 };
 
-for (const [nome, tela] of [["login", "/login"], ["cadastro", "/register"], ["inicio", "/"], ["descobrir", "/descobrir"], ["planos", "/planos"], ["suporte", "/suporte"]]) {
+for (const [nome, tela] of [["login", "/login"], ["cadastro", "/register"], ["inicio", "/"], ["descobrir", "/descobrir"], ["planos", "/planos"], ["suporte", "/suporte"], ["comunidade (Momentos)", "/comunidade"], ["termos", "/termos"], ["créditos de áudio", "/creditos-de-audio"], ["chamados", "/suporte/chamados"], ["administração", "/admin"], ["administração: suporte", "/admin?s=suporte"], ["página inexistente", "/nao-existe-mesmo"]]) {
   test(`foco visível ao navegar por Tab: ${nome}`, async ({ page }) => {
-    if (tela !== "/login" && tela !== "/register") await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } } });
+    if (tela !== "/login" && tela !== "/register") await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, music_credits: [] } });
     await page.goto(tela);
     await page.waitForTimeout(800);
     expect(await semIndicador(page, 40)).toEqual([]);
