@@ -19,7 +19,8 @@ interface Props {
 
 /** Atalho do painel: ícone com anel colorido e nome embaixo. Mesmo componente no Início, em Crescer e onde mais houver atalhos. */
 export default function ToolTile({ icon: Icon, label, tone, to, onClick, badge, note }: Props) {
-  const aria = [label, badge && badge > 0 ? `${badge} pendente${badge > 1 ? "s" : ""}` : "", note ?? ""].filter(Boolean).join(", ");
+  // O nome acessível começa pelo texto visível (rótulo + nota, separados por espaço); o aviso numerado vem depois.
+  const aria = [[label, note].filter(Boolean).join(" "), badge && badge > 0 ? `${badge} pendente${badge > 1 ? "s" : ""}` : ""].filter(Boolean).join(", ");
   const body = (
     <>
       <span className={cn("tool-ring relative", `tone-${tone}`)}>
