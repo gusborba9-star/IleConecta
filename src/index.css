@@ -205,6 +205,29 @@
     .sheen::after { animation: none; }
     .lift { transition: none; }
   }
+  /* Ferramentas do painel: ícone sem fundo chapado, com anel na cor da família (verde = pessoas e gestão, terracota = comunicação e eventos,
+     ouro = receita e alcance, noite = assistente). O texto e o ícone passam de 4,5:1 nos dois temas; o anel é só reforço. */
+  .tone-verde { --tc: 160 52% 31%; --ti: 160 62% 20%; }
+  .tone-terra { --tc: 14 60% 48%; --ti: 14 70% 33%; }
+  .tone-ouro { --tc: 42 70% 52%; --ti: 36 90% 23%; }
+  .tone-noite { --tc: 226 38% 42%; --ti: 226 44% 30%; }
+  .dark .tone-verde { --tc: 158 38% 52%; --ti: 158 58% 78%; }
+  .dark .tone-terra { --tc: 14 66% 60%; --ti: 14 100% 85%; }
+  .dark .tone-ouro { --tc: 42 77% 62%; --ti: 44 100% 77%; }
+  .dark .tone-noite { --tc: 226 62% 71%; --ti: 226 100% 90%; }
+  .tool-ring {
+    display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: 9999px; color: hsl(var(--ti));
+    background: radial-gradient(circle at 30% 25%, hsl(var(--tc) / 0.22), hsl(var(--tc) / 0.07)), hsl(var(--card));
+    box-shadow: 0 0 0 2px hsl(var(--tc)), 0 0 0 5px hsl(var(--tc) / 0.16), 0 8px 14px -8px hsl(var(--tc));
+    transition: transform 160ms ease;
+  }
+  .tool-tile:hover .tool-ring, .tool-tile:focus-visible .tool-ring { transform: translateY(-2px); }
+  @media (prefers-reduced-motion: reduce) { .tool-ring { transition: none; } }
+  /* Barra de baixo do celular (conta de casa): flutuante, com contorno fino para os limites ficarem visíveis nos dois temas. */
+  .mobile-bar {
+    box-shadow: inset 0 1px 0 hsl(var(--pillow-hi)), 0 10px 26px -10px hsl(22 40% 12% / 0.45);
+    border: 1px solid hsl(var(--gold) / 0.35);
+  }
   .scroll-x {
     overflow-x: auto;
     scrollbar-width: none;

@@ -1,8 +1,7 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { Bot, Contact, Megaphone, Newspaper, Pencil, Plus, Sparkles, TrendingUp, Users, UsersRound } from "lucide-react";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Bot, ClipboardList, Contact, Crown, Landmark, Leaf, Megaphone, Newspaper, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera, CalendarDays } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
@@ -17,33 +16,47 @@ import PlanUpsellModal from "@/components/house/PlanUpsellModal";
 import ShareHouseCard from "@/components/house/ShareHouseCard";
 import BillingAlertCard from "@/components/house/BillingAlertCard";
 import PaymentAccountCard from "@/components/payments/PaymentAccountCard";
+import ToolTile, { type ToolTone } from "@/components/panel/ToolTile";
+import Collapse from "@/components/panel/Collapse";
+import { useHouseBadges } from "@/lib/useHouseBadges";
 import { fetchHouseTermsAccepted } from "@/lib/consents";
 import { fetchMembersOverview } from "@/lib/members";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { isFeatureOn } from "@/lib/platformConfig";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { minPlanFor, type CapFlagKey, type CapNumberKey } from "@/lib/planMatrixCore";
 import { FREE_PLAN_NAME, HOUSE_PLAN_IDS } from "@/lib/platformConfigCore";
+import type { LucideIcon } from "lucide-react";
 import type { HouseUser } from "@/types";
 
-/** Um tom por atalho (ouro, esmeralda, terracota, ameixa), como no restante do app. */
-const TILE_TONES = [
-  { box: "bg-[#FBF2DE] border-[#AA781E]/30 dark:bg-gold/10", icon: "text-[#8A520C] dark:text-gold" },
-  { box: "bg-[#E8F1EA] border-[#1F5B43]/25 dark:bg-forest/10", icon: "text-[#1F5B43] dark:text-forest" },
-  { box: "bg-[#FBE9E1] border-[#B33A18]/25 dark:bg-primary/10", icon: "text-[#B33A18] dark:text-primary" },
-  { box: "bg-[#EEE9F5] border-[#5B3F7A]/25 dark:bg-plum/10", icon: "text-[#5B3F7A] dark:text-plum" },
-];
+interface Tool {
+  icon: LucideIcon;
+  title: string;
+  tone: ToolTone;
+  to: string;
+  badge?: number;
+  /** Ferramenta de plano: se o plano atual não inclui, o toque abre o aviso do plano. */
+  needs?: CapFlagKey | CapNumberKey;
+  about?: string;
+}
 
-/** Página inicial da conta de casa: o que fazer agora, e não o feed da comunidade. */
+/**
+ * Página inicial da conta de casa: o que precisa de você agora e as ferramentas, uma por atalho.
+ * Cada ferramenta tem a sua tela; o que é configuração fica em seções recolhidas no fim.
+ * Cores dos anéis: verde = pessoas e gestão, terracota = comunicação e eventos, ouro = receita e alcance, noite = assistente.
+ */
 export default function HouseHome() {
   const { currentUser, isRemoteAuth } = useApp();
   const nav = useNavigate();
   const house = currentUser?.type === "commercial" ? (currentUser as HouseUser) : null;
   const [termsOk, setTermsOk] = useState(true);
-  const [upsell, setUpsell] = useState<{ title: string; about: string; planName: string; open: () => void } | null>(null);
-  const [members, setMembers] = useState<{ total: number; vencidas: number; perto: number } | null>(null);
+  const [upsell, setUpsell] = useState<{ title: string; about: string; planName: string; to: string } | null>(null);
   const houseId = house?.id;
   const { config } = usePlatformConfig();
   const { plan } = useOwnerPlan(house?.id);
+  const badges = useHouseBadges(isRemoteAuth && Boolean(houseId));
+  const [params] = useSearchParams();
+  const focusReceipt = params.get("foco") === "recebimento";
 
   useEffect(() => {
     if (!isRemoteAuth || !houseId) return;
@@ -54,33 +67,32 @@ export default function HouseHome() {
     };
   }, [isRemoteAuth, houseId]);
 
-  useEffect(() => {
-    if (!isRemoteAuth || !houseId) return;
-    let alive = true;
-    void fetchMembersOverview().then((o) => alive && o && setMembers(o.summary));
-    return () => {
-      alive = false;
-    };
-  }, [isRemoteAuth, houseId]);
-
   if (!house) return null;
+  // Link antigo da central de pendências (`/?foco=recebimento`): leva para a tela de recebimentos.
+  if (focusReceipt && isRemoteAuth) return <Navigate to="/recebimentos?foco=recebimento" replace />;
 
-  const memberText = !members || members.total === 0 ? "Mensalidades e avisos de cobrança" : members.vencidas > 0 ? `${members.vencidas} em atraso` : members.perto > 0 ? `${members.perto} vencem em breve` : `${members.total} em dia`;
-  const tiles = [
-    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", text: memberText, badge: members?.vencidas || 0, about: "Controle mensalidades, vencimentos e avisos de cobrança dos membros da sua casa em um só lugar.", needs: "members_area" as CapFlagKey, onClick: () => nav("/painel/membros") }] : []),
-    ...(isRemoteAuth ? [{ icon: Contact, title: "Pessoas da casa", text: "Seguidores, clientes e membros, com a história de cada um", onClick: () => nav("/pessoas") }] : []),
-    { icon: Plus, title: "Novo serviço", text: "Jogos, consultas, trabalhos e atendimentos", onClick: () => nav(`/casa/${house.id}?aba=servicos&novo=1`) },
-    { icon: Sparkles, title: "Novo ritual", text: "Evento coletivo com vagas ao vivo", onClick: () => nav(`/casa/${house.id}?aba=rituais&novo=1`) },
-    { icon: Newspaper, title: "Publicar", text: "Texto e foto para a comunidade", onClick: () => nav("/comunidade") },
-    { icon: TrendingUp, title: "Destacar e impulsionar", text: "Mais alcance para a casa e os rituais", onClick: () => nav("/impulsionar") },
-    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", text: "Links por rede social, cartão e respostas rápidas", about: "Crie links próprios por rede social, cartões para postar e respostas rápidas, e veja de onde vêm as visitas.", needs: "campaign_links" as CapNumberKey, onClick: () => nav("/divulgacao") }] : []),
-    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe da casa", text: "Convide quem ajuda a atender e defina o que vê", about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver.", needs: "included_seats" as CapNumberKey, onClick: () => nav("/equipe") }] : []),
-    { icon: Pencil, title: "Editar perfil", text: "Foto, capa e apresentação da casa", onClick: () => nav(`/casa/${house.id}?editar=1`) },
-    { icon: Bot, title: "Assistente virtual", text: "Como ela atende seus clientes", onClick: () => nav("/perfil") },
+  const tools: Tool[] = [
+    { icon: ClipboardList, title: "Pedidos", tone: "verde", to: "/pedidos", badge: badges.pedidos },
+    ...(isRemoteAuth ? [{ icon: Users, title: "Membros", tone: "verde" as const, to: "/painel/membros", badge: badges.membros, needs: "members_area" as CapFlagKey, about: "Controle mensalidades, vencimentos e avisos de cobrança dos membros da sua casa em um só lugar." }] : []),
+    ...(isRemoteAuth ? [{ icon: Contact, title: "Pessoas", tone: "verde" as const, to: "/pessoas" }] : []),
+    { icon: Plus, title: "Novo serviço", tone: "verde", to: `/casa/${house.id}?aba=servicos&novo=1` },
+    { icon: Sparkles, title: "Novo ritual", tone: "terra", to: `/casa/${house.id}?aba=rituais&novo=1` },
+    { icon: Newspaper, title: "Publicar", tone: "terra", to: "/comunidade?novo=publicacao" },
+    ...(isRemoteAuth ? [{ icon: Camera, title: "Momentos", tone: "terra" as const, to: "/comunidade?novo=momento" }] : []),
+    ...(isRemoteAuth && isFeatureOn(config, "calendar", house.id) ? [{ icon: CalendarDays, title: "Agenda", tone: "verde" as const, to: `/casa/${house.id}?aba=calendario` }] : []),
+    ...(isRemoteAuth && isFeatureOn(config, "reviews", house.id) ? [{ icon: Star, title: "Avaliações", tone: "ouro" as const, to: `/casa/${house.id}?aba=avaliacoes` }] : []),
+    { icon: TrendingUp, title: "Crescer", tone: "ouro", to: "/impulsionar" },
+    ...(isRemoteAuth ? [{ icon: Crown, title: "Planos", tone: "ouro" as const, to: "/planos", badge: badges.faturas }] : []),
+    ...(isRemoteAuth ? [{ icon: Landmark, title: "Recebimentos", tone: "ouro" as const, to: "/recebimentos" }] : []),
+    ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", tone: "terra" as const, to: "/divulgacao", needs: "campaign_links" as CapNumberKey, about: "Crie links próprios por rede social, cartões para postar e respostas rápidas, e veja de onde vêm as visitas." }] : []),
+    ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe", tone: "verde" as const, to: "/equipe", needs: "included_seats" as CapNumberKey, about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver." }] : []),
+    { icon: Bot, title: "Assistente", tone: "noite", to: "/perfil" },
+    { icon: Pencil, title: "Editar página", tone: "verde", to: `/casa/${house.id}?editar=1` },
+    { icon: Leaf, title: "Minha página", tone: "verde", to: `/casa/${house.id}` },
   ];
 
-  // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; a página explica).
-  const planTag = (t: { needs?: CapFlagKey | CapNumberKey }): string | null => {
+  // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; o aviso explica).
+  const planTag = (t: Tool): string | null => {
     if (!t.needs || !plan) return null;
     const min = minPlanFor(config.plan_matrix, t.needs);
     if (!min || HOUSE_PLAN_IDS.indexOf(plan) >= HOUSE_PLAN_IDS.indexOf(min)) return null;
@@ -91,58 +103,60 @@ export default function HouseHome() {
     <div className="space-y-4 pb-16 lg:pb-4">
       {isRemoteAuth && <BillingAlertCard />}
       <Card className="relative overflow-hidden p-6 border-0 text-white shadow-altar" style={{ background: "linear-gradient(135deg, #14543F 0%, #0F3B2D 100%)" }}>
-        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "26px 26px" }} />
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "26px 26px" }} aria-hidden />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
         <div className="relative">
-        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Painel da casa</div>
-        <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1">Olá, {house.name}</h1>
-        <p className="text-sm text-white/75 mt-1">Aqui está o que você pode fazer pela sua casa hoje.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="gold" onClick={() => nav(`/casa/${house.id}`)}>Ver minha página</Button>
-          <Button variant="outline" className="!bg-white/10 !text-white !border-white/25 hover:!bg-white/20" onClick={() => nav("/comunidade")}>Ir para a comunidade</Button>
-        </div>
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Painel da casa</div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1 break-words">Olá, {house.name}</h1>
+          <p className="text-sm text-white/75 mt-1">O que precisa de você hoje.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="gold" onClick={() => nav(`/casa/${house.id}`)}>Ver minha página</Button>
+          </div>
         </div>
       </Card>
 
       {isRemoteAuth && <HousePendingCard />}
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
-      {isRemoteAuth && <HouseIndicatorsCard />}
 
-      {isRemoteAuth && <PromoList title="Destaque e impulsionamento em andamento" />}
+      {/* Só aparece enquanto falta cadastrar o recebimento; depois que está ativo, a casa o encontra em Recebimentos. */}
+      {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} required={plan === "gratis"} hideWhenReady />}
 
-      {isRemoteAuth && <PaymentAccountCard ownerId={house.id} termsOk={termsOk} required={plan === "gratis"} />}
-
-      <section aria-label="Atalhos" className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {tiles.map((t, i) => (
-          <button
-            key={t.title}
-            type="button"
-            onClick={() => { const pn = planTag(t); if (pn && "about" in t) setUpsell({ title: t.title, about: t.about, planName: pn, open: t.onClick }); else t.onClick(); }}
-            className={`lift relative text-left rounded-[22px] p-4 min-h-24 border ${TILE_TONES[i % TILE_TONES.length].box}`}
-          >
-            {"badge" in t && t.badge > 0 && (
-              <span className="absolute right-3 top-3 min-w-5 h-5 px-1.5 rounded-full bg-[hsl(var(--danger))] text-white text-xs font-bold grid place-items-center" aria-label={`${t.badge} em atraso`}>{t.badge}</span>
-            )}
-            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold"><span className="flex items-center gap-2"><t.icon className={`h-4 w-4 shrink-0 ${TILE_TONES[i % TILE_TONES.length].icon}`} />{t.title}</span>{planTag(t) && <span className="shrink-0 whitespace-nowrap rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{planTag(t)}</span>}</span>
-            <span className="block text-sm text-muted-foreground mt-1">{t.text}</span>
-          </button>
-        ))}
+      <section aria-labelledby="ferramentas" className="space-y-2">
+        <h2 id="ferramentas" className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Ferramentas</h2>
+        <div className="grid grid-cols-4 gap-x-1 gap-y-2 sm:grid-cols-5 xl:grid-cols-6">
+          {tools.map((t) => {
+            const pn = planTag(t);
+            return pn && t.about
+              ? <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} note={`Plano ${pn}`} onClick={() => setUpsell({ title: t.title, about: t.about!, planName: pn, to: t.to })} />
+              : <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} to={t.to} badge={t.badge} />;
+          })}
+        </div>
       </section>
+
+      {isRemoteAuth && <HouseIndicatorsCard />}
+      {isRemoteAuth && <PromoList title="Destaque e impulsionamento em andamento" />}
 
       <PlanUpsellModal
         tool={upsell}
         planName={upsell?.planName ?? ""}
         onClose={() => setUpsell(null)}
-        onPlans={() => { setUpsell(null); nav("/planos"); }}
-        onHow={() => { const go = upsell?.open; setUpsell(null); go?.(); }}
+        onPlans={() => { setUpsell(null); nav("/planos?aba=mudar"); }}
+        onHow={() => { const go = upsell?.to; setUpsell(null); if (go) nav(go); }}
       />
-      <ShareHouseCard />
-      <ReferralCard />
-      <AssistantReportCard />
-      <SocialNoticesCard />
-      <QuietHoursCard />
-      <DiscreetModeCard />
+
+      <Collapse id="casa-divulgar" title="Divulgar a casa" hint="compartilhar e indicar">
+        <ShareHouseCard />
+        <ReferralCard />
+      </Collapse>
+      <Collapse id="casa-assistente" title="Assistente" hint="relatório dos atendimentos">
+        <AssistantReportCard />
+      </Collapse>
+      <Collapse id="casa-preferencias" title="Preferências" hint="horário de silêncio, modo discreto, avisos">
+        <SocialNoticesCard />
+        <QuietHoursCard />
+        <DiscreetModeCard />
+      </Collapse>
     </div>
   );
 }

@@ -29,7 +29,7 @@ test.describe("excluir publicação impulsionada: caminho pelo reembolso", () =>
     await expect(d.getByRole("button", { name: "Excluir", exact: true })).toHaveCount(0);
     await expect(d.getByRole("button", { name: "Excluir agora" })).toHaveCount(0);
     await d.getByRole("button", { name: "Ir para Pedidos e validações" }).click();
-    await expect(page).toHaveURL(/\/planos#pedidos$/);
+    await expect(page).toHaveURL(/\/planos\?aba=cobrancas#pedidos$/);
     expect(deletes(calls)).toHaveLength(0);
   });
 
@@ -99,7 +99,7 @@ test.describe("excluir publicação impulsionada: caminho pelo reembolso", () =>
 
 test("/planos#pedidos abre a seção Pedidos e validações já aberta; sem o atalho ela fica recolhida", async ({ page }) => {
   await setup(page);
-  await page.goto("/planos");
+  await page.goto("/planos?aba=cobrancas");
   await expect(page.locator("details#pedidos")).toBeAttached();
   await expect(page.locator("details#pedidos")).not.toHaveAttribute("open", "");
   await page.goto("/planos#pedidos");

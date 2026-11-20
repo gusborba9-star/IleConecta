@@ -23,12 +23,12 @@ export function houseTarget(tab, role) {
   const staff = role === "equipe";
   switch (tab) {
     case "atendimento": return { path: staff ? "/atendimento" : "/mensagens", label: "Conversas" };
-    case "pedidos": return { path: staff ? "/atendimento" : "/mensagens", label: staff ? "Atendimento" : "Conversas e pedidos" };
+    case "pedidos": return { path: staff ? "/atendimento" : "/pedidos", label: staff ? "Atendimento" : "Pedidos" };
     case "mensalidades": return { path: "/mensalidades", label: "Mensalidades" };
     case "moderacao": return { path: "/moderacao", label: "Moderação" };
     case "suporte": return { path: "/suporte/chamados", label: "Meus chamados" };
-    case "cobranca": return { path: "/planos", label: "Planos e faturas" };
-    case "cadastro": return { path: "/planos", label: "Planos e cadastro" };
+    case "cobranca": return { path: "/planos?aba=cobrancas", label: "Planos e faturas" };
+    case "cadastro": return { path: "/planos?aba=cobrancas", label: "Planos e cadastro" };
     case "assistente": return { path: "/planos", label: "Créditos da assistente" };
     case "avaliacoes": return { path: null, label: "Página da casa" }; // resolvido com o id da casa na tela
     default: return null;
@@ -54,15 +54,15 @@ export function houseDestination(item, role, ownerUserId) {
       return typeof item.personId === "string" && UUID.test(item.personId) ? { path: `/mensagens/${item.personId}`, label: "Conversa" } : { path: "/mensagens", label: "Conversas" };
     case "pedido_para_iniciar":
     case "atendimento_passou":
-      return staff ? { path: "/atendimento?aba=orders", label: "Pedidos" } : me ? { path: `/casa/${me}?aba=servicos`, label: "Pedidos da casa" } : null;
+      return staff ? { path: "/atendimento?aba=orders", label: "Pedidos" } : me ? { path: "/pedidos", label: "Pedidos da casa" } : null;
     case "reembolso_da_casa":
-      return staff || !me ? null : { path: `/casa/${me}?aba=servicos`, label: "Reembolsos da casa" };
+      return staff || !me ? null : { path: "/pedidos", label: "Reembolsos da casa" };
     case "avaliacao_sem_resposta":
       return staff || !me ? null : { path: `/casa/${me}?aba=avaliacoes`, label: "Avaliações" };
     case "fatura":
-      return staff ? null : { path: typeof item.refId === "string" && UUID.test(item.refId) ? `/planos?foco=${item.refId}` : "/planos", label: "Fatura" };
+      return staff ? null : { path: typeof item.refId === "string" && UUID.test(item.refId) ? `/planos?foco=${item.refId}` : "/planos?aba=cobrancas", label: "Fatura" };
     case "conta_de_recebimento":
-      return staff ? null : { path: "/?foco=recebimento", label: "Conta de recebimento" };
+      return staff ? null : { path: "/recebimentos?foco=recebimento", label: "Conta de recebimento" };
     default: {
       const t = houseTarget(item.tab, role);
       return t && t.path ? t : null;

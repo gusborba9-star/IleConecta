@@ -37,7 +37,7 @@ export default function HouseIndicatorsCard() {
         </div>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void load(days)} aria-label="Atualizar indicadores"><RefreshCw className="h-4 w-4" /> Atualizar</Button>
       </div>
-      <div className="flex gap-2" role="tablist" aria-label="Período">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Período">
         {PERIODS.map((p) => (
           <button key={p} type="button" role="tab" aria-selected={days === p} onClick={() => setDays(p)}
             className={`min-h-11 rounded-full border px-4 text-sm font-semibold ${days === p ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border"}`}>{p} dias</button>

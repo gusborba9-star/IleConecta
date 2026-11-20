@@ -5,8 +5,10 @@ import { routeTitle, withBrand } from "../src/lib/routeTitleCore.js";
 
 test("título por tela: exatos, prefixos, barra final, página pública e desconhecida", () => {
   assert.equal(routeTitle("/"), "Início");
-  assert.equal(routeTitle("/planos"), "Planos");
-  assert.equal(routeTitle("/planos/"), "Planos");
+  assert.equal(routeTitle("/planos"), "Planos e faturas");
+  assert.equal(routeTitle("/planos/"), "Planos e faturas");
+  assert.equal(routeTitle("/pedidos"), "Pedidos");
+  assert.equal(routeTitle("/recebimentos"), "Recebimentos");
   assert.equal(routeTitle("/rituais/abc"), "Ritual");
   assert.equal(routeTitle("/suporte/chamados"), "Meus chamados");
   assert.equal(routeTitle("/suporte/chamados/123"), "Chamado");

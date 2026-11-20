@@ -54,7 +54,7 @@ test("destinos: a equipe vai ao atendimento, a titular às telas próprias; tudo
   assert.equal(houseTarget("x", "titular"), null);
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   for (const tab of ["atendimento", "pedidos", "mensalidades", "moderacao", "suporte", "cobranca", "cadastro", "assistente"]) for (const role of ["titular", "equipe"]) {
-    const t = houseTarget(tab, role); assert.ok(t && t.path && app.includes(`path="${t.path}"`), `${tab}/${role} aponta para rota inexistente: ${t?.path}`);
+    const t = houseTarget(tab, role); assert.ok(t && t.path && app.includes(`path="${t.path.split("?")[0]}"`), `${tab}/${role} aponta para rota inexistente: ${t?.path}`);
   }
 });
 
@@ -85,14 +85,14 @@ test("houseDestination: cada tipo vai à tela exata; equipe nunca às telas da t
   const { houseDestination } = await import("../src/lib/housePendingCore.js");
   const me = "00000000-0000-0000-0000-000000000001", ref = "00000000-0000-0000-0000-000000000105";
   const T = (kind, tab, role = "titular", o = {}) => houseDestination({ kind, tab, refId: ref, ...o }, role, me)?.path ?? null;
-  assert.equal(T("pedido_para_iniciar", "pedidos"), `/casa/${me}?aba=servicos`);
-  assert.equal(T("atendimento_passou", "pedidos"), `/casa/${me}?aba=servicos`);
-  assert.equal(T("reembolso_da_casa", "pedidos"), `/casa/${me}?aba=servicos`);
+  assert.equal(T("pedido_para_iniciar", "pedidos"), "/pedidos"); // tela própria de Pedidos (20/11/2026)
+  assert.equal(T("atendimento_passou", "pedidos"), "/pedidos"); // tela própria de Pedidos (20/11/2026)
+  assert.equal(T("reembolso_da_casa", "pedidos"), "/pedidos"); // tela própria de Pedidos (20/11/2026)
   assert.equal(T("avaliacao_sem_resposta", "avaliacoes"), `/casa/${me}?aba=avaliacoes`);
-  assert.equal(T("conta_de_recebimento", "cadastro"), "/?foco=recebimento");
-  assert.equal(T("cadastro_cpf_cnpj", "cadastro"), "/planos");
+  assert.equal(T("conta_de_recebimento", "cadastro"), "/recebimentos?foco=recebimento");
+  assert.equal(T("cadastro_cpf_cnpj", "cadastro"), "/planos?aba=cobrancas");
   assert.equal(T("fatura", "cobranca"), `/planos?foco=${ref}`);
-  assert.equal(T("fatura", "cobranca", "titular", { refId: "x'><script>" }), "/planos");
+  assert.equal(T("fatura", "cobranca", "titular", { refId: "x'><script>" }), "/planos?aba=cobrancas");
   assert.equal(T("conversa_sem_resposta", "atendimento"), "/mensagens"); // sem person_id: abre a lista
   assert.equal(T("conversa_sem_resposta", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);
   assert.equal(T("assunto_da_assistente", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);

@@ -8,6 +8,7 @@ import { Avatar, Button } from "@/components/base";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MoreSheet from "@/components/layout/MoreSheet";
 import { navGroups } from "@/components/layout/navConfig";
+import { OPEN_MENU_EVENT } from "@/components/layout/MobileBar";
 import { useStaffLink } from "@/lib/staff";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -21,6 +22,13 @@ export default function TopBar() {
   const [searchQuery, setSearchQuery] = useState("");
   const box = useRef<HTMLDivElement>(null);
   const closeMenu = useCallback(() => setMenu(false), []);
+
+  // "Mais" da barra de baixo (conta de casa, celular) abre o mesmo menu da foto do perfil.
+  useEffect(() => {
+    const open = () => setMenu(true);
+    window.addEventListener(OPEN_MENU_EVENT, open);
+    return () => window.removeEventListener(OPEN_MENU_EVENT, open);
+  }, []);
 
   // Fecha ao tocar fora ou apertar Esc (o menu antigo só fechava com o mouse, o que não funciona no celular).
   useEffect(() => {
@@ -66,7 +74,7 @@ export default function TopBar() {
           </div>
         </div>
 
-        <nav aria-label="Principal" className="flex-1 min-w-0 flex justify-center items-center gap-0.5 min-[380px]:gap-1">
+        <nav aria-label="Principal" className={cn("flex-1 min-w-0 justify-center items-center gap-0.5 min-[380px]:gap-1", currentUser?.type === "commercial" && isRemoteAuth ? "hidden lg:flex" : "flex")}>
           <TopIcon to="/" icon={Home} label="Início" />
           <TopIcon to="/descobrir" icon={Compass} label="Casas" />
           <TopIcon to="/rituais" icon={Sparkles} label="Rituais" />

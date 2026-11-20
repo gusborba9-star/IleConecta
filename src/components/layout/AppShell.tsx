@@ -16,6 +16,7 @@ import { fetchMyAssistant } from "@/lib/assistant";
 import type { AccountGate } from "@/lib/accountGateCore";
 import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 import Footer from "./Footer";
+import MobileBar from "./MobileBar";
 import MaintenanceBanner from "./MaintenanceBanner";
 
 export default function AppShell() {
@@ -99,7 +100,7 @@ export default function AppShell() {
           Ambiente de demonstração: contas, mensagens, reservas e impulsionamentos usam dados locais neste navegador. Não há autenticação server-side, sincronização entre usuários ou cobrança real.
         </div>
       )}
-      <div className={`flex-1 mx-auto w-full max-w-[1440px] px-3 md:px-6 py-4 grid grid-cols-1 gap-6 ${isRemoteAuth ? "lg:grid-cols-[240px_minmax(0,1fr)]" : "lg:grid-cols-[240px_minmax(0,1fr)_320px]"}`}>
+      <div className={`flex-1 mx-auto w-full max-w-[1440px] px-3 md:px-6 py-4 ${isRemoteAuth && currentUser?.type === "commercial" ? "max-lg:pb-24" : ""} grid grid-cols-1 gap-6 ${isRemoteAuth ? "lg:grid-cols-[240px_minmax(0,1fr)]" : "lg:grid-cols-[240px_minmax(0,1fr)_320px]"}`}>
         <aside aria-label="Menu lateral" className="hidden lg:block sticky top-20 self-start">
           <SideNav />
         </aside>
@@ -114,6 +115,7 @@ export default function AppShell() {
         )}
       </div>
       <Footer />
+      <MobileBar />
     </div>
   );
 }

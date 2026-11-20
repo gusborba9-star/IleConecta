@@ -36,13 +36,14 @@ test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)
     await li.getByRole("button", { name: /^Abrir/ }).click();
   };
 
-  test("pedido e reembolso levam à aba Serviços da PRÓPRIA casa (id da conta)", async ({ page }) => {
+  test("pedido e reembolso levam à tela Pedidos da casa", async ({ page }) => {
     await setup(page);
     for (const k of ["pedido_para_iniciar", "reembolso_da_casa"]) {
       await go(page, k);
-      await expect(page).toHaveURL(new RegExp(`/casa/${OWNER}\\?aba=servicos`));
+      await expect(page).toHaveURL(/\/pedidos$/);
       await expect(page.getByText("Casa indisponível")).toHaveCount(0);
-      await expect(page.getByRole("tab", { name: "Serviços" })).toHaveAttribute("aria-selected", "true");
+      await expect(page.getByRole("heading", { level: 1, name: "Pedidos" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: /Em andamento/ })).toHaveAttribute("aria-selected", "true");
     }
   });
   test("avaliação sem resposta abre a aba Avaliações da casa", async ({ page }) => {
@@ -51,10 +52,10 @@ test.describe("destinos das pendências da casa abrem a tela certa (app inteiro)
     await expect(page).toHaveURL(new RegExp(`/casa/${OWNER}\\?aba=avaliacoes`));
     await expect(page.getByText("Casa indisponível")).toHaveCount(0);
   });
-  test("conta de recebimento leva ao início (onde está o cartão da conta)", async ({ page }) => {
+  test("conta de recebimento leva à tela Recebimentos (onde está o cartão da conta)", async ({ page }) => {
     await setup(page);
     await go(page, "conta_de_recebimento");
-    await expect(page).toHaveURL(/\/\?foco=recebimento$/);
+    await expect(page).toHaveURL(/\/recebimentos\?foco=recebimento$/);
     await expect(page.getByRole("heading", { name: "Recebimento pela plataforma" })).toBeVisible();
     await expect(page.locator("#recebimento")).toHaveAttribute("data-focused", "true");
   });

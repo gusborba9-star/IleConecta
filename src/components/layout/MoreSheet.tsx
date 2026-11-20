@@ -5,6 +5,8 @@ import { LogOut, ShieldCheck } from "lucide-react";
 import { Avatar } from "@/components/base";
 import { cn } from "@/lib/utils";
 import type { NavGroup } from "./navConfig";
+import { useHouseBadges } from "@/lib/useHouseBadges";
+import { NavBadge, NavBadgeText } from "./NavBadge";
 
 interface Props {
   open: boolean;
@@ -17,6 +19,7 @@ interface Props {
 
 /** Menu "Mais" do celular: sobe de baixo, mostra os mesmos grupos da lateral e fecha ao tocar fora. Fica em portal para não ser cortado pelo cabeçalho. */
 export default function MoreSheet({ open, onClose, onLogout, groups, isAdmin, user }: Props) {
+  const badges = useHouseBadges(open && Boolean(user?.isHouse));
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -57,7 +60,8 @@ export default function MoreSheet({ open, onClose, onLogout, groups, isAdmin, us
                   className={({ isActive }) => cn("flex items-center gap-3 px-4 min-h-12 text-sm font-medium", isActive ? "bg-primary/10 text-primary" : "hover:bg-muted", it.tone === "gold" ? "text-gold-ink" : "")}
                 >
                   <it.icon className={cn("h-5 w-5", it.tone === "gold" ? "text-gold" : "")} />
-                  {it.label}
+                  {it.label}<NavBadgeText n={it.badge ? badges[it.badge] : 0} />
+                  <NavBadge n={it.badge ? badges[it.badge] : 0} />
                 </NavLink>
               ))}
               {i === groups.length - 1 && isAdmin && (

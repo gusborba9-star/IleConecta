@@ -5,11 +5,12 @@ import { Badge, Button, Card } from "@/components/base";
 import { paymentsEnabledFor } from "@/lib/consents";
 import { fetchAccountStatus, startOnboarding, type AccountStatus } from "@/lib/payments";
 
-interface Props { ownerId: string; termsOk: boolean; /** Plano Grátis: sem a conta de recebimento a casa não publica serviço ou ritual com valor. */ required?: boolean }
+interface Props { ownerId: string; termsOk: boolean; /** Plano Grátis: sem a conta de recebimento a casa não publica serviço ou ritual com valor. */ required?: boolean; /** Início da casa: só mostra o cartão enquanto falta cadastrar (depois, fica em Recebimentos). */ hideWhenReady?: boolean; /** Tela Recebimentos: se os pagamentos ainda não foram liberados para a casa, explica em vez de ficar vazia. */ explainWhenOff?: boolean }
 
 /** Cadastro de recebimento da casa no Stripe. Só aparece quando os pagamentos estão liberados para esta casa. */
-export default function PaymentAccountCard({ ownerId, termsOk, required = false }: Props) {
+export default function PaymentAccountCard({ ownerId, termsOk, required = false, hideWhenReady = false, explainWhenOff = false }: Props) {
   const [on, setOn] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,6 +25,7 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
     void paymentsEnabledFor(ownerId).then((v) => {
       if (!alive) return;
       setOn(v);
+      setChecked(true);
       if (v) void refresh();
     });
     return () => {
@@ -38,7 +40,7 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
     if (focused && on) document.getElementById("recebimento")?.scrollIntoView({ block: "center" });
   }, [focused, on]);
 
-  if (!on) return null;
+  if (!on) return explainWhenOff && checked ? <Card className="p-5"><h2 className="font-display font-bold text-lg">Recebimento pela plataforma</h2><p className="mt-1 text-sm text-muted-foreground">Os pagamentos pela plataforma ainda não foram liberados para a sua casa. Quando forem, o cadastro da conta de recebimento aparece aqui.</p></Card> : null;
 
   const go = async () => {
     setBusy(true);
@@ -50,6 +52,7 @@ export default function PaymentAccountCard({ ownerId, termsOk, required = false 
   };
 
   const ready = status?.chargesEnabled;
+  if (hideWhenReady && (status === null || ready)) return null;
   return (
     <div id="recebimento" data-focused={focused ? "true" : undefined} className={focused ? "rounded-2xl ring-2 ring-gold/60" : undefined}>
     <Card className="p-5 border-gold/50">

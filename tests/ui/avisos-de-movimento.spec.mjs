@@ -9,12 +9,14 @@ const post = (id, text) => ({ id, house_id: HID, kind: "geral", content: text, i
 const notice = (o) => ({ id: U(700 + (o.n ?? 0)), text: "x", href: null, read: false, created_at: "2026-11-17T11:00:00Z", ...o });
 const setup = (page, { type = "casa", prefs = null, notifs = [] } = {}) => api(page, { rest: { profiles: profile(type), legal_consents: consents, houses: [house], posts: [post(OTHER, "Outra publicação"), post(POST, "Gira de abertura")], notifications: notifs, notification_prefs: prefs ?? [] }, rpc: { post_like_counts: [] } });
 const sw = (page, name) => page.getByRole("switch", { name });
+const abrirPrefs = (page) => page.getByRole("button", { name: /^Preferências/ }).click();
 const upserts = (calls) => calls.filter((c) => c.kind === "rest" && c.name.startsWith("notification_prefs") && c.body && !Array.isArray(c.body)).map((c) => c.body);
 
 test.describe("avisos de movimento (curtida, comentário, seguidor)", () => {
   test("casa vê o cartão, tudo ligado por padrão, e desliga só um tipo", async ({ page }) => {
     const calls = await setup(page);
     await page.goto("/");
+    await abrirPrefs(page);
     await expect(page.getByRole("heading", { name: "Avisos de movimento" })).toBeVisible();
     for (const n of ["Comentários", "Curtidas", "Novos seguidores"]) await expect(sw(page, n)).toHaveAttribute("aria-checked", "true");
     await sw(page, "Curtidas").click();
@@ -31,6 +33,7 @@ test.describe("avisos de movimento (curtida, comentário, seguidor)", () => {
   test("preferência salva como desligada aparece desligada; valor estranho não desliga", async ({ page }) => {
     await setup(page, { prefs: { user_id: OWNER, notify_likes: false, notify_comments: null, notify_follows: true } });
     await page.goto("/");
+    await abrirPrefs(page);
     await expect(sw(page, "Curtidas")).toHaveAttribute("aria-checked", "false");
     await expect(sw(page, "Comentários")).toHaveAttribute("aria-checked", "true");
     await expect(sw(page, "Novos seguidores")).toHaveAttribute("aria-checked", "true");
@@ -39,6 +42,7 @@ test.describe("avisos de movimento (curtida, comentário, seguidor)", () => {
   test("falha ao salvar: volta ao estado anterior e avisa", async ({ page }) => {
     await api(page, { rest: { profiles: profile("casa"), legal_consents: consents, houses: [house], posts: [], notifications: [], notification_prefs: (body) => (body ? { status: 400, body: { message: "x" } } : []) } });
     await page.goto("/");
+    await abrirPrefs(page);
     await sw(page, "Novos seguidores").click();
     await expect(page.getByText("Não foi possível salvar. Tente novamente.")).toBeVisible();
     await expect(sw(page, "Novos seguidores")).toHaveAttribute("aria-checked", "true");

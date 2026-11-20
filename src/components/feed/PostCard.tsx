@@ -183,7 +183,7 @@ export default function PostCard({ post }: { post: Post }) {
             {(!di || di.state === "liberado" || di.state === "reembolsavel") && (
               <Button variant="outline" size="sm" disabled={deleting} onClick={() => setMenu("closed")}>{di?.state === "liberado" ? "Manter até o fim" : "Cancelar"}</Button>
             )}
-            {di?.state === "reembolsavel" && <Button size="sm" onClick={() => nav("/planos#pedidos")}>Ir para Pedidos e validações</Button>}
+            {di?.state === "reembolsavel" && <Button size="sm" onClick={() => nav("/planos?aba=cobrancas#pedidos")}>Ir para Pedidos e validações</Button>}
             {(di?.state === "reembolso_pendente" || di?.state === "aguardar") && <Button variant="outline" size="sm" onClick={() => setMenu("closed")}>Entendi</Button>}
             {(!di || di.state === "liberado") && <Button variant="danger" size="sm" disabled={deleting} onClick={() => void remove()}>{deleting ? "Excluindo…" : di ? "Excluir agora" : "Excluir"}</Button>}
           </div>

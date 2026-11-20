@@ -31,6 +31,12 @@ interface Props {
   ownerId: string;
   isOwn: boolean;
   startNew?: boolean;
+  /** Tela Pedidos da casa: mostra só os pedidos recebidos (sem a lista de serviços, agenda e botão de novo serviço). */
+  ordersOnly?: boolean;
+  /** Com `ordersOnly`: quais pedidos listar. */
+  ordersView?: "andamento" | "historico";
+  /** Com `ordersOnly`: avisa a tela quantos pedidos há em cada aba. */
+  onCounts?: (c: { andamento: number; historico: number }) => void;
   /** Quando a casa tem assistente, leva o cliente até ela. */
   onAskAssistant?: () => void;
   /** Com as avaliações ligadas: leva o cliente à avaliação daquele pedido. */
@@ -50,7 +56,7 @@ function askTimePath(ownerId: string | undefined, s: { id: string; title: string
   return `/mensagens/${ownerId}?servico=${encodeURIComponent(s.id)}&t=${encodeURIComponent(s.title.slice(0, 80))}`;
 }
 
-export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Props) {
+export default function ServicesTab({ ownerId, isOwn, startNew, onReview, ordersOnly = false, ordersView = "andamento", onCounts }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const nav = useNavigate();
@@ -116,6 +122,10 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
     };
   }, [items, isOwn]);
 
+  const andamento = orders.filter((o) => isOpenOrder(o.status));
+  const historico = orders.filter((o) => !isOpenOrder(o.status));
+  useEffect(() => { onCounts?.({ andamento: andamento.length, historico: historico.length }); }, [andamento.length, historico.length, onCounts]);
+
   const orderAct = async (fn: () => Promise<string | null>, okMsg: string) => {
     const error = await fn();
     if (error) toast.error(error);
@@ -170,23 +180,34 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
     } else toast.error("Não foi possível excluir.");
   };
 
-  if (items === null) return <Card className="p-8 text-center text-muted-foreground">Carregando serviços…</Card>;
+  if (items === null) return <Card className="p-8 text-center text-muted-foreground">{ordersOnly ? "Carregando pedidos…" : "Carregando serviços…"}</Card>;
 
   return (
     <div className="space-y-3">
-      {isOwn && (
+      {isOwn && !ordersOnly && (
         <div className="flex justify-end">
           <Button onClick={openNew}><Plus className="h-4 w-4" /> Novo serviço</Button>
         </div>
       )}
 
-      {isOwn && <AgendaManager key={agendaVersion} ownerId={ownerId} />}
+      {isOwn && !ordersOnly && <AgendaManager key={agendaVersion} ownerId={ownerId} />}
 
-      {isOwn && orders.length > 0 && (
+      {isOwn && !ordersOnly && andamento.length > 0 && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm"><strong>{andamento.length}</strong> {andamento.length === 1 ? "pedido em andamento" : "pedidos em andamento"}.</p>
+          <Button size="sm" variant="outline" onClick={() => nav("/pedidos")}>Ver em Pedidos</Button>
+        </Card>
+      )}
+
+      {isOwn && ordersOnly && (ordersView === "andamento" ? andamento : historico).length === 0 && (
+        <Card className="p-8 text-center text-sm text-muted-foreground">{ordersView === "andamento" ? "Nenhum pedido em andamento. Quando alguém contratar um serviço, ele aparece aqui." : "Ainda não há pedidos concluídos ou cancelados."}</Card>
+      )}
+
+      {isOwn && ordersOnly && (ordersView === "andamento" ? andamento : historico).length > 0 && (
         <Card className="p-5">
-          <h3 className="font-display font-bold text-lg mb-3">Pedidos recebidos</h3>
+          <h3 className="font-display font-bold text-lg mb-3">{ordersView === "andamento" ? "Em andamento" : "Histórico"}</h3>
           <div className="space-y-3">
-            {orders.map((o) => (
+            {(ordersView === "andamento" ? andamento : historico).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((o) => (
               <div key={o.id} className="flex flex-wrap items-start gap-3 justify-between border-b border-border/60 pb-3 last:border-0 last:pb-0">
                 <div className="min-w-[200px] flex-1">
                   <div className="font-semibold">{o.title} <span className="font-normal text-muted-foreground">· {o.clientName}</span></div>
@@ -241,7 +262,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
         </Card>
       )}
 
-      {items.length === 0 && (
+      {!ordersOnly && items.length === 0 && (
         <Card className="p-8 text-center">
           <div className="font-display text-xl mb-1">{isOwn ? "Cadastre o primeiro serviço" : "Esta casa ainda não cadastrou serviços"}</div>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
@@ -253,7 +274,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
         </Card>
       )}
 
-      {(isOwn ? groupServices(items) : [{ key: "todos", title: "", items }]).map((group, gi, groups) => (
+      {(ordersOnly ? [] : isOwn ? groupServices(items) : [{ key: "todos", title: "", items }]).map((group, gi, groups) => (
       <Fragment key={group.key}>
       {isOwn && groups.length > 1 && <h2 className={`font-display font-bold text-lg ${gi > 0 ? "pt-3" : ""}`}>{group.title} <span className="text-sm font-normal text-muted-foreground">({group.items.length})</span></h2>}
       {group.items.map((s) => {
@@ -348,7 +369,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview }: Prop
 
       <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ContractModal service={contracting} initialSlot={contractSlot} onClose={() => setContracting(null)} onDone={() => void load()} />
-      {isOwn && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} ownerId={ownerId} onAgendaChange={() => setAgendaVersion((v) => v + 1)} />}
+      {isOwn && !ordersOnly && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} ownerId={ownerId} onAgendaChange={() => setAgendaVersion((v) => v + 1)} />}
     </div>
   );
 }
