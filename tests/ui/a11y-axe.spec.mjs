@@ -33,7 +33,7 @@ for (const vp of [{ n: "celular 375", width: 375, height: 740 }, { n: "computado
         const achados = [];
         for (const tela of g.telas) {
           await page.goto(tela);
-          await page.waitForTimeout(700);
+          await page.locator("h1").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(150);
           const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
           for (const v of r.violations) achados.push(`${tela} · ${v.id} (${v.impact}) ×${v.nodes.length}: ${v.nodes[0].target.join(" ")} — ${(v.nodes[0].failureSummary ?? "").split("\n")[1] ?? ""}`.slice(0, 300));
         }

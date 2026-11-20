@@ -76,7 +76,7 @@ test("acessibilidade (axe): faixa de aviso e card do dono, claro e escuro", asyn
     await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [on({ assistant: true })] }, rpc: adminRpc });
     for (const tela of ["/", "/admin"]) {
       await page.goto(tela);
-      await page.waitForTimeout(700);
+      await page.locator("h1").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(150);
       const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
       expect(r.violations.map((v) => `${tela} ${scheme} ${v.id}: ${v.nodes[0].target.join(" ")}`)).toEqual([]);
     }

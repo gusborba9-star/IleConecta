@@ -191,6 +191,7 @@ test.describe("momentos: curtir, comentar e visualizações", () => {
     await page.getByTestId("moment-card").first().click();
     const v = page.getByTestId("moment-viewer");
     await expect(v).toBeVisible();
+    await v.getByRole("button", { name: "Pausar momento" }).click(); // com a máquina ocupada o tempo do momento poderia passar antes do clique
     await expect.poll(() => calls.some((x) => x.kind === "rpc" && x.name === "moment_view" && x.body.p_story === U(101))).toBe(true);
     await v.getByRole("button", { name: "Curtir", exact: true }).click();
     await expect(v.getByRole("button", { name: "Descurtir" })).toHaveAttribute("aria-pressed", "true");
@@ -203,6 +204,7 @@ test.describe("momentos: curtir, comentar e visualizações", () => {
     await setup(page, "cliente", null, { rpc: { moment_like: { status: 400, body: { code: "P0001", message: "Não foi possível curtir este momento." } } } });
     await page.goto("/comunidade");
     await page.getByTestId("moment-card").first().click();
+    await page.getByTestId("moment-viewer").getByRole("button", { name: "Pausar momento" }).click();
     await page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true }).click();
     await expect(page.getByText("Não foi possível curtir este momento.")).toBeVisible();
     await expect(page.getByTestId("moment-viewer").getByRole("button", { name: "Curtir", exact: true })).toBeVisible();
