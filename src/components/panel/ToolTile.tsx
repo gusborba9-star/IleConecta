@@ -19,8 +19,7 @@ interface Props {
 
 /** Atalho do painel: ícone com anel colorido e nome embaixo. Mesmo componente no Início, em Crescer e onde mais houver atalhos. */
 export default function ToolTile({ icon: Icon, label, tone, to, onClick, badge, note }: Props) {
-  // O nome acessível começa pelo texto visível (rótulo + nota, separados por espaço); o aviso numerado vem depois.
-  const aria = [[label, note].filter(Boolean).join(" "), badge && badge > 0 ? `${badge} pendente${badge > 1 ? "s" : ""}` : ""].filter(Boolean).join(", ");
+  const pend = badge && badge > 0 ? `${badge} pendente${badge > 1 ? "s" : ""}` : "";
   const body = (
     <>
       <span className={cn("tool-ring relative", `tone-${tone}`)}>
@@ -31,12 +30,13 @@ export default function ToolTile({ icon: Icon, label, tone, to, onClick, badge, 
       </span>
       <span className="mt-2 block max-w-full break-words text-center text-[12px] font-semibold leading-tight text-foreground">{label}</span>
       {note && <span className="mt-0.5 block max-w-full break-words text-center text-[10.5px] leading-tight text-muted-foreground">{note}</span>}
+      {pend && <span className="sr-only">, {pend}</span>}
     </>
   );
   const cls = "tool-tile group flex min-w-0 flex-col items-center rounded-2xl px-1 pb-2 pt-2 outline-none transition focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]";
   return to ? (
-    <Link to={to} aria-label={aria} className={cls}>{body}</Link>
+    <Link to={to} className={cls}>{body}</Link>
   ) : (
-    <button type="button" aria-label={aria} onClick={onClick} className={cls}>{body}</button>
+    <button type="button" onClick={onClick} className={cls}>{body}</button>
   );
 }
