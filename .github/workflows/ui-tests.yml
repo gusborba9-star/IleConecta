@@ -1,0 +1,76 @@
+name: Testes de interface
+
+# Roda a suíte de interface (Playwright, API simulada) dividida em 4 máquinas, mais os testes unitários.
+# Não usa segredos nem acessa o Supabase: tudo é simulado. Cada PR para a main passa por aqui.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ui-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Testes unitários
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  ui:
+    name: Interface (parte ${{ matrix.shard }} de 4)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Playwright e axe não ficam no package.json de propósito (não entram no app); a versão é a mesma usada nos testes locais.
+      - run: npm install --no-save @playwright/test@1.63.0 @axe-core/playwright axe-core
+      - run: npx playwright install --with-deps chromium
+      - name: Suíte de interface
+        env:
+          PW_WORKERS: "3"
+        run: npx playwright test -c playwright.ui.config.mjs --shard=${{ matrix.shard }}/4 --reporter=line
+      - name: Guardar relatório de falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: falhas-interface-${{ matrix.shard }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  resultado:
+    name: Resultado final dos testes de interface
+    if: always()
+    needs: [unit, ui]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Conferir
+        run: |
+          echo "unit=${{ needs.unit.result }} ui=${{ needs.ui.result }}"
+          test "${{ needs.unit.result }}" = "success" && test "${{ needs.ui.result }}" = "success"
