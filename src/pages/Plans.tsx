@@ -1,3 +1,5 @@
+import TabBar from "@/components/panel/TabBar";
+import { tabPanelProps } from "@/components/panel/tabPanelProps";
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
@@ -55,6 +57,8 @@ function ComparisonCard({ rows }: { rows: { plan: PlanId; people: number; label:
   );
 }
 
+type Aba = "meu" | "mudar" | "cobrancas";
+
 export default function Plans() {
   const { currentUser, isRemoteAuth } = useApp();
   const nav = useNavigate();
@@ -64,6 +68,9 @@ export default function Plans() {
   const userId = currentUser?.id;
   const [params, setParams] = useSearchParams();
   const [billingTick, setBillingTick] = useState(0);
+  // Aba aberta: `?aba=meu|mudar|cobrancas`; links com fatura (`?foco=`, `?retorno=`) abrem direto em Cobranças.
+  const askedTab = params.get("aba");
+  const [aba, setAba] = useState<Aba>(() => (params.get("foco") || params.get("retorno") || params.get("fatura") || params.get("cartao") ? "cobrancas" : askedTab === "mudar" || askedTab === "cobrancas" ? askedTab : "meu"));
   const [change, setChange] = useState<PlanChangeStatus | null>(null);
   const [target, setTarget] = useState<HousePlanId | null>(null);
   // O painel de troca fica acima dos cards: ao escolher um plano, leva a tela até ele (no celular ele ficava fora da vista).
@@ -117,12 +124,7 @@ export default function Plans() {
     };
   }, [isRemoteAuth, isHouse, userId, billingTick]);
 
-  return (
-    <div className="space-y-6 pb-16 lg:pb-4">
-      {isRemoteAuth && isHouse && <ReactivateCard plan={mine === "gratis" ? null : mine} refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <TaxIdCard />}
-      {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <ReturningNoticeCard />}
+  const hero = (
       <Card className="p-6 border-gold/40 bg-gradient-to-br from-gold/15 via-transparent to-forest/10">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Planos da casa</div>
         <h1 className="font-display font-bold text-3xl mt-1">Cresça no seu ritmo</h1>
@@ -142,9 +144,10 @@ export default function Plans() {
           ))}
         </ol>
       </Card>
-
-      {isRemoteAuth && isHouse && mine === "gratis" && <FreePlanNotice />}
-      {isRemoteAuth && isHouse && mine && <SellOnPlatformCard paid={mine !== "gratis"} />}
+  );
+  const tabsOn = isRemoteAuth && isHouse;
+  const mudar = (
+    <>
       <div ref={panelRef} className="scroll-mt-20 empty:hidden">
         {isRemoteAuth && isHouse && change && target && (
           <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
@@ -195,17 +198,56 @@ export default function Plans() {
         })}
       </div>
       <PlanCompare mine={mine} userId={userId} />
-      {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine && mine !== "gratis" ? config.pricing.plans[mine].name : null} monthly={mine && mine !== "gratis" ? config.pricing.plans[mine].monthly : null} />}
-      {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
-      {isRemoteAuth && isHouse && <OrdersCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
-      {isRemoteAuth && isHouse && <CancelSubscriptionCard onChanged={() => setBillingTick((n) => n + 1)} />}
       <ComparisonCard
         rows={[
           { plan: "intermediario", people: 1, label: "Uma pessoa para atender em horário comercial" },
           { plan: "maximo", people: PEOPLE_FOR_24H, label: `Uma equipe de cerca de ${PEOPLE_FOR_24H} pessoas para cobrir 24 horas, 7 dias por semana` },
         ]}
       />
+    </>
+  );
+  const meu = (
+    <>
+      {isRemoteAuth && isHouse && mine === "gratis" && <FreePlanNotice />}
+      {isRemoteAuth && isHouse && mine && <SellOnPlatformCard paid={mine !== "gratis"} />}
+      {isRemoteAuth && isHouse && <AssistantCreditsCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <CancelSubscriptionCard onChanged={() => setBillingTick((n) => n + 1)} />}
+    </>
+  );
+  const cobrancas = (
+    <>
+      {isRemoteAuth && isHouse && <InvoicesCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <OrdersCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} />}
+      {isRemoteAuth && isHouse && <CardAutoChargeCard refreshKey={billingTick} onChanged={() => setBillingTick((n) => n + 1)} planName={mine && mine !== "gratis" ? config.pricing.plans[mine].name : null} monthly={mine && mine !== "gratis" ? config.pricing.plans[mine].monthly : null} />}
+      {isRemoteAuth && isHouse && <TaxIdCard />}
+    </>
+  );
+
+  return (
+    <div className="space-y-6 pb-16 lg:pb-4">
+      {isRemoteAuth && isHouse && <ReactivateCard plan={mine === "gratis" ? null : mine} refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <BillingAlertCard refreshKey={billingTick} />}
+      {isRemoteAuth && isHouse && <ReturningNoticeCard />}
+      {tabsOn ? (
+        <>
+          <Card className="page-hero p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Painel da casa</div>
+            <h1 className="mt-1 break-words font-display text-2xl font-bold">Planos e faturas</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Seu plano, a troca de plano e tudo o que é cobrado, em abas.</p>
+          </Card>
+          <TabBar idBase="planos" label="Planos e faturas" value={aba} onChange={(id) => setAba(id as Aba)} tabs={[{ id: "meu", label: "Meu plano" }, { id: "mudar", label: "Mudar de plano" }, { id: "cobrancas", label: "Cobranças" }]} />
+          {(["meu", "mudar", "cobrancas"] as Aba[]).map((id) => (
+            <div key={id} {...tabPanelProps("planos", id, aba)} className="space-y-6 outline-none">
+              {id === aba && (id === "meu" ? meu : id === "mudar" ? <>{hero}{mudar}</> : cobrancas)}
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          {hero}
+          {mudar}
+        </>
+      )}
       <p className="text-xs text-muted-foreground">Assinar, subir de plano e voltar a um plano menor são feitos aqui mesmo. Dúvidas sobre a sua casa? Fale com o suporte.</p>
     </div>
   );

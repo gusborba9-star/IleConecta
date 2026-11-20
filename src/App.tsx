@@ -23,6 +23,8 @@ const Boost = lazy(() => import("@/pages/Boost"));
 const Discover = lazy(() => import("@/pages/Discover"));
 const Highlights = lazy(() => import("@/pages/Highlights"));
 const Plans = lazy(() => import("@/pages/Plans"));
+const Pedidos = lazy(() => import("@/pages/Pedidos"));
+const Recebimentos = lazy(() => import("@/pages/Recebimentos"));
 const Activity = lazy(() => import("@/pages/Activity"));
 const Support = lazy(() => import("@/pages/Support"));
 const MyCases = lazy(() => import("@/pages/MyCases"));
@@ -113,6 +115,9 @@ export default function App() {
         <Route path="/mensagens/:id" element={<MessagesRoute />} />
         <Route path="/impulsionar" element={<Boost />} />
         <Route path="/destaques" element={<Highlights />} />
+        <Route path="/crescer" element={<Navigate to="/impulsionar" replace />} />
+        <Route path="/pedidos" element={<Pedidos />} />
+        <Route path="/recebimentos" element={<Recebimentos />} />
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Activity />} />
         <Route path="/suporte" element={<Support />} />

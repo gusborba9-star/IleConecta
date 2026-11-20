@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Lock, Plus, Play } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar } from "@/components/base";
@@ -60,6 +60,14 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
 
   const canPost = isRemoteAuth && isHouse && canPostMoments(caps);
   const showUpsell = isRemoteAuth && isHouse && caps !== null && !canPostMoments(caps);
+  // Atalho "Momentos" do Início da casa (`/comunidade?novo=momento`): abre o editor direto (uma vez; o endereço é limpo para não reabrir).
+  const [params, setParams] = useSearchParams();
+  const wantsNew = params.get("novo") === "momento";
+  useEffect(() => {
+    if (!wantsNew || !canPost) return;
+    setComposing(true);
+    setParams((p) => { const n = new URLSearchParams(p); n.delete("novo"); return n; }, { replace: true });
+  }, [wantsNew, canPost, setParams]);
 
   return (
     <>
@@ -72,7 +80,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
             </button>
           )}
           {showUpsell && (
-            <Link to="/planos" className="shrink-0 w-32 h-52 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-2 px-2 text-center hover:bg-muted/40">
+            <Link to="/planos?aba=mudar" className="shrink-0 w-32 h-52 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-2 px-2 text-center hover:bg-muted/40">
               <span className="h-11 w-11 rounded-full bg-muted grid place-items-center"><Lock className="h-5 w-5 text-muted-foreground" aria-hidden /></span>
               <span className="text-xs font-semibold">Momentos a partir do plano Essencial</span>
               <span className="text-[11px] text-primary font-semibold">Ver planos</span>

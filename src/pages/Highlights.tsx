@@ -1,3 +1,4 @@
+import GrowTabs from "@/components/panel/GrowTabs";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -53,6 +54,7 @@ export default function Highlights() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
+      <GrowTabs active="destaques" />
       <Card className="p-6 bg-gradient-to-br from-[#FBF2DE] via-transparent to-gold/10 dark:from-gold/15 border-gold/40 shadow-card">
         <div className="flex items-center gap-2 mb-2">
           <Star className="h-5 w-5 text-gold" />

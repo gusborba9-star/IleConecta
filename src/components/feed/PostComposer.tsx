@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button, Card, Textarea } from "@/components/base";
 import { Image, Sparkles, Radio } from "lucide-react";
@@ -20,6 +21,15 @@ export default function PostComposer() {
   const [style, setStyle] = useState<StyleDraft>(EMPTY_STYLE);
   const { caps } = useOwnerPlan(isHouse ? currentUser?.id : null);
   const allowed = caps?.styled_posts === true;
+  // Atalho "Publicar" do Início da casa (`/comunidade?novo=publicacao`): leva o foco para o campo de texto.
+  const [params] = useSearchParams();
+  const wantsFocus = params.get("novo") === "publicacao";
+  useEffect(() => {
+    if (!wantsFocus) return;
+    const el = document.getElementById("texto-da-publicacao");
+    el?.scrollIntoView({ block: "center" });
+    el?.focus({ preventScroll: true });
+  }, [wantsFocus, currentUser?.id]);
 
   if (!currentUser) return null;
 
@@ -65,6 +75,7 @@ export default function PostComposer() {
         <Avatar src={currentUser.avatar} name={currentUser.name} size={44} ring={isHouse ? "gold" : "none"} />
         <div className="flex-1 space-y-3">
           <Textarea
+            id="texto-da-publicacao"
             aria-label="Texto da publicação"
             placeholder={
               isHouse

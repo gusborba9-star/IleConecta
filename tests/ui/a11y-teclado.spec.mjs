@@ -56,7 +56,7 @@ test.describe("pular para o conteúdo e título por tela", () => {
   test("o título da aba muda a cada tela e a troca é anunciada; a primeira carga não é anunciada duas vezes", async ({ page }) => {
     await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] } } });
     await page.goto("/planos");
-    await expect(page).toHaveTitle("Planos · Ilê Conecta");
+    await expect(page).toHaveTitle("Planos e faturas · Ilê Conecta");
     expect(await page.getByRole("status").filter({ hasText: "Página:" }).count()).toBe(0);
     await page.goto("/suporte");
     await expect(page).toHaveTitle("Suporte · Ilê Conecta");

@@ -80,7 +80,7 @@ export default function PromoPicker<K extends string>({
                 {d} dias
               </Button>
             ))}
-            <div className="flex items-center gap-2 ml-1">
+            <div className="flex flex-wrap items-center gap-2 ml-1 min-w-0">
               <span className="text-sm text-muted-foreground">ou</span>
               <Input
                 aria-label="Quantidade de dias"

@@ -4,12 +4,15 @@ import { Avatar, Card } from "@/components/base";
 import { cn } from "@/lib/utils";
 import { useStaffLink } from "@/lib/staff";
 import { navGroups, type NavEntry } from "./navConfig";
+import { useHouseBadges } from "@/lib/useHouseBadges";
+import { NavBadge, NavBadgeText } from "./NavBadge";
 
 export default function SideNav() {
   const { currentUser, isRemoteAuth } = useApp();
   const isHouse = currentUser?.type === "commercial";
   const staff = useStaffLink(isRemoteAuth && !isHouse ? currentUser?.id : undefined);
   const groups = navGroups({ isHouse, isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff) });
+  const badges = useHouseBadges(isHouse && isRemoteAuth);
 
   return (
     <div className="space-y-4">
@@ -29,7 +32,7 @@ export default function SideNav() {
           )}
           {g.title && <div className={cn("px-3 pb-1 text-xs uppercase tracking-widest", isHouse ? "text-[#E3BF5A]" : "text-muted-foreground")}>{g.title}</div>}
           <nav aria-label={g.title || (i === 0 ? "Menu principal" : `Menu ${i + 1}`)} className="flex flex-col gap-1">
-            {g.items.map((it) => <NavItem key={it.to + it.label} {...it} dark={isHouse} />)}
+            {g.items.map((it) => <NavItem key={it.to + it.label} {...it} count={it.badge ? badges[it.badge] : 0} dark={isHouse} />)}
           </nav>
         </Card>
       ))}
@@ -37,7 +40,7 @@ export default function SideNav() {
   );
 }
 
-function NavItem({ to, icon: Icon, label, tone, dark }: NavEntry & { dark?: boolean }) {
+function NavItem({ to, icon: Icon, label, tone, dark, count = 0 }: NavEntry & { dark?: boolean; count?: number }) {
   return (
     <NavLink
       to={to}
@@ -53,7 +56,8 @@ function NavItem({ to, icon: Icon, label, tone, dark }: NavEntry & { dark?: bool
       }
     >
       <Icon className={cn("h-4 w-4", tone === "gold" ? "text-gold" : "")} />
-      {label}
+      {label}<NavBadgeText n={count} />
+      <NavBadge n={count} />
     </NavLink>
   );
 }

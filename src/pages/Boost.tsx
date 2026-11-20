@@ -1,3 +1,4 @@
+import GrowTabs from "@/components/panel/GrowTabs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -74,6 +75,7 @@ export default function Boost() {
 
   return (
     <div className="space-y-6 pb-16 lg:pb-4">
+      <GrowTabs active="impulsionar" />
       <Card className="p-6 bg-gradient-to-br from-[#EEE9F5] via-transparent to-gold/10 dark:from-plum/15 border-plum/30 shadow-card">
         <div className="flex items-center gap-2 mb-2">
           <TrendingUp className="h-5 w-5 text-primary" />
