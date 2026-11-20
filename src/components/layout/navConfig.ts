@@ -1,4 +1,4 @@
-import { Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
+import { CalendarDays, Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
 
 export interface NavEntry { to: string; icon: LucideIcon; label: string; tone?: "gold"; /** Número de pendências mostrado em bolinha (vem da central de pendências da casa). */ badge?: "mensagens" | "pedidos" | "membros" | "faturas" }
 export interface NavGroup { title?: string; items: NavEntry[] }
@@ -11,6 +11,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
         { to: "/", icon: Home, label: "Início" },
         { to: "/mensagens", icon: MessageCircle, label: "Mensagens", badge: "mensagens" },
         { to: "/pedidos", icon: ClipboardList, label: "Pedidos", badge: "pedidos" },
+        ...(isRemoteAuth ? [{ to: "/agenda", icon: CalendarDays, label: "Agenda" }] : []),
         ...(isRemoteAuth ? [{ to: "/painel/membros", icon: Users, label: "Membros", badge: "membros" as const }, { to: "/pessoas", icon: Contact, label: "Pessoas da casa" }] : []),
       ] },
       { title: "Minha casa", items: [

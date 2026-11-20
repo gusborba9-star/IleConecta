@@ -15,6 +15,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   if (!currentUser) return null;
 
+  const isHouse = currentUser.type === "commercial";
   const myPurchases = purchases.filter((p) => p.userId === currentUser.id);
   const myPosts = posts.filter((p) => p.houseId === currentUser.id);
 
@@ -50,10 +51,11 @@ export default function Profile() {
       </Card>
       <EditProfileModal open={editing} onClose={() => setEditing(false)} />
       <AssistantSettings />
-      <ThemeSwitch />
-      <DiscreetModeCard />
+      {/* A casa tem a aparência no topo e o modo discreto em Preferências, no Início; aqui ficam só o perfil e a assistente. */}
+      {!isHouse && <ThemeSwitch />}
+      {!isHouse && <DiscreetModeCard />}
 
-      <Card className="p-5">
+      {!isHouse && <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Ticket className="h-5 w-5 text-primary" />
           <h2 className="font-display font-bold text-lg">Reservas demonstrativas</h2>
@@ -97,9 +99,9 @@ export default function Profile() {
             })}
           </div>
         )}
-      </Card>
+      </Card>}
 
-      <Card className="p-5">
+      {!isHouse && <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-gold" />
           <h2 className="font-display font-bold text-lg">Recomendado para você</h2>
@@ -115,9 +117,9 @@ export default function Profile() {
             </Link>
           ))}
         </div>
-      </Card>
+      </Card>}
 
-      {myPosts.length > 0 && (
+      {!isHouse && myPosts.length > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Heart className="h-5 w-5 text-primary" />

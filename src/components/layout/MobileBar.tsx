@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { ClipboardList, Home, Leaf, Menu, MessageCircle, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardList, Home, Menu, MessageCircle, type LucideIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useHouseBadges } from "@/lib/useHouseBadges";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ export default function MobileBar() {
     { to: "/", label: "Início", icon: Home, end: true },
     { to: "/mensagens", label: "Mensagens", icon: MessageCircle, n: badges.mensagens },
     { to: "/pedidos", label: "Pedidos", icon: ClipboardList, n: badges.pedidos },
-    { to: `/casa/${currentUser.id}`, label: "Casa", icon: Leaf },
+    { to: "/agenda", label: "Agenda", icon: CalendarDays },
   ];
   return (
     <nav aria-label="Atalhos do celular" className="fixed inset-x-3 bottom-3 z-40 lg:hidden pb-[env(safe-area-inset-bottom)]">

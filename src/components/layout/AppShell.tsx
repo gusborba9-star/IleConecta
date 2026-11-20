@@ -17,6 +17,7 @@ import type { AccountGate } from "@/lib/accountGateCore";
 import type { HousePlanId as PlanId } from "@/lib/platformConfigCore";
 import Footer from "./Footer";
 import MobileBar from "./MobileBar";
+import BackBar from "./BackBar";
 import MaintenanceBanner from "./MaintenanceBanner";
 
 export default function AppShell() {
@@ -106,6 +107,7 @@ export default function AppShell() {
         </aside>
         <main id="conteudo" tabIndex={-1} className="min-w-0 outline-none">
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
+          {!gate && <BackBar />}
           {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
         </main>
         {!isRemoteAuth && (

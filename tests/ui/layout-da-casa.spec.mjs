@@ -22,9 +22,9 @@ test.describe("Início da casa: cada ferramenta leva ao lugar certo", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: /Olá, Casa Axé/ })).toBeVisible();
     const alvo = {
-      "Pedidos": "/pedidos", "Pessoas": "/pessoas", "Novo serviço": `/casa/${ME}?aba=servicos&novo=1`, "Novo ritual": `/casa/${ME}?aba=rituais&novo=1`,
+      "Pessoas": "/pessoas", "Novo serviço": `/casa/${ME}?aba=servicos&novo=1`, "Novo ritual": `/casa/${ME}?aba=rituais&novo=1`,
       "Publicar": "/comunidade?novo=publicacao", "Momentos": "/comunidade?novo=momento", "Crescer": "/impulsionar", "Planos": "/planos", "Recebimentos": "/recebimentos",
-      "Assistente": "/perfil", "Editar página": `/casa/${ME}?editar=1`, "Minha página": `/casa/${ME}`,
+      "Assistente": "/perfil", "Editar página": `/casa/${ME}?editar=1`,
     };
     const area = page.getByRole("region", { name: "Ferramentas" }).or(page.locator("section[aria-labelledby=ferramentas]"));
     for (const [nome, href] of Object.entries(alvo)) {
@@ -92,7 +92,7 @@ test.describe("barra de baixo e menu no celular", () => {
     await page.goto("/");
     const barra = page.getByRole("navigation", { name: "Atalhos do celular" });
     await expect(barra).toBeVisible();
-    for (const [nome, href] of [["Início", "/"], ["Mensagens", "/mensagens"], ["Pedidos", "/pedidos"], ["Casa", `/casa/${ME}`]]) {
+    for (const [nome, href] of [["Início", "/"], ["Mensagens", "/mensagens"], ["Pedidos", "/pedidos"], ["Agenda", "/agenda"]]) {
       await expect(barra.getByRole("link", { name: new RegExp(`^${nome}`) })).toHaveAttribute("href", href);
     }
     await expect(barra.getByRole("link", { name: /^Mensagens/ })).toContainText("3 pendentes");
@@ -216,7 +216,7 @@ test.describe("Recebimentos", () => {
 });
 
 test.describe("sem rolagem lateral e texto a 200%", () => {
-  for (const tela of ["/", "/pedidos", "/recebimentos", "/planos", "/planos?aba=mudar", "/planos?aba=cobrancas", "/impulsionar", "/destaques"]) {
+  for (const tela of ["/", "/pedidos", "/agenda", "/recebimentos", "/planos", "/planos?aba=mudar", "/planos?aba=cobrancas", "/impulsionar", "/destaques"]) {
     test(`320 px e 200%: ${tela}`, async ({ page }) => {
       await entrar(page);
       await page.setViewportSize({ width: 320, height: 640 });
@@ -229,4 +229,117 @@ test.describe("sem rolagem lateral e texto a 200%", () => {
       await noHScroll(page);
     });
   }
+});
+
+test.describe("Agenda da casa, Voltar, aparência no topo e caminhos sem repetição", () => {
+  test.use({ viewport: { width: 375, height: 740 } });
+  test("Agenda: tela própria com horários de atendimento e próximos atendimentos; cliente é mandado ao Início", async ({ page }) => {
+    await entrar(page, { rest: { house_availability: [{ id: U(5), weekday: 1, start_time: "09:00:00", end_time: "12:00:00" }], house_calendar_items: [] } });
+    await page.goto("/agenda");
+    await expect(page.getByRole("heading", { level: 1, name: "Agenda" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Agenda de atendimento" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Próximos atendimentos marcados" })).toBeVisible();
+    await expect(page.getByText("9:00 às 12:00").or(page.getByText("09:00 às 12:00"))).toBeVisible();
+    await noHScroll(page);
+    const p2 = await page.context().newPage();
+    await api(p2, { rest: { profiles: perfilPessoa, legal_consents: consent("termos_cliente") }, rpc: {} });
+    await p2.goto("/agenda");
+    await expect(p2).toHaveURL(/\/$/);
+  });
+
+  test("o Início não repete o que a barra de baixo já tem: sem atalhos de Pedidos, Agenda e Minha página entre as ferramentas", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/");
+    const area = page.locator("section[aria-labelledby=ferramentas]");
+    await expect(area.getByRole("link", { name: /^Planos/ })).toBeVisible();
+    for (const nome of ["Pedidos", "Agenda", "Minha página"]) await expect(area.getByRole("link", { name: new RegExp(`^${nome}`) })).toHaveCount(0);
+  });
+
+  test("Voltar: some nas telas principais; volta à tela anterior; link direto vai para o Início", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Voltar" })).toHaveCount(0);
+    await page.locator("section[aria-labelledby=ferramentas]").getByRole("link", { name: /^Planos/ }).click();
+    await expect(page).toHaveURL(/\/planos$/);
+    await page.getByRole("button", { name: "Voltar" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/pessoas");
+    await page.goBack().catch(() => undefined);
+    await page.goto("/recebimentos");
+    await expect(page.getByRole("button", { name: "Voltar" })).toBeVisible();
+    for (const t of ["/pedidos", "/agenda", "/mensagens"]) {
+      await page.goto(t);
+      await expect(page.getByRole("button", { name: "Voltar" }), t).toHaveCount(0);
+    }
+  });
+
+  test("aparência no topo: um toque alterna claro, escuro e automático", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/");
+    const botao = page.getByRole("button", { name: /^Aparência:/ });
+    await expect(botao).toBeVisible();
+    const escuro = () => page.evaluate(() => document.documentElement.classList.contains("dark"));
+    await page.evaluate(() => localStorage.removeItem("ile:tema"));
+    await page.reload();
+    await page.getByRole("button", { name: /^Aparência:/ }).click(); // automático -> claro
+    await expect(page.getByRole("button", { name: /^Aparência: claro/ })).toBeVisible();
+    expect(await escuro()).toBe(false);
+    await page.getByRole("button", { name: /^Aparência:/ }).click(); // -> escuro
+    await expect(page.getByRole("button", { name: /^Aparência: escuro/ })).toBeVisible();
+    expect(await escuro()).toBe(true);
+    await noHScroll(page);
+  });
+
+  test("topo no celular: sino e perfil à direita, com espaço entre eles", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/");
+    const marca = await page.locator("header a[href='/']").first().boundingBox();
+    const sino = await page.getByRole("button", { name: /Notificações/ }).boundingBox();
+    const perfil = await page.getByRole("button", { name: "Menu da conta" }).boundingBox();
+    expect(sino.x).toBeGreaterThan(marca.x + marca.width + 40);
+    expect(perfil.x - (sino.x + sino.width)).toBeGreaterThanOrEqual(4);
+    expect(perfil.x + perfil.width).toBeLessThanOrEqual(375 - 8);
+  });
+
+  test("Perfil e assistente da casa: sem Reservas demonstrativas, Recomendado, Suas publicações nem Modo discreto repetido", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/perfil");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    for (const t of ["Reservas demonstrativas", "Recomendado para você", "Suas publicações", "Modo discreto"]) await expect(page.getByRole("heading", { name: t })).toHaveCount(0);
+  });
+});
+
+test.describe("Faturas resumidas e Compare os planos no celular", () => {
+  test.use({ viewport: { width: 375, height: 740 } });
+  const inv = (i, status = "paga") => ({ id: `c${i}`, kind: "plan", description: `Mensalidade ${i}`, amount_cents: 29990, due_date: `2026-${String(12 - i).padStart(2, "0")}-17`, status, paid_at: null, idempotency_key: `plan:${i}`, pix_discount_cents: 0, pix_discount_until: null });
+  test("mostra as abertas e as 3 mais recentes; o resto abre em 'Ver histórico completo'", async ({ page }) => {
+    await entrar(page, { rest: { platform_charges: [inv(0, "aberta"), ...[1, 2, 3, 4, 5, 6].map((i) => inv(i))] }, rpc: { my_house_billing_status: { house_id: HID, plan: "intermediario" } } });
+    await page.goto("/planos?aba=cobrancas");
+    const card = page.locator("section, div").filter({ has: page.getByRole("heading", { name: "Faturas da plataforma" }) }).last();
+    await expect(page.getByText("Mensalidade 3")).toBeVisible();
+    await expect(page.getByText("Mensalidade 4")).toHaveCount(0);
+    const mais = page.getByRole("button", { name: /Ver histórico completo \(3 mais antigas\)/ });
+    await mais.click();
+    await expect(page.getByText("Mensalidade 6")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mostrar só as recentes" })).toHaveAttribute("aria-expanded", "true");
+    await noHScroll(page);
+    void card;
+  });
+
+  test("Compare os planos: celular mostra um plano por vez, sem tabela cortada; computador mantém a tabela", async ({ page }) => {
+    await entrar(page);
+    await page.goto("/planos?aba=mudar");
+    const grupo = page.getByRole("radiogroup", { name: "Plano a ver" });
+    await expect(grupo).toBeVisible();
+    await expect(page.locator("table")).toHaveCount(0);
+    const radios = grupo.getByRole("radio");
+    await expect(radios.first()).toBeVisible();
+    await radios.last().click();
+    await expect(radios.last()).toHaveAttribute("aria-checked", "true");
+    await noHScroll(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.reload();
+    await expect(page.getByRole("radiogroup", { name: "Plano a ver" })).toHaveCount(0);
+    await expect(page.locator("table").first()).toBeVisible();
+  });
 });

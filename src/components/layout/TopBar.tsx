@@ -6,6 +6,7 @@ import NotificationBell from "@/components/layout/NotificationBell";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { Avatar, Button } from "@/components/base";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ThemeButton from "@/components/layout/ThemeButton";
 import MoreSheet from "@/components/layout/MoreSheet";
 import { navGroups } from "@/components/layout/navConfig";
 import { OPEN_MENU_EVENT } from "@/components/layout/MobileBar";
@@ -81,7 +82,8 @@ export default function TopBar() {
           <TopIcon to="/mensagens" icon={MessageCircle} label="Mensagens" />
         </nav>
 
-        <div className="flex items-center gap-1 min-[380px]:gap-2 shrink-0">
+        <div className="ml-auto flex items-center gap-1 min-[380px]:gap-2 shrink-0">
+          <ThemeButton />
           {isRemoteAuth && currentUser ? (
             <NotificationBell userId={currentUser.id} />
           ) : (

@@ -239,6 +239,8 @@ A agenda é o núcleo de disponibilidade da casa e contempla horários, bloqueio
 
 Deve existir uma fonte única de disponibilidade para painel, assistente e checkout. Publicar atividade no calendário não significa venda automática. Jogos com horário marcado consultam disponibilidade real. Atendimento presencial confirmado bloqueia o horário correspondente.
 
+**Implementação (20/11/2026).** A casa gerencia a agenda na tela própria **Agenda** (`/agenda`): aba Atendimento (janelas semanais, bloqueios e próximos atendimentos marcados) e aba Datas e eventos (calendário de comemorações, que não bloqueia horário). A assistente informa o horário de atendimento lendo as janelas da agenda (`house_availability`); o texto livre antigo só vale enquanto a casa não tiver nenhuma janela cadastrada.
+
 O backend impede duas confirmações para o mesmo horário por validação transacional no momento da reserva, não apenas na apresentação de horários livres.
 
 ---

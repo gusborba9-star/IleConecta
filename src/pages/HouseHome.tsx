@@ -1,7 +1,7 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Bot, ClipboardList, Contact, Crown, Landmark, Leaf, Megaphone, Newspaper, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera, CalendarDays } from "lucide-react";
+import { Bot, Contact, Crown, Landmark, Megaphone, Newspaper, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
@@ -73,14 +73,12 @@ export default function HouseHome() {
   if (focusReceipt && isRemoteAuth) return <Navigate to="/recebimentos?foco=recebimento" replace />;
 
   const tools: Tool[] = [
-    { icon: ClipboardList, title: "Pedidos", tone: "verde", to: "/pedidos", badge: badges.pedidos },
     ...(isRemoteAuth ? [{ icon: Users, title: "Membros", tone: "verde" as const, to: "/painel/membros", badge: badges.membros, needs: "members_area" as CapFlagKey, about: "Controle mensalidades, vencimentos e avisos de cobrança dos membros da sua casa em um só lugar." }] : []),
     ...(isRemoteAuth ? [{ icon: Contact, title: "Pessoas", tone: "verde" as const, to: "/pessoas" }] : []),
     { icon: Plus, title: "Novo serviço", tone: "verde", to: `/casa/${house.id}?aba=servicos&novo=1` },
     { icon: Sparkles, title: "Novo ritual", tone: "terra", to: `/casa/${house.id}?aba=rituais&novo=1` },
     { icon: Newspaper, title: "Publicar", tone: "terra", to: "/comunidade?novo=publicacao" },
     ...(isRemoteAuth ? [{ icon: Camera, title: "Momentos", tone: "terra" as const, to: "/comunidade?novo=momento" }] : []),
-    ...(isRemoteAuth && isFeatureOn(config, "calendar", house.id) ? [{ icon: CalendarDays, title: "Agenda", tone: "verde" as const, to: `/casa/${house.id}?aba=calendario` }] : []),
     ...(isRemoteAuth && isFeatureOn(config, "reviews", house.id) ? [{ icon: Star, title: "Avaliações", tone: "ouro" as const, to: `/casa/${house.id}?aba=avaliacoes` }] : []),
     { icon: TrendingUp, title: "Crescer", tone: "ouro", to: "/impulsionar" },
     ...(isRemoteAuth ? [{ icon: Crown, title: "Planos", tone: "ouro" as const, to: "/planos", badge: badges.faturas }] : []),
@@ -89,7 +87,6 @@ export default function HouseHome() {
     ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe", tone: "verde" as const, to: "/equipe", needs: "included_seats" as CapNumberKey, about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver." }] : []),
     { icon: Bot, title: "Assistente", tone: "noite", to: "/perfil" },
     { icon: Pencil, title: "Editar página", tone: "verde", to: `/casa/${house.id}?editar=1` },
-    { icon: Leaf, title: "Minha página", tone: "verde", to: `/casa/${house.id}` },
   ];
 
   // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; o aviso explica).

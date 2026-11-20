@@ -26,3 +26,5 @@ export function cardView(status: CardInput | null | undefined, todayIso?: string
 export function authorizationText(input?: { planName?: string | null; amountCents?: number | null }): { period: "mensal"; planKey: string | null; amountCents: number | null; text: string };
 
 export function pixOffer(inv: { amountCents: number; status: string; pixDiscountCents?: number; pixDiscountUntil?: string | null }, todayIso?: string): { discountCents: number; payCents: number; until: string; pct: number } | null;
+
+export function splitInvoices<T extends { id?: string; status?: string }>(rows: T[], keep?: number, focusId?: string | null): { visible: T[]; hidden: T[] };
