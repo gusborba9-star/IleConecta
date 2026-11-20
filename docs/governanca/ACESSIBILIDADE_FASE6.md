@@ -29,3 +29,12 @@ Idioma `pt-BR`; janelas (`Modal`) com `role=dialog`, `aria-modal`, nome, foco pr
 - Automação cobre cerca de metade dos critérios. Não foi testado com leitor de tela real (TalkBack/VoiceOver/NVDA), nem zoom de 200% em todas as telas, nem janelas abertas por fluxos específicos com axe.
 - Carrossel de destaques (pedido para a etapa de layout) deve nascer com setas, toque, leitor de tela e contraste; o teste `a11y-axe` já vale para ele quando existir.
 - Recomendado antes do lançamento: uma passada manual de 30 min com TalkBack (celular) nas telas de entrada, compra de vaga e mensagens.
+
+
+## Cobertura ampliada — 19/11/2026
+Teste novo `tests/ui/a11y-cobertura.spec.mjs` (45 testes) e ampliações em `a11y-teclado`, `momentos` e `momentos-musica`.
+- **Mais telas no axe:** `/sobre/*` (9 páginas), 404, `/redefinir-senha`, créditos de áudio, chamados, pessoas, convites, retorno de pagamento, detalhe de ritual inexistente, `/admin?s=` (7 seções); janela de publicar com filtros de música (claro e escuro).
+- **Reflow (WCAG 1.4.10):** 11 telas em 320 px sem rolagem lateral. **Texto a 200% (1.4.4)** e **espaçamento de texto (1.4.12):** as mesmas 11 telas, sem rolagem lateral da página (tabelas largas continuam em região rolável nomeada).
+- **Corrigido:** 404 (`main`, `h1`, botão fora do link); detalhe de ritual inexistente e seções da administração com título principal; barra do topo e caixa da Conecta em 320 px; quebra de palavras longas em cadastro, comunidade e administração; foco preso (Tab/Shift+Tab) no visualizador e no editor de Momentos (hook `useFocusTrap`) e na janela de denúncia; botão "Pausar/Continuar momento" (WCAG 2.2.2), que também para a música (1.4.2 já tinha o botão de som).
+- **Controle:** os testes de foco falham sem a correção (provado removendo-a).
+- **Limites que continuam:** leitor de tela real (TalkBack/VoiceOver) e zoom do navegador em todos os fluxos não foram testados; recomendado: 30 min de TalkBack antes do lançamento. A barra do topo foi ajustada só abaixo de 380 px; reorganizar a navegação segue na etapa de layout.

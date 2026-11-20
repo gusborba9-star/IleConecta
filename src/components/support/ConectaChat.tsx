@@ -62,7 +62,7 @@ export default function ConectaChat() {
         <div ref={end} />
       </div>
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-        <input aria-label="Pergunte à Conecta" className="h-11 flex-1 rounded-md border border-input bg-background px-3 text-sm" maxLength={MAX_INPUT_CHARS} value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva sua pergunta" />
+        <input aria-label="Pergunte à Conecta" className="h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" maxLength={MAX_INPUT_CHARS} value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva sua pergunta" />
         <Button type="submit" disabled={busy || text.trim().length < 2} aria-label="Enviar"><Send className="h-4 w-4" /></Button>
       </form>
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

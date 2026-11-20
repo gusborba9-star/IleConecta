@@ -6,6 +6,7 @@ import {
   clampFrame, cleanText, coverScale, defaultFrame, hitLayer, isDefaultFrame, makeLayer, pinchValue, sanitizeLayers,
   type EditFrame, type EditLayer, type LayerBox,
 } from "@/lib/momentEditCore";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { drawScene, ensureFonts, renderFinal, sourceSize, type Src } from "@/lib/momentEditRender";
 
 export interface EditState { frame: EditFrame; layers: EditLayer[] }
@@ -28,6 +29,8 @@ export default function MomentEditor({ blob, initial, onCancel, onDone }: { blob
   const [fontTick, setFontTick] = useState(0);
   const [box, setBox] = useState<{ w: number; h: number }>({ w: 270, h: 480 });
   const wrap = useRef<HTMLDivElement>(null);
+  const dialogRoot = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRoot);
   const canvas = useRef<HTMLCanvasElement>(null);
   const boxes = useRef<LayerBox[]>([]);
   const pointers = useRef(new Map<number, Pt>());
@@ -160,7 +163,7 @@ export default function MomentEditor({ blob, initial, onCancel, onDone }: { blob
   const chip = "h-10 min-w-10 px-3 rounded-xl text-sm font-semibold bg-white/10 text-white aria-pressed:bg-white aria-pressed:text-black";
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Editar momento" className="fixed inset-0 z-[80] bg-neutral-950 text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div ref={dialogRoot} role="dialog" aria-modal="true" aria-label="Editar momento" className="fixed inset-0 z-[80] bg-neutral-950 text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex items-center justify-between px-3 h-14 shrink-0">
         <button type="button" onClick={onCancel} disabled={busy} className="h-11 px-3 inline-flex items-center gap-1 rounded-xl text-sm font-semibold bg-white/10"><X className="h-4 w-4" aria-hidden />Cancelar</button>
         <h2 className="text-sm font-semibold">Editar momento</h2>

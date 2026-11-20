@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronRight, Eye, Flag, Heart, MessageCircle, MoreVertical, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { ChevronRight, Eye, Flag, Heart, MessageCircle, MoreVertical, Pause, Play, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { Avatar, Button } from "@/components/base";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import { COMMENT_MAX, REPORT_REASONS, expiresInPt, itemSeconds, jumpGroup, nextPosition, prevPosition, timeAgoPt, type MomentGroup, type MomentStats } from "@/lib/momentsCore";
 import { deleteMomentComment, fetchMomentStats, recordMomentView, reportMoment, sendMomentComment, setMomentLike } from "@/lib/moments";
 
@@ -25,6 +26,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
   const [pos, setPos] = useState(start);
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
+  const [userPaused, setUserPaused] = useState(false); // pausa por botão (teclado e leitor de tela; WCAG 2.2.2)
   const [menu, setMenu] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reason, setReason] = useState("");
@@ -39,10 +41,12 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
   const [stats, setStats] = useState<MomentStats | null | "loading">(null);
   const group = groups[pos.gi];
   const item = group?.items[pos.ii];
-  const paused = holding || menu || reporting || typing || panel;
+  const paused = holding || userPaused || menu || reporting || typing || panel;
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRoot = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRoot);
   const gesture = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null);
   const holdTimer = useRef<number | null>(null);
   const onSeenRef = useRef(onSeen), onCloseRef = useRef(onClose);
@@ -217,7 +221,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
   const reply = (userId: string) => { onClose(); window.setTimeout(() => nav(`/mensagens/${userId}`), 0); };
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={label} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" data-testid="moment-viewer">
+    <div ref={dialogRoot} role="dialog" aria-modal="true" aria-label={label} className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" data-testid="moment-viewer">
       <div
         className="relative h-full w-full sm:h-[min(92vh,820px)] sm:w-auto sm:aspect-[9/16] sm:max-w-[460px] sm:rounded-2xl overflow-hidden bg-black select-none touch-none"
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { gesture.current = null; setHolding(false); }}
@@ -248,7 +252,7 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
         <div className="absolute top-2 inset-x-2 flex gap-1" aria-hidden>
           {group.items.map((it, k) => (
             <div key={it.id} className="h-[3px] flex-1 rounded-full bg-white/35 overflow-hidden">
-              <div className="h-full bg-white" style={{ width: `${k < pos.ii ? 100 : k === pos.ii ? Math.round(progress * 100) : 0}%` }} />
+              <div className="h-full bg-white" data-testid={k === pos.ii ? "moment-progress" : undefined} style={{ width: `${k < pos.ii ? 100 : k === pos.ii ? Math.round(progress * 100) : 0}%` }} />
             </div>
           ))}
         </div>
@@ -260,6 +264,9 @@ export default function MomentViewer({ groups, start, viewerId, onSeen, onClose,
             <div className="text-[11px] text-white/80">{timeAgoPt(item.createdAt)} · some em {expiresInPt(item.expiresAt)}</div>
             {item.music && <div className="text-[11px] text-white/90 truncate" data-testid="moment-music">♪ {item.music.title}{item.music.author ? ` — ${item.music.author}` : ""}</div>}
           </div>
+          <button type="button" onClick={() => setUserPaused((p) => !p)} aria-pressed={userPaused} aria-label={userPaused ? "Continuar momento" : "Pausar momento"} className="h-9 w-9 grid place-items-center rounded-full bg-black/35 hover:bg-black/55">
+            {userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          </button>
           {(item.kind === "video" || item.music) && (
             <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Ligar o som" : "Desligar o som"} className="h-9 w-9 grid place-items-center rounded-full bg-black/35 hover:bg-black/55">
               {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

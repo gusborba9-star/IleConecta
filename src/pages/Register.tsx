@@ -168,7 +168,7 @@ function TypeCard({ active, onClick, icon: Icon, title, desc }: { active: boolea
       type="button"
       onClick={onClick}
       className={cn(
-        "text-left p-4 rounded-2xl border-2 transition",
+        "min-w-0 break-words text-left p-4 rounded-2xl border-2 transition",
         active ? "border-forest bg-[#E8F1EA] dark:bg-forest/10 shadow-card ring-1 ring-gold/50" : "border-border bg-card hover:border-forest/40"
       )}
     >

@@ -43,7 +43,7 @@ export default function TopBar() {
 
   return (
     <header className="sticky top-0 z-40 glass border-b border-border shadow-[0_1px_0_hsl(var(--gold)/0.35)]">
-      <div className="mx-auto max-w-[1440px] px-3 md:px-6 h-16 flex items-center gap-3">
+      <div className="mx-auto max-w-[1440px] px-3 md:px-6 h-16 flex items-center gap-1 min-[380px]:gap-3">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <Brand size={38} compact />
         </Link>
@@ -66,14 +66,14 @@ export default function TopBar() {
           </div>
         </div>
 
-        <nav aria-label="Principal" className="flex-1 flex justify-center items-center gap-1">
+        <nav aria-label="Principal" className="flex-1 min-w-0 flex justify-center items-center gap-0.5 min-[380px]:gap-1">
           <TopIcon to="/" icon={Home} label="Início" />
           <TopIcon to="/descobrir" icon={Compass} label="Casas" />
           <TopIcon to="/rituais" icon={Sparkles} label="Rituais" />
           <TopIcon to="/mensagens" icon={MessageCircle} label="Mensagens" />
         </nav>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 min-[380px]:gap-2 shrink-0">
           {isRemoteAuth && currentUser ? (
             <NotificationBell userId={currentUser.id} />
           ) : (
@@ -82,7 +82,7 @@ export default function TopBar() {
             </Button>
           )}
           <div className="relative" ref={box}>
-            <button aria-label="Menu da conta" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-muted transition">
+            <button aria-label="Menu da conta" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 pl-1 pr-1 min-[380px]:pr-2 py-1 rounded-full hover:bg-muted transition">
               <Avatar src={currentUser?.avatar} name={currentUser?.name} size={34} ring={currentUser?.type === "commercial" ? "gold" : "none"} />
             </button>
             {menu && (
@@ -123,7 +123,7 @@ function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
       end={to === "/"}
       className={({ isActive }) =>
         cn(
-          "px-3 md:px-6 h-11 rounded-full flex items-center gap-2 text-sm font-semibold transition",
+          "px-2 min-[380px]:px-3 md:px-6 h-11 rounded-full flex items-center gap-2 text-sm font-semibold transition",
           isActive ? "bg-forest/10 text-forest shadow-[inset_0_-2px_0_hsl(var(--gold))]" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )
       }

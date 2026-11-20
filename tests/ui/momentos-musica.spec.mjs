@@ -173,6 +173,18 @@ test.describe("filtros do seletor de música", () => {
     await noHScroll(page);
   });
 
+  test("janela de publicar com os filtros de música: sem violações de acessibilidade (claro e escuro)", async ({ page }) => {
+    for (const scheme of ["light", "dark"]) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await setup(page, "casa", { catalog: big });
+      await toPreview(page);
+      await expect(page.getByTestId("music-filters")).toBeVisible();
+      const r = await new AxeBuilder({ page }).include("[role=dialog]").withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
+      expect(r.violations.map((v) => `${scheme} ${v.id}: ${v.nodes[0].target.join(" ")}`)).toEqual([]);
+      await page.goto("/");
+    }
+  });
+
   test("a faixa já escolhida continua na lista mesmo se o filtro a esconder; vai no momento", async ({ page }) => {
     const calls = await setup(page, "casa", { catalog: big });
     await toPreview(page);
