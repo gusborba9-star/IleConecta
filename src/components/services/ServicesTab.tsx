@@ -11,7 +11,6 @@ import OfferCard, { type OfferInfo } from "@/components/OfferCard";
 import { useChatStatus } from "@/hooks/useChatStatus";
 import { paymentsEnabledFor } from "@/lib/consents";
 import { cardHint, primaryLabel, serviceSegment, slotChipLabel } from "@/lib/cardsCore";
-import AgendaManager from "@/components/services/AgendaManager";
 import { fetchSlots } from "@/lib/agenda";
 import { formatSlot } from "@/lib/agendaCore";
 import RefundModal from "@/components/refunds/RefundModal";
@@ -62,7 +61,6 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
   const nav = useNavigate();
   const [items, setItems] = useState<Service[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [agendaVersion, setAgendaVersion] = useState(0);
   const [editing, setEditing] = useState<Service | null>(null);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [contracting, setContracting] = useState<Service | null>(null);
@@ -190,7 +188,12 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
         </div>
       )}
 
-      {isOwn && !ordersOnly && <AgendaManager key={agendaVersion} ownerId={ownerId} />}
+      {isOwn && !ordersOnly && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="min-w-0 flex-1 text-sm text-muted-foreground"><strong className="text-foreground">Agenda de atendimento.</strong> Os horários livres e bloqueios ficam na tela Agenda.</p>
+          <Button variant="outline" onClick={() => nav("/agenda")}>Abrir a Agenda</Button>
+        </Card>
+      )}
 
       {isOwn && !ordersOnly && andamento.length > 0 && (
         <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
@@ -369,7 +372,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
 
       <RefundModal target={refunding} onClose={() => setRefunding(null)} onDone={() => void load()} />
       <ContractModal service={contracting} initialSlot={contractSlot} onClose={() => setContracting(null)} onDone={() => void load()} />
-      {isOwn && !ordersOnly && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} ownerId={ownerId} onAgendaChange={() => setAgendaVersion((v) => v + 1)} />}
+      {isOwn && !ordersOnly && <ServiceForm open={formOpen} onClose={() => setFormOpen(false)} initial={editing} onSubmit={save} ownerId={ownerId} />}
     </div>
   );
 }

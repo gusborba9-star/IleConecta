@@ -12,6 +12,7 @@ import {
   stripGuaranteeTalk,
   cleanUserText,
   finalizeReply,
+  hoursFromWindows,
   resolveCheckout,
   canSell,
   featureEnabled,
@@ -242,6 +243,16 @@ Deno.serve(async (req) => {
     else agenda = normalizeAgenda(agendaRows ?? []);
   }
 
+  // Horário de atendimento: a agenda real da casa é a fonte única (Blueprint §9). Se ela não tiver nenhuma janela, vale o texto antigo.
+  // Falha na leitura só mantém o texto antigo.
+  let assistantWithHours = assistant;
+  {
+    const { data: wins, error: winErr } = await admin.from("house_availability").select("weekday, start_time, end_time").eq("house_id", house.id);
+    if (winErr) console.error("horários indisponíveis:", winErr.message);
+    const fromAgenda = winErr ? null : hoursFromWindows(wins ?? []);
+    if (assistant && fromAgenda) assistantWithHours = { ...assistant, business_hours: fromAgenda };
+  }
+
   // Vagas restantes vêm do banco (nunca da IA).
   const eventsWithSeats = await Promise.all((events ?? []).map(async (e) => {
     const { data: taken } = await admin.rpc("event_taken", { p_event: e.id });
@@ -266,7 +277,7 @@ Deno.serve(async (req) => {
   }
 
   const system = buildSystemPrompt({
-    house, assistant, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
+    house, assistant: assistantWithHours, services: servicesWithSlots, events: eventsWithSeats, plan: house.plan, catalog: catalog ?? [], agenda,
     payments: payOn === true, pending, matrix: planMatrix,
   });
   const chat = toChatMessages((history ?? []).slice().reverse(), house.owner_id);

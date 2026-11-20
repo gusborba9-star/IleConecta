@@ -276,6 +276,29 @@ const DAY_LABEL = {
   seg: "segunda", ter: "terça", qua: "quarta", qui: "quinta", sex: "sexta", sab: "sábado", dom: "domingo",
 };
 
+const WEEKDAY_KEY = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"];
+const hourLabel = (t) => {
+  const m = /^(\d{2}):(\d{2})/.exec(String(t ?? ""));
+  if (!m) return "";
+  return m[2] === "00" ? `${Number(m[1])}h` : `${Number(m[1])}h${m[2]}`;
+};
+
+/** Horário de atendimento vindo da agenda real da casa (house_availability: weekday 0=domingo..6=sábado). Sem nenhuma janela válida, devolve null
+ *  e vale o texto antigo da assistente. A agenda é a fonte única de disponibilidade (Blueprint §9). */
+export function hoursFromWindows(windows) {
+  if (!Array.isArray(windows)) return null;
+  const byDay = {};
+  for (const w of windows) {
+    const key = WEEKDAY_KEY[Number(w?.weekday)];
+    const a = hourLabel(w?.start_time), b = hourLabel(w?.end_time);
+    if (!key || !a || !b) continue;
+    (byDay[key] ??= []).push({ s: String(w.start_time), t: `${a} às ${b}` });
+  }
+  const out = {};
+  for (const [k, list] of Object.entries(byDay)) out[k] = list.sort((x, y) => x.s.localeCompare(y.s)).map((x) => x.t).join(" e ").slice(0, 40);
+  return Object.keys(out).length ? out : null;
+}
+
 export function describeHours(hours) {
   if (!hours || typeof hours !== "object") return "não informado";
   const parts = Object.entries(hours)

@@ -62,7 +62,7 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
     <Card className="p-5 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarDays className="h-5 w-5 text-primary" />
-        <h3 className="font-display font-bold text-lg">Agenda de atendimento</h3>
+        <h2 className="font-display font-bold text-lg">Agenda de atendimento</h2>
       </div>
       <p className="text-sm text-muted-foreground">
         Defina os dias e horários em que você atende. Nos serviços marcados com agenda (jogos, consultas, atendimentos), o cliente escolhe um desses horários e paga pela plataforma. Horários no fuso de Brasília.
@@ -71,15 +71,15 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
       <div className="space-y-1">
         {windows.length === 0 && <p className="text-sm text-muted-foreground">Nenhum horário cadastrado ainda. Sem horários, ninguém consegue agendar.</p>}
         {windows.map((w) => (
-          <div key={w.id} className="flex items-center gap-2 text-sm">
-            <span className="w-24 font-semibold">{WEEKDAYS.find((d) => d.id === w.weekday)?.label}</span>
-            <span className="flex-1">{w.start} às {w.end}</span>
+          <div key={w.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <span className="w-24 shrink-0 font-semibold">{WEEKDAYS.find((d) => d.id === w.weekday)?.label}</span>
+            <span className="min-w-0 flex-1 break-words">{w.start} às {w.end}</span>
             <Button size="sm" variant="ghost" onClick={() => void del(w)}>Remover</Button>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2 [&>div]:min-w-0 [&>div]:max-w-full">
         <div>
           <Label htmlFor="ag-day">Dia</Label>
           <select id="ag-day" className={sel} value={day} onChange={(e) => setDay(Number(e.target.value))}>
@@ -92,19 +92,19 @@ export default function AgendaManager({ ownerId }: { ownerId: string }) {
       </div>
 
       <div className="border-t border-border/60 pt-3 space-y-2">
-        <h4 className="font-semibold text-sm">Bloquear um horário</h4>
+        <h3 className="font-semibold text-sm">Bloquear um horário</h3>
         <p className="text-xs text-muted-foreground">Folga, viagem ou um atendimento que você combinou fora da plataforma.</p>
         {blocks.map((b) => (
-          <div key={b.id} className="flex items-center gap-2 text-sm">
-            <span className="flex-1">{formatSlot(b.startsAt)} até {formatSlot(b.endsAt).split(" às ")[1]}{b.note ? ` · ${b.note}` : ""}</span>
+          <div key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <span className="min-w-0 flex-1 break-words">{formatSlot(b.startsAt)} até {formatSlot(b.endsAt).split(" às ")[1]}{b.note ? ` · ${b.note}` : ""}</span>
             <Button size="sm" variant="ghost" onClick={() => void unblock(b)}>Liberar</Button>
           </div>
         ))}
-        <div className="flex flex-wrap items-end gap-2">
-          <div><Label htmlFor="bk-d">Dia</Label><Input id="bk-d" type="date" className="w-40" value={bDay} onChange={(e) => setBDay(e.target.value)} /></div>
+        <div className="flex flex-wrap items-end gap-2 [&>div]:min-w-0 [&>div]:max-w-full">
+          <div><Label htmlFor="bk-d">Dia</Label><Input id="bk-d" type="date" className="w-full max-w-40" value={bDay} onChange={(e) => setBDay(e.target.value)} /></div>
           <div><Label htmlFor="bk-s">Das</Label><TimeSelect id="bk-s" value={bStart} onChange={setBStart} /></div>
           <div><Label htmlFor="bk-e">Até</Label><TimeSelect id="bk-e" value={bEnd} onChange={setBEnd} /></div>
-          <div className="flex-1 min-w-[140px]"><Label htmlFor="bk-n">Motivo (opcional)</Label><Input id="bk-n" maxLength={120} value={bNote} onChange={(e) => setBNote(e.target.value)} /></div>
+          <div className="min-w-0 flex-1 basis-40"><Label htmlFor="bk-n">Motivo (opcional)</Label><Input id="bk-n" maxLength={120} value={bNote} onChange={(e) => setBNote(e.target.value)} /></div>
           <Button size="sm" variant="outline" onClick={() => void block()}>Bloquear</Button>
         </div>
       </div>

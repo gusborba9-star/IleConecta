@@ -107,3 +107,21 @@ test("repasse com assunto: o marcador some do texto e o assunto vai só para o a
   assert.ok(!f.text.includes("[["));
   assert.equal(finalizeReply("[[CASA: x]]", "oi").text, HANDOFF_NOTE);
 });
+
+import { hoursFromWindows, describeHours } from "../supabase/functions/assistant-chat/logic.js";
+
+test("horário de atendimento sai da agenda real (janelas por dia da semana)", () => {
+  const h = hoursFromWindows([
+    { weekday: 1, start_time: "14:00:00", end_time: "18:00:00" },
+    { weekday: 1, start_time: "09:00:00", end_time: "12:30:00" },
+    { weekday: 0, start_time: "10:00:00", end_time: "11:00:00" },
+  ]);
+  assert.deepEqual(h, { seg: "9h às 12h30 e 14h às 18h", dom: "10h às 11h" });
+  assert.match(describeHours(h), /segunda: 9h às 12h30 e 14h às 18h/);
+});
+
+test("sem janela válida a agenda não responde (vale o texto antigo); dados estranhos são ignorados", () => {
+  assert.equal(hoursFromWindows([]), null);
+  assert.equal(hoursFromWindows(null), null);
+  assert.equal(hoursFromWindows([{ weekday: 9, start_time: "09:00:00", end_time: "10:00:00" }, { weekday: 1, start_time: "x", end_time: null }, null]), null);
+});

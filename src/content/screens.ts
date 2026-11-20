@@ -9,6 +9,7 @@ export const SCREENS: Screen[] = [
   { path: "/mensalidades", name: "Mensalidades", what: "Mensalidades de membros.", audience: "cliente" },
   { path: "/perfil", name: "Perfil", what: "Dados do perfil e, para casas, a assistente virtual da casa.", audience: "todos" },
   { path: "/planos", name: "Planos e faturas", what: "Planos da casa (Base, Intermediário, Máximo) e limites, em abas: Meu plano, Mudar de plano e Cobranças (faturas, cartão e cadastro).", audience: "casa" },
+  { path: "/agenda", name: "Agenda", what: "Agenda da casa: horários de atendimento, próximos atendimentos marcados e datas e eventos do ano. A assistente usa os mesmos horários.", audience: "casa" },
   { path: "/pedidos", name: "Pedidos", what: "Pedidos recebidos pela casa: em andamento e histórico; iniciar, concluir ou cancelar.", audience: "casa" },
   { path: "/recebimentos", name: "Recebimentos", what: "Cadastro e situação da conta de recebimento da casa no Stripe.", audience: "casa" },
   { path: "/painel/membros", name: "Membros", what: "Membros da casa.", audience: "casa" },

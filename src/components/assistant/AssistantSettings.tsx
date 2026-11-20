@@ -10,6 +10,9 @@ import InternalCatalog from "@/components/assistant/InternalCatalog";
 import { DAYS, PROFILE_MAX, TONE_LABEL, assistantAvatarUrl, fetchMyAssistant, removeAssistantPhotoFile, saveMyAssistant, type AssistantConfig, type HouseProfile, type Tone } from "@/lib/assistant";
 import AssistantAvatar from "@/components/assistant/AssistantAvatar";
 import { uploadProfileImage, validateImageFile } from "@/lib/imageUpload";
+import { Link } from "react-router-dom";
+import { WEEKDAYS } from "@/lib/agendaCore";
+import { fetchWindows, type Window } from "@/lib/agenda";
 import { fetchCredits } from "@/lib/aiCredits";
 import { FREE_PLAN_NAME } from "@/lib/platformConfigCore";
 import { STOP_SELLING_LOSSES } from "@/lib/platformAdvantages";
@@ -224,23 +227,7 @@ export default function AssistantSettings() {
 
       <InternalCatalog houseId={cfg.houseId} />
 
-      <div>
-        <Label>Horário de atendimento</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {DAYS.map((d) => (
-            <div key={d.key} className="flex items-center gap-2">
-              <span className="w-20 text-sm text-muted-foreground">{d.label}</span>
-              <Input
-                aria-label={`Horário de ${d.label}`}
-                maxLength={40}
-                placeholder="ex.: 9h às 18h"
-                value={cfg.businessHours[d.key] ?? ""}
-                onChange={(e) => patch({ businessHours: { ...cfg.businessHours, [d.key]: e.target.value } })}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      <HoursFromAgenda ownerId={userId ?? ""} legacy={cfg.businessHours} />
 
       <div className="space-y-2">
         <label className={`flex items-start gap-2 text-sm ${available ? "" : "opacity-50"}`}>
@@ -293,5 +280,29 @@ export default function AssistantSettings() {
         </div>
       </Modal>
     </Card>
+  );
+}
+
+
+/** Horário de atendimento que a assistente informa: vem da Agenda da casa (fonte única). Sem horários na Agenda, vale o texto antigo, só leitura. */
+function HoursFromAgenda({ ownerId, legacy }: { ownerId: string; legacy: Record<string, string> }) {
+  const [wins, setWins] = useState<Window[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    if (ownerId) void fetchWindows(ownerId).then((w) => alive && setWins(w)).catch(() => alive && setWins([]));
+    return () => { alive = false; };
+  }, [ownerId]);
+  const lines = WEEKDAYS.map((d) => ({ d, items: (wins ?? []).filter((w) => w.weekday === d.id) })).filter((x) => x.items.length > 0);
+  const old = DAYS.filter((d) => (legacy[d.key] ?? "").trim());
+  return (
+    <div>
+      <Label>Horário de atendimento</Label>
+      <div className="rounded-xl border border-border p-3 text-sm space-y-1">
+        {wins === null ? <p className="text-muted-foreground">Carregando…</p>
+          : lines.length > 0 ? lines.map(({ d, items }) => <p key={d.id}><span className="inline-block w-24 text-muted-foreground">{d.label}</span>{items.map((w) => `${w.start} às ${w.end}`).join(" e ")}</p>)
+          : <p className="text-muted-foreground">Nenhum horário na Agenda ainda.{old.length > 0 ? ` A assistente está usando o texto antigo (${old.map((d) => `${d.label}: ${legacy[d.key]}`).join("; ")}) até você cadastrar na Agenda.` : ""}</p>}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">A assistente informa os mesmos horários da sua Agenda, os que o cliente escolhe ao agendar e paga. <Link to="/agenda" className="font-semibold text-primary hover:underline">Editar na Agenda</Link></p>
+    </div>
   );
 }

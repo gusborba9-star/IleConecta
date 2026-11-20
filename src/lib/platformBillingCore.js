@@ -123,6 +123,20 @@ export function canPay(charge) {
   return charge?.status === "aberta" || charge?.status === "vencida";
 }
 
+/** Faturas à vista: todas as que pedem pagamento + as mais recentes das demais (`keep`); o resto fica no "histórico completo".
+ *  A fatura em foco (link da central de pendências) nunca fica escondida. A ordem original (mais nova primeiro) é mantida. */
+export function splitInvoices(rows, keep = 3, focusId = null) {
+  const list = Array.isArray(rows) ? rows : [];
+  const n = Number.isInteger(keep) && keep >= 0 ? keep : 3;
+  let others = 0;
+  const visible = [], hidden = [];
+  for (const r of list) {
+    if (canPay(r) || r?.id === focusId) { visible.push(r); continue; }
+    if (others < n) { others += 1; visible.push(r); } else hidden.push(r);
+  }
+  return { visible, hidden };
+}
+
 const BRANDS = { visa: "Visa", mastercard: "Mastercard", amex: "American Express", elo: "Elo", hipercard: "Hipercard", diners: "Diners", discover: "Discover", jcb: "JCB", unionpay: "UnionPay" };
 const OUTCOME_TEXT = {
   aprovada: "cobrança aprovada",

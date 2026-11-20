@@ -201,3 +201,17 @@ test("abrir o pagamento de novo em outro segundo, sem página gravada, não bate
   await openPayment({ ...base, nowMs: 1_800_000_007_000 });
   assert.equal(fake.sessions.size, before);
 });
+
+import { splitInvoices } from "../src/lib/platformBillingCore.js";
+test("faturas à vista: as que pedem pagamento sempre, mais as 3 recentes; o resto vai para o histórico", () => {
+  const rows = [{ id: "a", status: "aberta" }, ...Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, status: "paga" })), { id: "v", status: "vencida" }];
+  const { visible, hidden } = splitInvoices(rows, 3);
+  assert.deepEqual(visible.map((r) => r.id), ["a", "p0", "p1", "p2", "v"]);
+  assert.deepEqual(hidden.map((r) => r.id), ["p3", "p4", "p5"]);
+});
+test("fatura em foco nunca fica escondida; entradas estranhas não quebram", () => {
+  const rows = Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, status: "paga" }));
+  assert.ok(splitInvoices(rows, 3, "p5").visible.some((r) => r.id === "p5"));
+  assert.deepEqual(splitInvoices(null), { visible: [], hidden: [] });
+  assert.equal(splitInvoices(rows, -1).visible.length, 3);
+});

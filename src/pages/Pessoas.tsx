@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar, Badge, Button, Card, Input } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchHousePeople, fetchPersonTimeline } from "@/lib/housePeople";
@@ -110,7 +110,6 @@ export function PeopleBoard() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       <div>
-        <Link to={view?.role === "equipe" ? "/atendimento" : "/"} className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary"><ArrowLeft className="h-4 w-4" /> Voltar</Link>
         <h1 className="font-display font-bold text-2xl">Pessoas da casa</h1>
         <p className="text-sm text-muted-foreground">Quem tem relação com a sua casa e a história de cada uma. Serve para atender e acompanhar; nada aqui é enviado a ninguém.</p>
       </div>

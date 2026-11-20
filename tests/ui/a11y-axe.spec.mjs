@@ -18,7 +18,7 @@ const GRUPOS = [
   { nome: "pessoa/administração", login: { rest: { profiles: pessoa, legal_consents: consent("termos_cliente", "dados_sensiveis") }, rpc },
     telas: ["/", "/comunidade", "/descobrir", "/rituais", "/perfil", "/mensagens", "/planos", "/suporte", "/termos", "/atividade", "/destaques", "/admin"] },
   { nome: "casa", login: { rest: { profiles: casa, legal_consents: consent("termos_casa"), houses: [house] }, rpc: {} },
-    telas: ["/", `/casa/${HID}`, "/planos", "/planos?aba=mudar", "/planos?aba=cobrancas", "/pedidos", "/pedidos?aba=historico", "/recebimentos", "/atendimento", "/mensalidades", "/divulgacao", "/equipe", "/impulsionar", "/destaques", "/painel/membros", "/moderacao", "/mensagens"] },
+    telas: ["/", `/casa/${HID}`, "/planos", "/planos?aba=mudar", "/planos?aba=cobrancas", "/pedidos", "/agenda", "/pedidos?aba=historico", "/recebimentos", "/atendimento", "/mensalidades", "/divulgacao", "/equipe", "/impulsionar", "/destaques", "/painel/membros", "/moderacao", "/mensagens"] },
 ];
 
 for (const vp of [{ n: "celular 375", width: 375, height: 740 }, { n: "computador", width: 1280, height: 800 }]) {

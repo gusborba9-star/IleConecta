@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Badge, Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchBillingStatus, fetchInvoices, payCharge, type InvoiceRow } from "@/lib/platformBilling";
-import { canPay, kindLabel, pixOffer, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
+import { canPay, kindLabel, splitInvoices, pixOffer, shortDate, statusLabel, statusTone } from "@/lib/platformBillingCore";
 import { formatCents } from "@/lib/financePanelCore";
 
 /** Faturas da plataforma para a casa (planos, vagas, destaque...). Só aparece quando a casa já tem alguma. */
@@ -12,6 +12,7 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
   const { isRemoteAuth } = useApp();
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
   // `?foco=<id da fatura>`: vem da central de pendências; só rola até a fatura e a destaca (não paga nada sozinho).
   const [params] = useSearchParams();
   const focus = params.get("foco");
@@ -46,11 +47,13 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
   if (rows.length === 0) return null;
   const today = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10); // dia em Brasília (UTC-3)
   const offer = (r: InvoiceRow) => pixOffer(r, today);
+  const { visible, hidden } = splitInvoices(rows, 3, focus);
+  const shown = all ? rows : visible;
   return (
     <Card className="p-5">
       <h2 className="font-display font-bold text-lg">Faturas da plataforma</h2>
       <ul className="mt-3 divide-y divide-border">
-        {rows.map((r) => (
+        {shown.map((r) => (
           <li key={r.id} id={`fatura-${r.id}`} data-focused={focus === r.id ? "true" : undefined} className={`py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm${focus === r.id ? " rounded-lg bg-gold/10 px-2 ring-2 ring-gold/50" : ""}`}>
             <span className="flex-1 min-w-40">{r.description ?? kindLabel(r.kind)}</span>
             <span className="text-xs text-muted-foreground">vence {shortDate(r.dueDate)}</span>
@@ -66,6 +69,9 @@ export default function InvoicesCard({ refreshKey = 0 }: { refreshKey?: number }
           </li>
         ))}
       </ul>
+      {hidden.length > 0 && (
+        <Button variant="outline" size="sm" className="mt-3" aria-expanded={all} onClick={() => setAll((v) => !v)}>{all ? "Mostrar só as recentes" : `Ver histórico completo (${hidden.length} mais antigas)`}</Button>
+      )}
     </Card>
   );
 }
