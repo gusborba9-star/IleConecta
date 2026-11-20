@@ -73,3 +73,10 @@ test("créditos: só links https, licença com nome, textos cortados e lixo igno
   assert.equal(c[1].source, null); assert.equal(c[1].licenseUrl, null); assert.equal(c[1].license, "Nota");
   assert.deepEqual(normalizeMusicCredits("x"), []);
 });
+test("créditos: faixa 'Outra' mostra a observação da licença (ex.: criada na Suno), não só 'Outra'", () => {
+  const [a, b] = normalizeMusicCredits([
+    { title: "S", author: "G", license_kind: "outra", license_note: "Criada por Gustavo na Suno (plano Pro), em 19/11/2026" },
+    { title: "T", author: "G", license_kind: "outra" },
+  ]);
+  assert.equal(a.license, "Criada por Gustavo na Suno (plano Pro), em 19/11/2026"); assert.equal(b.license, "Outra");
+});
