@@ -65,7 +65,7 @@ jobs:
           retention-days: 7
 
   resultado:
-    name: Testes de interface: resultado final
+    name: Resultado final dos testes de interface
     if: always()
     needs: [unit, ui]
     runs-on: ubuntu-24.04
