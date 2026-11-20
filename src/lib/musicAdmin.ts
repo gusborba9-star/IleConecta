@@ -3,12 +3,16 @@ import { supabase } from "@/lib/supabase";
 import { reportClientError } from "@/lib/clientErrors";
 import { musicExt, validateMusicFile } from "@/lib/momentsCore";
 
-export interface MusicRow { id: string; title: string; author: string; source_url: string | null; license_note: string | null; license_date: string | null; path: string; size_bytes: number; active: boolean; created_at: string; uses: number; style: string | null; occasions: string[]; vocal: boolean; license_kind: string | null; license_url: string | null }
+export interface MusicRow { id: string; title: string; author: string; source_url: string | null; license_note: string | null; license_date: string | null; path: string; size_bytes: number; active: boolean; created_at: string; uses: number; style: string | null; occasions: string[]; vocal: boolean; license_kind: string | null; license_url: string | null; license_proof?: string | null }
 export interface MusicAdminState { enabled: boolean; max_total_bytes: number; total_bytes: number; max_count: number; tracks: MusicRow[] }
-export interface MusicFields { title: string; author: string; source: string; license: string; licenseDate: string; style: string; occasions: string[]; vocal: boolean; licenseKind: string; licenseUrl: string }
-export const EMPTY_FIELDS: MusicFields = { title: "", author: "", source: "", license: "", licenseDate: "", style: "", occasions: [], vocal: false, licenseKind: "", licenseUrl: "" };
+export interface MusicFields { title: string; author: string; source: string; license: string; licenseDate: string; style: string; occasions: string[]; vocal: boolean; licenseKind: string; licenseUrl: string; proof: string }
+export const EMPTY_FIELDS: MusicFields = { title: "", author: "", source: "", license: "", licenseDate: "", style: "", occasions: [], vocal: false, licenseKind: "", licenseUrl: "", proof: "" };
 const httpsOk = (u: string) => !u.trim() || /^https:\/\/\S+$/.test(u.trim());
-const saveMeta = (id: string, f: MusicFields) => supabase!.rpc("admin_music_meta", { p_id: id, p_style: f.style || null, p_occasions: f.occasions, p_vocal: f.vocal, p_license_kind: f.licenseKind || null, p_license_url: f.licenseUrl.trim() || null });
+const saveMeta = async (id: string, f: MusicFields) => {
+  const m = await supabase!.rpc("admin_music_meta", { p_id: id, p_style: f.style || null, p_occasions: f.occasions, p_vocal: f.vocal, p_license_kind: f.licenseKind || null, p_license_url: f.licenseUrl.trim() || null });
+  if (m.error) return m;
+  return supabase!.rpc("admin_music_proof", { p_id: id, p_proof: f.proof.trim() || null }); // onde está o print da licença (prova guardada por 5 anos)
+};
 
 export async function fetchMusicAdmin(): Promise<MusicAdminState | null> {
   if (!supabase) return null;
@@ -56,10 +60,18 @@ export async function setMusicEnabled(on: boolean): Promise<boolean> {
   if (!supabase) return false;
   return !(await supabase.rpc("admin_music_set_enabled", { p_on: on })).error;
 }
-export async function deleteTrack(id: string): Promise<boolean> {
+export async function deleteTrack(id: string, reason: string): Promise<boolean> {
   if (!supabase) return false;
-  const { data, error } = await supabase.rpc("admin_music_delete", { p_id: id });
+  const { data, error } = await supabase.rpc("admin_music_delete", { p_id: id, p_reason: reason.trim() || null });
   if (error) return false;
   if (typeof data === "string") await supabase.storage.from("music").remove([data]).catch(() => undefined); // se falhar, a limpeza diária recolhe
   return true;
+}
+
+/** Registro das faixas retiradas (prova da licença guardada por 5 anos; só o dono lê). */
+export interface RemovedTrack { id: number; removed_at: string; keep_until: string; by: string | null; reason: string; title: string; author: string; source_url: string | null; license_kind: string | null; license_url: string | null; license_note: string | null; license_date: string | null; license_proof: string | null }
+export async function fetchRemovedTracks(): Promise<RemovedTrack[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("admin_music_log");
+  return error || !Array.isArray(data) ? null : (data as RemovedTrack[]);
 }

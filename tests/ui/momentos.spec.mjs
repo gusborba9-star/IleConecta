@@ -101,6 +101,18 @@ test.describe("momentos das casas", () => {
     expect(c.body).toEqual({ p_story: U(103), p_reason: "golpe" });
   });
 
+  test("denúncia de criança ou adolescente sem autorização: motivo próprio, enviado ao banco", async ({ page }) => {
+    const calls = await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    await page.getByTestId("moment-card").nth(1).click();
+    await page.getByRole("button", { name: "Mais opções" }).click();
+    await page.getByRole("menuitem", { name: "Denunciar" }).click();
+    await page.getByLabel("Criança ou adolescente sem autorização").check();
+    await page.getByRole("button", { name: "Enviar denúncia" }).click();
+    await expect(page.getByText(/Denúncia enviada/)).toBeVisible();
+    expect(calls.find((x) => x.kind === "rpc" && x.name === "report_moment").body).toEqual({ p_story: U(103), p_reason: "menor" });
+  });
+
   test("casa no Grátis: vê o convite para o Essencial, não o botão de criar", async ({ page }) => {
     await setup(page, "casa", "gratis");
     await page.goto("/comunidade");
