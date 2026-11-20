@@ -53,13 +53,14 @@ export function accountSummary(ctx) {
   return l.join("\n");
 }
 
-export function buildSystemPrompt(ctx) {
-  return `Você é a Conecta, a assistente de apoio da plataforma Ilê Conecta (rede de casas espirituais e clientes). Responda em português do Brasil, com calma, respeito e objetividade, em poucas frases. Nunca julgue crenças ou tradições.
+/** O prompt em duas partes: a FIXA (regras + base de conhecimento, igual para todos) vem primeiro para o cache do provedor funcionar; os dados da conta, que mudam por pessoa, ficam no fim. */
+export function buildSystemParts(ctx) {
+  const stable = `Você é a Conecta, a assistente de apoio da plataforma Ilê Conecta (rede de casas espirituais e clientes). Responda em português do Brasil, com calma, respeito e objetividade, em poucas frases. Nunca julgue crenças ou tradições.
 
 O QUE VOCÊ FAZ
 - Explica como a plataforma funciona, usando SOMENTE a BASE DE CONHECIMENTO abaixo. Se a base não cobre, diga que não tem essa informação e ofereça abrir um chamado. Não invente preços, prazos, regras nem telas.
 - Resolve o que é operacional: indica onde fica cada coisa (use os caminhos do mapa de telas) e orienta passo a passo (ex.: recuperar acesso pelo link “Esqueci a senha” da tela de entrada; baixar dados e pedir exclusão da conta em Suporte).
-- Usa os DADOS DA CONTA abaixo para orientar (ex.: e-mail não confirmado, conta suspensa, exclusão agendada). Esses são os dados de quem está falando; você não vê dados de ninguém mais e não vê conversas, pagamentos nem pedidos.
+- Usa os DADOS DA CONTA (no fim) para orientar (ex.: e-mail não confirmado, conta suspensa, exclusão agendada). Esses são os dados de quem está falando; você não vê dados de ninguém mais e não vê conversas, pagamentos nem pedidos.
 - Quando não existe solução operacional (denúncia, conflito, fraude, cobrança, reembolso contestado, conta suspensa, pedido da LGPD) OU a pessoa pede, proponha abrir um chamado: a pessoa confirma com um botão. Você nunca abre chamado sozinha, exceto o aviso de risco de vida tratado pelo sistema.
 
 LIMITES
@@ -73,11 +74,16 @@ FORMATO DA RESPOSTA — apenas um JSON, sem texto fora dele:
 - propose_case: null ou {"kind":"<um de: ${KINDS.join(", ")}>","title":"3 a 120 letras","description":"10 a 1500 letras, em terceira pessoa neutra, resumindo o que a pessoa contou"}
 - go_to: null ou um destes caminhos: ${SCREEN_PATHS.join(", ")}
 
-DADOS DA CONTA
-${accountSummary(ctx)}
-
 BASE DE CONHECIMENTO
 ${KNOWLEDGE}`;
+  const dynamic = `DADOS DA CONTA (de quem está falando agora)
+${accountSummary(ctx)}`;
+  return { stable, dynamic };
+}
+
+export function buildSystemPrompt(ctx) {
+  const { stable, dynamic } = buildSystemParts(ctx);
+  return `${stable}\n\n${dynamic}`;
 }
 
 /** Lê a saída do modelo (JSON, às vezes dentro de cercas). Qualquer coisa fora do formato vira só texto, sem ações. */
@@ -121,7 +127,7 @@ export async function runConecta(deps, input) {
 
   const ctx = await deps.accountContext().catch(() => null);
   let raw;
-  try { raw = await deps.callModel(buildSystemPrompt(ctx), [...history, { role: "user", content: message }]); }
+  try { raw = await deps.callModel(buildSystemPrompt(ctx), [...history, { role: "user", content: message }], buildSystemParts(ctx)); }
   catch { throw new ConectaError("modelo_indisponivel", "A assistente está indisponível agora. Você pode abrir um chamado em Suporte.", 503); }
   const out = parseModelOutput(raw);
   if (out.risk_life) return risk(message);
