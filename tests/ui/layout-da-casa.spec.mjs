@@ -33,6 +33,33 @@ test.describe("Início da casa: cada ferramenta leva ao lugar certo", () => {
     await noHScroll(page);
   });
 
+  test("frase do topo reflete o que espera a casa; indicadores começam recolhidos; 'nada pendente' não aparece com fatura a pagar", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rpc: { house_pending_center: { ...pendencias({ pedido_para_iniciar: 2 }, 1), total: 0 } } });
+    await page.goto("/");
+    await expect(page.getByText("3 assuntos esperam por você.")).toBeVisible();
+    await expect(page.getByText("O que precisa de você hoje")).toHaveCount(0);
+    await expect(page.getByText("Nada pendente agora.")).toHaveCount(0);
+    const ind = page.getByRole("button", { name: /^Indicadores da casa/ });
+    await expect(ind).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("tablist", { name: "Período" })).toHaveCount(0);
+    await ind.click();
+    await expect(page.getByRole("tablist", { name: "Período" })).toBeVisible();
+    await noHScroll(page);
+  });
+
+  test("os quatro resumos têm a mesma altura e cada ferramenta tem anel", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page);
+    await page.goto("/");
+    await expect(page.locator('section[aria-label="Resumo da casa"] > a')).toHaveCount(4);
+    const caixas = await page.locator('section[aria-label="Resumo da casa"] > a > div').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    expect(caixas).toHaveLength(4);
+    expect(new Set(caixas).size).toBe(1);
+    const aneis = await page.locator("section[aria-labelledby=ferramentas] .tool-ring").count();
+    expect(aneis).toBeGreaterThanOrEqual(12);
+  });
+
   test("seções de configuração começam recolhidas, abrem ao tocar e o estado é lembrado", async ({ page }) => {
     await entrar(page);
     await page.goto("/");

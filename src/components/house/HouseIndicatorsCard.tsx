@@ -7,7 +7,7 @@ import { PERIODS, changeInfo, formatIndicator, groupedIndicators, type HouseIndi
 const TONE = { good: "text-forest", bad: "text-destructive", none: "text-muted-foreground" } as const;
 
 /** Indicadores da casa: cada número com a variação sobre o período anterior e, em "Como é calculado", a definição e a origem dos dados. */
-export default function HouseIndicatorsCard() {
+export default function HouseIndicatorsCard({ hideTitle = false }: { hideTitle?: boolean } = {}) {
   const [days, setDays] = useState(30);
   const [view, setView] = useState<HouseIndicatorsView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export default function HouseIndicatorsCard() {
     <Card className="p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg">Indicadores da casa</h2>
+          {hideTitle ? null : <h2 className="font-display font-bold text-lg">Indicadores da casa</h2>}
           <p className="text-xs text-muted-foreground">Comparados com os {days} dias anteriores. Toque em um número para ver como é calculado.</p>
         </div>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void load(days)} aria-label="Atualizar indicadores"><RefreshCw className="h-4 w-4" /> Atualizar</Button>

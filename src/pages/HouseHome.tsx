@@ -55,6 +55,7 @@ export default function HouseHome() {
   const { config } = usePlatformConfig();
   const { plan } = useOwnerPlan(house?.id);
   const badges = useHouseBadges(isRemoteAuth && Boolean(houseId));
+  const waiting = badges.mensagens + badges.pedidos + badges.membros + badges.faturas;
   const [params] = useSearchParams();
   const focusReceipt = params.get("foco") === "recebimento";
 
@@ -108,7 +109,7 @@ export default function HouseHome() {
         <div className="relative">
           <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Painel da casa</div>
           <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1 break-words">Olá, {house.name}</h1>
-          <p className="text-sm text-white/75 mt-1">O que precisa de você hoje.</p>
+          <p className="text-sm text-white/75 mt-1">{waiting > 0 ? `${waiting} ${waiting === 1 ? "assunto espera" : "assuntos esperam"} por você.` : "Seu resumo de hoje."}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="gold" onClick={() => nav(`/casa/${house.id}`)}>Ver minha página</Button>
           </div>
@@ -134,7 +135,11 @@ export default function HouseHome() {
         </div>
       </section>
 
-      {isRemoteAuth && <HouseIndicatorsCard />}
+      {isRemoteAuth && (
+        <Collapse id="casa-indicadores" title="Indicadores da casa" hint="atendimento, vendas, rituais e clientes">
+          <HouseIndicatorsCard hideTitle />
+        </Collapse>
+      )}
       {isRemoteAuth && <PromoList title="Destaque e impulsionamento em andamento" />}
 
       <PlanUpsellModal
