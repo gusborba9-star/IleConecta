@@ -59,14 +59,18 @@ Deno.serve(async (req) => {
         const { error } = await asUser.rpc("open_support_case", { p_kind: "risco_vida", p_title: title, p_description: description, p_source: "assistente" });
         if (error) console.error("conecta risco", error.message);
       },
-      callModel: async (system: string, messages: { role: string; content: string }[]) => {
+      callModel: async (system: string, messages: { role: string; content: string }[], parts?: { stable: string; dynamic: string }) => {
+        // parte fixa primeiro, com marca de cache (Claude); dados da conta depois. Modelos da OpenAI fazem cache do início sozinhos.
+        const sys = parts
+          ? [{ type: "text", text: parts.stable, cache_control: { type: "ephemeral" } }, { type: "text", text: parts.dynamic }]
+          : system;
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 25_000);
         try {
           const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST", signal: ctrl.signal,
             headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "HTTP-Referer": "https://ile-conecta.vercel.app", "X-Title": "Ile Conecta" },
-            body: JSON.stringify({ model: models[0], models, messages: [{ role: "system", content: system }, ...messages], ...params(models[0]), user: user.id }),
+            body: JSON.stringify({ model: models[0], models, messages: [{ role: "system", content: sys }, ...messages], ...params(models[0]), user: user.id }),
           });
           if (!res.ok) throw new Error(`openrouter_${res.status}`);
           const out = await res.json();

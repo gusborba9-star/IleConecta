@@ -144,3 +144,22 @@ test("knowledge.js está em dia com os textos do app", async () => {
   const r = spawnSync("node", ["scripts/build-conecta-knowledge.mjs", "--check"], { cwd: new URL("..", import.meta.url).pathname, encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
 });
+
+test("prompt em duas partes: a fixa é idêntica para todos (cache) e os dados da conta ficam só no fim", async () => {
+  const { buildSystemParts, buildSystemPrompt } = await import("../supabase/functions/conecta/core.js");
+  const a = buildSystemParts({ tipo_conta: "casa", casa: { nome: "Ilê Axé Alfa", plano: "premium" }, email_confirmado: true });
+  const b = buildSystemParts({ tipo_conta: "cliente", email_confirmado: false, suspensa: true });
+  assert.equal(a.stable, b.stable, "a parte fixa não pode variar por pessoa");
+  assert.notEqual(a.dynamic, b.dynamic);
+  assert.doesNotMatch(a.stable, /Ilê Axé Alfa|E-mail confirmado/);
+  assert.match(a.stable, /BASE DE CONHECIMENTO/);
+  assert.match(a.dynamic, /Ilê Axé Alfa/);
+  assert.ok(buildSystemPrompt({ tipo_conta: "cliente" }).indexOf("DADOS DA CONTA (de quem") > buildSystemPrompt({ tipo_conta: "cliente" }).indexOf("BASE DE CONHECIMENTO"));
+});
+
+test("runConecta entrega as partes ao modelo como 3º argumento", async () => {
+  let got;
+  await runConecta({ allow: async () => true, accountContext: async () => ({ tipo_conta: "cliente" }), recentRiskCase: async () => false, openRiskCase: async () => {},
+    callModel: async (s, m, parts) => { got = parts; return JSON.stringify({ reply: "Oi", propose_case: null, go_to: null, risk_life: false }); } }, { message: "Como mudo minha senha?" });
+  assert.ok(got.stable.includes("BASE DE CONHECIMENTO") && got.dynamic.includes("Tipo de conta"));
+});
