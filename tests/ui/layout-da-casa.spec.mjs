@@ -234,11 +234,12 @@ test.describe("sem rolagem lateral e texto a 200%", () => {
 test.describe("Agenda da casa, Voltar, aparência no topo e caminhos sem repetição", () => {
   test.use({ viewport: { width: 375, height: 740 } });
   test("Agenda: tela própria com horários de atendimento e próximos atendimentos; cliente é mandado ao Início", async ({ page }) => {
-    await entrar(page, { rest: { house_availability: [{ id: U(5), weekday: 1, start_time: "09:00:00", end_time: "12:00:00" }], house_calendar_items: [] } });
+    await entrar(page, { rest: { house_availability: [{ id: U(5), weekday: 1, start_time: "09:00:00", end_time: "12:00:00" }], house_calendar_items: [], house_blocks: [{ starts_at: "2099-03-10T13:00:00Z", ends_at: "2099-03-10T15:00:00Z", note: "Viagem" }] } });
     await page.goto("/agenda");
     await expect(page.getByRole("heading", { level: 1, name: "Agenda" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Agenda de atendimento" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Próximos atendimentos marcados" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Próximos compromissos" })).toBeVisible();
+    await expect(page.getByText("Bloqueio: Viagem")).toBeVisible();
     await expect(page.getByText("9:00 às 12:00").or(page.getByText("09:00 às 12:00"))).toBeVisible();
     await noHScroll(page);
     const p2 = await page.context().newPage();
