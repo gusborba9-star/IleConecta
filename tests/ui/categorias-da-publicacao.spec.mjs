@@ -33,7 +33,7 @@ test("casa escolhe a categoria e ela vai no envio", async ({ page }) => {
   const calls = await setup(page, "casa", OWNER);
   await page.goto("/comunidade");
   await page.getByRole("button", { name: /Diga algo/ }).click();
-  await page.getByRole("radio", { name: "Giras e eventos" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Giras e eventos" }).click();
   await page.getByLabel("Texto da publicação").fill("Gira aberta sexta");
   await page.getByRole("button", { name: "Publicar", exact: true }).click();
   await expect.poll(() => calls.find((c) => c.kind === "rest" && c.name === "posts" && c.method === "POST")?.body?.category).toBe("evento");

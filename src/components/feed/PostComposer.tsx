@@ -101,11 +101,11 @@ export default function PostComposer() {
       <Modal open={open} onClose={() => setOpen(false)} title="Nova publicação" maxWidth="max-w-xl">
         <div className="space-y-3">
           {isHouse && (
-            <div role="radiogroup" aria-label="Tipo da publicação" className="flex flex-wrap gap-2">
+            <div role="group" aria-label="Tipo da publicação" className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => {
                 const on = category === c.id;
                 return (
-                  <button key={c.id} type="button" role="radio" aria-checked={on} onClick={() => setCategory(on ? "geral" : c.id)}
+                  <button key={c.id} type="button" aria-pressed={on} onClick={() => setCategory(on ? "geral" : c.id)}
                     className={`min-h-9 rounded-full border px-3.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted"}`}>
                     {c.label}
                   </button>
