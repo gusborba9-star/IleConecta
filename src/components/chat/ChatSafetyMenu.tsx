@@ -31,8 +31,8 @@ export default function ChatSafetyMenu({ otherId, otherName, blocked, conversati
 
   return (
     <div className="relative">
-      <button type="button" aria-label="Mais opções" disabled={busy} onClick={() => setOpen((v) => !v)} className="p-2 rounded-full hover:bg-muted">
-        <MoreVertical className="h-4 w-4" />
+      <button type="button" aria-label="Mais opções" disabled={busy} onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <MoreVertical className="h-5 w-5" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-xl border border-border bg-card shadow-lg py-1 text-sm pillow">
