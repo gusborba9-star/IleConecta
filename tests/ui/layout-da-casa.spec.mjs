@@ -23,7 +23,7 @@ test.describe("Início da casa: cada ferramenta leva ao lugar certo", () => {
     await expect(page.getByRole("heading", { level: 1, name: /Olá, Casa Axé/ })).toBeVisible();
     const alvo = {
       "Pessoas": "/pessoas", "Novo serviço": `/casa/${ME}?aba=servicos&novo=1`, "Novo ritual": `/casa/${ME}?aba=rituais&novo=1`,
-      "Publicar": "/comunidade?novo=publicacao", "Momentos": "/comunidade?novo=momento", "Crescer": "/impulsionar", "Planos": "/planos", "Recebimentos": "/recebimentos",
+      "Comunidade": "/comunidade", "Publicar": "/comunidade?novo=publicacao", "Momentos": "/comunidade?novo=momento", "Crescer": "/impulsionar", "Planos": "/planos", "Recebimentos": "/recebimentos",
       "Assistente": "/perfil", "Editar página": `/casa/${ME}?editar=1`,
     };
     const area = page.getByRole("region", { name: "Ferramentas" }).or(page.locator("section[aria-labelledby=ferramentas]"));
@@ -342,5 +342,76 @@ test.describe("Faturas resumidas e Compare os planos no celular", () => {
     await page.reload();
     await expect(page.getByRole("radiogroup", { name: "Plano a ver" })).toHaveCount(0);
     await expect(page.locator("table").first()).toBeVisible();
+  });
+});
+
+test.describe("Plano Grátis: ferramentas de plano superior aparecem como nos outros planos", () => {
+  const gratis = { ...house, plan: "gratis" };
+  const semCreditos = { has_house: true, limit: 0, used_month: 0, balance: 0, for_sale: true, packs: [], prices: { p80: 1900 } };
+
+  test("Momentos mostra 'Plano Essencial' e abre o aviso; Comunidade segue liberada", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rest: { houses: [gratis] }, rpc: { my_ai_credit_status: semCreditos } });
+    await page.goto("/");
+    const area = page.locator("section[aria-labelledby=ferramentas]");
+    await expect(area.getByRole("link", { name: /^Comunidade/ })).toHaveAttribute("href", "/comunidade");
+    await expect(area.getByRole("link", { name: /^Momentos/ })).toHaveCount(0);
+    await area.getByRole("button", { name: /^Momentos/ }).click();
+    const dlg = page.getByRole("dialog");
+    await expect(dlg.getByText(/Disponível a partir do plano/)).toBeVisible();
+    await dlg.getByRole("button", { name: "Ver planos" }).click();
+    await expect(page).toHaveURL(/\/planos\?aba=mudar/);
+  });
+
+  test("Assistente sem franquia nem pacote: aviso com botão para comprar pacote, sem abrir a configuração", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rest: { houses: [gratis] }, rpc: { my_ai_credit_status: semCreditos } });
+    await page.goto("/");
+    const area = page.locator("section[aria-labelledby=ferramentas]");
+    await area.getByRole("button", { name: /^Assistente/ }).click();
+    const dlg = page.getByRole("dialog");
+    await expect(dlg.getByText(/a partir do plano/)).toBeVisible();
+    await expect(dlg.getByText(/adquira um pacote de respostas/)).toBeVisible();
+    await dlg.getByRole("button", { name: "Comprar pacote de respostas" }).click();
+    await expect(page).toHaveURL(/\/planos\?aba=meu#creditos/);
+  });
+
+  test("/perfil no Grátis sem pacote mostra só o aviso (sem formulário) e o botão leva aos pacotes", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rest: { houses: [gratis], assistants: [] }, rpc: { my_ai_credit_status: semCreditos } });
+    await page.goto("/perfil");
+    await expect(page.getByText(/Assistente com franquia de respostas a partir do plano/)).toBeVisible();
+    await expect(page.getByLabel(/Assistente ativada para clientes/)).toHaveCount(0);
+    await noHScroll(page);
+    await page.getByRole("link", { name: "Comprar pacote de respostas" }).click();
+    await expect(page).toHaveURL(/\/planos\?aba=meu#creditos/);
+  });
+
+  test("com pacote comprado a Assistente volta a abrir normalmente", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rest: { houses: [gratis] }, rpc: { my_ai_credit_status: { ...semCreditos, balance: 50, packs: [{ size: 80, remaining: 50, expires_at: "2027-02-01T00:00:00Z" }] } } });
+    await page.goto("/");
+    const area = page.locator("section[aria-labelledby=ferramentas]");
+    await expect(area.getByRole("link", { name: /^Assistente/ })).toHaveAttribute("href", "/perfil");
+  });
+});
+
+test.describe("Central de pendências: minimizar o que é só informativo", () => {
+  const item = (kind, priority, extra = {}) => ({ kind, priority, ref_id: U(900), title: kind, detail: null, due_date: null, link: "/planos", ...extra });
+  test("assistente sem respostas pode ser minimizada e volta pelo 'Mostrar'; fatura não tem minimizar", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    const pend = { ...pendencias({ assistente_sem_respostas: 1, fatura_aberta: 1 }), total: 2, items: [item("assistente_sem_respostas", "alta"), item("fatura_aberta", "alta", { ref_id: U(901) })] };
+    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] }, rpc: { house_pending_center: pend, my_ai_credit_status: { has_house: true, limit: 0, used_month: 0, balance: 0, for_sale: true, packs: [], prices: {} } } });
+    await page.goto("/");
+    const min = page.getByRole("button", { name: /^Minimizar:/ });
+    await expect(min).toHaveCount(1);
+    await min.click();
+    await expect(page.getByRole("button", { name: /^Mostrar:/ })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /^Minimizar:/ })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("button", { name: /^Mostrar:/ })).toHaveCount(1);
+    await page.getByRole("button", { name: /^Mostrar:/ }).click();
+    await expect(page.getByRole("button", { name: /^Minimizar:/ })).toHaveCount(1);
+    await noHScroll(page);
   });
 });
