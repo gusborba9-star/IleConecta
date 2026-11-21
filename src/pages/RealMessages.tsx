@@ -1,7 +1,7 @@
 import { useConfirm } from "@/components/base/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Bot, CalendarClock, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
+import { ArrowLeft, Bot, CalendarClock, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card } from "@/components/base";
 import ChatAttachment from "@/components/chat/ChatAttachment";
@@ -25,6 +25,7 @@ import {
   type ChatMessage, type ConversationRow, type Peer,
 } from "@/lib/messaging";
 import { cn, timeAgo } from "@/lib/utils";
+import { clockTime, dayLabel, decorateMessages } from "@/lib/chatTimeCore.js";
 
 /** Mensagens reais. Se a casa estiver offline, a assistente dela atende primeiro. */
 export default function RealMessages() {
@@ -44,7 +45,6 @@ export default function RealMessages() {
   const [notice, setNotice] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState<string | null>(null);
   const [assistantAvatar, setAssistantAvatar] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
   const [iBlocked, setIBlocked] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -227,7 +227,6 @@ export default function RealMessages() {
   };
 
   const removeMsg = async (id: string) => {
-    setSelected(null);
     const ok = await deleteMessage(id);
     if (!ok) toast.error("Não foi possível apagar. Só dá para apagar mensagens suas dos últimos 2 dias.");
     await refreshRef.current();
@@ -235,15 +234,15 @@ export default function RealMessages() {
 
   /** Lixeira: pergunta e apaga na hora (funciona igual para texto, foto e PDF). */
   const askDelete = (id: string) => {
-    setSelected(null);
     void confirm({ title: "Apagar esta mensagem?", message: "Ela some para todos na conversa.", confirmLabel: "Apagar", danger: true }).then((ok) => { if (ok) void removeMsg(id); });
   };
 
   const offlineHouse = Boolean(peer?.isHouse && !peer.online);
 
   return (
-    <div ref={rootRef} className="scroll-mt-20">
-    <Card className="overflow-hidden sticky top-[4.5rem] h-[calc(100dvh-5.5rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)]">
+    <div ref={rootRef} className="scroll-mt-20 max-md:-mx-3">
+    {/* No celular a conversa ocupa a largura toda (sem moldura), como nos aplicativos de mensagem. */}
+    <Card className="overflow-hidden sticky top-[4.5rem] h-[calc(100dvh-5.5rem)] grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] max-md:rounded-none max-md:border-x-0 max-md:shadow-none">
       <aside aria-label="Conversas" className={cn("border-r border-border overflow-y-auto", otherId && "hidden md:block")}>
         <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
           <h1 className="font-display font-bold text-lg">Mensagens</h1>
@@ -270,38 +269,39 @@ export default function RealMessages() {
       <section className={cn("flex flex-col min-h-0", !otherId && "hidden md:flex")}>
         {otherId && peer ? (
           <>
-            <header className="p-3 border-b border-gold/40 flex items-center gap-3 sticky top-0 bg-card shadow-[0_1px_0_hsl(var(--gold)/0.25)]">
-              <button className="md:hidden text-sm font-semibold text-primary px-2" onClick={() => nav("/mensagens")}>Voltar</button>
-              <Avatar src={peer.avatar ?? undefined} name={peer.name} size={40} ring={peer.isHouse ? "gold" : "none"} />
+            <header className="flex items-center gap-2 border-b border-border/70 bg-card px-2 py-2 sm:px-3 sticky top-0">
+              <button type="button" aria-label="Voltar" className="md:hidden grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => nav("/mensagens")}>
+                <ArrowLeft className="h-5 w-5" aria-hidden />
+              </button>
+              <Avatar src={peer.avatar ?? undefined} name={peer.name} size={42} ring={peer.isHouse ? "gold" : "none"} />
               <div className="min-w-0 flex-1">
-                <button onClick={() => peer.isHouse && nav(`/casa/${peer.id}`)} className="font-semibold hover:underline truncate block max-w-full text-left">{peer.name}</button>
-                <div className="text-xs text-muted-foreground">{peer.isHouse ? (peer.online ? "Casa online" : assistantName ? "Casa offline · a assistente atende" : "Casa offline") : "Cliente"}</div>
+                {/* o nome pode ocupar até três linhas: nada de "Gustavo dos Sant…" */}
+                <button onClick={() => peer.isHouse && nav(`/casa/${peer.id}`)} className={cn("block max-w-full text-left text-[15px] sm:text-base font-semibold leading-tight break-words line-clamp-3", peer.isHouse && "hover:underline")}>{peer.name}</button>
+                <div className="text-xs text-muted-foreground leading-tight mt-0.5">{peer.isHouse ? (peer.online ? "Casa online" : assistantName ? "Casa offline · a assistente atende" : "Casa offline") : "Cliente"}</div>
               </div>
               <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} conversationId={convId} onBlockedChange={setIBlocked} />
             </header>
 
             {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse && peer && !peer.isHouse ? "house" : "client"} always={!!(iAmHouse && myAssistant && peer && !peer.isHouse)} onChange={() => void refreshRef.current()} />}
-            <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2 bg-muted/30" aria-live="polite">
+            <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-2.5 py-3 sm:px-4 bg-muted/30" aria-live="polite">
               {offlineHouse && assistantName && !handoff?.active && (
                 <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1"><Bot className="h-3 w-3" /> A casa está offline agora. A assistente responde sobre serviços, rituais, vagas e valores.</div>
               )}
-              {msgs.map((m) => {
+              {decorateMessages(msgs, (m) => (m.fromAssistant ? "assistente" : m.senderId)).map(({ message: m, newDay, sameSenderAsPrev }) => {
                 const mine = m.senderId === me && !m.fromAssistant;
                 const deleted = Boolean(m.deletedAt);
                 return (
-                  <div key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
-                    <div className={cn("flex items-center gap-1 max-w-full", mine && "justify-end")}>
-                    {mine && !deleted && (
-                      <button type="button" aria-label="Apagar mensagem" className="relative z-10 p-3 -m-1 rounded-full text-muted-foreground hover:bg-muted active:bg-muted touch-manipulation" onClick={(e) => { e.stopPropagation(); askDelete(m.id); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                  <div key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start", sameSenderAsPrev ? "mt-0.5" : "mt-2.5 first:mt-0")}>
+                    {newDay && <div className="my-2 self-center rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow-card">{dayLabel(m.createdAt)}</div>}
                     <div
-                      onClick={() => mine && !deleted && setSelected(selected === m.id ? null : m.id)}
-                      className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", mine ? "bg-forest text-forest-foreground rounded-br-md cursor-pointer shadow-card" : "bg-card border border-border rounded-bl-md shadow-[0_0_0_1px_hsl(22_30%_20%/0.04)]", deleted && "italic opacity-70")}
+                      className={cn(
+                        "max-w-[88%] sm:max-w-[75%] min-w-0 px-3 py-1.5 rounded-2xl text-[15px] leading-snug whitespace-pre-wrap break-words",
+                        mine ? "bg-forest text-forest-foreground rounded-br-md shadow-card" : "bg-card rounded-bl-md shadow-card",
+                        deleted && "italic opacity-70"
+                      )}
                     >
-                      {m.staffName && !m.fromAssistant && <div className="text-[10px] font-semibold text-gold-ink mb-0.5">Atendido por {m.staffName}</div>}
-                      {m.fromAssistant && <div className="text-[10px] font-semibold text-primary mb-0.5 flex items-center gap-1"><AssistantAvatar url={assistantAvatar} size={16} /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
+                      {m.staffName && !m.fromAssistant && <div className="text-[11px] font-semibold text-gold-ink mb-0.5">Atendido por {m.staffName}</div>}
+                      {m.fromAssistant && <div className="text-[11px] font-semibold text-primary mb-0.5 flex items-center gap-1"><AssistantAvatar url={assistantAvatar} size={16} /> {assistantName ? `${assistantName} · assistente virtual` : "Assistente da casa"}</div>}
                       {deleted ? (mine ? "Você apagou esta mensagem" : "Mensagem apagada") : (
                         <>
                           {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}
@@ -310,8 +310,13 @@ export default function RealMessages() {
                           {m.action?.target === "proposal" && !m.fromAssistant && <ProposalCard proposalId={m.action.id} onChanged={() => void refreshRef.current()} />}
                         </>
                       )}
-                      <div className={cn("text-[10px] mt-1 flex items-center gap-1", mine ? "justify-end text-forest-foreground/70" : "text-muted-foreground")}>
-                        {timeAgo(m.createdAt)}
+                      <div className={cn("mt-0.5 flex items-center justify-end gap-1 text-[11px] leading-none", mine ? "text-forest-foreground/75" : "text-muted-foreground")}>
+                        {mine && !deleted && (
+                          <button type="button" aria-label="Apagar mensagem" className="-my-2 -ml-1 grid h-8 w-8 place-items-center rounded-full opacity-70 hover:opacity-100 hover:bg-white/10 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold" onClick={(e) => { e.stopPropagation(); askDelete(m.id); }}>
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        )}
+                        <time dateTime={m.createdAt}>{clockTime(m.createdAt)}</time>
                         {mine && !deleted && (
                           m.read
                             ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" aria-label="Lida" />
@@ -321,13 +326,6 @@ export default function RealMessages() {
                         )}
                       </div>
                     </div>
-                    </div>
-                    {mine && selected === m.id && (
-                      <div className="flex gap-3 mt-1 text-xs">
-                        <button className="font-semibold text-destructive" onClick={() => void removeMsg(m.id)}>Apagar para todos</button>
-                        <button className="text-muted-foreground" onClick={() => setSelected(null)}>Cancelar</button>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -344,36 +342,40 @@ export default function RealMessages() {
                 Você bloqueou este contato. Use o menu (⋮) para desbloquear.
               </div>
             ) : (
-              <div className="p-3 border-t border-border flex items-center gap-2 bg-card">
+              <div className="flex items-end gap-2 border-t border-border/70 bg-card px-2 py-2 sm:px-3">
                 <input ref={fileRef} type="file" hidden accept={mediaOk ? "image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,application/pdf" : "application/pdf"} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void attach(f); }} />
-                {iAmHouse && quick.length > 0 && (
-                  <div className="relative">
-                    <Button size="icon" variant="ghost" aria-label="Respostas rápidas" aria-expanded={quickOpen} onClick={() => setQuickOpen((v) => !v)}><Zap className="h-4 w-4" /></Button>
-                    {quickOpen && (
-                      <ul className="pillow absolute bottom-12 left-0 z-20 w-72 max-h-64 overflow-y-auto rounded-2xl bg-card p-1.5 shadow-lift">
-                        {quick.map((q) => (
-                          <li key={q.id}><button type="button" className="w-full rounded-xl px-3 py-2 text-left hover:bg-muted" onClick={() => { setText(q.body.slice(0, 1000)); setQuickOpen(false); }}>
-                            <span className="block text-sm font-semibold">{q.title}</span><span className="block text-xs text-muted-foreground line-clamp-2">{q.body}</span>
-                          </button></li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-                {iAmHouse && peer && !peer.isHouse && otherId && (
-                  <Button size="icon" variant="ghost" aria-label="Propor horário" title="Propor horário" disabled={busy || !convId} onClick={() => setProposeOpen(true)}><CalendarClock className="h-4 w-4" /></Button>
-                )}
-                <Button size="icon" variant="ghost" aria-label={mediaOk ? "Anexar foto, vídeo ou PDF" : "Anexar PDF"} disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" /></Button>
-                <input
-                  aria-label="Mensagem"
-                  value={text}
-                  maxLength={1000}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && void send()}
-                  placeholder="Escreva sua mensagem..."
-                  className="flex-1 h-11 px-4 rounded-full bg-muted border border-transparent focus:bg-background focus:border-input focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none text-sm"
-                />
-                <Button size="icon" aria-label="Enviar mensagem" disabled={busy || !convId} onClick={() => void send()}><Send className="h-4 w-4" /></Button>
+                {/* Campo único em forma de pílula, com as ações dentro (anexar, horário, respostas rápidas); o botão de enviar fica ao lado. */}
+                <div className="relative flex min-w-0 flex-1 items-center rounded-full bg-muted pl-1 pr-3 focus-within:ring-2 focus-within:ring-[hsl(var(--ring))]">
+                  <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0 rounded-full" aria-label={mediaOk ? "Anexar foto, vídeo ou PDF" : "Anexar PDF"} disabled={busy || !convId} onClick={() => fileRef.current?.click()}><Paperclip className="h-5 w-5" /></Button>
+                  {iAmHouse && peer && !peer.isHouse && otherId && (
+                    <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0 rounded-full" aria-label="Propor horário" title="Propor horário" disabled={busy || !convId} onClick={() => setProposeOpen(true)}><CalendarClock className="h-5 w-5" /></Button>
+                  )}
+                  {iAmHouse && quick.length > 0 && (
+                    <>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0 rounded-full" aria-label="Respostas rápidas" aria-expanded={quickOpen} onClick={() => setQuickOpen((v) => !v)}><Zap className="h-5 w-5" /></Button>
+                      {quickOpen && (
+                        <ul className="pillow absolute bottom-12 left-0 z-20 w-72 max-w-[calc(100vw-1.5rem)] max-h-64 overflow-y-auto rounded-2xl bg-card p-1.5 shadow-lift">
+                          {quick.map((q) => (
+                            <li key={q.id}><button type="button" className="w-full rounded-xl px-3 py-2 text-left hover:bg-muted" onClick={() => { setText(q.body.slice(0, 1000)); setQuickOpen(false); }}>
+                              <span className="block text-sm font-semibold">{q.title}</span><span className="block text-xs text-muted-foreground line-clamp-2">{q.body}</span>
+                            </button></li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )}
+                  <input
+                    aria-label="Mensagem"
+                    value={text}
+                    maxLength={1000}
+                    enterKeyHint="send"
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void send()}
+                    placeholder="Escreva sua mensagem..."
+                    className="h-11 min-w-0 flex-1 bg-transparent px-2 text-[15px] outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                <Button size="icon" className="h-11 w-11 shrink-0 rounded-full" aria-label="Enviar mensagem" disabled={busy || !convId} onClick={() => void send()}><Send className="h-5 w-5" /></Button>
               </div>
             )}
           </>
