@@ -1,39 +1,40 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canMinimize, minimizeKey, shownPriority, readMinimized, writeMinimized } from "../src/lib/pendingMinimizeCore.js";
+import { shownPriority, bubbleCount, badgeText, bubbleLabel, readBubble, writeBubble, shouldReopen } from "../src/lib/pendingMinimizeCore.js";
 
-const ass = (priority) => ({ kind: "assistente_sem_respostas", refId: "h1", priority });
-test("assistente sem respostas: quem nunca comprou pacote sempre pode minimizar", () => {
-  assert.equal(canMinimize(ass("alta"), { hasCredits: false }), true);
-  assert.equal(canMinimize(ass("normal"), { hasCredits: false }), true);
-});
-test("assistente sem respostas: quem já comprou só minimiza o 'quase sem'; acabou fica aberto", () => {
-  assert.equal(canMinimize(ass("normal"), { hasCredits: true }), true);
-  assert.equal(canMinimize(ass("alta"), { hasCredits: true }), false);
-});
-test("nada que envolva cliente, dinheiro, moderação ou suporte pode ser minimizado", () => {
-  for (const kind of ["conversa_sem_resposta", "pedido_para_iniciar", "reembolso_da_casa", "mensalidade_vencida", "fatura", "moderacao", "suporte", "avaliacao_sem_resposta", "atendimento_passou", "cadastro_cpf_cnpj", "conta_de_recebimento", "assunto_da_assistente"]) {
-    assert.equal(canMinimize({ kind, refId: "x", priority: "normal" }, { hasCredits: false }), false, kind);
-  }
-  assert.equal(canMinimize({ kind: "cartao_vencendo", refId: "c", priority: "normal", overdue: true }), false);
-  assert.equal(canMinimize({ kind: "cartao_vencendo", refId: "c", priority: "normal" }), true);
-  assert.equal(canMinimize(null), false);
-});
-test("a chave muda quando a prioridade sobe: minimizado reabre sozinho", () => {
-  assert.notEqual(minimizeKey(ass("normal")), minimizeKey(ass("alta")));
-});
-test("prioridade mostrada: sem pacote comprado a assistente é 'normal'", () => {
-  assert.equal(shownPriority(ass("alta"), { hasCredits: false }), "normal");
-  assert.equal(shownPriority(ass("alta"), { hasCredits: true }), "alta");
+test("assistente sem respostas: quem nunca comprou pacote vê 'normal'; quem comprou vê a prioridade real", () => {
+  const a = { kind: "assistente_sem_respostas", priority: "alta" };
+  assert.equal(shownPriority(a, { hasCredits: false }), "normal");
+  assert.equal(shownPriority(a, { hasCredits: true }), "alta");
   assert.equal(shownPriority({ kind: "fatura", priority: "alta" }, { hasCredits: false }), "alta");
+  assert.equal(shownPriority(null), "normal");
 });
-test("memória do aparelho: guarda só o que ainda existe e aguenta dado estranho", () => {
-  const mem = {}; const st = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; } };
-  writeMinimized("u1", new Set(["a", "b"]), ["a"], st);
-  assert.deepEqual([...readMinimized("u1", st)], ["a"]);
-  mem["ic:pend-min:u2"] = "{lixo";
-  assert.equal(readMinimized("u2", st).size, 0);
-  mem["ic:pend-min:u3"] = JSON.stringify([1, "ok", null]);
-  assert.deepEqual([...readMinimized("u3", st)], ["ok"]);
-  assert.equal(readMinimized("u4", { getItem: () => { throw new Error("x"); } }).size, 0);
+test("o número do balão: 1 a 9 como é, '9+' a partir de 10, nunca negativo", () => {
+  assert.deepEqual([0, 1, 2, 5, 8, 9, 10, 25, -3, NaN].map(badgeText), ["0", "1", "2", "5", "8", "9", "9+", "9+", "0", "0"]);
+});
+test("contagem: total da central; se só há faturas a pagar, conta as faturas", () => {
+  assert.equal(bubbleCount({ total: 4, toPay: { count: 1 } }), 4);
+  assert.equal(bubbleCount({ total: 0, toPay: { count: 2 } }), 2);
+  assert.equal(bubbleCount(null), 0);
+  assert.equal(bubbleCount({ total: "x" }), 0);
+});
+test("texto para leitor de tela cita quantas e quantas vencidas", () => {
+  assert.equal(bubbleLabel(1), "Abrir a central de pendências: 1 pendente");
+  assert.equal(bubbleLabel(12, 2), "Abrir a central de pendências: 12 pendentes, 2 vencidas");
+});
+test("estado guardado por aparelho; lixo no armazenamento vira 'aberto'", () => {
+  const mem = new Map();
+  const st = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  assert.deepEqual(readBubble("u1", st), { minimized: false, overdue: 0 });
+  writeBubble("u1", { minimized: true, overdue: 2 }, st);
+  assert.deepEqual(readBubble("u1", st), { minimized: true, overdue: 2 });
+  assert.deepEqual(readBubble("u2", st), { minimized: false, overdue: 0 });
+  mem.set("ic:pend-bubble:u3", "{lixo");
+  assert.deepEqual(readBubble("u3", st), { minimized: false, overdue: 0 });
+  assert.doesNotThrow(() => writeBubble("u1", { minimized: true, overdue: 1 }, { setItem() { throw new Error("cheio"); } }));
+});
+test("abre sozinho só quando surge vencida nova", () => {
+  assert.equal(shouldReopen({ minimized: true, overdue: 1 }, 1), false);
+  assert.equal(shouldReopen({ minimized: true, overdue: 1 }, 2), true);
+  assert.equal(shouldReopen({ minimized: false, overdue: 0 }, 5), false);
 });

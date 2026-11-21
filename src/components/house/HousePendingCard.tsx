@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ClipboardList, Minimize2, RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchHousePending } from "@/lib/housePending";
 import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseDestination, type HousePendingView } from "@/lib/housePendingCore.js";
@@ -8,10 +8,10 @@ import { kindLabel, shortDate } from "@/lib/platformBillingCore.js";
 import { formatBRL } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
 import { fetchCredits } from "@/lib/aiCredits";
-import { canMinimize, minimizeKey, readMinimized, shownPriority, writeMinimized } from "@/lib/pendingMinimizeCore.js";
+import { badgeText, bubbleCount, bubbleLabel, readBubble, shouldReopen, shownPriority, writeBubble } from "@/lib/pendingMinimizeCore.js";
 
 /** Central de pendências da casa: o que espera a casa (ou a equipe, conforme a permissão), vencidos primeiro, mais o que há a pagar à plataforma. */
-export default function HousePendingCard() {
+export default function HousePendingCard({ collapsible = false }: { collapsible?: boolean }) {
   const nav = useNavigate();
   const { currentUser } = useApp();
   const [view, setView] = useState<HousePendingView | null>(null);
@@ -19,10 +19,12 @@ export default function HousePendingCard() {
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState("todos");
   const [onlyOverdue, setOnlyOverdue] = useState(false);
-  // Minimizar não esconde: o card vira uma linha compacta com ponto de atenção. Só vale para avisos informativos (ver pendingMinimizeCore).
+  // Minimizar não esconde nem apaga: a central vira um balão flutuante com o número de pendências (estado guardado neste aparelho).
   const userId = currentUser?.id ?? "";
-  const [minimized, setMinimized] = useState<Set<string>>(() => readMinimized(userId));
+  const [bubble, setBubble] = useState(() => readBubble(userId));
   const [hasCredits, setHasCredits] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [justOpened, setJustOpened] = useState(false);
   useEffect(() => {
     let alive = true;
     void fetchCredits().then((c) => alive && setHasCredits((c?.packs.length ?? 0) > 0));
@@ -42,24 +44,50 @@ export default function HousePendingCard() {
   }, [load]);
 
   const items = useMemo(() => (view ? filterPending(view.items as never, { kind, onlyOverdue }) : []) as HousePendingView["items"], [view, kind, onlyOverdue]);
-  const toggleMin = (key: string) => {
-    const next = new Set(minimized);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    setMinimized(next);
-    writeMinimized(userId, next, (view?.items ?? []).map((x) => minimizeKey(x as never)));
-  };
   const toPay = view?.toPay && view.toPay.count > 0 ? view.toPay : null;
+  const count = bubbleCount(view);
+  const minimize = () => { const st = { minimized: true, overdue: view?.overdue ?? 0 }; setBubble(st); writeBubble(userId, st); };
+  const expand = () => { const st = { minimized: false, overdue: 0 }; setBubble(st); writeBubble(userId, st); setJustOpened(true); };
+  // Surgiu pendência vencida nova: a central abre sozinha (o balão não pode esconder urgência).
+  useEffect(() => {
+    if (collapsible && view && shouldReopen(bubble, view.overdue)) { const st = { minimized: false, overdue: 0 }; setBubble(st); writeBubble(userId, st); }
+  }, [collapsible, view, bubble, userId]);
+  // Depois de abrir pelo balão, leva a tela e o foco até a central.
+  useEffect(() => {
+    if (!justOpened) return;
+    setJustOpened(false);
+    cardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    cardRef.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [justOpened, bubble.minimized]);
   // Quem não é da casa (ou o modo de demonstração) não vê o cartão, em vez de ver um erro.
   if (error && /not_house|Disponível só/i.test(error)) return null;
 
+  if (collapsible && bubble.minimized && view && count > 0) {
+    return (
+      <button
+        type="button"
+        onClick={expand}
+        aria-label={bubbleLabel(count, view.overdue)}
+        className="fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 grid h-14 w-14 place-items-center rounded-full bg-card text-primary shadow-altar ring-2 ring-gold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring lg:bottom-6"
+      >
+        <ClipboardList className="h-6 w-6" aria-hidden />
+        <span aria-hidden className="absolute -right-1 -top-1 grid h-6 min-w-6 place-items-center rounded-full bg-destructive px-1 text-xs font-bold leading-none text-white ring-2 ring-card">{badgeText(count)}</span>
+      </button>
+    );
+  }
+
   return (
+    <div ref={cardRef} className="scroll-mt-20">
     <Card className="p-5 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg">Central de pendências</h2>
+          <h2 tabIndex={-1} className="font-display font-bold text-lg outline-none">Central de pendências</h2>
           <p className="text-xs text-muted-foreground">{view?.role === "equipe" ? "O que espera a casa e que você pode acompanhar." : "O que está esperando por você, vencidos primeiro."}</p>
         </div>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void load()} aria-label="Atualizar pendências"><RefreshCw className="h-4 w-4" /> Atualizar</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => void load()} aria-label="Atualizar pendências"><RefreshCw className="h-4 w-4" /> Atualizar</Button>
+          {collapsible && count > 0 && <Button size="sm" variant="outline" onClick={minimize}><Minimize2 className="h-4 w-4" aria-hidden /> Minimizar</Button>}
+        </div>
       </div>
 
       {error ? (
@@ -91,23 +119,12 @@ export default function HousePendingCard() {
                 <ul className="space-y-2">
                   {items.map((i) => {
                     const target = houseDestination(i, view.role, currentUser?.id);
-                    const key = minimizeKey(i);
-                    const can = canMinimize(i, { hasCredits });
                     const prio = shownPriority(i, { hasCredits });
-                    if (can && minimized.has(key)) {
-                      return (
-                        <li key={`${i.kind}-${i.refId}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-border px-3 py-1.5 text-sm">
-                          <span className="flex min-w-0 items-center gap-2"><span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-gold" /><span className="min-w-0 break-words font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span><span className="sr-only"> (minimizado)</span></span>
-                          <Button size="sm" variant="ghost" aria-expanded={false} aria-label={`Mostrar: ${HOUSE_KIND_LABELS[i.kind]}`} onClick={() => toggleMin(key)}><ChevronDown className="h-4 w-4" /> Mostrar</Button>
-                        </li>
-                      );
-                    }
                     return (
                       <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge tone={i.overdue ? "danger" : prio === "alta" ? "gold" : "muted"}>{i.overdue ? "Vencida" : HOUSE_PRIORITY_LABELS[prio]}</Badge>
                           <span className="min-w-0 flex-1 font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span>
-                          {can && <Button size="sm" variant="ghost" aria-expanded aria-label={`Minimizar: ${HOUSE_KIND_LABELS[i.kind]}`} onClick={() => toggleMin(key)}><ChevronUp className="h-4 w-4" /> Minimizar</Button>}
                         </div>
                         <p className="break-words">{i.title}</p>
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -145,5 +162,6 @@ export default function HousePendingCard() {
         </>
       )}
     </Card>
+    </div>
   );
 }

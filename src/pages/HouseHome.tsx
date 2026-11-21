@@ -39,6 +39,8 @@ interface Tool {
   badge?: number;
   /** Ferramenta de plano: se o plano atual não inclui, o toque abre o aviso do plano. */
   needs?: CapFlagKey | CapNumberKey;
+  /** Fica sozinha na última linha (fora dos grupos de cor). */
+  last?: boolean;
   /** Assistente: bloqueada no plano sem franquia enquanto não houver pacote de respostas. */
   assistant?: boolean;
   about?: string;
@@ -98,7 +100,7 @@ export default function HouseHome() {
     ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", tone: "terra" as const, to: "/divulgacao", needs: "campaign_links" as CapNumberKey, about: "Crie links próprios por rede social, cartões para postar e respostas rápidas, e veja de onde vêm as visitas." }] : []),
     ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe", tone: "verde" as const, to: "/equipe", needs: "included_seats" as CapNumberKey, about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver." }] : []),
     { icon: Bot, title: "Assistente", tone: "noite", to: "/perfil", assistant: true, about: "Atende seus clientes no chat, orienta e vende pela plataforma, com o que você configurar." },
-    { icon: Pencil, title: "Editar página", tone: "verde", to: `/casa/${house.id}?editar=1` },
+    { icon: Pencil, title: "Editar página", tone: "verde", to: `/casa/${house.id}?editar=1`, last: true },
   ];
 
   // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; o aviso explica).
@@ -130,7 +132,7 @@ export default function HouseHome() {
         </div>
       </Card>
 
-      {isRemoteAuth && <HousePendingCard />}
+      {isRemoteAuth && <HousePendingCard collapsible />}
 
       {isRemoteAuth && <HouseKpis ownerId={house.id} />}
 
@@ -139,13 +141,23 @@ export default function HouseHome() {
 
       <section aria-labelledby="ferramentas" className="space-y-2">
         <h2 id="ferramentas" className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Ferramentas</h2>
-        <div className="grid grid-cols-4 gap-x-1 gap-y-2 sm:grid-cols-5 xl:grid-cols-6">
-          {tools.map((t) => {
-            const pn = planTag(t);
-            return pn && t.about
-              ? <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} note={`Plano ${pn}`} onClick={() => setUpsell({ title: t.title, about: t.about!, planName: pn, to: t.to, ...(t.assistant ? { note: `Assistente com franquia de respostas a partir do plano ${pn}. Para operar a assistente no plano atual, adquira um pacote de respostas.`, buyLabel: "Comprar pacote de respostas" } : {}) })} />
-              : <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} to={t.to} badge={t.badge} />;
-          })}
+        {/* Uma linha por cor: dourados, verdes, vermelhos e roxo no fim; "Editar página" sozinha por último. */}
+        <div className="space-y-2 lg:max-w-2xl">
+          {[
+            tools.filter((t) => t.tone === "ouro"),
+            tools.filter((t) => t.tone === "verde" && !t.last),
+            tools.filter((t) => t.tone === "terra" || t.tone === "noite"),
+            tools.filter((t) => t.last),
+          ].filter((row) => row.length > 0).map((row) => (
+            <div key={row[0].title} className="grid grid-cols-4 gap-x-1">
+              {row.map((t) => {
+                const pn = planTag(t);
+                return pn && t.about
+                  ? <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} note={`Plano ${pn}`} onClick={() => setUpsell({ title: t.title, about: t.about!, planName: pn, to: t.to, ...(t.assistant ? { note: `Assistente com franquia de respostas a partir do plano ${pn}. Para operar a assistente no plano atual, adquira um pacote de respostas.`, buyLabel: "Comprar pacote de respostas" } : {}) })} />
+                  : <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} to={t.to} badge={t.badge} />;
+              })}
+            </div>
+          ))}
         </div>
       </section>
 
