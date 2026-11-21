@@ -1,3 +1,4 @@
+import { categoryLabel } from "@/lib/postCategoryCore.js";
 import StyledPostBody from "@/components/feed/StyledPostBody";
 import { useEffect, useState } from "react";
 import type { Post } from "@/types";
@@ -130,6 +131,7 @@ export default function PostCard({ post }: { post: Post }) {
               <span className="font-semibold">{author?.name}</span>
             )}
             {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
+            {categoryLabel(post.category) && <Badge tone="gold">{categoryLabel(post.category)}</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>
                 {post.kind === "buzios" ? "Jogo" : post.kind === "trabalho" ? "Trabalho" : post.kind === "ritual" ? "Ritual" : ""}
