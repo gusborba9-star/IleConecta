@@ -143,6 +143,24 @@ export async function fetchMyReservations(userId: string): Promise<Record<string
   return out;
 }
 
+export interface MyUpcomingReservation { id: string; status: string; title: string; houseName: string; startsAt: string }
+
+/** Reservas do cliente (confirmadas ou a pagar) de rituais que ainda não passaram — alimenta o "Para você" do Início. */
+export async function fetchMyUpcomingReservations(userId: string): Promise<MyUpcomingReservation[]> {
+  if (!supabase) return [];
+  const { data: rs } = await supabase.from("reservations").select("id, event_id, status").eq("user_id", userId).in("status", ["confirmada", "aguardando_pagamento"]);
+  if (!rs?.length) return [];
+  const { data: evs } = await supabase.from("events").select("id, title, starts_at, houses(name)").in("id", rs.map((r) => r.event_id)).gt("starts_at", new Date(Date.now() - 6 * 3600 * 1000).toISOString());
+  const byId = new Map((evs ?? []).map((e) => [String(e.id), e]));
+  const out: MyUpcomingReservation[] = [];
+  for (const r of rs) {
+    const e = byId.get(String(r.event_id));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (e) out.push({ id: String(r.id), status: String(r.status), title: String(e.title), houseName: String((e as any).houses?.name ?? "Casa"), startsAt: String(e.starts_at) });
+  }
+  return out;
+}
+
 /** Devolve null em caso de sucesso, ou a mensagem de erro em português. */
 /** Reserva a vaga. Devolve o erro (ou null) e o id da reserva, usado para abrir o pagamento. */
 export async function reserveSeat(eventId: string, answers: Record<string, string>): Promise<{ error: string | null; id: string | null }> {

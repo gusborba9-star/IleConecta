@@ -2,6 +2,7 @@ import { useApp } from "@/contexts/AppContext";
 import MomentsRail from "@/components/feed/MomentsRail";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
+import ClientHome from "@/components/feed/ClientHome";
 import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
@@ -14,8 +15,9 @@ import PromoTrack from "@/components/promo/PromoTrack";
 import FeedPromos from "@/components/promo/FeedPromos";
 import type { Post } from "@/types";
 
-export default function Feed() {
-  const { posts, refreshRemote, isRemoteAuth } = useApp();
+export default function Feed({ home = false }: { home?: boolean }) {
+  const { posts, refreshRemote, isRemoteAuth, currentUser } = useApp();
+  const isClient = home && currentUser?.type === "personal";
   const promo = usePromoRanking(isRemoteAuth);
   // Link de um aviso (curtida/comentário): abre o feed já na publicação, destacada por alguns segundos.
   const [params] = useSearchParams();
@@ -49,15 +51,17 @@ export default function Feed() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <PendingReviewsCard />
-      <Card className="page-hero px-5 py-4">
-        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Comunidade</div>
-        <h1 className="font-display font-bold text-xl sm:text-2xl mt-0.5 break-words">O que as casas estão compartilhando</h1>
-      </Card>
+      {isClient && <ClientHome />}
+      {isClient && <PendingReviewsCard />}
+      {isClient ? <h1 className="sr-only">Início</h1> : (
+        <Card className="page-hero px-5 py-3">
+          <h1 className="font-display font-bold text-xl break-words">Comunidade</h1>
+        </Card>
+      )}
       <div>
         <div className="flex items-end justify-between mb-2">
           <h2 className="font-display font-bold text-xl">Momentos das casas</h2>
-          <Link to="/descobrir" className="text-xs text-primary font-semibold hover:underline">ver todas</Link>
+          <Link to="/descobrir" className="inline-flex min-h-9 items-center text-xs text-primary font-semibold hover:underline">ver casas</Link>
         </div>
         <MomentsRail highlightOwners={promo.highlightOwners} />
       </div>
