@@ -10,6 +10,7 @@ import { EMPTY_STYLE, type StyleDraft } from "@/components/feed/postStyleDraft";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { toColumn, validateDraft } from "@/lib/postCardCore";
 import { fitToMode, scrimPctFor } from "@/lib/postLettersCore";
+import { CATEGORIES, type PostCategory } from "@/lib/postCategoryCore.js";
 import { removeCardImage, uploadCardImage } from "@/lib/postImages";
 
 export default function PostComposer() {
@@ -17,6 +18,7 @@ export default function PostComposer() {
   const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
+  const [category, setCategory] = useState<PostCategory>("geral");
   const isHouse = currentUser?.type === "commercial";
   const [style, setStyle] = useState<StyleDraft>(EMPTY_STYLE);
   // A barra fica fechada (como "No que você está pensando?"); o editor completo abre numa janela.
@@ -52,6 +54,7 @@ export default function PostComposer() {
         houseId: currentUser.id,
         content: text.trim(),
         kind: "geral",
+        category,
         image: col ? undefined : image || undefined,
         card: col && style.image ? { style: col, image: style.image.previewUrl, scrimPct: col === "total" ? scrimPctFor(style.image.brightness, style.letters.color) : style.image.scrimPct, letters: fitToMode(style.letters, col) } : undefined,
       },
@@ -64,6 +67,7 @@ export default function PostComposer() {
     }
     setText("");
     setImage("");
+    setCategory("geral");
     setStyle(EMPTY_STYLE);
     setOpen(false);
     toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");
@@ -96,6 +100,19 @@ export default function PostComposer() {
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="Nova publicação" maxWidth="max-w-xl">
         <div className="space-y-3">
+          {isHouse && (
+            <div role="group" aria-label="Tipo da publicação" className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const on = category === c.id;
+                return (
+                  <button key={c.id} type="button" aria-pressed={on} onClick={() => setCategory(on ? "geral" : c.id)}
+                    className={`min-h-9 rounded-full border px-3.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted"}`}>
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <Textarea
             id="texto-da-publicacao"
             aria-label="Texto da publicação"

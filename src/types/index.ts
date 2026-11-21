@@ -49,6 +49,8 @@ export interface Post {
   /** Card estilizado (Profissional/Premium): modo, imagem da plataforma e força do fundo atrás do texto (%). */
   card?: { style: "total" | "parcial"; image: string; path?: string; scrimPct: number; letters?: import("@/lib/postLettersCore").Letters };
   kind: "trabalho" | "ritual" | "buzios" | "story" | "geral";
+  /** Categoria escolhida pela casa ao publicar (ausente = geral). */
+  category?: import("@/lib/postCategoryCore").PostCategory;
   ritualId?: string;
   likes: string[]; // user ids visíveis (o banco só mostra as próprias curtidas; a dona da casa vê todas)
   likeCount?: number; // total público, vindo de post_like_counts

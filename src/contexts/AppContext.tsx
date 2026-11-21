@@ -282,6 +282,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const saved = await remoteCreatePost(currentUser.id, {
           content: post.content,
           kind: post.kind,
+          category: post.category,
           image: post.image,
           card: post.card && opts?.cardPath ? { style: post.card.style, path: opts.cardPath, scrimPct: post.card.scrimPct, letters: post.card.letters } : undefined,
         });

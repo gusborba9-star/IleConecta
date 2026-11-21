@@ -6,17 +6,17 @@
   :root {
     --build-id: 2026-11-01a;
     /* Terra & Folha: marfim, tinta, terracota, esmeralda, ouro e ameixa. */
-    --background: 36 38% 95%;
+    --background: 40 30% 96.5%;
     --foreground: 22 45% 12%;
 
-    --card: 36 40% 99%;
+    --card: 40 40% 100%;
     --card-foreground: 22 45% 12%;
 
     --muted: 33 22% 91%;
     --muted-foreground: 24 17% 36%;
 
-    --primary: 10 75% 43%;
-    --primary-ink: 10 75% 43%; /* cor do texto em destaque: no tema claro é a própria cor primária */
+    --primary: 160 72% 22%;
+    --primary-ink: 160 72% 22%; /* cor do texto em destaque: no tema claro é a própria cor primária */
     --primary-foreground: 40 40% 98%;
 
     --secondary: 33 24% 89%;
@@ -25,7 +25,7 @@
     --accent: 160 62% 20%;
     --accent-foreground: 40 40% 98%;
 
-    --gold: 42 70% 57%;
+    --gold: 42 86% 52%;
     --gold-foreground: 22 45% 12%;
 
     --forest: 160 62% 20%;
@@ -62,8 +62,8 @@
     --muted-foreground: 30 12% 66%;
 
     /* contraste (WCAG AA 4,5:1): botão com texto claro e texto em destaque sobre fundo escuro usam tons diferentes */
-    --primary: 12 72% 46%;
-    --primary-ink: 12 72% 62%;
+    --primary: 158 60% 28%;
+    --primary-ink: 158 60% 66%;
     --primary-foreground: 40 40% 98%;
 
     --secondary: 22 14% 18%;
@@ -72,7 +72,7 @@
     --accent: 158 30% 20%;
     --accent-foreground: 36 30% 92%;
 
-    --gold: 42 88% 56%;
+    --gold: 43 94% 58%;
     --gold-foreground: 22 40% 12%;
 
     --forest: 158 38% 52%;
@@ -140,12 +140,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-image:
-      radial-gradient(1200px 600px at 100% -10%, hsl(var(--glow-1) / 0.08), transparent 60%),
-      radial-gradient(900px 500px at -10% 20%, hsl(var(--glow-2) / 0.08), transparent 60%);
+      radial-gradient(1200px 600px at 100% -10%, hsl(var(--glow-1) / 0.03), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, hsl(var(--glow-2) / 0.03), transparent 60%);
     background-attachment: fixed;
   }
+  h1 { @apply font-display font-bold tracking-tight; }
+  h2, h3, h4 { @apply font-sans font-semibold tracking-tight; }
   h1, h2, h3, h4 {
-    @apply font-display;
     /* WCAG 1.4.4/1.4.10: com letra a 200% uma palavra longa ("Funcionalidades") não cabe e empurraria a página; só quebra se não couber. */
     overflow-wrap: anywhere;
   }
@@ -166,22 +167,20 @@
     backdrop-filter: blur(12px);
   }
   /* Efeito almofada: contorno dourado fino, brilho no topo e sombra suave por dentro e por fora. */
+  /* Superfície plana: fio fino e uma única sombra suave (sem brilho por dentro). */
   .pillow {
-    border-color: hsl(var(--gold) / 0.35);
-    box-shadow:
-      inset 0 1px 0 hsl(var(--pillow-hi)),
-      inset 0 -16px 24px -18px hsl(var(--gold) / 0.38),
-      0 0 0 1px hsl(var(--gold) / 0.12),
-      0 16px 28px -20px hsl(22 40% 15% / 0.4);
+    border-color: hsl(var(--border));
+    box-shadow: 0 1px 2px hsl(160 30% 10% / 0.05), 0 8px 24px -14px hsl(160 30% 10% / 0.18);
   }
-  /* Cabeçalho de página: marfim com um brilho dourado e fio de ouro na base. */
+  /* Cabeçalho de página: superfície clara e plana, com um fio dourado no topo. */
   .page-hero {
-    background-image:
-      radial-gradient(520px 200px at 100% 0%, hsl(var(--gold) / 0.22), transparent 70%),
-      linear-gradient(135deg, hsl(var(--card)), hsl(var(--forest) / 0.07));
-    border-color: hsl(var(--gold) / 0.35);
-    box-shadow: 0 1px 0 hsl(var(--gold) / 0.35), 0 14px 28px -18px hsl(22 40% 15% / 0.35);
+    background-image: none;
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
+    border-top: 3px solid hsl(var(--gold));
+    box-shadow: 0 1px 2px hsl(160 30% 10% / 0.05), 0 8px 24px -14px hsl(160 30% 10% / 0.18);
   }
+
   /* Cartão que sobe de leve ao passar o mouse (listas de ofertas, planos). */
   .lift {
     transition: transform 180ms ease, box-shadow 180ms ease;

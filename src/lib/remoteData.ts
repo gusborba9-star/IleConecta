@@ -1,3 +1,4 @@
+import { normalizeCategory } from "@/lib/postCategoryCore.js";
 import type { HouseUser, PersonalUser, Post, User } from "@/types";
 import { rememberPlanGuard } from "@/lib/planGuard";
 import { supabase } from "@/lib/supabase";
@@ -83,7 +84,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, house_id, kind, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, edited_at, comments_off, created_at, houses(owner_id), post_likes(user_id)"
+      "id, house_id, kind, category, content, image_url, card_style, card_image_path, card_scrim, card_font, card_size, card_color, card_align, card_pos, card_bold, card_italic, edited_at, comments_off, created_at, houses(owner_id), post_likes(user_id)"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -116,6 +117,7 @@ export async function fetchRemotePosts(): Promise<RemoteFeed> {
       image: row.image_url ?? undefined,
       card: readCard(row),
       kind: row.kind,
+      category: normalizeCategory(row.category),
       likes: ((row.post_likes as Row[]) ?? []).map((l) => String(l.user_id)),
       likeCount: counts.get(String(row.id)),
       comments: [],
@@ -175,14 +177,14 @@ function readCard(row: Row): Post["card"] {
 /** Cria a publicação da casa logada. Devolve o post salvo ou null se o servidor recusar. */
 export async function remoteCreatePost(
   ownerId: string,
-  input: { content: string; kind: Post["kind"]; image?: string; card?: { style: "total" | "parcial"; path: string; scrimPct: number; letters?: Letters } }
+  input: { content: string; kind: Post["kind"]; category?: Post["category"]; image?: string; card?: { style: "total" | "parcial"; path: string; scrimPct: number; letters?: Letters } }
 ): Promise<Post | null> {
   if (!supabase) return null;
   const { data: house } = await supabase.from("houses").select("id").eq("owner_id", ownerId).maybeSingle();
   if (!house) return null;
   const { data, error } = await supabase
     .from("posts")
-    .insert({ house_id: house.id, kind: input.kind, content: input.content, image_url: input.image ?? null, ...(input.card ? { card_style: input.card.style, card_image_path: input.card.path, card_rights_ack: true, card_scrim: input.card.scrimPct, ...lettersToColumns(fitToMode(input.card.letters, input.card.style)) } : {}) })
+    .insert({ house_id: house.id, kind: input.kind, category: normalizeCategory(input.category), content: input.content, image_url: input.image ?? null, ...(input.card ? { card_style: input.card.style, card_image_path: input.card.path, card_rights_ack: true, card_scrim: input.card.scrimPct, ...lettersToColumns(fitToMode(input.card.letters, input.card.style)) } : {}) })
     .select("id, created_at")
     .single();
   if (error) rememberPlanGuard(error);
@@ -194,6 +196,7 @@ export async function remoteCreatePost(
     image: input.image,
     card: input.card ? { style: input.card.style, image: cardImageUrl(input.card.path) ?? "", path: input.card.path, scrimPct: input.card.scrimPct, letters: fitToMode(input.card.letters, input.card.style) } : undefined,
     kind: input.kind,
+    category: normalizeCategory(input.category),
     likes: [],
     comments: [],
     createdAt: String(data.created_at),
