@@ -448,9 +448,10 @@ test.describe("Ícones do Início agrupados por cor", () => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: /^Editar página/ })).toBeVisible();
     const linhas = await page.locator("section[aria-labelledby=ferramentas] .tool-tile").evaluateAll((els) => {
-      const por = new Map();
-      for (const e of els) { const y = Math.round(e.getBoundingClientRect().top + window.scrollY); por.set(y, [...(por.get(y) ?? []), e.innerText.split("\n")[0].trim()]); }
-      return [...por.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+      // cada linha de cor é uma grade própria: agrupar pela grade (não pela posição, que oscila durante a animação de entrada)
+      const grades = [];
+      for (const e of els) { const g = e.parentElement; let i = grades.findIndex((x) => x.g === g); if (i < 0) { grades.push({ g, itens: [] }); i = grades.length - 1; } grades[i].itens.push(e.innerText.split("\n")[0].trim()); }
+      return grades.map((x) => x.itens);
     });
     expect(linhas).toEqual([
       ["Crescer", "Planos", "Recebimentos"], // Avaliações só aparece com o recurso ligado; entra no começo desta linha
