@@ -1,4 +1,4 @@
-import { CalendarDays, Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, History, Settings, LifeBuoy, Users, Wallet, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
+import { CalendarDays, Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, Settings, LifeBuoy, Users, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
 
 export interface NavEntry { to: string; icon: LucideIcon; label: string; tone?: "gold"; /** Número de pendências mostrado em bolinha (vem da central de pendências da casa). */ badge?: "mensagens" | "pedidos" | "membros" | "faturas" }
 export interface NavGroup { title?: string; items: NavEntry[] }
@@ -39,10 +39,8 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
       { to: "/mensagens", icon: MessageCircle, label: "Mensagens" },
     ] },
     { title: "Minha conta", items: [
-      { to: "/atividade", icon: History, label: "Minha atividade" },
-      ...(isRemoteAuth ? [{ to: "/mensalidades", icon: Wallet, label: "Mensalidades" }] : []),
       ...(isStaff ? [{ to: "/atendimento", icon: Headset, label: "Atendimento da casa", tone: "gold" as const }] : []),
-      { to: "/perfil", icon: User, label: "Meu perfil" },
+      { to: "/perfil", icon: User, label: "Minha conta" },
     ] },
     { items: [{ to: "/termos", icon: FileText, label: "Termos e normas" }, { to: "/suporte", icon: LifeBuoy, label: "Suporte" }] },
   ];

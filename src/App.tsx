@@ -121,7 +121,7 @@ export default function App() {
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/recebimentos" element={<Recebimentos />} />
         <Route path="/planos" element={<Plans />} />
-        <Route path="/atividade" element={<Activity />} />
+        <Route path="/atividade" element={<Navigate to="/perfil?aba=atividade" replace />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/suporte/chamados" element={<MyCases />} />
         <Route path="/suporte/chamados/:id" element={<MyCases />} />
@@ -133,7 +133,7 @@ export default function App() {
         <Route path="/equipe" element={<Equipe />} />
         <Route path="/equipe/convite/:token" element={<EquipeConvite />} />
         <Route path="/atendimento" element={<Atendimento />} />
-        <Route path="/mensalidades" element={<Mensalidades />} />
+        <Route path="/mensalidades" element={<Navigate to="/perfil?aba=mensalidades" replace />} />
         <Route path="/pessoas" element={<Pessoas />} />
         <Route path="/convite/:token" element={<MemberInvite />} />
         <Route path="/pagamento/retorno" element={<PaymentReturn />} />

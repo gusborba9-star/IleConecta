@@ -27,7 +27,7 @@ export default function MemberInvite() {
     setBusy(false);
     if (err) return void toast.error(err);
     toast.success("Pronto! Você entrou na lista da casa.");
-    nav("/mensalidades", { replace: true });
+    nav("/perfil?aba=mensalidades", { replace: true });
   };
 
   return (
@@ -49,7 +49,7 @@ export default function MemberInvite() {
             ) : preview.alreadyMember ? (
               <>
                 <p className="text-sm text-muted-foreground">Você já está na lista desta casa.</p>
-                <Link to="/mensalidades"><Button>Ver minhas mensalidades</Button></Link>
+                <Link to="/perfil?aba=mensalidades"><Button>Ver minhas mensalidades</Button></Link>
               </>
             ) : (
               <>

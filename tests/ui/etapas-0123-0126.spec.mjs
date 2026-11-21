@@ -145,8 +145,8 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await page.getByLabel("Só vencidas").uncheck();
       await page.getByLabel("Filtrar por tipo").selectOption("mensalidade_vencida");
       await expect(page.getByText("Mensalidade de Bia")).toBeVisible();
-      await page.getByRole("button", { name: /Abrir Mensalidades/ }).click();
-      await expect(page).toHaveURL(/\/mensalidades/);
+      await page.getByRole("button", { name: /Abrir Membros/ }).click();
+      await expect(page).toHaveURL(/\/painel\/membros/);
     });
 
     test("Central da casa: equipe não vê 'a pagar'; vazia; quem não é da casa não vê o cartão; erro do servidor sem detalhe técnico", async ({ page }) => {

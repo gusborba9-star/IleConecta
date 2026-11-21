@@ -5,8 +5,8 @@ export const SCREENS: Screen[] = [
   { path: "/descobrir", name: "Casas", what: "Procurar casas espirituais por cidade e tradição.", audience: "todos" },
   { path: "/rituais", name: "Rituais", what: "Rituais e encontros com vagas; reservar e pagar.", audience: "todos" },
   { path: "/mensagens", name: "Mensagens", what: "Conversas com casas e clientes. No menu ⋮ da conversa: bloquear e Relatar ocorrência.", audience: "todos" },
-  { path: "/atividade", name: "Minha atividade", what: "Reservas, pedidos e pagamentos do cliente; daqui se pede reembolso.", audience: "cliente" },
-  { path: "/mensalidades", name: "Mensalidades", what: "Mensalidades de membros.", audience: "cliente" },
+  { path: "/perfil?aba=atividade", name: "Minha atividade", what: "Reservas, pedidos e pagamentos do cliente; daqui se pede reembolso.", audience: "cliente" },
+  { path: "/perfil?aba=mensalidades", name: "Mensalidades", what: "Mensalidades de membros.", audience: "cliente" },
   { path: "/perfil", name: "Perfil", what: "Dados do perfil e, para casas, a assistente virtual da casa.", audience: "todos" },
   { path: "/planos", name: "Planos e faturas", what: "Planos da casa (Base, Intermediário, Máximo) e limites, em abas: Meu plano, Mudar de plano e Cobranças (faturas, cartão e cadastro).", audience: "casa" },
   { path: "/agenda", name: "Agenda", what: "Agenda da casa: horários de atendimento, próximos atendimentos marcados e datas e eventos do ano. A assistente usa os mesmos horários.", audience: "casa" },
@@ -25,3 +25,7 @@ export const SCREENS: Screen[] = [
   { path: "/recuperar-senha", name: "Recuperar acesso", what: "Pedir por e-mail o link para criar nova senha.", audience: "todos" },
 ];
 export const SCREEN_PATHS = SCREENS.map((s) => s.path);
+
+/** Caminhos antigos que a Conecta (função no servidor) ainda pode propor até ser republicada; levam à mesma tela nova. */
+const OLD_PATHS: Record<string, string> = { "/atividade": "/perfil?aba=atividade", "/mensalidades": "/perfil?aba=mensalidades" };
+export const screenFor = (path: string) => SCREENS.find((s) => s.path === (OLD_PATHS[path] ?? path));

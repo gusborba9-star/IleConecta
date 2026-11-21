@@ -47,7 +47,7 @@ export default function PaymentReturn() {
       <h1 className="font-display font-bold text-2xl">{title}</h1>
       <p className="text-sm text-muted-foreground">{text}</p>
       <div className="flex justify-center gap-2 pt-2">
-        <Link to={isDue ? "/mensalidades" : "/atividade"}><Button>{isDue ? "Ver minhas mensalidades" : "Ver minha atividade"}</Button></Link>
+        <Link to={isDue ? "/perfil?aba=mensalidades" : "/perfil?aba=atividade"}><Button>{isDue ? "Ver minhas mensalidades" : "Ver minha atividade"}</Button></Link>
         <Link to="/"><Button variant="outline">Início</Button></Link>
       </div>
     </Card>
