@@ -1,0 +1,3 @@
+export function dateBlock(iso: string): { day: string; month: string; time: string };
+export interface NearItem { id: string; ownerId: string; houseName: string; title: string; startsAt: string; seatsTotal: number; taken: number; status: string; city: string; left: number; soldOut: boolean; featured: boolean; near: boolean }
+export function pickNearYou(a: { rituals: { id: string; ownerId: string | null; houseName: string; title: string; startsAt: string; seatsTotal: number; taken: number; status: string }[]; cityOf: (ownerId: string) => string | undefined; viewerCity?: string; highlightOwners?: string[]; now?: number; limit?: number }): NearItem[];
