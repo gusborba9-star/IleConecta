@@ -133,7 +133,7 @@ export default function HousePage() {
             </Badge>
           )}
           <div className="absolute right-3 top-3 z-10">
-            <HouseActionsMenu houseId={house.id} houseName={house.name} isOwn={isOwn} remote={isRemoteAuth} />
+            <HouseActionsMenu house={house} isOwn={isOwn} remote={isRemoteAuth} />
           </div>
         </div>
         <div className="relative z-10 px-4 sm:px-6 pb-5 text-center">

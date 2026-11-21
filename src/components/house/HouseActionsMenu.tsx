@@ -6,13 +6,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const ITEM = "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none focus:bg-muted data-[highlighted]:bg-muted";
 
 /** Menu "⋯" do perfil da casa (como o do Facebook): o que sobra de ações sem poluir a tela. */
-export default function HouseActionsMenu({ houseId, houseName, isOwn, remote }: { houseId: string; houseName: string; isOwn: boolean; remote: boolean }) {
+export default function HouseActionsMenu({ house, isOwn, remote }: { house: { id: string; name: string }; isOwn: boolean; remote: boolean }) {
   const nav = useNavigate();
   const share = async () => {
-    const url = `${window.location.origin}/casa/${houseId}`;
+    const url = `${window.location.origin}/casa/${house.id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: houseName, url });
+        await navigator.share({ title: house.name, url });
         return;
       }
       await navigator.clipboard.writeText(url);
