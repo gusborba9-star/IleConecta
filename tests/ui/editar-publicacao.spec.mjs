@@ -121,7 +121,7 @@ test.describe("editar publicação e cuidar dos comentários", () => {
     await more(page, MINE).click();
     await expect(page.getByRole("menuitem", { name: "Ativar comentários" })).toBeVisible();
     await page.getByRole("menuitem", { name: "Ativar comentários" }).click();
-    expect(patches(calls)[1].body).toEqual({ comments_off: false });
+    await expect.poll(() => patches(calls)[1]?.body).toEqual({ comments_off: false });
   });
 
   test("cliente em post com comentários desativados: sem caixa de comentar e com aviso; 'editado' aparece", async ({ page }) => {

@@ -62,7 +62,7 @@
     --muted-foreground: 30 12% 66%;
 
     /* contraste (WCAG AA 4,5:1): botão com texto claro e texto em destaque sobre fundo escuro usam tons diferentes */
-    --primary: 158 55% 38%;
+    --primary: 158 60% 28%;
     --primary-ink: 158 60% 66%;
     --primary-foreground: 40 40% 98%;
 
