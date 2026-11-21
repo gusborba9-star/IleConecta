@@ -24,7 +24,7 @@ export function houseTarget(tab, role) {
   switch (tab) {
     case "atendimento": return { path: staff ? "/atendimento" : "/mensagens", label: "Conversas" };
     case "pedidos": return { path: staff ? "/atendimento" : "/pedidos", label: staff ? "Atendimento" : "Pedidos" };
-    case "mensalidades": return { path: "/mensalidades", label: "Mensalidades" };
+    case "mensalidades": return { path: staff ? "/atendimento?aba=members" : "/painel/membros", label: "Membros" }; // mensalidades dos membros da casa (não a tela do cliente)
     case "moderacao": return { path: "/moderacao", label: "Moderação" };
     case "suporte": return { path: "/suporte/chamados", label: "Meus chamados" };
     case "cobranca": return { path: "/planos?aba=cobrancas", label: "Planos e faturas" };

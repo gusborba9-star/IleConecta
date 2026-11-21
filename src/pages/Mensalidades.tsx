@@ -9,7 +9,7 @@ import { formatBRL } from "@/lib/utils";
 
 const brl = (cents: number) => formatBRL(cents / 100);
 
-export default function Mensalidades() {
+export default function Mensalidades({ embedded = false }: { embedded?: boolean }) {
   const { currentUser, isRemoteAuth } = useApp();
   const [list, setList] = useState<Membership[] | null>(null);
   const [leaving, setLeaving] = useState<Membership | null>(null);
@@ -44,11 +44,13 @@ export default function Mensalidades() {
   };
 
   return (
-    <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="page-hero p-6">
-        <h1 className="font-display font-bold text-2xl">Minhas mensalidades</h1>
-        <p className="text-sm text-muted-foreground mt-1">As casas de que você é membro, o que vence e o seu histórico.</p>
-      </Card>
+    <div className={embedded ? "space-y-4" : "space-y-4 pb-16 lg:pb-4"}>
+      {!embedded && (
+        <Card className="page-hero p-6">
+          <h1 className="font-display font-bold text-2xl">Minhas mensalidades</h1>
+          <p className="text-sm text-muted-foreground mt-1">As casas de que você é membro, o que vence e o seu histórico.</p>
+        </Card>
+      )}
 
       {list === null && <Card className="p-6 text-sm text-muted-foreground">Carregando…</Card>}
       {list?.length === 0 && (

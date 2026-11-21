@@ -49,7 +49,8 @@ test("'a pagar': soma, ordem de vencimento mantida, descontos absurdos e linhas 
 test("destinos: a equipe vai ao atendimento, a titular às telas próprias; tudo aponta para rota que existe", () => {
   assert.equal(houseTarget("atendimento", "equipe").path, "/atendimento");
   assert.equal(houseTarget("atendimento", "titular").path, "/mensagens");
-  assert.equal(houseTarget("mensalidades", "titular").path, "/mensalidades");
+  assert.equal(houseTarget("mensalidades", "titular").path, "/painel/membros");
+  assert.equal(houseTarget("mensalidades", "equipe").path, "/atendimento?aba=members");
   assert.equal(houseTarget("avaliacoes", "titular").path, null); // a tela completa com o id da casa
   assert.equal(houseTarget("x", "titular"), null);
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
@@ -97,7 +98,7 @@ test("houseDestination: cada tipo vai à tela exata; equipe nunca às telas da t
   assert.equal(T("conversa_sem_resposta", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);
   assert.equal(T("assunto_da_assistente", "atendimento", "titular", { personId: ref }), `/mensagens/${ref}`);
   assert.equal(T("conversa_sem_resposta", "atendimento", "titular", { personId: "../x" }), "/mensagens");
-  assert.equal(T("mensalidade_vencida", "mensalidades"), "/mensalidades");
+  assert.equal(T("mensalidade_vencida", "mensalidades"), "/painel/membros");
   assert.equal(T("suporte", "suporte"), "/suporte/chamados");
   // equipe
   assert.equal(T("pedido_para_iniciar", "pedidos", "equipe"), "/atendimento?aba=orders");

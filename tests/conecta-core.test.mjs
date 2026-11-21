@@ -32,7 +32,7 @@ test("todo caminho do mapa de telas existe como rota em App.tsx", () => {
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   for (const p of SCREEN_PATHS) {
     if (p === "/") continue;
-    assert.ok(app.includes(`path="${p}"`), `rota ausente: ${p}`);
+    assert.ok(app.includes(`path="${p.split("?")[0]}"`), `rota ausente: ${p}`);
   }
 });
 
