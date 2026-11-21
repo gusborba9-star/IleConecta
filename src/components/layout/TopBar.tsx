@@ -88,7 +88,7 @@ export default function TopBar() {
             <NotificationBell userId={currentUser.id} />
           ) : (
             <Button variant="ghost" size="icon" aria-label="Notificações indisponíveis na demonstração" disabled title="Notificações ainda não estão implementadas">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5" strokeWidth={1.75} />
             </Button>
           )}
           <div className="relative" ref={box}>
@@ -134,14 +134,18 @@ function TopIcon({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
       className={({ isActive }) =>
         cn(
           "px-2 min-[380px]:px-3 md:px-6 h-11 rounded-full flex items-center gap-2 text-sm font-semibold transition",
-          isActive ? "bg-forest/10 text-forest shadow-[inset_0_-2px_0_hsl(var(--gold))]" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          isActive ? "text-primary shadow-[inset_0_-2px_0_hsl(var(--gold))]" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )
       }
       aria-label={label}
       title={label}
     >
-      <Icon className="h-5 w-5" />
-      <span className="hidden md:inline">{label}</span>
+      {({ isActive }) => (
+        <>
+          <Icon className={cn("h-5 w-5", isActive && "fill-primary/15")} strokeWidth={isActive ? 2.1 : 1.75} aria-hidden />
+          <span className="hidden md:inline">{label}</span>
+        </>
+      )}
     </NavLink>
   );
 }

@@ -75,19 +75,18 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
     setParams((p) => { const n = new URLSearchParams(p); n.delete("novo"); return n; }, { replace: true });
   }, [wantsNew, canPost, setParams]);
 
+  // Cliente sem Momentos para ver: a faixa inteira some (sem título solto nem texto explicando o óbvio).
+  const empty = groups.length === 0 && !canPost && !showUpsell;
+  if (empty && !open && !composing) return null;
+
   return (
     <>
+      <div className="mb-1.5 flex items-center justify-between px-0.5">
+        <h2 className="text-[15px] font-semibold">Momentos das casas</h2>
+        <Link to="/descobrir" className="inline-flex min-h-9 items-center text-xs font-semibold text-primary hover:underline">ver casas</Link>
+      </div>
       <div className="scroll-x -mx-1 px-1" role="region" aria-label="Momentos das casas">
         <div className="flex gap-2.5 pb-1">
-          {/* Cliente: o primeiro cartão é a própria foto (como o "Criar story" do Facebook), e leva à conta. */}
-          {!isHouse && currentUser && (
-            <Link to="/perfil" className="relative shrink-0 w-28 h-44 sm:w-32 sm:h-52 overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <span className="absolute inset-x-0 top-0 bottom-11 block overflow-hidden bg-muted">
-                {currentUser.avatar ? <img src={currentUser.avatar} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center"><Avatar src={currentUser.avatar} name={currentUser.name} size={64} /></span>}
-              </span>
-              <span className="absolute inset-x-0 bottom-0 grid h-11 place-items-center bg-card px-1 text-xs font-semibold">Sua conta</span>
-            </Link>
-          )}
           {canPost && currentUser && (
             <button type="button" onClick={() => setComposing(true)} className="shrink-0 w-28 h-44 sm:w-32 sm:h-52 rounded-2xl border-2 border-dashed border-gold/60 bg-card flex flex-col items-center justify-center gap-2 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
               <span className="h-11 w-11 rounded-full bg-primary/10 text-primary grid place-items-center"><Plus className="h-5 w-5" aria-hidden /></span>
@@ -122,9 +121,6 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
               </button>
             );
           })}
-          {groups.length === 0 && !canPost && !showUpsell && (
-            <p className="min-w-0 flex-1 self-center rounded-2xl border border-dashed border-border px-4 py-3 text-xs text-muted-foreground">Quando as casas que você acompanha publicarem momentos, eles aparecem aqui por 24 horas.</p>
-          )}
         </div>
       </div>
       {open && groups[open.gi] && (

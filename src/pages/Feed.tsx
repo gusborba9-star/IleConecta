@@ -1,5 +1,6 @@
 import { useApp } from "@/contexts/AppContext";
 import MomentsRail from "@/components/feed/MomentsRail";
+import NearYou from "@/components/feed/NearYou";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
 import ClientHome, { ClientSearchBar } from "@/components/feed/ClientHome";
@@ -69,11 +70,8 @@ export default function Feed({ home = false }: { home?: boolean }) {
       )}
       <PostComposer />
 
+      {isClient && isRemoteAuth && <NearYou highlightOwners={promo.highlightOwners} />}
       <div>
-        <div className="mb-1.5 flex items-center justify-between px-0.5">
-          <h2 className="font-display font-bold text-base">Momentos das casas</h2>
-          <Link to="/descobrir" className="inline-flex min-h-9 items-center text-xs text-primary font-semibold hover:underline">ver casas</Link>
-        </div>
         <MomentsRail highlightOwners={promo.highlightOwners} />
       </div>
 

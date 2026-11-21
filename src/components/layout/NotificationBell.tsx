@@ -88,8 +88,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   return (
     <div className="relative">
-      <Button variant="ghost" size="icon" aria-label={unread ? `Notificações (${unread} novas)` : "Notificações"} aria-expanded={open} onClick={toggle} className="relative">
-        <Bell className="h-5 w-5" />
+      <Button variant="ghost" size="icon" aria-label={unread ? `Notificações (${unread} novas)` : "Notificações"} aria-expanded={open} onClick={toggle} className="relative text-muted-foreground hover:text-foreground">
+        <Bell className="h-5 w-5" strokeWidth={1.75} />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold grid place-items-center">
             {unread > 9 ? "9+" : unread}

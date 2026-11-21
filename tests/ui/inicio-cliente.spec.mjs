@@ -23,15 +23,11 @@ test("sem nada acontecendo: sem bloco Para você, sem o cartão antigo, e a orde
   await expect(compor).toHaveAttribute("href", "/descobrir");
   await expect(page.getByRole("link", { name: /^Minha conta, Ana/ })).toHaveAttribute("href", "/perfil");
   await expect(compor).toBeVisible();
-  const trilho = page.getByRole("region", { name: "Momentos das casas" });
-  await expect(trilho).toBeVisible();
-  expect((await compor.boundingBox()).y).toBeLessThan((await trilho.boundingBox()).y);
-  // o primeiro cartão é a foto do cliente e leva à conta; cartões retangulares (mais altos que largos)
-  const meu = trilho.getByRole("link", { name: "Sua conta" });
-  await expect(meu).toHaveAttribute("href", "/perfil");
-  const c = await meu.boundingBox();
-  expect(c.height).toBeGreaterThan(c.width * 1.4);
-  expect(c.height).toBeLessThanOrEqual(180);
+  // sem Momentos para ver, a faixa inteira some: nada de cartão "Sua conta", título solto nem texto explicando o óbvio
+  await expect(page.getByRole("region", { name: "Momentos das casas" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Momentos das casas" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sua conta" })).toHaveCount(0);
+  await expect(page.getByText(/Quando as casas que você acompanha/)).toHaveCount(0);
   await noHScroll(page);
 });
 
