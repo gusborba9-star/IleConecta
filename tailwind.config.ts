@@ -52,7 +52,7 @@ export default {
         },
         danger: "hsl(var(--danger))",
         // As telas usam text-/bg-/border-destructive; sem esta cor elas não geravam estilo nenhum (erros sem vermelho).
-        destructive: { DEFAULT: "hsl(var(--danger))", foreground: "#fff" },
+        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
         success: "hsl(var(--success))",
       },
       borderRadius: {

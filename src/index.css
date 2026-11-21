@@ -38,6 +38,8 @@
     --ring: 10 75% 43%;
 
     --danger: 0 72% 45%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
     --success: 150 55% 30%;
 
     /* Texto sobre fundo dourado claro (selos e itens "crescer"). */
@@ -81,6 +83,9 @@
     --ring: 12 72% 55%;
 
     --danger: 0 72% 58%;
+    /* texto/borda de erro: mais claro no escuro para passar de 4,5:1 sobre o fundo; o fundo vermelho leva texto escuro */
+    --destructive: 0 75% 66%;
+    --destructive-foreground: 22 45% 10%;
     --success: 145 50% 50%;
 
     --gold-ink: 42 80% 72%;
@@ -113,6 +118,8 @@
     --input: 160 16% 18%;
     --ring: 150 55% 62%;
     --danger: 8 70% 62%;
+    --destructive: 8 72% 66%;
+    --destructive-foreground: 160 40% 7%;
     --success: 150 55% 55%;
     --gold-ink: 42 75% 72%;
     --glass: 160 24% 10%;
