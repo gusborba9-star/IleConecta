@@ -21,6 +21,12 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
     };
   }, [isRemoteAuth, refreshKey]);
 
+  // Link "#creditos" (ex.: do aviso da assistente): leva direto aos pacotes quando o cartão aparece.
+  const ready = !!c;
+  useEffect(() => {
+    if (ready && window.location.hash === "#creditos") document.getElementById("creditos")?.scrollIntoView({ block: "start" });
+  }, [ready]);
+
   if (!c) return null;
   const f = franchiseView(c); // plano Grátis: sem franquia do mês; a assistente só responde com pacote
 
@@ -34,7 +40,7 @@ export default function AssistantCreditsCard({ refreshKey = 0 }: { refreshKey?: 
   };
 
   return (
-    <Card className="p-5 space-y-3">
+    <Card id="creditos" className="p-5 space-y-3 scroll-mt-20">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display font-bold text-lg flex-1">Respostas da assistente</h2>
         {f && <Badge tone={f.tone}>{f.exhausted ? "Franquia esgotada" : `${f.pct}% da franquia`}</Badge>}

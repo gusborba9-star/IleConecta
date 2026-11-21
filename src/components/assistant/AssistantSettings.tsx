@@ -29,7 +29,7 @@ export default function AssistantSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [askStopSelling, setAskStopSelling] = useState(false);
-  const [balance, setBalance] = useState(0); // créditos comprados (no Grátis são o único jeito de a assistente responder)
+  const [balance, setBalance] = useState<number | null>(null); // créditos comprados (no Grátis são o único jeito de a assistente responder)
   const [photoBusy, setPhotoBusy] = useState(false);
   const savedPhoto = useRef<string | null>(null); // foto que está salva no banco
   const uploadedPhotos = useRef<string[]>([]); // arquivos enviados nesta tela (os não usados são apagados ao salvar)
@@ -56,7 +56,7 @@ export default function AssistantSettings() {
   if (!isFeatureOn(config, "assistant", userId)) {
     return <Card className="p-5 text-sm text-muted-foreground">A assistente virtual ainda não foi liberada para a sua casa.</Card>;
   }
-  if (loading) return <Card className="p-5 text-sm text-muted-foreground">Carregando assistente…</Card>;
+  if (loading || balance === null) return <Card className="p-5 text-sm text-muted-foreground">Carregando assistente…</Card>;
   if (!cfg) return null;
 
   const patch = (p: Partial<AssistantConfig>) => setCfg({ ...cfg, ...p });
@@ -66,6 +66,24 @@ export default function AssistantSettings() {
   const planCaps = config.plan_matrix.caps[cfg.plan];
   const free = cfg.plan === "gratis";
   const available = planCaps.assistant_replies > 0 || balance > 0;
+  if (!available) {
+    const first = config.pricing.plans.base.name;
+    return (
+      <Card className="p-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Bot className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-bold text-lg flex-1 min-w-0">Assistente virtual</h2>
+          <Badge tone="muted">Plano {FREE_PLAN_NAME}</Badge>
+        </div>
+        <p className="text-sm">Assistente com franquia de respostas a partir do plano <strong>{first}</strong>.</p>
+        <p className="text-sm text-muted-foreground">Para operar a assistente no plano atual, adquira um pacote de respostas (sem assinar nada). Quando houver respostas, as configurações da assistente aparecem aqui.</p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link to="/planos?aba=meu#creditos" className="w-full sm:w-auto"><Button variant="gold" className="w-full">Comprar pacote de respostas</Button></Link>
+          <Link to="/planos?aba=mudar" className="w-full sm:w-auto"><Button variant="outline" className="w-full">Ver planos</Button></Link>
+        </div>
+      </Card>
+    );
+  }
   const fullPlan = planCaps.assistant_discount;
 
   const save = async () => {

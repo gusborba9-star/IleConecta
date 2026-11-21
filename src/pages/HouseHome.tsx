@@ -1,7 +1,7 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Bot, Contact, Crown, Landmark, Megaphone, Newspaper, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera } from "lucide-react";
+import { Bot, MessagesSquare, PenLine, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
@@ -24,6 +24,8 @@ import { fetchMembersOverview } from "@/lib/members";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
 import { useOwnerPlan } from "@/lib/housePlan";
+import { fetchCredits } from "@/lib/aiCredits";
+import type { Credits } from "@/lib/aiCreditsCore";
 import { minPlanFor, type CapFlagKey, type CapNumberKey } from "@/lib/planMatrixCore";
 import { FREE_PLAN_NAME, HOUSE_PLAN_IDS } from "@/lib/platformConfigCore";
 import type { LucideIcon } from "lucide-react";
@@ -37,6 +39,8 @@ interface Tool {
   badge?: number;
   /** Ferramenta de plano: se o plano atual não inclui, o toque abre o aviso do plano. */
   needs?: CapFlagKey | CapNumberKey;
+  /** Assistente: bloqueada no plano sem franquia enquanto não houver pacote de respostas. */
+  assistant?: boolean;
   about?: string;
 }
 
@@ -50,7 +54,9 @@ export default function HouseHome() {
   const nav = useNavigate();
   const house = currentUser?.type === "commercial" ? (currentUser as HouseUser) : null;
   const [termsOk, setTermsOk] = useState(true);
-  const [upsell, setUpsell] = useState<{ title: string; about: string; planName: string; to: string } | null>(null);
+  const [upsell, setUpsell] = useState<{ title: string; about: string; planName: string; to: string; note?: string; buyLabel?: string } | null>(null);
+  // Assistente: no plano sem franquia só opera com pacote de respostas comprado.
+  const [credits, setCredits] = useState<Credits | null | undefined>(undefined);
   const houseId = house?.id;
   const { config } = usePlatformConfig();
   const { plan } = useOwnerPlan(house?.id);
@@ -68,6 +74,13 @@ export default function HouseHome() {
     };
   }, [isRemoteAuth, houseId]);
 
+  useEffect(() => {
+    if (!isRemoteAuth || !houseId) return;
+    let alive = true;
+    void fetchCredits().then((c) => alive && setCredits(c));
+    return () => { alive = false; };
+  }, [isRemoteAuth, houseId]);
+
   if (!house) return null;
   // Link antigo da central de pendências (`/?foco=recebimento`): leva para a tela de recebimentos.
   if (focusReceipt && isRemoteAuth) return <Navigate to="/recebimentos?foco=recebimento" replace />;
@@ -77,20 +90,26 @@ export default function HouseHome() {
     ...(isRemoteAuth ? [{ icon: Contact, title: "Pessoas", tone: "verde" as const, to: "/pessoas" }] : []),
     { icon: Plus, title: "Novo serviço", tone: "verde", to: `/casa/${house.id}?aba=servicos&novo=1` },
     { icon: Sparkles, title: "Novo ritual", tone: "terra", to: `/casa/${house.id}?aba=rituais&novo=1` },
-    { icon: Newspaper, title: "Publicar", tone: "terra", to: "/comunidade?novo=publicacao" },
-    ...(isRemoteAuth ? [{ icon: Camera, title: "Momentos", tone: "terra" as const, to: "/comunidade?novo=momento" }] : []),
+    { icon: MessagesSquare, title: "Comunidade", tone: "terra", to: "/comunidade" },
+    { icon: PenLine, title: "Publicar", tone: "terra", to: "/comunidade?novo=publicacao" },
+    ...(isRemoteAuth ? [{ icon: Camera, title: "Momentos", tone: "terra" as const, to: "/comunidade?novo=momento", needs: "moments_per_day" as CapNumberKey, about: "Publique fotos que ficam 24 horas no topo da Comunidade, com texto e música, para mostrar o dia a dia da casa." }] : []),
     ...(isRemoteAuth && isFeatureOn(config, "reviews", house.id) ? [{ icon: Star, title: "Avaliações", tone: "ouro" as const, to: `/casa/${house.id}?aba=avaliacoes` }] : []),
     { icon: TrendingUp, title: "Crescer", tone: "ouro", to: "/impulsionar" },
     ...(isRemoteAuth ? [{ icon: Crown, title: "Planos", tone: "ouro" as const, to: "/planos", badge: badges.faturas }] : []),
     ...(isRemoteAuth ? [{ icon: Landmark, title: "Recebimentos", tone: "ouro" as const, to: "/recebimentos" }] : []),
     ...(isRemoteAuth ? [{ icon: Megaphone, title: "Divulgação", tone: "terra" as const, to: "/divulgacao", needs: "campaign_links" as CapNumberKey, about: "Crie links próprios por rede social, cartões para postar e respostas rápidas, e veja de onde vêm as visitas." }] : []),
     ...(isRemoteAuth ? [{ icon: UsersRound, title: "Equipe", tone: "verde" as const, to: "/equipe", needs: "included_seats" as CapNumberKey, about: "Convide quem ajuda a atender a casa e escolha o que cada pessoa pode ver." }] : []),
-    { icon: Bot, title: "Assistente", tone: "noite", to: "/perfil" },
+    { icon: Bot, title: "Assistente", tone: "noite", to: "/perfil", assistant: true, about: "Atende seus clientes no chat, orienta e vende pela plataforma, com o que você configurar." },
     { icon: Pencil, title: "Editar página", tone: "verde", to: `/casa/${house.id}?editar=1` },
   ];
 
   // Ferramenta de plano acima do atual: selo discreto com o plano que a inclui (continua clicável; o aviso explica).
   const planTag = (t: Tool): string | null => {
+    if (t.assistant) {
+      const caps = plan ? config.plan_matrix.caps[plan] : null;
+      if (!caps || caps.assistant_replies > 0 || credits === undefined || (credits?.balance ?? 0) > 0) return null;
+      return config.pricing.plans.base.name;
+    }
     if (!t.needs || !plan) return null;
     const min = minPlanFor(config.plan_matrix, t.needs);
     if (!min || HOUSE_PLAN_IDS.indexOf(plan) >= HOUSE_PLAN_IDS.indexOf(min)) return null;
@@ -126,7 +145,7 @@ export default function HouseHome() {
           {tools.map((t) => {
             const pn = planTag(t);
             return pn && t.about
-              ? <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} note={`Plano ${pn}`} onClick={() => setUpsell({ title: t.title, about: t.about!, planName: pn, to: t.to })} />
+              ? <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} note={`Plano ${pn}`} onClick={() => setUpsell({ title: t.title, about: t.about!, planName: pn, to: t.to, ...(t.assistant ? { note: `Assistente com franquia de respostas a partir do plano ${pn}. Para operar a assistente no plano atual, adquira um pacote de respostas.`, buyLabel: "Comprar pacote de respostas" } : {}) })} />
               : <ToolTile key={t.title} icon={t.icon} label={t.title} tone={t.tone} to={t.to} badge={t.badge} />;
           })}
         </div>
@@ -144,6 +163,7 @@ export default function HouseHome() {
         planName={upsell?.planName ?? ""}
         onClose={() => setUpsell(null)}
         onPlans={() => { setUpsell(null); nav("/planos?aba=mudar"); }}
+        onBuy={() => { setUpsell(null); nav("/planos?aba=meu#creditos"); }}
         onHow={() => { const go = upsell?.to; setUpsell(null); if (go) nav(go); }}
       />
 

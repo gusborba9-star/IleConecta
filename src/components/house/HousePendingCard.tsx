@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchHousePending } from "@/lib/housePending";
 import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseDestination, type HousePendingView } from "@/lib/housePendingCore.js";
 import { kindLabel, shortDate } from "@/lib/platformBillingCore.js";
 import { formatBRL } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
+import { fetchCredits } from "@/lib/aiCredits";
+import { canMinimize, minimizeKey, readMinimized, shownPriority, writeMinimized } from "@/lib/pendingMinimizeCore.js";
 
 /** Central de pendências da casa: o que espera a casa (ou a equipe, conforme a permissão), vencidos primeiro, mais o que há a pagar à plataforma. */
 export default function HousePendingCard() {
@@ -17,6 +19,15 @@ export default function HousePendingCard() {
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState("todos");
   const [onlyOverdue, setOnlyOverdue] = useState(false);
+  // Minimizar não esconde: o card vira uma linha compacta com ponto de atenção. Só vale para avisos informativos (ver pendingMinimizeCore).
+  const userId = currentUser?.id ?? "";
+  const [minimized, setMinimized] = useState<Set<string>>(() => readMinimized(userId));
+  const [hasCredits, setHasCredits] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void fetchCredits().then((c) => alive && setHasCredits((c?.packs.length ?? 0) > 0));
+    return () => { alive = false; };
+  }, []);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -31,6 +42,12 @@ export default function HousePendingCard() {
   }, [load]);
 
   const items = useMemo(() => (view ? filterPending(view.items as never, { kind, onlyOverdue }) : []) as HousePendingView["items"], [view, kind, onlyOverdue]);
+  const toggleMin = (key: string) => {
+    const next = new Set(minimized);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setMinimized(next);
+    writeMinimized(userId, next, (view?.items ?? []).map((x) => minimizeKey(x as never)));
+  };
   const toPay = view?.toPay && view.toPay.count > 0 ? view.toPay : null;
   // Quem não é da casa (ou o modo de demonstração) não vê o cartão, em vez de ver um erro.
   if (error && /not_house|Disponível só/i.test(error)) return null;
@@ -74,11 +91,23 @@ export default function HousePendingCard() {
                 <ul className="space-y-2">
                   {items.map((i) => {
                     const target = houseDestination(i, view.role, currentUser?.id);
+                    const key = minimizeKey(i);
+                    const can = canMinimize(i, { hasCredits });
+                    const prio = shownPriority(i, { hasCredits });
+                    if (can && minimized.has(key)) {
+                      return (
+                        <li key={`${i.kind}-${i.refId}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-border px-3 py-1.5 text-sm">
+                          <span className="flex min-w-0 items-center gap-2"><span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-gold" /><span className="min-w-0 break-words font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span><span className="sr-only"> (minimizado)</span></span>
+                          <Button size="sm" variant="ghost" aria-expanded={false} aria-label={`Mostrar: ${HOUSE_KIND_LABELS[i.kind]}`} onClick={() => toggleMin(key)}><ChevronDown className="h-4 w-4" /> Mostrar</Button>
+                        </li>
+                      );
+                    }
                     return (
                       <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone={i.overdue ? "danger" : i.priority === "alta" ? "gold" : "muted"}>{i.overdue ? "Vencida" : HOUSE_PRIORITY_LABELS[i.priority]}</Badge>
-                          <span className="font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span>
+                          <Badge tone={i.overdue ? "danger" : prio === "alta" ? "gold" : "muted"}>{i.overdue ? "Vencida" : HOUSE_PRIORITY_LABELS[prio]}</Badge>
+                          <span className="min-w-0 flex-1 font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span>
+                          {can && <Button size="sm" variant="ghost" aria-expanded aria-label={`Minimizar: ${HOUSE_KIND_LABELS[i.kind]}`} onClick={() => toggleMin(key)}><ChevronUp className="h-4 w-4" /> Minimizar</Button>}
                         </div>
                         <p className="break-words">{i.title}</p>
                         <div className="flex flex-wrap items-center justify-between gap-2">
