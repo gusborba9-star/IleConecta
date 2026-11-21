@@ -1,6 +1,8 @@
-interface Item { kind: string; refId?: string; priority?: string; overdue?: boolean }
-export function canMinimize(item: Item, opts?: { hasCredits?: boolean }): boolean;
-export function minimizeKey(item: Item): string;
-export function shownPriority(item: Item, opts?: { hasCredits?: boolean }): "alta" | "normal";
-export function readMinimized(userId: string, storage?: Pick<Storage, "getItem">): Set<string>;
-export function writeMinimized(userId: string, keys: Iterable<string>, alive: Iterable<string>, storage?: Pick<Storage, "setItem">): void;
+export function shownPriority(item: { kind?: string; priority?: string } | null | undefined, opts?: { hasCredits?: boolean }): "alta" | "normal";
+export function bubbleCount(view: { total?: number; toPay?: { count?: number } | null } | null | undefined): number;
+export function badgeText(n: number): string;
+export function bubbleLabel(n: number, overdue?: number): string;
+export interface BubbleState { minimized: boolean; overdue: number }
+export function readBubble(userId: string, storage?: Pick<Storage, "getItem">): BubbleState;
+export function writeBubble(userId: string, state: BubbleState, storage?: Pick<Storage, "setItem">): void;
+export function shouldReopen(state: BubbleState, overdueNow: number): boolean;

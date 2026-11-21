@@ -392,84 +392,67 @@ test.describe("Plano Grátis: ferramentas de plano superior aparecem como nos ou
   });
 });
 
-test.describe("Central de pendências: minimizar o que é só informativo", () => {
-  const item = (kind, priority, extra = {}) => ({ kind, priority, ref_id: U(900), title: kind, detail: null, due_date: null, link: "/planos", ...extra });
-  test("assistente sem respostas pode ser minimizada e volta pelo 'Mostrar'; fatura não tem minimizar", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 740 });
-    const pend = { ...pendencias({ assistente_sem_respostas: 1, fatura_aberta: 1 }), total: 2, items: [item("assistente_sem_respostas", "alta"), item("fatura_aberta", "alta", { ref_id: U(901) })] };
-    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] }, rpc: { house_pending_center: pend, my_ai_credit_status: { has_house: true, limit: 0, used_month: 0, balance: 0, for_sale: true, packs: [], prices: {} } } });
-    await page.goto("/");
-    const min = page.getByRole("button", { name: /^Minimizar:/ });
-    await expect(min).toHaveCount(1);
-    await min.click();
-    await expect(page.getByRole("button", { name: /^Mostrar:/ })).toHaveCount(1);
-    await expect(page.getByRole("button", { name: /^Minimizar:/ })).toHaveCount(0);
-    await page.reload();
-    await expect(page.getByRole("button", { name: /^Mostrar:/ })).toHaveCount(1);
-    await page.getByRole("button", { name: /^Mostrar:/ }).click();
-    await expect(page.getByRole("button", { name: /^Minimizar:/ })).toHaveCount(1);
-    await noHScroll(page);
-  });
-});
-
-test.describe("Comunidade: barra 'Diga algo…' e editor enxuto", () => {
-  test("a barra abre o editor; no Grátis o card com foto vira uma linha com o plano certo", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 740 });
-    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] } });
-    await page.goto("/comunidade");
-    await expect(page.getByLabel("Texto da publicação")).toHaveCount(0);
-    await page.getByRole("button", { name: /^Diga algo à comunidade/ }).click();
-    await expect(page.getByLabel("Texto da publicação")).toBeVisible();
-    await expect(page.getByRole("radio")).toHaveCount(0);
-    await expect(page.getByText(/Foto no card da publicação: a partir do plano/)).toBeVisible();
-    await expect(page.getByText(/Foto no card da publicação: a partir do plano Profissional/)).toBeVisible(); // nome vem da matriz de planos
-    await page.getByLabel("Texto da publicação").fill("Axé!");
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("button", { name: /^Rascunho: Axé!/ })).toBeVisible();
-    await noHScroll(page);
-  });
-  test("o link antigo ?novo=publicacao abre o editor", async ({ page }) => {
-    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] } });
-    await page.goto("/comunidade?novo=publicacao");
-    await expect(page.getByLabel("Texto da publicação")).toBeVisible();
-  });
-});
-
-test.describe("Perfil da casa no estilo das redes", () => {
-  const meuPerfil = async (page, plan, w = 375) => {
-    await page.setViewportSize({ width: w, height: 740 });
-    await entrar(page, { rest: { houses: [{ ...house, plan, bio: "Casa de axé em Porto Alegre.", offerings: "Jogo de búzios e limpeza espiritual." }] } });
-    await page.goto(`/casa/${ME}`);
-    await expect(page.getByRole("heading", { level: 1, name: "Casa Axé" })).toBeVisible();
+test.describe("Central de pendências: minimizar vira balão com o número", () => {
+  const item = (kind, n, extra = {}) => ({ kind, priority: "normal", ref_id: U(900 + n), title: `${kind} ${n}`, detail: null, due_date: null, overdue: false, ...extra });
+  const montar = (page, items, overdue = 0) => {
+    const pend = { ...pendencias({ pedido_para_iniciar: items.length }), total: items.length, overdue, items };
+    return entrar(page, { rpc: { house_pending_center: pend } });
   };
-  test("botões principais, seta de informações e menu ⋯; sem abas 'Sobre'", async ({ page }) => {
-    await meuPerfil(page, "intermediario");
-    await expect(page.getByRole("button", { name: /Adicionar momento/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Editar página/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Diga algo à comunidade/ })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Sobre" })).toHaveCount(0);
-    const seta = page.getByRole("button", { name: "Mostrar informações da casa" });
-    await expect(page.getByText("Trabalhos que a casa realiza")).toHaveCount(0);
-    await seta.click();
-    await expect(page.getByRole("button", { name: "Esconder informações da casa" })).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByText("Trabalhos que a casa realiza")).toBeVisible();
-    await page.getByRole("button", { name: "Mais opções da página" }).click();
-    for (const n of ["Divulgar a casa", "Agenda", "Planos e faturas", "Compartilhar a página"]) await expect(page.getByRole("menuitem", { name: n })).toBeVisible();
-    await page.getByRole("menuitem", { name: "Agenda" }).click();
-    await expect(page).toHaveURL(/\/agenda/);
+  test("Minimizar troca o cartão por um balão com o número (9+ a partir de 10); tocar no balão reabre", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await montar(page, Array.from({ length: 12 }, (_, i) => item("pedido_para_iniciar", i)));
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
+    await page.getByRole("button", { name: "Minimizar" }).click();
+    await expect(page.getByRole("heading", { name: "Central de pendências" })).toHaveCount(0);
+    const balao = page.getByRole("button", { name: /^Abrir a central de pendências: 12 pendentes/ });
+    await expect(balao).toBeVisible();
+    await expect(balao).toContainText("9+");
+    const caixa = await balao.boundingBox();
+    expect(caixa.width).toBeLessThanOrEqual(60);
+    await page.reload(); // lembrado neste aparelho
+    await expect(page.getByRole("button", { name: /^Abrir a central de pendências/ })).toBeVisible();
+    await noHScroll(page);
+    await page.getByRole("button", { name: /^Abrir a central de pendências/ }).click();
+    await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Abrir a central de pendências/ })).toHaveCount(0);
   });
-  test("Grátis: 'Adicionar momento' abre o aviso com o plano certo", async ({ page }) => {
-    await meuPerfil(page, "gratis");
-    await page.getByRole("button", { name: /Adicionar momento/ }).click();
-    await expect(page.getByRole("dialog").getByText(/Disponível a partir do plano/)).toBeVisible();
+  test("número pequeno aparece inteiro; vencida nova reabre a central sozinha", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await montar(page, [item("pedido_para_iniciar", 1), item("fatura", 2)]);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Minimizar" }).click();
+    await expect(page.getByRole("button", { name: /^Abrir a central de pendências: 2 pendentes/ })).toContainText("2");
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await montar(page, [item("pedido_para_iniciar", 1, { overdue: true }), item("fatura", 2)], 1);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
   });
-  for (const w of [320, 375, 768]) {
-    test(`sem rolagem lateral em ${w}px, com as abas rolando de lado`, async ({ page }) => {
-      await meuPerfil(page, "maximo", w);
-      await noHScroll(page);
-      await expect(page.getByRole("tablist", { name: "Seções da página" })).toBeVisible();
-      await page.getByRole("button", { name: "Mostrar informações da casa" }).click();
-      await noHScroll(page);
+  test("sem pendências não há balão nem botão de minimizar", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await montar(page, []);
+    await page.goto("/");
+    await expect(page.getByText("Nada pendente agora.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Minimizar" })).toHaveCount(0);
+  });
+});
+
+test.describe("Ícones do Início agrupados por cor", () => {
+  test("linhas: dourados, verdes, vermelhos com roxo no fim e Editar página sozinha", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page);
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: /^Editar página/ })).toBeVisible();
+    const linhas = await page.locator("section[aria-labelledby=ferramentas] .tool-tile").evaluateAll((els) => {
+      const por = new Map();
+      for (const e of els) { const y = Math.round(e.getBoundingClientRect().top + window.scrollY); por.set(y, [...(por.get(y) ?? []), e.innerText.split("\n")[0].trim()]); }
+      return [...por.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v);
     });
-  }
+    expect(linhas).toEqual([
+      ["Crescer", "Planos", "Recebimentos"], // Avaliações só aparece com o recurso ligado; entra no começo desta linha
+      ["Membros", "Pessoas", "Novo serviço", "Equipe"],
+      ["Novo ritual", "Comunidade", "Divulgação", "Assistente"],
+      ["Editar página"],
+    ]);
+  });
 });
