@@ -11,7 +11,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Fraunces", "Georgia", "serif"],
+        display: ["DM Sans", "system-ui", "sans-serif"],
+        brand: ["Fraunces", "Georgia", "serif"],
         sans: ["'DM Sans'", "system-ui", "sans-serif"],
       },
       colors: {
