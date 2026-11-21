@@ -19,6 +19,7 @@ import {
   type PermKey, type StaffConversation, type StaffDate, type StaffLink, type StaffMessage, type StaffOrder,
 } from "@/lib/staff";
 import { cn, formatBRL, timeAgo } from "@/lib/utils";
+import { clockTime, dayLabel, decorateMessages } from "@/lib/chatTimeCore.js";
 
 const STATUS: Record<string, string> = { aguardando_pagamento: "Aguardando pagamento", confirmado: "Confirmado", em_andamento: "Em andamento", concluido: "Concluído", cancelado: "Cancelado" };
 const SITUATION: Record<string, string> = { vencida: "Em atraso", perto: "Vence em breve", em_dia: "Em dia", sem_mensalidade: "Sem mensalidade" };
@@ -91,33 +92,42 @@ function Conversations({ link }: { link: StaffLink }) {
       </Card>
     );
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-border p-3">
-        <Button size="icon" variant="ghost" aria-label="Voltar às conversas" onClick={() => setOpen(null)}><ArrowLeft className="h-4 w-4" /></Button>
-        <div className="font-semibold">{open.otherName}</div>
-      </div>
+    // Mesma conversa limpa da casa: no celular ocupa a largura toda, sem moldura de cartão.
+    <div className="max-md:-mx-3">
+    <Card className="overflow-hidden max-md:rounded-none max-md:border-x-0 max-md:shadow-none">
+      <header className="flex items-center gap-2 border-b border-border/70 bg-card px-2 py-2 sm:px-3">
+        <button type="button" aria-label="Voltar às conversas" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(null)}><ArrowLeft className="h-5 w-5" aria-hidden /></button>
+        <div className="min-w-0 flex-1">
+          <h2 className="block max-w-full break-words line-clamp-3 text-[15px] font-semibold leading-tight sm:text-base">{open.otherName}</h2>
+          <div className="mt-0.5 text-xs leading-tight text-muted-foreground">Você atende pela casa</div>
+        </div>
+      </header>
       <HandoffBar conversationId={open.id} handoff={handoff} viewer="house" canAct={canReply} onChange={() => void loadThread(open)} />
-      <div ref={listRef} className="h-[50dvh] overflow-y-auto p-3 space-y-2">
+      <div ref={listRef} className="h-[55dvh] overflow-y-auto overscroll-contain bg-muted/30 px-2.5 py-3 sm:px-4" aria-live="polite">
         {msgs.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">Nenhuma mensagem ainda.</p>}
-        {msgs.map((m) => (
-          <div key={m.id} className={cn("flex", m.fromHouse ? "justify-end" : "justify-start")}>
-            <div className={cn("max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap", m.fromHouse ? "bg-forest text-forest-foreground rounded-br-md" : "bg-card border border-border rounded-bl-md")}>
-              {m.fromHouse && <div className="text-[10px] font-semibold opacity-80 mb-0.5">{m.fromAssistant ? "Assistente da casa" : m.staffName ? `Atendido por ${m.staffName}` : "Casa"}</div>}
+        {decorateMessages(msgs, (m) => (m.fromAssistant ? "assistente" : m.fromHouse ? `casa:${m.staffName ?? ""}` : "cliente")).map(({ message: m, newDay, sameSenderAsPrev }) => (
+          <div key={m.id} className={cn("flex flex-col", m.fromHouse ? "items-end" : "items-start", sameSenderAsPrev ? "mt-0.5" : "mt-2.5 first:mt-0")}>
+            {newDay && <div className="my-2 self-center rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow-card">{dayLabel(m.createdAt)}</div>}
+            <div className={cn("max-w-[88%] sm:max-w-[75%] min-w-0 px-3 py-1.5 rounded-2xl text-[15px] leading-snug whitespace-pre-wrap break-words", m.fromHouse ? "bg-forest text-forest-foreground rounded-br-md shadow-card" : "bg-card rounded-bl-md shadow-card")}>
+              {m.fromHouse && <div className="text-[11px] font-semibold text-gold-ink mb-0.5">{m.fromAssistant ? "Assistente da casa" : m.staffName ? `Atendido por ${m.staffName}` : "Casa"}</div>}
               {m.attachmentPath && m.attachmentType && <div className="mb-1"><ChatAttachment path={m.attachmentPath} type={m.attachmentType} name={m.attachmentName ?? "arquivo"} size={m.attachmentSize} /></div>}
               {!(m.attachmentPath && isPlaceholderText(m.text)) && m.text}
-              <div className={cn("text-[10px] mt-1", m.fromHouse ? "text-right opacity-70" : "text-muted-foreground")}>{timeAgo(m.createdAt)}</div>
+              <div className={cn("mt-0.5 flex justify-end text-[11px] leading-none", m.fromHouse ? "text-forest-foreground/75" : "text-muted-foreground")}><time dateTime={m.createdAt}>{clockTime(m.createdAt)}</time></div>
             </div>
           </div>
         ))}
       </div>
       {canReply ? (
-        <div className="flex items-center gap-2 border-t border-border p-3">
-          <input aria-label="Mensagem" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void send()}
-            placeholder="Responder pela casa" className="h-11 flex-1 min-w-0 rounded-[14px] border border-input bg-card px-4 text-sm" />
-          <Button size="icon" aria-label="Enviar" disabled={busy || !text.trim()} onClick={() => void send()}><Send className="h-4 w-4" /></Button>
+        <div className="flex items-end gap-2 border-t border-border/70 bg-card px-2 py-2 sm:px-3">
+          <div className="flex min-w-0 flex-1 items-center rounded-full bg-muted px-4 focus-within:ring-2 focus-within:ring-[hsl(var(--ring))]">
+            <input aria-label="Mensagem" value={text} maxLength={1000} enterKeyHint="send" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void send()}
+              placeholder="Responder pela casa" className="h-11 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" />
+          </div>
+          <Button size="icon" className="h-11 w-11 shrink-0 rounded-full" aria-label="Enviar" disabled={busy || !text.trim()} onClick={() => void send()}><Send className="h-5 w-5" /></Button>
         </div>
       ) : <p className="border-t border-border p-3 text-center text-xs text-muted-foreground">Seu acesso não inclui responder.</p>}
     </Card>
+    </div>
   );
 }
 
