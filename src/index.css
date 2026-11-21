@@ -256,3 +256,14 @@
 @layer utilities {
   .dark .text-primary { color: hsl(var(--primary-ink)); }
 }
+
+/* Avisos do sistema (sonner): o botão de fechar fica dentro do cartão, à direita, discreto. */
+.ic-toaster [data-sonner-toast] [data-close-button] {
+  left: auto; right: 10px; top: 10px; transform: none;
+  width: 28px; height: 28px; border-radius: 9999px; border: 0;
+  background: transparent !important; color: hsl(var(--muted-foreground)); box-shadow: none;
+  display: grid; place-items: center;
+}
+.ic-toaster [data-sonner-toast] [data-close-button]:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+.ic-toaster [data-sonner-toast] [data-close-button]:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .ic-toaster [data-sonner-toast] { transition: none !important; animation: none !important; } }
