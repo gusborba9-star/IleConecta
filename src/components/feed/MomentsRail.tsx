@@ -83,7 +83,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
           {!isHouse && currentUser && (
             <Link to="/perfil" className="relative shrink-0 w-28 h-44 sm:w-32 sm:h-52 overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <span className="absolute inset-x-0 top-0 bottom-11 block overflow-hidden bg-muted">
-                {currentUser.avatar ? <img src={currentUser.avatar} alt="" aria-hidden decoding="async" draggable={false} className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center"><Avatar src={currentUser.avatar} name={currentUser.name} size={64} /></span>}
+                {currentUser.avatar ? <img src={currentUser.avatar} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center"><Avatar src={currentUser.avatar} name={currentUser.name} size={64} /></span>}
               </span>
               <span className="absolute inset-x-0 bottom-0 grid h-11 place-items-center bg-card px-1 text-xs font-semibold">Sua conta</span>
             </Link>
