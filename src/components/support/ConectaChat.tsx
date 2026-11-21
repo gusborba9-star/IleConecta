@@ -7,7 +7,7 @@ import ReportOccurrence from "@/components/support/ReportOccurrence";
 import { askConecta, type ConectaAction, type ConectaTurn } from "@/lib/conecta";
 import { supabase } from "@/lib/supabase";
 import { MAX_INPUT_CHARS } from "@/lib/conectaCore.js";
-import { SCREENS } from "@/content/screens";
+import { screenFor } from "@/content/screens";
 
 interface Bubble extends ConectaTurn { actions?: ConectaAction[] }
 const HELLO: Bubble = { role: "assistant", content: "Oi! Eu sou a Conecta, a assistente de apoio do Ilê Conecta. Pergunte sobre a plataforma, a sua conta, pagamentos ou regras. Se for algo que só a equipe resolve, eu preparo o chamado para você revisar e enviar." };
@@ -52,7 +52,7 @@ export default function ConectaChat() {
             {t.actions?.map((a, j) => a.type === "propose_case" ? (
               <div key={j} className="mt-2"><Button size="sm" onClick={() => setDraft(a)}>Abrir chamado (você revisa antes de enviar)</Button></div>
             ) : a.type === "go_to" ? (
-              <div key={j} className="mt-2"><Link to={a.path} className="text-primary font-semibold hover:underline">Ir para {SCREENS.find((s) => s.path === a.path)?.name ?? "a tela"} →</Link></div>
+              <div key={j} className="mt-2"><Link to={a.path} className="text-primary font-semibold hover:underline">Ir para {screenFor(a.path)?.name ?? "a tela"} →</Link></div>
             ) : (
               <div key={j} className="mt-2"><Link to="/suporte/chamados" className="text-primary font-semibold hover:underline">Ver em Meus chamados →</Link></div>
             ))}

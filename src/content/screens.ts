@@ -25,3 +25,7 @@ export const SCREENS: Screen[] = [
   { path: "/recuperar-senha", name: "Recuperar acesso", what: "Pedir por e-mail o link para criar nova senha.", audience: "todos" },
 ];
 export const SCREEN_PATHS = SCREENS.map((s) => s.path);
+
+/** Caminhos antigos que a Conecta (função no servidor) ainda pode propor até ser republicada; levam à mesma tela nova. */
+const OLD_PATHS: Record<string, string> = { "/atividade": "/perfil?aba=atividade", "/mensalidades": "/perfil?aba=mensalidades" };
+export const screenFor = (path: string) => SCREENS.find((s) => s.path === (OLD_PATHS[path] ?? path));
