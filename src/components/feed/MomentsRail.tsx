@@ -78,15 +78,24 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
   return (
     <>
       <div className="scroll-x -mx-1 px-1" role="region" aria-label="Momentos das casas">
-        <div className="flex gap-3 pb-1">
+        <div className="flex gap-2.5 pb-1">
+          {/* Cliente: o primeiro cartão é a própria foto (como o "Criar story" do Facebook), e leva à conta. */}
+          {!isHouse && currentUser && (
+            <Link to="/perfil" className="relative shrink-0 w-28 h-44 sm:w-32 sm:h-52 overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span className="absolute inset-x-0 top-0 bottom-11 block overflow-hidden bg-muted">
+                {currentUser.avatar ? <img src={currentUser.avatar} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center"><Avatar src={currentUser.avatar} name={currentUser.name} size={64} /></span>}
+              </span>
+              <span className="absolute inset-x-0 bottom-0 grid h-11 place-items-center bg-card px-1 text-xs font-semibold">Sua conta</span>
+            </Link>
+          )}
           {canPost && currentUser && (
-            <button type="button" onClick={() => setComposing(true)} className="shrink-0 w-32 h-52 rounded-2xl border-2 border-dashed border-gold/60 bg-card flex flex-col items-center justify-center gap-2 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
+            <button type="button" onClick={() => setComposing(true)} className="shrink-0 w-28 h-44 sm:w-32 sm:h-52 rounded-2xl border-2 border-dashed border-gold/60 bg-card flex flex-col items-center justify-center gap-2 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
               <span className="h-11 w-11 rounded-full bg-primary/10 text-primary grid place-items-center"><Plus className="h-5 w-5" aria-hidden /></span>
               <span className="text-xs font-semibold text-center px-2">Criar momento</span>
             </button>
           )}
           {showUpsell && (
-            <Link to="/planos?aba=mudar" className="shrink-0 w-32 h-52 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-2 px-2 text-center hover:bg-muted/40">
+            <Link to="/planos?aba=mudar" className="shrink-0 w-28 h-44 sm:w-32 sm:h-52 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-2 px-2 text-center hover:bg-muted/40">
               <span className="h-11 w-11 rounded-full bg-muted grid place-items-center"><Lock className="h-5 w-5 text-muted-foreground" aria-hidden /></span>
               <span className="text-xs font-semibold">Momentos a partir do plano {minName}</span>
               <span className="text-[11px] text-primary font-semibold">Ver planos</span>
@@ -101,7 +110,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
                 key={g.ownerId} type="button" data-testid="moment-card"
                 aria-label={`Ver momentos de ${g.name}${done ? " (já vistos)" : ""}`}
                 onClick={() => setOpen({ gi, ii: startIndex(g, seen) })}
-                className="relative shrink-0 w-32 h-52 rounded-2xl overflow-hidden shadow-card text-left focus-visible:ring-2 focus-visible:ring-ring bg-[#0b2a1f]"
+                className="relative shrink-0 w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden shadow-card text-left focus-visible:ring-2 focus-visible:ring-ring bg-[#0b2a1f]"
               >
                 {!broken[thumb] && <img src={thumb} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken((b) => ({ ...b, [thumb]: true }))} />}
                 <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/5 from-40% to-black/70" />
@@ -114,7 +123,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
             );
           })}
           {groups.length === 0 && !canPost && !showUpsell && (
-            <p className="w-full rounded-2xl border border-dashed border-border grid place-items-center text-center text-xs text-muted-foreground px-4 py-4">Quando as casas que você acompanha publicarem momentos, eles aparecem aqui por 24 horas.</p>
+            <p className="min-w-0 flex-1 self-center rounded-2xl border border-dashed border-border px-4 py-3 text-xs text-muted-foreground">Quando as casas que você acompanha publicarem momentos, eles aparecem aqui por 24 horas.</p>
           )}
         </div>
       </div>

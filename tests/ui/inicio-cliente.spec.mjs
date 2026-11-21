@@ -11,17 +11,27 @@ const venc = [{ member_id: U(40), house_name: "Casa de Iansã", house_slug: "ian
 
 const montar = (page, { orders = [], memberships = [] } = {}) => api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [], service_orders: orders, reservations: [] }, rpc: { my_memberships: memberships, report_client_error: true } });
 
-test("sem nada acontecendo: só os atalhos, sem o cartão antigo 'Comunidade'", async ({ page }) => {
+test("sem nada acontecendo: sem bloco Para você, sem o cartão antigo, e a ordem é busca → momentos → feed", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await montar(page);
   await page.goto("/");
-  await expect(page.getByRole("navigation", { name: "Atalhos" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Para você" })).toHaveCount(0);
   await expect(page.getByText("O que as casas estão compartilhando")).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1, name: "Início" })).toHaveCount(1);
-  for (const [nome, rota] of [["Casas", "/descobrir"], ["Rituais", "/rituais"], ["Pedidos", "/perfil?aba=atividade"], ["Minha conta", "/perfil"]]) {
-    await expect(page.getByRole("navigation", { name: "Atalhos" }).getByRole("link", { name: nome })).toHaveAttribute("href", rota);
-  }
+  await expect(page.getByRole("navigation", { name: "Atalhos", exact: true })).toHaveCount(0); // os caminhos ficam na barra de cima, sem repetir
+  const compor = page.getByRole("link", { name: /Buscar casas e rituais/ });
+  await expect(compor).toHaveAttribute("href", "/descobrir");
+  await expect(page.getByRole("link", { name: /^Minha conta, Ana/ })).toHaveAttribute("href", "/perfil");
+  await expect(compor).toBeVisible();
+  const trilho = page.getByRole("region", { name: "Momentos das casas" });
+  await expect(trilho).toBeVisible();
+  expect((await compor.boundingBox()).y).toBeLessThan((await trilho.boundingBox()).y);
+  // o primeiro cartão é a foto do cliente e leva à conta; cartões retangulares (mais altos que largos)
+  const meu = trilho.getByRole("link", { name: "Sua conta" });
+  await expect(meu).toHaveAttribute("href", "/perfil");
+  const c = await meu.boundingBox();
+  expect(c.height).toBeGreaterThan(c.width * 1.4);
+  expect(c.height).toBeLessThanOrEqual(180);
   await noHScroll(page);
 });
 

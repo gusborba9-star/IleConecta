@@ -2,7 +2,7 @@ import { useApp } from "@/contexts/AppContext";
 import MomentsRail from "@/components/feed/MomentsRail";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
-import ClientHome from "@/components/feed/ClientHome";
+import ClientHome, { ClientSearchBar } from "@/components/feed/ClientHome";
 import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
@@ -51,6 +51,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
+      {isClient && <ClientSearchBar />}
       {isClient && <ClientHome />}
       {isClient && <PendingReviewsCard />}
       {isClient ? <h1 className="sr-only">Início</h1> : (
@@ -58,15 +59,15 @@ export default function Feed({ home = false }: { home?: boolean }) {
           <h1 className="font-display font-bold text-xl break-words">Comunidade</h1>
         </Card>
       )}
+      <PostComposer />
+
       <div>
-        <div className="flex items-end justify-between mb-2">
-          <h2 className="font-display font-bold text-xl">Momentos das casas</h2>
+        <div className="mb-1.5 flex items-center justify-between px-0.5">
+          <h2 className="font-display font-bold text-base">Momentos das casas</h2>
           <Link to="/descobrir" className="inline-flex min-h-9 items-center text-xs text-primary font-semibold hover:underline">ver casas</Link>
         </div>
         <MomentsRail highlightOwners={promo.highlightOwners} />
       </div>
-
-      <PostComposer />
 
       {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
 
