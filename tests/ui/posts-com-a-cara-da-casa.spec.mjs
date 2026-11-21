@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { api, U, noHScroll } from "./_api.mjs";
+import { api, U, noHScroll, abrirEditor } from "./_api.mjs";
 
 const OWNER = U(1), HID = U(60);
 const profile = { id: OWNER, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
@@ -19,6 +19,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("Profissional: 3 opções, prévia ao vivo, confirma direito, envia foto e publica com os campos certos", async ({ page }) => {
     const calls = await setup(page, "intermediario");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     const area = page.getByLabel("Texto da publicação");
     await expect(radio(page, "Card normal")).toBeEnabled();
     await expect(radio(page, "Imagem no card todo")).toBeEnabled();
@@ -50,13 +51,17 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
     expect(row.card_image_path).toBe(up.name.replace("post-images/", ""));
     expect(row.card_scrim).toBeGreaterThanOrEqual(54); // foto branca: véu forte
     await expect(page.getByText("Publicação enviada.")).toBeVisible();
-    await expect(area).toHaveValue("");
-    await expect(page.getByTestId("card-preview")).toHaveCount(0); // voltou ao card normal
+    await expect(area).toHaveCount(0); // o editor fecha ao publicar
+    await expect(page.getByTestId("card-preview")).toHaveCount(0);
+    await abrirEditor(page);
+    await expect(area).toHaveValue(""); // reabrindo: campo limpo e de volta ao card normal
+    await expect(radio(page, "Card normal")).toHaveAttribute("aria-checked", "true");
   });
 
   test("foto escura pede véu leve (35 %); foto clara pede véu forte", async ({ page }) => {
     const calls = await setup(page, "maximo");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#101010"));
@@ -70,10 +75,11 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("Essencial: opções de estilo com cadeado e caminho para os planos; card normal continua igual", async ({ page }) => {
     const calls = await setup(page, "base");
     await page.goto("/comunidade");
-    await expect(radio(page, "Imagem no card todo")).toBeDisabled();
-    await expect(radio(page, "Imagem em parte do card")).toBeDisabled();
-    await expect(page.getByText(/Posts com a cara da sua casa/).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Ver planos" })).toHaveAttribute("href", "/planos");
+    await abrirEditor(page);
+    // sem a ferramenta no plano: nenhuma opção de card, só uma linha com o plano e o caminho para os planos
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    await expect(page.getByText(/Foto no card da publicação: a partir do plano Profissional/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver planos" })).toHaveAttribute("href", "/planos?aba=mudar");
     await page.getByLabel("Texto da publicação").fill("Só texto, como sempre.");
     await page.getByRole("button", { name: "Publicar" }).click();
     await expect.poll(() => inserts(calls).length).toBe(1);
@@ -85,13 +91,16 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("Grátis também vê o cadeado (e nada é enviado)", async ({ page }) => {
     const calls = await setup(page, "gratis");
     await page.goto("/comunidade");
-    await expect(radio(page, "Imagem no card todo")).toBeDisabled();
+    await abrirEditor(page);
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    await expect(page.getByText(/Foto no card da publicação: a partir do plano/)).toBeVisible();
     expect(calls.filter((c) => c.kind === "storage")).toHaveLength(0);
   });
 
   test("texto passando de 400 no card: contador vermelho e recusa antes de enviar a foto", async ({ page }) => {
     const calls = await setup(page, "intermediario");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("a".repeat(401));
     await radio(page, "Imagem em parte do card").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#808080"));
@@ -106,6 +115,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("foto inválida (PDF disfarçado ou grande demais) é recusada na hora", async ({ page }) => {
     await setup(page, "intermediario");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles({ name: "x.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") });
     await expect(page.getByText("Use uma imagem JPG, PNG ou WebP.")).toBeVisible();
@@ -117,6 +127,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("envio da foto falha: avisa, não cria o post", async ({ page }) => {
     const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, houses: [house("maximo")], posts: (b) => (b ? { id: U(900), created_at: "x" } : []) }, storageOk: { status: 500, body: { message: "boom" } } });
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#333333"));
@@ -129,6 +140,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
   test("servidor recusa o post (ex.: plano mudou): a foto enviada é apagada e o motivo aparece", async ({ page }) => {
     const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, houses: [house("maximo")], posts: (b) => (b ? { status: 400, body: { code: "P0001", message: "Posts com a cara da sua casa estão disponíveis a partir do plano Profissional." } } : []) } });
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#333333"));
@@ -149,6 +161,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
     ];
     await setup(page, "maximo", { list });
     await page.goto("/comunidade");
+    await abrirEditor(page);
     const total = page.locator('[data-card="total"]');
     await expect(total).toHaveCount(1);
     await expect(total).toContainText("<img src=x onerror=window.__xss=1> Axé");
@@ -167,6 +180,7 @@ test.describe("posts com a cara da sua casa (app inteiro)", () => {
     await page.setViewportSize({ width: 360, height: 740 });
     await setup(page, "intermediario");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto longo ".repeat(25));
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#aa5500"));

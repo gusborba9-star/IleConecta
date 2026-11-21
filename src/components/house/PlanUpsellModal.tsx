@@ -6,7 +6,7 @@ export default function PlanUpsellModal({ tool, planName, onClose, onPlans, onHo
   planName: string;
   onClose: () => void;
   onPlans: () => void;
-  onHow: () => void;
+  onHow?: () => void;
   /** Quando a ferramenta tem um jeito de usar no plano atual (ex.: pacotes de respostas da assistente). */
   onBuy?: () => void;
 }) {
@@ -18,8 +18,8 @@ export default function PlanUpsellModal({ tool, planName, onClose, onPlans, onHo
           <p className="rounded-2xl bg-gold/15 p-3 text-sm">{tool.note ?? <>Disponível a partir do plano <strong>{planName}</strong>.</>}</p>
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             {tool.buyLabel && onBuy ? <Button variant="gold" className="w-full sm:w-auto" onClick={onBuy}>{tool.buyLabel}</Button> : null}
-            <Button variant={tool.buyLabel && onBuy ? "outline" : "gold"} className="w-full sm:w-auto" onClick={onPlans}>Ver planos</Button>
-            {tool.buyLabel && onBuy ? null : <Button variant="outline" className="w-full sm:w-auto" onClick={onHow}>Ver como funciona</Button>}
+            <Button variant={(tool.buyLabel && onBuy) ? "outline" : "gold"} className="w-full sm:w-auto" onClick={onPlans}>Ver planos</Button>
+            {(tool.buyLabel && onBuy) || !onHow ? null : <Button variant="outline" className="w-full sm:w-auto" onClick={onHow}>Ver como funciona</Button>}
           </div>
         </div>
       )}

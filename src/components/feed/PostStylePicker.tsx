@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/base";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { minPlanFor } from "@/lib/planMatrixCore";
+import { FREE_PLAN_NAME } from "@/lib/platformConfigCore";
 import StyledPostBody from "@/components/feed/StyledPostBody";
 import LettersPicker from "@/components/feed/LettersPicker";
 import { fitToMode, scrimPctFor } from "@/lib/postLettersCore";
@@ -17,6 +20,9 @@ import { toast } from "sonner";
  */
 export default function PostStylePicker({ value, onChange, text, allowed, houseName }: { value: StyleDraft; onChange: (v: StyleDraft) => void; text: string; allowed: boolean; houseName: string }) {
   const file = useRef<HTMLInputElement>(null);
+  const { config } = usePlatformConfig();
+  const minPlan = minPlanFor(config.plan_matrix, "styled_posts");
+  const minName = !minPlan ? null : minPlan === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[minPlan].name;
   const [busy, setBusy] = useState(false);
   const urlRef = useRef<string | null>(null);
   useEffect(() => { urlRef.current = value.image?.previewUrl ?? null; }, [value.image]);
@@ -36,24 +42,27 @@ export default function PostStylePicker({ value, onChange, text, allowed, houseN
 
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-semibold">Como a publicação aparece</legend>
-      <div role="radiogroup" aria-label="Estilo do card" className="grid gap-2 sm:grid-cols-3">
-        {CARD_MODES.map((m) => {
-          const locked = m.id !== "normal" && !allowed;
-          const on = value.mode === m.id;
-          return (
-            <button key={m.id} type="button" role="radio" aria-checked={on} disabled={locked} onClick={() => setMode(m.id)}
-              className={`text-left rounded-xl border px-3 py-2 min-h-11 text-sm transition ${on ? "border-primary bg-primary/10" : "border-border"} ${locked ? "opacity-60 cursor-not-allowed" : "hover:bg-muted"}`}>
-              <span className="flex items-center gap-1 font-semibold">{locked && <Lock className="h-3.5 w-3.5" aria-hidden />}{m.label}</span>
-              <span className="block text-xs text-muted-foreground">{m.desc}</span>
-            </button>
-          );
-        })}
-      </div>
-      {!allowed && (
-        <p className="text-xs text-muted-foreground">
-          <strong>Posts com a cara da sua casa</strong>: use a foto do seu templo ou altar como fundo da publicação. Disponível a partir do plano Profissional.{" "}
-          <Link to="/planos" className="text-primary font-semibold">Ver planos</Link>
+      {allowed ? (
+        <>
+          <legend className="text-sm font-semibold">Como a publicação aparece</legend>
+          <div role="radiogroup" aria-label="Estilo do card" className="grid gap-2 sm:grid-cols-3">
+            {CARD_MODES.map((m) => {
+              const on = value.mode === m.id;
+              return (
+                <button key={m.id} type="button" role="radio" aria-checked={on} onClick={() => setMode(m.id)}
+                  className={`text-left rounded-xl border px-3 py-2 min-h-11 text-sm transition ${on ? "border-primary bg-primary/10" : "border-border"} hover:bg-muted`}>
+                  <span className="block font-semibold">{m.label}</span>
+                  <span className="block text-xs text-muted-foreground">{m.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span className="min-w-0 break-words">Foto no card da publicação: a partir do plano <strong>{minName ?? "superior"}</strong>.</span>
+          <Link to="/planos?aba=mudar" className="font-semibold text-primary">Ver planos</Link>
         </p>
       )}
       {styled && allowed && (

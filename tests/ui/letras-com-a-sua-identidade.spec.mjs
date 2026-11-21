@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { api, U, noHScroll } from "./_api.mjs";
+import { api, U, noHScroll, abrirEditor } from "./_api.mjs";
 
 const OWNER = U(1), HID = U(60);
 const profile = { id: OWNER, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
@@ -19,6 +19,7 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
   test("escolhe fonte, tamanho, cor, alinhamento, posição e negrito; a prévia muda ao vivo e o que vai para o banco é só a escolha", async ({ page }) => {
     const calls = await setup(page, "intermediario");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Hoje tem gira. Axé!");
     await expect(page.getByTestId("letters-picker")).toHaveCount(0); // card normal: sem letras
     await radio(page, "Imagem no card todo").click();
@@ -60,6 +61,7 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
   test("trocar para o card parcial: só cores escuras, sem posição, cor clara escolhida cai; papel claro sob o texto", async ({ page }) => {
     const calls = await setup(page, "maximo");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Mensagem do dia");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#808080"));
@@ -84,6 +86,7 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
   test("Voltar ao padrão limpa tudo; clicar de novo na escolha desmarca", async ({ page }) => {
     await setup(page, "maximo");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#202020"));
@@ -105,6 +108,7 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
       row({ id: U(503), content: "Post sem letras", card_style: "total", card_image_path: OK_PATH }),
     ]);
     await page.goto("/comunidade");
+    await abrirEditor(page);
     const a = page.locator(`#post-${U(501)} [data-letters="1"]`);
     await expect(a).toHaveCSS("font-family", /Dancing Script/);
     await expect(a).toHaveCSS("color", "rgb(255, 211, 221)");
@@ -121,6 +125,7 @@ test.describe("letras com a sua identidade (app inteiro)", () => {
     await page.setViewportSize({ width: 360, height: 740 });
     await setup(page, "maximo");
     await page.goto("/comunidade");
+    await abrirEditor(page);
     await page.getByLabel("Texto da publicação").fill("Texto");
     await radio(page, "Imagem no card todo").click();
     await page.getByLabel("Foto do card").setInputFiles(await photo(page, "#303030"));

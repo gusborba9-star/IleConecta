@@ -1,7 +1,7 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Bot, MessagesSquare, PenLine, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound, Camera } from "lucide-react";
+import { Bot, MessagesSquare, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
@@ -91,8 +91,6 @@ export default function HouseHome() {
     { icon: Plus, title: "Novo serviço", tone: "verde", to: `/casa/${house.id}?aba=servicos&novo=1` },
     { icon: Sparkles, title: "Novo ritual", tone: "terra", to: `/casa/${house.id}?aba=rituais&novo=1` },
     { icon: MessagesSquare, title: "Comunidade", tone: "terra", to: "/comunidade" },
-    { icon: PenLine, title: "Publicar", tone: "terra", to: "/comunidade?novo=publicacao" },
-    ...(isRemoteAuth ? [{ icon: Camera, title: "Momentos", tone: "terra" as const, to: "/comunidade?novo=momento", needs: "moments_per_day" as CapNumberKey, about: "Publique fotos que ficam 24 horas no topo da Comunidade, com texto e música, para mostrar o dia a dia da casa." }] : []),
     ...(isRemoteAuth && isFeatureOn(config, "reviews", house.id) ? [{ icon: Star, title: "Avaliações", tone: "ouro" as const, to: `/casa/${house.id}?aba=avaliacoes` }] : []),
     { icon: TrendingUp, title: "Crescer", tone: "ouro", to: "/impulsionar" },
     ...(isRemoteAuth ? [{ icon: Crown, title: "Planos", tone: "ouro" as const, to: "/planos", badge: badges.faturas }] : []),
