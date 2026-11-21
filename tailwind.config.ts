@@ -51,6 +51,8 @@ export default {
           foreground: "hsl(var(--forest-foreground))",
         },
         danger: "hsl(var(--danger))",
+        // As telas usam text-/bg-/border-destructive; sem esta cor elas não geravam estilo nenhum (erros sem vermelho).
+        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
         success: "hsl(var(--success))",
       },
       borderRadius: {

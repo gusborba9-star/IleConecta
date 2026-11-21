@@ -392,43 +392,47 @@ test.describe("Plano Grátis: ferramentas de plano superior aparecem como nos ou
   });
 });
 
-test.describe("Central de pendências: minimizar vira balão com o número", () => {
+test.describe("Central de pendências: minimizar vira uma faixa no topo com o número", () => {
   const item = (kind, n, extra = {}) => ({ kind, priority: "normal", ref_id: U(900 + n), title: `${kind} ${n}`, detail: null, due_date: null, overdue: false, ...extra });
   const montar = (page, items, overdue = 0) => {
     const pend = { ...pendencias({ pedido_para_iniciar: items.length }), total: items.length, overdue, items };
     return entrar(page, { rpc: { house_pending_center: pend } });
   };
-  test("Minimizar troca o cartão por um balão com o número (9+ a partir de 10); tocar no balão reabre", async ({ page }) => {
+  test("Minimizar deixa só 'Central de pendências' + número vermelho; tocar reabre; lembra no aparelho", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     await montar(page, Array.from({ length: 12 }, (_, i) => item("pedido_para_iniciar", i)));
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
     await page.getByRole("button", { name: "Minimizar" }).click();
     await expect(page.getByRole("heading", { name: "Central de pendências" })).toHaveCount(0);
-    const balao = page.getByRole("button", { name: /^Abrir a central de pendências: 12 pendentes/ });
-    await expect(balao).toBeVisible();
-    await expect(balao).toContainText("9+");
-    const caixa = await balao.boundingBox();
-    expect(caixa.width).toBeLessThanOrEqual(60);
-    await page.reload(); // lembrado neste aparelho
-    await expect(page.getByRole("button", { name: /^Abrir a central de pendências/ })).toBeVisible();
+    const faixa = page.getByRole("button", { name: /^Central de pendências\s*, 12 pendentes/ });
+    await expect(faixa).toBeVisible();
+    await expect(faixa).toContainText("12");
+    // o número tem fundo vermelho de verdade (a cor "destructive" já ficou sem estilo uma vez)
+    const fundo = await faixa.locator("span[aria-hidden]").first().evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(fundo).not.toBe("rgba(0, 0, 0, 0)");
+    const caixa = await faixa.boundingBox();
+    expect(caixa.height).toBeLessThanOrEqual(64); // não ocupa espaço
+    await expect(page.getByText("pedido_para_iniciar 3")).toHaveCount(0); // nada de lista
+    await page.reload();
+    await expect(page.getByRole("button", { name: /^Central de pendências\s*, 12 pendentes/ })).toBeVisible();
     await noHScroll(page);
-    await page.getByRole("button", { name: /^Abrir a central de pendências/ }).click();
+    await page.getByRole("button", { name: /^Central de pendências\s*, 12 pendentes/ }).click();
     await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Abrir a central de pendências/ })).toHaveCount(0);
   });
-  test("número pequeno aparece inteiro; vencida nova reabre a central sozinha", async ({ page }) => {
+  test("o que é crítico (vencida, suporte) fica à mostra mesmo minimizado; o resto some atrás do número", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
-    await montar(page, [item("pedido_para_iniciar", 1), item("fatura", 2)]);
+    await montar(page, [item("pedido_para_iniciar", 1), item("suporte", 2), item("pedido_para_iniciar", 3, { overdue: true })], 1);
     await page.goto("/");
     await page.getByRole("button", { name: "Minimizar" }).click();
-    await expect(page.getByRole("button", { name: /^Abrir a central de pendências: 2 pendentes/ })).toContainText("2");
-    await page.unrouteAll({ behavior: "ignoreErrors" });
-    await montar(page, [item("pedido_para_iniciar", 1, { overdue: true }), item("fatura", 2)], 1);
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Central de pendências" })).toBeVisible();
+    const faixa = page.getByRole("button", { name: /^Central de pendências\s*, 3 pendentes, 1 vencida/ });
+    await expect(faixa).toContainText("3");
+    await expect(page.getByText("suporte 2")).toBeVisible();
+    await expect(page.getByText("pedido_para_iniciar 3")).toBeVisible();
+    await expect(page.getByText("pedido_para_iniciar 1")).toHaveCount(0);
+    await noHScroll(page);
   });
-  test("sem pendências não há balão nem botão de minimizar", async ({ page }) => {
+  test("sem pendências não há faixa nem botão de minimizar", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     await montar(page, []);
     await page.goto("/");

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ClipboardList, Minimize2, RefreshCw } from "lucide-react";
+import { ChevronDown, ClipboardList, Minimize2, RefreshCw } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
 import { fetchHousePending } from "@/lib/housePending";
 import { HOUSE_KIND_LABELS, HOUSE_PRIORITY_LABELS, dueText, filterPending, houseDestination, type HousePendingView } from "@/lib/housePendingCore.js";
@@ -8,7 +8,7 @@ import { kindLabel, shortDate } from "@/lib/platformBillingCore.js";
 import { formatBRL } from "@/lib/utils";
 import { useApp } from "@/contexts/AppContext";
 import { fetchCredits } from "@/lib/aiCredits";
-import { badgeText, bubbleCount, bubbleLabel, readBubble, shouldReopen, shownPriority, writeBubble } from "@/lib/pendingMinimizeCore.js";
+import { badgeText, bubbleCount, bubbleLabel, isCritical, readBubble, shownPriority, writeBubble } from "@/lib/pendingMinimizeCore.js";
 
 /** Central de pendências da casa: o que espera a casa (ou a equipe, conforme a permissão), vencidos primeiro, mais o que há a pagar à plataforma. */
 export default function HousePendingCard({ collapsible = false }: { collapsible?: boolean }) {
@@ -23,8 +23,6 @@ export default function HousePendingCard({ collapsible = false }: { collapsible?
   const userId = currentUser?.id ?? "";
   const [bubble, setBubble] = useState(() => readBubble(userId));
   const [hasCredits, setHasCredits] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [justOpened, setJustOpened] = useState(false);
   useEffect(() => {
     let alive = true;
     void fetchCredits().then((c) => alive && setHasCredits((c?.packs.length ?? 0) > 0));
@@ -46,42 +44,56 @@ export default function HousePendingCard({ collapsible = false }: { collapsible?
   const items = useMemo(() => (view ? filterPending(view.items as never, { kind, onlyOverdue }) : []) as HousePendingView["items"], [view, kind, onlyOverdue]);
   const toPay = view?.toPay && view.toPay.count > 0 ? view.toPay : null;
   const count = bubbleCount(view);
-  const minimize = () => { const st = { minimized: true, overdue: view?.overdue ?? 0 }; setBubble(st); writeBubble(userId, st); };
-  const expand = () => { const st = { minimized: false, overdue: 0 }; setBubble(st); writeBubble(userId, st); setJustOpened(true); };
-  // Surgiu pendência vencida nova: a central abre sozinha (o balão não pode esconder urgência).
-  useEffect(() => {
-    if (collapsible && view && shouldReopen(bubble, view.overdue)) { const st = { minimized: false, overdue: 0 }; setBubble(st); writeBubble(userId, st); }
-  }, [collapsible, view, bubble, userId]);
-  // Depois de abrir pelo balão, leva a tela e o foco até a central.
-  useEffect(() => {
-    if (!justOpened) return;
-    setJustOpened(false);
-    cardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    cardRef.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
-  }, [justOpened, bubble.minimized]);
+  const minimize = () => { const st = { minimized: true }; setBubble(st); writeBubble(userId, st); };
+  const expand = () => { const st = { minimized: false }; setBubble(st); writeBubble(userId, st); };
   // Quem não é da casa (ou o modo de demonstração) não vê o cartão, em vez de ver um erro.
   if (error && /not_house|Disponível só/i.test(error)) return null;
 
-  if (collapsible && bubble.minimized && view && count > 0) {
+  // Item da lista (usado no cartão aberto e, só para as críticas, abaixo da faixa minimizada).
+  const renderItem = (i: HousePendingView["items"][number]) => {
+    const target = houseDestination(i, view?.role ?? "titular", currentUser?.id);
+    const prio = shownPriority(i, { hasCredits });
     return (
-      <button
-        type="button"
-        onClick={expand}
-        aria-label={bubbleLabel(count, view.overdue)}
-        className="fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 grid h-14 w-14 place-items-center rounded-full bg-card text-primary shadow-altar ring-2 ring-gold transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring lg:bottom-6"
-      >
-        <ClipboardList className="h-6 w-6" aria-hidden />
-        <span aria-hidden className="absolute -right-1 -top-1 grid h-6 min-w-6 place-items-center rounded-full bg-destructive px-1 text-xs font-bold leading-none text-white ring-2 ring-card">{badgeText(count)}</span>
-      </button>
+      <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={i.overdue ? "danger" : prio === "alta" ? "gold" : "muted"}>{i.overdue ? "Vencida" : HOUSE_PRIORITY_LABELS[prio]}</Badge>
+          <span className="min-w-0 flex-1 font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span>
+        </div>
+        <p className="break-words">{i.title}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}</span>
+          {target && <Button size="sm" variant="outline" onClick={() => nav(target.path)}>Abrir {target.label}</Button>}
+        </div>
+      </li>
+    );
+  };
+
+  // Minimizada: só uma faixa ("Central de pendências" + número em vermelho). O que é crítico (vencido, suporte, moderação, prioridade alta) continua à mostra até a casa resolver.
+  if (collapsible && bubble.minimized && view && count > 0) {
+    const critical = view.items.filter((i) => isCritical(i as never, { hasCredits }));
+    return (
+      <section aria-label="Central de pendências, minimizada" className="space-y-2">
+        <button
+          type="button"
+          onClick={expand}
+          aria-expanded={false}
+          className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-gold/40 bg-card px-4 py-2 text-left shadow-card transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ClipboardList className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1 font-display font-bold">Central de pendências<span className="sr-only">, {bubbleLabel(count, view.overdue)}. Toque para abrir.</span></span>
+          <span aria-hidden className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-destructive px-2 text-sm font-bold leading-none text-destructive-foreground">{badgeText(count)}</span>
+          <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+        {critical.length > 0 && <ul aria-label="Pendências que precisam de atenção" className="space-y-2">{critical.map((i) => renderItem(i))}</ul>}
+      </section>
     );
   }
 
   return (
-    <div ref={cardRef} className="scroll-mt-20">
     <Card className="p-5 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 tabIndex={-1} className="font-display font-bold text-lg outline-none">Central de pendências</h2>
+          <h2 className="font-display font-bold text-lg">Central de pendências</h2>
           <p className="text-xs text-muted-foreground">{view?.role === "equipe" ? "O que espera a casa e que você pode acompanhar." : "O que está esperando por você, vencidos primeiro."}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -117,23 +129,7 @@ export default function HousePendingCard({ collapsible = false }: { collapsible?
                 <p className="text-sm text-muted-foreground">Nenhuma pendência com esse filtro.</p>
               ) : (
                 <ul className="space-y-2">
-                  {items.map((i) => {
-                    const target = houseDestination(i, view.role, currentUser?.id);
-                    const prio = shownPriority(i, { hasCredits });
-                    return (
-                      <li key={`${i.kind}-${i.refId}`} className="rounded-xl border border-border p-3 text-sm space-y-1 pillow">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone={i.overdue ? "danger" : prio === "alta" ? "gold" : "muted"}>{i.overdue ? "Vencida" : HOUSE_PRIORITY_LABELS[prio]}</Badge>
-                          <span className="min-w-0 flex-1 font-semibold">{HOUSE_KIND_LABELS[i.kind]}</span>
-                        </div>
-                        <p className="break-words">{i.title}</p>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className={i.overdue ? "text-xs font-semibold text-destructive" : "text-xs text-muted-foreground"}>{dueText(i.dueAt)}</span>
-                          {target && <Button size="sm" variant="outline" onClick={() => nav(target.path)}>Abrir {target.label}</Button>}
-                        </div>
-                      </li>
-                    );
-                  })}
+                  {items.map((i) => renderItem(i))}
                 </ul>
               )}
             </>
@@ -162,6 +158,5 @@ export default function HousePendingCard({ collapsible = false }: { collapsible?
         </>
       )}
     </Card>
-    </div>
   );
 }
