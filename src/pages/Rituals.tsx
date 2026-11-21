@@ -50,45 +50,32 @@ export default function Rituals() {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
-      <Card className="page-hero p-5 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-1">
-          <Sparkles className="h-5 w-5 text-gold" />
-          <h1 className="font-display font-bold text-2xl">Rituais & Trabalhos</h1>
+      <Card className="page-hero relative overflow-hidden p-4 sm:p-5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-gold-ink" aria-hidden />
+          <h1 className="font-display font-bold text-xl sm:text-2xl">Rituais & Trabalhos</h1>
         </div>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Encontre rituais coletivos e trabalhos personalizados oferecidos pelas casas. {isRemoteAuth ? "Reserve direto com a casa; as vagas são atualizadas em tempo real." : "Dados de demonstração; disponibilidade não é sincronizada entre usuários."}
+        <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
+          Rituais coletivos e trabalhos personalizados das casas. {isRemoteAuth ? "Reserve direto com a casa; as vagas são atualizadas em tempo real." : "Dados de demonstração; disponibilidade não é sincronizada entre usuários."}
         </p>
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por título, tema ou casa..." className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="relative mt-3">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input aria-label="Buscar rituais" placeholder="Buscar por título, tema ou casa..." className="h-11 rounded-full border-transparent bg-muted pl-11" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {!isRemoteAuth && CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold capitalize border transition",
-                cat === c ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
-              )}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
+        {!isRemoteAuth && (
+          <div className="scroll-x -mx-1 mt-3 flex gap-1.5 px-1 whitespace-nowrap" role="group" aria-label="Filtrar por tema">
+            {CATEGORIES.map((c) => (
+              <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)}
+                className={cn("shrink-0 min-h-9 px-3.5 rounded-full text-xs font-semibold capitalize border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", cat === c ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted")}>
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="scroll-x -mx-1 mt-2 flex gap-1.5 px-1 whitespace-nowrap" role="group" aria-label="Filtrar por modalidade">
           {MODES.map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold capitalize border transition",
-                mode === m ? "bg-forest text-forest-foreground border-forest" : "border-border hover:bg-muted"
-              )}
-            >
+            <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}
+              className={cn("shrink-0 min-h-9 px-3.5 rounded-full text-xs font-semibold capitalize border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", mode === m ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted")}>
               {m === "distancia" ? "à distância" : m}
             </button>
           ))}
@@ -100,18 +87,28 @@ export default function Rituals() {
           <h2 className="font-display font-bold text-lg">Próximos rituais das casas</h2>
           {realFiltered.map((r) => (
             <PromoTrack key={r.id} promoId={promo.idByItem.get(r.id)}>
-            <Card className="p-4">
-              <div className="flex flex-wrap items-center gap-3 justify-between">
-                <div className="min-w-0">
-                  <div className="font-semibold">{r.title}{promo.boostedIds.has(r.id) && <span className="ml-2 rounded-full border border-current/30 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Promovido</span>}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {r.houseName} · {modeLabel(r.mode)} · {new Date(r.startsAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })} · {seatsLeft(r.seatsTotal, r.taken)} vagas · {formatCents(r.priceCents)}
+            <Card className="lift overflow-hidden">
+              <div className="flex items-stretch gap-3 p-3 sm:p-4">
+                <div className="grid w-14 shrink-0 place-items-center rounded-2xl bg-forest/10 py-2 text-center text-forest" aria-hidden>
+                  <div>
+                    <div className="font-display text-2xl font-bold leading-none">{new Date(r.startsAt).toLocaleDateString("pt-BR", { day: "2-digit", timeZone: "America/Sao_Paulo" })}</div>
+                    <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide">{new Date(r.startsAt).toLocaleDateString("pt-BR", { month: "short", timeZone: "America/Sao_Paulo" }).replace(".", "")}</div>
                   </div>
                 </div>
-                {r.ownerId && (
-                  <Link to={`/casa/${r.ownerId}?aba=rituais`} className="text-sm font-semibold text-primary underline">Ver e reservar</Link>
-                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-bold text-base leading-snug break-words">{r.title}{promo.boostedIds.has(r.id) && <span className="ml-2 rounded-full border border-current/30 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Promovido</span>}</div>
+                  <div className="mt-0.5 text-sm text-muted-foreground break-words">
+                    {r.houseName} · {modeLabel(r.mode)} · {new Date(r.startsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <Badge tone="muted">{seatsLeft(r.seatsTotal, r.taken)} vagas</Badge>
+                    <Badge tone="gold">{formatCents(r.priceCents)}</Badge>
+                  </div>
+                </div>
               </div>
+              {r.ownerId && (
+                <Link to={`/casa/${r.ownerId}?aba=rituais`} className="flex min-h-11 items-center justify-center border-t border-border/70 text-sm font-semibold text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">Ver e reservar</Link>
+              )}
             </Card>
             </PromoTrack>
           ))}
