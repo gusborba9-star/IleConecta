@@ -80,7 +80,7 @@ function MessagesRoute() {
 /** Casa com conta real começa na página da casa; as demais, no feed. */
 function Home() {
   const { currentUser, isRemoteAuth } = useApp();
-  return isRemoteAuth && currentUser?.type === "commercial" ? <HouseHome /> : <Feed />;
+  return isRemoteAuth && currentUser?.type === "commercial" ? <HouseHome /> : <Feed home />;
 }
 
 export default function App() {

@@ -114,7 +114,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
             );
           })}
           {groups.length === 0 && !canPost && !showUpsell && (
-            <p className="shrink-0 w-64 h-52 rounded-2xl border border-dashed border-border grid place-items-center text-center text-xs text-muted-foreground px-4">Quando as casas que você acompanha publicarem momentos, eles aparecem aqui por 24 horas.</p>
+            <p className="w-full rounded-2xl border border-dashed border-border grid place-items-center text-center text-xs text-muted-foreground px-4 py-4">Quando as casas que você acompanha publicarem momentos, eles aparecem aqui por 24 horas.</p>
           )}
         </div>
       </div>
