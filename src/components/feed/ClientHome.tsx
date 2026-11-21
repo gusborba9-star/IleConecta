@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, ClipboardList, Compass, Minimize2, Sparkles, User } from "lucide-react";
-import { Card } from "@/components/base";
+import { ChevronDown, ChevronRight, ClipboardList, Minimize2, Search } from "lucide-react";
+import { Avatar, Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { fetchMyOrders, subscribeOrders } from "@/lib/serviceOrders";
 import { fetchMemberships, type Membership } from "@/lib/members";
@@ -10,22 +10,7 @@ import { buildClientItems, criticalItems, todayBR, type ClientItem } from "@/lib
 import { badgeText, readBubble, writeBubble } from "@/lib/pendingMinimizeCore.js";
 import { cn } from "@/lib/utils";
 
-// Classes literais (o Tailwind só gera o que está escrito por inteiro no código).
-const TONES = {
-  gold: "bg-gold/10 text-gold-ink ring-gold/50",
-  forest: "bg-forest/10 text-forest ring-forest/40",
-  terra: "bg-primary/10 text-primary ring-primary/40",
-  noite: "bg-muted text-foreground ring-border",
-} as const;
-
-const SHORTCUTS = [
-  { to: "/descobrir", label: "Casas", icon: Compass, tone: "gold" },
-  { to: "/rituais", label: "Rituais", icon: Sparkles, tone: "forest" },
-  { to: "/perfil?aba=atividade", label: "Pedidos", icon: ClipboardList, tone: "terra" },
-  { to: "/perfil", label: "Minha conta", icon: User, tone: "noite" },
-] as const;
-
-/** Início do cliente (como o Facebook): o que está acontecendo com ele + atalhos, acima da comunidade. */
+/** "Para você" no Início do cliente: o que está acontecendo com ele (some quando não há nada). Os caminhos ficam na barra de cima. */
 export default function ClientHome() {
   const { currentUser, isRemoteAuth } = useApp();
   const uid = currentUser?.id;
@@ -91,14 +76,25 @@ export default function ClientHome() {
         </Card>
       )}
 
-      <nav aria-label="Atalhos" className="grid grid-cols-4 gap-2">
-        {SHORTCUTS.map(({ to, label, icon: Icon, tone }) => (
-          <Link key={label} to={to} className="group flex min-h-[84px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-1 py-2 text-center shadow-card transition hover:shadow-altar focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span aria-hidden className={cn("grid h-11 w-11 place-items-center rounded-full ring-2", TONES[tone])}><Icon className="h-5 w-5" /></span>
-            <span className="text-[13px] font-semibold leading-tight">{label}</span>
-          </Link>
-        ))}
-      </nav>
     </div>
+  );
+}
+
+/** Primeira linha do Início do cliente, como o "No que você está pensando?" do Facebook: foto (leva à conta) + busca de casas, rituais e serviços. */
+export function ClientSearchBar() {
+  const { currentUser } = useApp();
+  if (!currentUser) return null;
+  return (
+    <Card className="p-3">
+      <div className="flex items-center gap-3">
+        <Link to="/perfil" aria-label={`Minha conta, ${currentUser.name}`} className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Avatar src={currentUser.avatar} name={currentUser.name} size={42} />
+        </Link>
+        <Link to="/descobrir" className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-muted/40 px-4 text-sm text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Search className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="truncate">Buscar casas e rituais…</span>
+        </Link>
+      </div>
+    </Card>
   );
 }
