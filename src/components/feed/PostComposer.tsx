@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
-import { Avatar, Button, Card, Textarea } from "@/components/base";
-import { Image, Sparkles, Radio } from "lucide-react";
+import { Avatar, Button, Card, Modal, Textarea } from "@/components/base";
+import { Image, ImagePlus, Sparkles, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { toastSaveError } from "@/lib/planGuard";
 import PostStylePicker from "@/components/feed/PostStylePicker";
@@ -19,17 +19,16 @@ export default function PostComposer() {
   const [image, setImage] = useState("");
   const isHouse = currentUser?.type === "commercial";
   const [style, setStyle] = useState<StyleDraft>(EMPTY_STYLE);
+  // A barra fica fechada (como "No que você está pensando?"); o editor completo abre numa janela.
+  const [open, setOpen] = useState(false);
   const { caps } = useOwnerPlan(isHouse ? currentUser?.id : null);
   const allowed = caps?.styled_posts === true;
   // Atalho "Publicar" do Início da casa (`/comunidade?novo=publicacao`): leva o foco para o campo de texto.
   const [params] = useSearchParams();
-  const wantsFocus = params.get("novo") === "publicacao";
+  const wantsOpen = params.get("novo") === "publicacao";
   useEffect(() => {
-    if (!wantsFocus) return;
-    const el = document.getElementById("texto-da-publicacao");
-    el?.scrollIntoView({ block: "center" });
-    el?.focus({ preventScroll: true });
-  }, [wantsFocus, currentUser?.id]);
+    if (wantsOpen && currentUser) setOpen(true);
+  }, [wantsOpen, currentUser]);
 
   if (!currentUser) return null;
 
@@ -66,51 +65,68 @@ export default function PostComposer() {
     setText("");
     setImage("");
     setStyle(EMPTY_STYLE);
+    setOpen(false);
     toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");
   };
 
+  const prompt = isHouse ? "Diga algo à comunidade…" : "No que você está pensando?";
+  const draft = text.trim();
+
   return (
-    <Card className="p-4">
-      <div className="flex gap-3">
-        <Avatar src={currentUser.avatar} name={currentUser.name} size={44} ring={isHouse ? "gold" : "none"} />
-        <div className="flex-1 space-y-3">
+    <>
+      <Card className="p-3">
+        <div className="flex items-center gap-3">
+          <Avatar src={currentUser.avatar} name={currentUser.name} size={42} ring={isHouse ? "gold" : "none"} />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="min-h-11 min-w-0 flex-1 truncate rounded-full border border-border bg-muted/40 px-4 text-left text-sm text-muted-foreground transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {draft ? `Rascunho: ${draft}` : prompt}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Escolher foto para a publicação"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-primary transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ImagePlus className="h-6 w-6" aria-hidden />
+          </button>
+        </div>
+      </Card>
+      <Modal open={open} onClose={() => setOpen(false)} title="Nova publicação" maxWidth="max-w-xl">
+        <div className="space-y-3">
           <Textarea
             id="texto-da-publicacao"
             aria-label="Texto da publicação"
-            placeholder={
-              isHouse
-                ? "Compartilhe um trabalho, ritual, jogo, consulta ou uma mensagem para a sua comunidade..."
-                : "O que você está sentindo? Compartilhe com a comunidade..."
-            }
+            placeholder={isHouse ? "Compartilhe um trabalho, ritual, jogo, consulta ou uma mensagem para a sua comunidade..." : "O que você está sentindo? Compartilhe com a comunidade..."}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            rows={3}
+            rows={4}
           />
           {isHouse && <PostStylePicker value={style} onChange={setStyle} text={text} allowed={allowed || !isRemoteAuth} houseName={currentUser.name} />}
           {image && !style.image && (
             <div className="relative rounded-xl overflow-hidden">
               <img src={image} alt="" className="w-full max-h-72 object-cover" />
-              <button onClick={() => setImage("")} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 text-white">✕</button>
+              <button type="button" aria-label="Remover a foto" onClick={() => setImage("")} className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 text-white">✕</button>
             </div>
           )}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-1">
               {!isRemoteAuth && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setImage(
-                    "https://images.unsplash.com/photo-" +
-                      ["1503756234508-e32369269deb", "1441716844725-09cedc13a4e7", "1500375592092-40eb2168fd21", "1470252649378-9c29740c9fa8"][
-                        Math.floor(Math.random() * 4)
-                      ] +
-                      "?w=1200&h=800&fit=crop"
-                  )
-                }
-              >
-                <Image className="h-4 w-4" /> Foto
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setImage(
+                      "https://images.unsplash.com/photo-" +
+                        ["1503756234508-e32369269deb", "1441716844725-09cedc13a4e7", "1500375592092-40eb2168fd21", "1470252649378-9c29740c9fa8"][Math.floor(Math.random() * 4)] +
+                        "?w=1200&h=800&fit=crop"
+                    )
+                  }
+                >
+                  <Image className="h-4 w-4" /> Foto
+                </Button>
               )}
               {isHouse && !isRemoteAuth && (
                 <>
@@ -126,7 +142,7 @@ export default function PostComposer() {
             <Button onClick={submit} disabled={sending}>{sending ? "Publicando…" : "Publicar"}</Button>
           </div>
         </div>
-      </div>
-    </Card>
+      </Modal>
+    </>
   );
 }

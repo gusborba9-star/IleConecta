@@ -28,3 +28,11 @@ export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {}, storageOk
 }
 export const noHScroll = async (page) => expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
 export const U = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
+
+/** Abre o editor de publicação (a barra "Diga algo…" fica fechada); não faz nada se já estiver aberto. */
+export const abrirEditor = async (page) => {
+  const area = page.getByLabel("Texto da publicação");
+  if (await area.isVisible().catch(() => false)) return;
+  await page.getByRole("button", { name: /^(Diga algo à comunidade|No que você está pensando|Rascunho:)/ }).click();
+  await expect(area).toBeVisible();
+};

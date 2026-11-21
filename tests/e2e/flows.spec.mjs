@@ -53,8 +53,9 @@ test("busca pelo campo global abre resultados e preserva a consulta após recarg
 test("publicação aparece no feed e permanece após recarga", async ({ page }) => {
   await login(page, "oxum@ile.app");
   const content = "E2E publicação persistida 2026";
+  await page.getByRole("button", { name: /^Diga algo à comunidade/ }).click();
   await page.getByPlaceholder(/Compartilhe um trabalho/).fill(content);
-  await page.getByRole("button", { name: "Publicar" }).click();
+  await page.getByRole("button", { name: "Publicar", exact: true }).click();
   await expect(page.getByText(content)).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText(content)).toBeVisible();

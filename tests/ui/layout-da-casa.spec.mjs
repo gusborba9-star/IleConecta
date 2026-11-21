@@ -23,7 +23,7 @@ test.describe("Início da casa: cada ferramenta leva ao lugar certo", () => {
     await expect(page.getByRole("heading", { level: 1, name: /Olá, Casa Axé/ })).toBeVisible();
     const alvo = {
       "Pessoas": "/pessoas", "Novo serviço": `/casa/${ME}?aba=servicos&novo=1`, "Novo ritual": `/casa/${ME}?aba=rituais&novo=1`,
-      "Comunidade": "/comunidade", "Publicar": "/comunidade?novo=publicacao", "Momentos": "/comunidade?novo=momento", "Crescer": "/impulsionar", "Planos": "/planos", "Recebimentos": "/recebimentos",
+      "Comunidade": "/comunidade", "Crescer": "/impulsionar", "Planos": "/planos", "Recebimentos": "/recebimentos",
       "Assistente": "/perfil", "Editar página": `/casa/${ME}?editar=1`,
     };
     const area = page.getByRole("region", { name: "Ferramentas" }).or(page.locator("section[aria-labelledby=ferramentas]"));
@@ -349,18 +349,14 @@ test.describe("Plano Grátis: ferramentas de plano superior aparecem como nos ou
   const gratis = { ...house, plan: "gratis" };
   const semCreditos = { has_house: true, limit: 0, used_month: 0, balance: 0, for_sale: true, packs: [], prices: { p80: 1900 } };
 
-  test("Momentos mostra 'Plano Essencial' e abre o aviso; Comunidade segue liberada", async ({ page }) => {
+  test("Início não repete Momentos/Publicar: o caminho é a Comunidade; Momentos fica na faixa dela e no perfil", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     await entrar(page, { rest: { houses: [gratis] }, rpc: { my_ai_credit_status: semCreditos } });
     await page.goto("/");
     const area = page.locator("section[aria-labelledby=ferramentas]");
     await expect(area.getByRole("link", { name: /^Comunidade/ })).toHaveAttribute("href", "/comunidade");
-    await expect(area.getByRole("link", { name: /^Momentos/ })).toHaveCount(0);
-    await area.getByRole("button", { name: /^Momentos/ }).click();
-    const dlg = page.getByRole("dialog");
-    await expect(dlg.getByText(/Disponível a partir do plano/)).toBeVisible();
-    await dlg.getByRole("button", { name: "Ver planos" }).click();
-    await expect(page).toHaveURL(/\/planos\?aba=mudar/);
+    await expect(area.getByText(/^Momentos$/)).toHaveCount(0);
+    await expect(area.getByText(/^Publicar$/)).toHaveCount(0);
   });
 
   test("Assistente sem franquia nem pacote: aviso com botão para comprar pacote, sem abrir a configuração", async ({ page }) => {
@@ -414,4 +410,66 @@ test.describe("Central de pendências: minimizar o que é só informativo", () =
     await expect(page.getByRole("button", { name: /^Minimizar:/ })).toHaveCount(1);
     await noHScroll(page);
   });
+});
+
+test.describe("Comunidade: barra 'Diga algo…' e editor enxuto", () => {
+  test("a barra abre o editor; no Grátis o card com foto vira uma linha com o plano certo", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
+    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] } });
+    await page.goto("/comunidade");
+    await expect(page.getByLabel("Texto da publicação")).toHaveCount(0);
+    await page.getByRole("button", { name: /^Diga algo à comunidade/ }).click();
+    await expect(page.getByLabel("Texto da publicação")).toBeVisible();
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    await expect(page.getByText(/Foto no card da publicação: a partir do plano/)).toBeVisible();
+    await expect(page.getByText(/Foto no card da publicação: a partir do plano Profissional/)).toBeVisible(); // nome vem da matriz de planos
+    await page.getByLabel("Texto da publicação").fill("Axé!");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: /^Rascunho: Axé!/ })).toBeVisible();
+    await noHScroll(page);
+  });
+  test("o link antigo ?novo=publicacao abre o editor", async ({ page }) => {
+    await entrar(page, { rest: { houses: [{ ...house, plan: "gratis" }] } });
+    await page.goto("/comunidade?novo=publicacao");
+    await expect(page.getByLabel("Texto da publicação")).toBeVisible();
+  });
+});
+
+test.describe("Perfil da casa no estilo das redes", () => {
+  const meuPerfil = async (page, plan, w = 375) => {
+    await page.setViewportSize({ width: w, height: 740 });
+    await entrar(page, { rest: { houses: [{ ...house, plan, bio: "Casa de axé em Porto Alegre.", offerings: "Jogo de búzios e limpeza espiritual." }] } });
+    await page.goto(`/casa/${ME}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Casa Axé" })).toBeVisible();
+  };
+  test("botões principais, seta de informações e menu ⋯; sem abas 'Sobre'", async ({ page }) => {
+    await meuPerfil(page, "intermediario");
+    await expect(page.getByRole("button", { name: /Adicionar momento/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Editar página/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Diga algo à comunidade/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Sobre" })).toHaveCount(0);
+    const seta = page.getByRole("button", { name: "Mostrar informações da casa" });
+    await expect(page.getByText("Trabalhos que a casa realiza")).toHaveCount(0);
+    await seta.click();
+    await expect(page.getByRole("button", { name: "Esconder informações da casa" })).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByText("Trabalhos que a casa realiza")).toBeVisible();
+    await page.getByRole("button", { name: "Mais opções da página" }).click();
+    for (const n of ["Divulgar a casa", "Agenda", "Planos e faturas", "Compartilhar a página"]) await expect(page.getByRole("menuitem", { name: n })).toBeVisible();
+    await page.getByRole("menuitem", { name: "Agenda" }).click();
+    await expect(page).toHaveURL(/\/agenda/);
+  });
+  test("Grátis: 'Adicionar momento' abre o aviso com o plano certo", async ({ page }) => {
+    await meuPerfil(page, "gratis");
+    await page.getByRole("button", { name: /Adicionar momento/ }).click();
+    await expect(page.getByRole("dialog").getByText(/Disponível a partir do plano/)).toBeVisible();
+  });
+  for (const w of [320, 375, 768]) {
+    test(`sem rolagem lateral em ${w}px, com as abas rolando de lado`, async ({ page }) => {
+      await meuPerfil(page, "maximo", w);
+      await noHScroll(page);
+      await expect(page.getByRole("tablist", { name: "Seções da página" })).toBeVisible();
+      await page.getByRole("button", { name: "Mostrar informações da casa" }).click();
+      await noHScroll(page);
+    });
+  }
 });

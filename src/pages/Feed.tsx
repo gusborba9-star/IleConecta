@@ -50,10 +50,9 @@ export default function Feed() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       <PendingReviewsCard />
-      <Card className="page-hero p-5">
+      <Card className="page-hero px-5 py-4">
         <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold-ink">Comunidade</div>
-        <h1 className="font-display font-bold text-2xl mt-1 break-words">O que as casas estão compartilhando</h1>
-        <p className="text-sm text-muted-foreground mt-1">Momentos, rituais e novidades de quem você acompanha.</p>
+        <h1 className="font-display font-bold text-xl sm:text-2xl mt-0.5 break-words">O que as casas estão compartilhando</h1>
       </Card>
       <div>
         <div className="flex items-end justify-between mb-2">
@@ -63,9 +62,9 @@ export default function Feed() {
         <MomentsRail highlightOwners={promo.highlightOwners} />
       </div>
 
-      {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
-
       <PostComposer />
+
+      {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
 
       {feedItems.map((item, idx) =>
         item.kind === "post" ? (

@@ -6,6 +6,9 @@ import { Avatar } from "@/components/base";
 import MomentViewer from "@/components/feed/MomentViewer";
 import MomentComposer from "@/components/feed/MomentComposer";
 import { useOwnerPlan } from "@/lib/housePlan";
+import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
+import { minPlanFor } from "@/lib/planMatrixCore";
+import { FREE_PLAN_NAME } from "@/lib/platformConfigCore";
 import { deleteMoment, fetchHouseId, fetchMomentGroups, fetchMyMoments } from "@/lib/moments";
 import { canPostMoments, isGroupSeen, sortGroups, startIndex, type MomentGroup } from "@/lib/momentsCore";
 import { readSeen, saveSeen } from "@/lib/momentsSeen";
@@ -16,6 +19,9 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const isHouse = currentUser?.type === "commercial";
   const { caps } = useOwnerPlan(isHouse ? currentUser?.id : null);
+  const { config } = usePlatformConfig();
+  const minPlan = minPlanFor(config.plan_matrix, "moments_per_day");
+  const minName = !minPlan ? "superior" : minPlan === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[minPlan].name;
   const [remote, setRemote] = useState<MomentGroup[] | null>(null);
   const [seen, setSeen] = useState<Set<string>>(readSeen);
   const [open, setOpen] = useState<{ gi: number; ii: number } | null>(null);
@@ -82,7 +88,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
           {showUpsell && (
             <Link to="/planos?aba=mudar" className="shrink-0 w-32 h-52 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-2 px-2 text-center hover:bg-muted/40">
               <span className="h-11 w-11 rounded-full bg-muted grid place-items-center"><Lock className="h-5 w-5 text-muted-foreground" aria-hidden /></span>
-              <span className="text-xs font-semibold">Momentos a partir do plano Essencial</span>
+              <span className="text-xs font-semibold">Momentos a partir do plano {minName}</span>
               <span className="text-[11px] text-primary font-semibold">Ver planos</span>
             </Link>
           )}
