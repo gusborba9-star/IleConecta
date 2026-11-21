@@ -72,7 +72,7 @@ test("mensagem enviada aparece na conversa e persiste após recarga", async ({ p
   await expect(page.locator("section").getByText(content)).toBeVisible();
 });
 
-test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escape", async ({ page }) => {
+test("reserva demonstrativa fica gravada após recarga e modal fecha com Escape", async ({ page }) => {
   await login(page);
   await page.evaluate(() => {
     const key = "ile-conecta:v1:rituals";
@@ -95,10 +95,11 @@ test("reserva demonstrativa fica no perfil após recarga e modal fecha com Escap
   await page.getByRole("dialog").getByRole("button", { name: "Simular reserva" }).click();
   await expect(page.getByText("Reserva demonstrativa registrada")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Fechar", exact: true }).click();
-  await page.goto("/perfil", { waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada").first()).toBeVisible();
+  // a reserva demonstrativa continua gravada após recarregar (a tela "Minha conta" não lista mais esses registros de simulação)
+  const total = () => page.evaluate(() => JSON.parse(localStorage.getItem("ile-conecta:v1:purchases") || "[]").length);
+  await expect.poll(total).toBeGreaterThan(0);
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Ritual da Prosperidade — Oxum Dourada").first()).toBeVisible();
+  expect(await total()).toBeGreaterThan(0);
 });
 
 test("boost demonstrativo expira e deixa de aparecer após recarga", async ({ page }) => {
