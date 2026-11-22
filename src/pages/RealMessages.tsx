@@ -305,7 +305,7 @@ export default function RealMessages() {
                     <div
                       className={cn(
                         "max-w-[88%] sm:max-w-[75%] min-w-0 px-3 py-1.5 rounded-2xl text-[15px] leading-snug whitespace-pre-wrap break-words",
-                        mine ? "bg-forest text-forest-foreground rounded-br-md shadow-card" : "bg-card rounded-bl-md shadow-card",
+                        mine ? "bg-forest text-forest-foreground rounded-br-md shadow-card" : m.fromAssistant ? "bg-primary/10 border border-primary/20 rounded-bl-md" : "bg-card rounded-bl-md shadow-card",
                         deleted && "italic opacity-70"
                       )}
                     >
