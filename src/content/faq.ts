@@ -7,7 +7,7 @@ export const FAQ_CLIENT: FaqItem[] = [
   { q: "Como vou saber que o ritual começou?", a: "Quando a casa inicia e quando conclui, você recebe um aviso. Vale para quem reservou ou contratou, inclusive trabalhos à distância e em sigilo." },
   { q: "Como falo com a casa?", a: "Pelo chat, em Mensagens. A assistente da casa responde na hora sobre serviços, valores e vagas; se a pergunta for além, ela chama a casa e a resposta vem na mesma conversa." },
   { q: "A assistente pode errar?", a: "Ela usa só o que a casa cadastrou e avisa quando precisa confirmar algo. Em caso de dúvida, peça para falar com a casa." },
-  { q: "O que aparece no meu Início?", a: "O que as casas que você segue ou com as quais tem vínculo publicam, e os destaques da rede. Toque em Perto de mim para ver as casas da sua cidade." },
+  { q: "O que aparece no meu Início?", a: "O que as casas que você segue ou com as quais tem vínculo publicam, e os destaques da rede. Toque em Na minha cidade em Casas para ver as da sua cidade." },
   { q: "Preciso cancelar ou tive um problema. O que faço?", a: "Fale primeiro com a casa pelo chat. Se não resolver, abra um chamado aqui em Suporte e a equipe acompanha com você." },
 ];
 
@@ -30,7 +30,7 @@ export const FAQ: FaqItem[] = [
 
 // Roteiros "do objetivo ao caminho" para a assistente Conecta orientar passo a passo (nomes iguais aos das telas).
 export const ROTEIROS: FaqItem[] = [
-  { q: "Quero achar uma casa para o que eu preciso (amor, proteção, prosperidade…)", a: "Casas > toque no que você procura (ex.: Amor) ou digite na busca. Para ver só a sua cidade, toque em Perto de mim. Abra a casa, veja Rituais e Serviços e toque em Mensagem para conversar." },
+  { q: "Quero achar uma casa para o que eu preciso (amor, proteção, prosperidade…)", a: "Casas > toque no que você procura (ex.: Amor) ou digite na busca. Para ver só a sua cidade, toque em Na minha cidade. Abra a casa, veja Rituais e Serviços e toque em Mensagem para conversar." },
   { q: "Quero seguir uma casa para ver o que ela publica", a: "Abra a página da casa e toque em Seguir. As publicações dela passam a aparecer no seu Início; quem reservou ou contratou também passa a ver o que a casa publica." },
   { q: "Quero reservar um ritual", a: "Casas > abra a casa > aba Rituais > Reservar > pagar. Depois, acompanhe em Perfil > Minha atividade; você é avisado quando a casa iniciar e concluir." },
   { q: "Quero pedir reembolso ou cancelar", a: "Perfil > Minha atividade > escolha a reserva ou o pedido. Se não resolver com a casa, abra um chamado em Suporte. As regras estão em Termos e normas." },

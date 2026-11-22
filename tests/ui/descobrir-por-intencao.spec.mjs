@@ -32,11 +32,11 @@ test("Descobrir: sem linhas de tradição; intenção filtra; texto livre reconh
   await noHScroll(page);
 });
 
-test("Descobrir: Perto de mim usa a cidade do perfil", async ({ page }) => {
+test("Descobrir: Na minha cidade usa a cidade do perfil", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
   await page.goto("/descobrir");
-  await page.getByRole("button", { name: "Perto de mim" }).click();
+  await page.getByRole("button", { name: "Na minha cidade" }).click();
   await expect(page.getByText("Casa Salvador", { exact: true })).toBeVisible();
   await expect(page.getByText("Casa Salvador Dois")).toBeVisible();
   await expect(page.getByText("Casa Manaus")).toHaveCount(0);
