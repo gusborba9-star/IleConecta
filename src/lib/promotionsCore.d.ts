@@ -19,6 +19,8 @@ export declare function promoName(i: MyPromo): string;
 
 export declare function editDaysDraft(raw: string, cap?: number): { text: string; days: number | null };
 
-export declare function resultsLine(i: { views?: number; opens?: number }): string;
+export interface PromoFunnel { chats: number; checkouts: number; payments: number }
+export declare function resultsLine(i: { views?: number; opens?: number }, f?: PromoFunnel): string;
+export declare function readFunnel(raw: unknown): Record<string, PromoFunnel>;
 export interface FeedPostLike { id: string; houseId: string; kind?: string }
 export declare function rankFeed<T extends FeedPostLike>(posts: T[], promo?: { highlightOwners?: string[]; boostedPostIds?: string[] }): { post: T; tag: "destaque" | "promovido" | null }[];

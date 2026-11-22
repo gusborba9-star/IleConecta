@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { Star, TrendingUp } from "lucide-react";
 import { Badge, Card } from "@/components/base";
-import { fetchMyPromotions } from "@/lib/promotions";
-import { promoLine, promoName, resultsLine, type MyPromo, type PromoKind } from "@/lib/promotionsCore";
+import { fetchMyPromotions, fetchPromoFunnel } from "@/lib/promotions";
+import { promoLine, promoName, resultsLine, type MyPromo, type PromoFunnel, type PromoKind } from "@/lib/promotionsCore";
 
 /** Compras em andamento da casa, com o fim exato e os dias restantes. O contador se atualiza sozinho a cada minuto. */
 export default function PromoList({ kind, refreshKey = 0, title }: { kind?: PromoKind; refreshKey?: number; title?: string }) {
   const [items, setItems] = useState<MyPromo[] | null>(null);
+  const [funnel, setFunnel] = useState<Record<string, PromoFunnel>>({});
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     let alive = true;
     void fetchMyPromotions().then((r) => alive && setItems(r.items));
+    void fetchPromoFunnel().then((f) => alive && setFunnel(f));
     return () => { alive = false; };
   }, [refreshKey]);
   useEffect(() => {
@@ -29,12 +31,13 @@ export default function PromoList({ kind, refreshKey = 0, title }: { kind?: Prom
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{promoName(i)}</div>
               <div className="text-sm text-muted-foreground">{promoLine(i, now)}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">{resultsLine(i)}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{resultsLine(i, funnel[i.id])}</div>
             </div>
             {i.paused ? <Badge tone="gold">Pausado</Badge> : i.queued ? <Badge tone="gold">Na fila</Badge> : <Badge tone="primary">No ar</Badge>}
           </li>
         ))}
       </ul>
+      <p className="mt-3 text-[11px] text-muted-foreground">Visualizações são contadas por aparelho e por dia: um aparelho pode ser mais de uma pessoa. Conversões atribuídas consideram o último anúncio aberto em até 7 dias e não provam que o anúncio foi a causa.</p>
     </Card>
   );
 }

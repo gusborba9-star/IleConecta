@@ -90,12 +90,23 @@ export function editDaysDraft(raw, cap = 90) {
   return n > limit ? { text: String(limit), days: limit } : { text: digits, days: n };
 }
 
-/** Resultado da compra: pessoas que viram e que abriram (cada pessoa conta uma vez por dia). */
-export function resultsLine(i) {
+/** Resultado da compra. Visualizações são contadas por aparelho/dia (um aparelho pode ser mais de uma pessoa); conversões são «atribuídas» (último anúncio aberto em até 7 dias), sem afirmar causa. */
+export function resultsLine(i, f) {
   const v = Number(i?.views) || 0, o = Number(i?.opens) || 0;
   if (v === 0 && o === 0) return "Ainda sem resultados: aparecem aqui assim que alguém vir.";
-  const pessoas = (n) => `${n} ${n === 1 ? "pessoa" : "pessoas"}`;
-  return `Apareceu para ${pessoas(v)} · ${o === 1 ? "1 abriu" : `${o} abriram`}`;
+  const base = `${v} ${v === 1 ? "visualização" : "visualizações"} · ${o} ${o === 1 ? "abertura" : "aberturas"}`;
+  const c = Number(f?.chats) || 0, k = Number(f?.checkouts) || 0, p = Number(f?.payments) || 0;
+  if (!f || c + k + p === 0) return base;
+  return `${base} · conversões atribuídas: ${c} ${c === 1 ? "conversa" : "conversas"}, ${k} ${k === 1 ? "pedido ou reserva" : "pedidos ou reservas"}, ${p} ${p === 1 ? "pago" : "pagos"}`;
+}
+
+/** Lê o funil do banco ([{ id, chats, checkouts, payments }]) para um mapa por anúncio. */
+export function readFunnel(raw) {
+  const out = {};
+  for (const r of Array.isArray(raw) ? raw : []) {
+    if (r && typeof r.id === "string") out[r.id] = { chats: Number(r.chats) || 0, checkouts: Number(r.checkouts) || 0, payments: Number(r.payments) || 0 };
+  }
+  return out;
 }
 
 /**

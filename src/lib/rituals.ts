@@ -1,4 +1,5 @@
 import { rememberPlanGuard } from "@/lib/planGuard";
+import { attributeRef } from "@/lib/promoAttribution";
 import { supabase } from "@/lib/supabase";
 import { subscribeLive } from "@/lib/live";
 import { refundCancelled } from "@/lib/payments";
@@ -204,6 +205,7 @@ export async function fetchMyReservationOwners(userId: string): Promise<string[]
 export async function reserveSeat(eventId: string, answers: Record<string, string>): Promise<{ error: string | null; id: string | null }> {
   if (!supabase) return { error: "Indisponível.", id: null };
   const { data, error } = await supabase.rpc("reserve_event", { p_event: eventId, p_answers: answers });
+  if (!error && data) void attributeRef("reservation", String(data));
   return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
 }
 
