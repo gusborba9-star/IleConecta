@@ -95,8 +95,13 @@ test("rankFeed: destaque nas primeiras posições, impulsionadas intercaladas, s
 test("resultados por compra e nome da publicação impulsionada", async () => {
   const { resultsLine, promoName, readMyPromotions } = await import("../src/lib/promotionsCore.js");
   assert.match(resultsLine({ views: 0, opens: 0 }), /Ainda sem resultados/);
-  assert.equal(resultsLine({ views: 1, opens: 1 }), "Apareceu para 1 pessoa · 1 abriu");
-  assert.equal(resultsLine({ views: 12, opens: 3 }), "Apareceu para 12 pessoas · 3 abriram");
+  assert.equal(resultsLine({ views: 1, opens: 1 }), "1 visualização · 1 abertura");
+  assert.equal(resultsLine({ views: 12, opens: 3 }), "12 visualizações · 3 aberturas");
+  assert.equal(resultsLine({ views: 12, opens: 3 }, { chats: 2, checkouts: 1, payments: 1 }), "12 visualizações · 3 aberturas · conversões atribuídas: 2 conversas, 1 pedido ou reserva, 1 pago");
+  assert.equal(resultsLine({ views: 12, opens: 3 }, { chats: 0, checkouts: 0, payments: 0 }), "12 visualizações · 3 aberturas");
+  const { readFunnel } = await import("../src/lib/promotionsCore.js");
+  assert.deepEqual(readFunnel([{ id: "a", chats: 2, checkouts: "1", payments: null }, { id: 5 }, null]), { a: { chats: 2, checkouts: 1, payments: 0 } });
+  assert.deepEqual(readFunnel("x"), {});
   assert.match(resultsLine({}), /Ainda sem resultados/);
   assert.equal(promoName({ kind: "boost", scope: "cidade", itemType: "post", title: "Oi" }), 'Impulso da publicação "Oi" · Cidade');
   const r = readMyPromotions({ has_house: true, items: [{ id: "a", kind: "boost", scope: "cidade", status: "ativa", views: "7", opens: 2 }, { id: "b", kind: "boost", scope: "cidade", status: "ativa" }] });

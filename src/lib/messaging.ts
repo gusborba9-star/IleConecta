@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { attributeRef } from "@/lib/promoAttribution";
 import { subscribeLive } from "@/lib/live";
 
 export interface Peer {
@@ -68,7 +69,9 @@ export async function fetchPeer(otherId: string): Promise<Peer | null> {
 export async function openConversation(otherId: string): Promise<string | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("open_conversation", { p_other: otherId });
-  return error || typeof data !== "string" ? null : data;
+  if (error || typeof data !== "string") return null;
+  void attributeRef("conversation", data);
+  return data;
 }
 
 export async function listConversations(): Promise<ConversationRow[]> {

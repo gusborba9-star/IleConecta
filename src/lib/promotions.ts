@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { placeArgs } from "@/lib/placeStore";
-import { readAvailability, readMyPromotions, type PromoKind, type PromoScopeKey } from "@/lib/promotionsCore";
+import { readFunnel, readAvailability, readMyPromotions, type PromoKind, type PromoScopeKey } from "@/lib/promotionsCore";
 
 export async function fetchMyPromotions() {
   if (!supabase) return readMyPromotions(null);
@@ -78,4 +78,11 @@ export async function fetchVisiblePromotions(): Promise<VisiblePromo[]> {
 export async function trackPromotions(ids: string[], kind: "view" | "open"): Promise<void> {
   if (!supabase || ids.length === 0) return;
   try { await supabase.rpc("promo_track", { p_ids: ids.slice(0, 50), p_kind: kind, ...placeArgs() }); } catch { /* contagem nunca atrapalha a tela */ }
+}
+
+/** Conversões atribuídas por anúncio (só da própria casa). Sem dado ou com falha: vazio, e a tela mostra só visualizações e aberturas. */
+export async function fetchPromoFunnel() {
+  if (!supabase) return readFunnel(null);
+  const { data, error } = await supabase.rpc("promo_funnel");
+  return readFunnel(error ? null : data);
 }

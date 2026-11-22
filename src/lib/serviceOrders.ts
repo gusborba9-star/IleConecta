@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { attributeRef } from "@/lib/promoAttribution";
 import { subscribeLive } from "@/lib/live";
 import { refundCancelled } from "@/lib/payments";
 
@@ -86,12 +87,14 @@ async function call(fn: string, args: Record<string, unknown>): Promise<string |
 export async function createOrder(serviceId: string, note: string): Promise<{ error: string | null; id: string | null }> {
   if (!supabase) return { error: "Indisponível.", id: null };
   const { data, error } = await supabase.rpc("create_service_order", { p_service: serviceId, p_note: note });
+  if (!error && data) void attributeRef("service_order", String(data));
   return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
 }
 /** Agenda um horário (a casa precisa ter liberado o serviço para agenda). */
 export async function createBooking(serviceId: string, slotIso: string, note: string): Promise<{ error: string | null; id: string | null }> {
   if (!supabase) return { error: "Indisponível.", id: null };
   const { data, error } = await supabase.rpc("create_booking", { p_service: serviceId, p_slot: slotIso, p_note: note });
+  if (!error && data) void attributeRef("service_order", String(data));
   return error ? { error: error.message, id: null } : { error: null, id: data ? String(data) : null };
 }
 export const setOrderModality = (id: string, modality: "presencial" | "distancia") => call("set_order_modality", { p_order: id, p_modality: modality });
