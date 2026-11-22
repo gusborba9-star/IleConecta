@@ -3,7 +3,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(5), OWN1 = U(1), OWN2 = U(2), H1 = U(60), H2 = U(61);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Ana Souza", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
 const house = (id, owner, name, city) => ({ id, owner_id: owner, name, category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city, state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const ev = (id, hid, owner, name, title, days, taken = 2) => ({ id, house_id: hid, title, description: null, price_cents: 5000, seats_total: 10, mode: "presencial", starts_at: new Date(Date.now() + days * 86_400_000).toISOString(), duration_min: 90, status: "publicado", started_at: null, intake_fields: [], houses: { owner_id: owner, name } });
 const montar = (page, events, loc = {}) => api(page, { rest: { profiles: { ...pessoa, ...loc }, legal_consents: consents, houses: [house(H1, OWN1, "Casa Axé", "Salvador"), house(H2, OWN2, "Casa Longe", "Manaus")], events, service_orders: [], reservations: [] }, rpc: { house_follow_summary: { counts: {}, mine: [OWN1, OWN2] }, my_memberships: [], event_taken: [], post_like_counts: [], post_comment_counts: [] } });

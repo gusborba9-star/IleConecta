@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { api, U } from "./_api.mjs";
 
 const profile = { id: U(1), account_type: "pessoa", display_name: "Gustavo", avatar_url: null, bio: null, city: "Porto Alegre", state: "RS", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
 const base = (patch) => ({ rest: { profiles: (b, c, r) => (r?.method === "PATCH" ? patch(b) : profile), legal_consents: consents }, rpc: { report_client_error: true } });
 
 test("salva o perfil: manda só campos permitidos e avisa que deu certo", async ({ page }) => {

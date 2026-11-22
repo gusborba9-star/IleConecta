@@ -339,7 +339,7 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: "Métricas de visualização e impulsionamento",
         paragraphs: [
-          "Para fornecer relatórios transparentes de desempenho às casas e evitar contagens duplicadas, registramos temporariamente a interação (aparição ou clique) em conteúdos impulsionados ou em destaque. Esse registro técnico é usado apenas para medir a entrega do serviço contratado pela casa (execução de contrato, LGPD, art. 7º, V), sem perfilamento individual e sem uso de dados sobre crença ou religião.",
+          "Para fornecer relatórios transparentes de desempenho às casas e evitar contagens duplicadas, registramos temporariamente a interação (aparição ou clique) em conteúdos impulsionados ou em destaque. Esse registro técnico é usado apenas para medir a entrega do serviço contratado pela casa (execução dos Termos de Uso que você aceita ao entrar na plataforma, LGPD, art. 7º, V, o que viabiliza a busca, as conexões com as casas e a auditoria técnica antifraude e de entrega do sistema), sem perfilamento individual e sem uso de dados sobre crença ou religião.",
           "Os registros individuais de acesso são eliminados em até 24 horas, permanecendo apenas os totais diários sem identificação de usuários.",
         ],
       },
@@ -353,7 +353,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: "Conversões atribuídas aos anúncios",
         paragraphs: [
           "Quando você abre um anúncio, o aplicativo guarda no aparelho um código técnico temporário, válido por 7 dias, sem nenhum dado pessoal. Se, nesse prazo e no mesmo aparelho, você iniciar uma conversa, um pedido ou uma reserva com a casa anunciante, registramos apenas a ligação entre o anúncio, o tipo de ação, o identificador da ação e a data.",
-          "Esse registro serve para informar à casa, de forma agregada, o resultado do serviço contratado. Ele é mantido por 13 (treze) meses e depois excluído automaticamente; também é excluído quando a conversa, o pedido ou a reserva de origem deixam de existir, para que nunca sirva de atalho para identificar alguém.",
+          "Esse registro serve para informar à casa, de forma agregada, o resultado do serviço contratado. Ele é mantido por 13 (treze) meses, para análise anual de desempenho, e depois excluído automaticamente; também é excluído quando a conversa, o pedido ou a reserva de origem deixam de existir, para que nunca sirva de atalho para identificar alguém.",
         ],
       },
       {

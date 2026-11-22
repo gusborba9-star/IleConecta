@@ -3,7 +3,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), ANA = U(2), BIA = U(3);
 const profile = { id: ME, account_type: "pessoa", display_name: "Eu", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }];
 const TEAM = [
   { user_id: ME, email: "dono@x.com", name: "Gustavo", owner: true, perms: [], created_at: "2026-01-01T00:00:00Z" },
   { user_id: ANA, email: "ana@x.com", name: "Ana <b>Suporte</b>", owner: false, perms: ["suporte"], created_at: "2026-02-01T00:00:00Z" },

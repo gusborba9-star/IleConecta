@@ -4,7 +4,7 @@ import { api, U } from "./_api.mjs";
 
 const ME = U(5), OTHER = U(1), CONV = "c0000000-0000-0000-0000-000000000001";
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Ana Souza", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
 const agora = Math.floor(Date.now() / 1000);
 const token = (exp) => `${Buffer.from(JSON.stringify({ v: 1, p: U(70), h: U(60), iat: agora - 60, exp, n: "x" })).toString("hex")}.${"a".repeat(64)}`;
 
