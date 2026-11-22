@@ -21,11 +21,13 @@ export default function NearYou({ highlightOwners = [], allow }: { highlightOwne
     [list, users, currentUser?.city, highlightOwners, allow]
   );
   if (items.length === 0) return null;
+  // Só promete "sua cidade" quando há algo da cidade dela; sem localização a faixa segue com destaques e próximos rituais de qualquer lugar.
+  const title = items.some((r) => r.near) ? "Na sua cidade e em destaque" : "Próximos rituais e em destaque";
 
   return (
     <section aria-labelledby="na-sua-cidade">
       <div className="mb-2 flex items-center justify-between px-0.5">
-        <h2 id="na-sua-cidade" className="text-[15px] font-semibold">Na sua cidade e em destaque</h2>
+        <h2 id="na-sua-cidade" className="text-[15px] font-semibold">{title}</h2>
         <Link to="/rituais" className="inline-flex min-h-9 items-center text-xs font-semibold text-primary hover:underline">Ver tudo</Link>
       </div>
       <ul className="scroll-x flex snap-x gap-2.5 pb-1">
