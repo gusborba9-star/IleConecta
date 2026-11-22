@@ -41,3 +41,13 @@ test("Descobrir: Na minha cidade usa a cidade do perfil", async ({ page }) => {
   await expect(page.getByText("Casa Salvador Dois")).toBeVisible();
   await expect(page.getByText("Casa Manaus")).toHaveCount(0);
 });
+
+test("Descobrir (desktop): um único campo de busca", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await setup(page);
+  await page.goto("/descobrir");
+  await expect(page.getByLabel("Buscar casas", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Buscar casas e rituais")).toBeHidden();
+  await page.goto("/rituais");
+  await expect(page.getByLabel("Buscar casas e rituais")).toBeVisible();
+});
