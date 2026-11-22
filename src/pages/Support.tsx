@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/base";
 import { INFO_PAGES } from "@/content/institutional";
-import { FAQ } from "@/content/faq";
+import { FAQ_CLIENT, FAQ_HOUSE } from "@/content/faq";
 import { LifeBuoy } from "lucide-react";
 import { Button } from "@/components/base";
 import ConectaChat from "@/components/support/ConectaChat";
@@ -42,7 +42,7 @@ export default function Support() {
       </Card>
       <Card className="p-6 space-y-4">
         <h2 className="font-display font-bold text-lg">Perguntas frequentes</h2>
-        {FAQ.map((f) => (
+        {(currentUser?.type === "commercial" ? FAQ_HOUSE : FAQ_CLIENT).map((f) => (
           <div key={f.q}>
             <div className="font-semibold text-sm">{f.q}</div>
             <p className="text-sm text-muted-foreground">{f.a}</p>

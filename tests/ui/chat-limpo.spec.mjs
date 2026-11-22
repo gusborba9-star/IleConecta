@@ -96,3 +96,28 @@ test("celular: ao enviar, cabeçalho, faixa 'Devolver à assistente' e campo fic
   expect(await page.evaluate(() => window.scrollY)).toBe(rolagem0);
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe("hidden");
 });
+
+test("três autores se distinguem: minha mensagem verde, do cliente neutra, da assistente com tom próprio", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 740 });
+  const lista = [...mensagens, msg(9, ME, "Resposta automática da Lara", hoje.toISOString(), { from_assistant: true })];
+  await api(page, {
+    rest: { profiles: casa, legal_consents: consents, houses: [house], messages: lista },
+    rpc: { open_conversation: CONV, peer_info: [{ id: OTHER, name: "Maria", avatar_url: null, is_house: false, online: true }], conversation_handoff_state: [{ state: "ativa", handler_name: "Casa Axé", since: hoje.toISOString(), active: true }], my_conversations: [] },
+  });
+  await page.goto(`/mensagens/${OTHER}`);
+  const fundo = (t) => page.getByText(t).locator("xpath=ancestor-or-self::div[contains(@class,'rounded-2xl')][1]").evaluate((e) => getComputedStyle(e).backgroundColor);
+  const minha = await fundo("Boa, temos sim");
+  const cliente = await fundo("Pode me explicar?");
+  const assistente = await fundo("Resposta automática da Lara");
+  expect(new Set([minha, cliente, assistente]).size).toBe(3);
+});
+
+test("perguntas frequentes: casa e cliente veem listas diferentes, sem taxas nem planos", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 740 });
+  await api(page, { rest: { profiles: casa, legal_consents: consents, houses: [house] } });
+  await page.goto("/suporte");
+  await expect(page.getByText("Como inicio e concluo um ritual ou trabalho?")).toBeVisible();
+  await expect(page.getByText("Como reservo um ritual ou contrato um serviço?")).toHaveCount(0);
+  await expect(page.getByText(/Qual é a taxa da plataforma|15%|Stripe/)).toHaveCount(0);
+  await noHScroll(page);
+});
