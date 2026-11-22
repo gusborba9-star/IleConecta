@@ -120,7 +120,7 @@ export default function HouseHome() {
     <div className="space-y-4 pb-16 lg:pb-4">
       {isRemoteAuth && <BillingAlertCard />}
       <Card className="p-5">
-        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Painel da casa</div>
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Painel da casa</div>
         <h1 className="mt-1 break-words font-display text-2xl font-bold sm:text-3xl">Olá, {house.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{waiting > 0 ? `${waiting} ${waiting === 1 ? "assunto espera" : "assuntos esperam"} por você.` : "Tudo em dia por aqui."}</p>
         <div role="group" aria-label="Publicar agora" className="mt-4 grid grid-cols-3 gap-2">
