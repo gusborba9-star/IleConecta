@@ -13,7 +13,7 @@ const setup = (page, type, id, extra = {}, follows) => api(page, {
   rpc: { house_follow_summary: { counts: {}, mine: follows ?? [OWNER, OTHER_OWNER] }, post_like_counts: [], post_comment_counts: [], my_memberships: [], ...(extra.rpc ?? {}) },
 });
 
-test("cliente filtra por categoria e por cidade", async ({ page }) => {
+test("cliente filtra por categoria (Perto de mim fica em Descobrir)", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page, "cliente", CLIENT);
   await page.goto("/comunidade");
@@ -21,9 +21,7 @@ test("cliente filtra por categoria e por cidade", async ({ page }) => {
   await page.getByRole("button", { name: "Avisos" }).click();
   await expect(page.getByText("Aviso do mês")).toBeVisible();
   await expect(page.getByText("Gira de sábado")).toHaveCount(0);
-  await page.getByRole("button", { name: "Perto de mim" }).click();
-  await expect(page.getByText("Gira de sábado")).toBeVisible();
-  await expect(page.getByText("Texto sobre ervas")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Perto de mim" })).toHaveCount(0); // vive em Descobrir casas
   await page.getByRole("button", { name: "Todos", exact: true }).click();
   await expect(page.getByText("Texto sobre ervas")).toBeVisible();
   await noHScroll(page);

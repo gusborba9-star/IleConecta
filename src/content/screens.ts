@@ -2,7 +2,7 @@
 export interface Screen { path: string; name: string; what: string; audience?: "cliente" | "casa" | "todos" | "admin" }
 export const SCREENS: Screen[] = [
   { path: "/", name: "Início", what: "Resumo e atalhos.", audience: "todos" },
-  { path: "/descobrir", name: "Casas", what: "Procurar casas espirituais por cidade e tradição.", audience: "todos" },
+  { path: "/descobrir", name: "Casas", what: "Procurar casas por nome, cidade ou pelo que a pessoa precisa (Prosperidade, Amor, Proteção, Saúde, Orientação) e pelo botão Perto de mim; casas impulsionadas ou em destaque aparecem primeiro.", audience: "todos" },
   { path: "/rituais", name: "Rituais", what: "Rituais e encontros com vagas; reservar e pagar.", audience: "todos" },
   { path: "/mensagens", name: "Mensagens", what: "Conversas com casas e clientes. No menu ⋮ da conversa: bloquear e Relatar ocorrência.", audience: "todos" },
   { path: "/perfil?aba=atividade", name: "Minha atividade", what: "Reservas, pedidos e pagamentos do cliente; daqui se pede reembolso.", audience: "cliente" },
