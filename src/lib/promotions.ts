@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { placeArgs } from "@/lib/placeStore";
 import { readAvailability, readMyPromotions, type PromoKind, type PromoScopeKey } from "@/lib/promotionsCore";
 
 export async function fetchMyPromotions() {
@@ -67,7 +68,7 @@ export async function leavePromoWaitlist(scope: PromoScopeKey): Promise<void> {
 export interface VisiblePromo { id: string; kind: PromoKind; scope: PromoScopeKey; houseId: string; ownerId: string; itemType: string | null; itemId: string | null }
 export async function fetchVisiblePromotions(): Promise<VisiblePromo[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc("promotions_visible");
+  const { data, error } = await supabase.rpc("promotions_visible", placeArgs());
   if (error || !Array.isArray(data)) return [];
   return data.flatMap((r: Record<string, unknown>) => (r && typeof r.id === "string" && (r.kind === "boost" || r.kind === "highlight") && typeof r.house_id === "string" && typeof r.owner_id === "string"
     ? [{ id: r.id, kind: r.kind as PromoKind, scope: r.scope as PromoScopeKey, houseId: r.house_id, ownerId: r.owner_id, itemType: typeof r.item_type === "string" ? r.item_type : null, itemId: typeof r.item_id === "string" ? r.item_id : null }] : []));
@@ -76,5 +77,5 @@ export async function fetchVisiblePromotions(): Promise<VisiblePromo[]> {
 /** Registra que a promoção foi vista ou aberta. O banco só conta o que está no ar para quem vê, uma vez por pessoa por dia. Falha em silêncio. */
 export async function trackPromotions(ids: string[], kind: "view" | "open"): Promise<void> {
   if (!supabase || ids.length === 0) return;
-  try { await supabase.rpc("promo_track", { p_ids: ids.slice(0, 50), p_kind: kind }); } catch { /* contagem nunca atrapalha a tela */ }
+  try { await supabase.rpc("promo_track", { p_ids: ids.slice(0, 50), p_kind: kind, ...placeArgs() }); } catch { /* contagem nunca atrapalha a tela */ }
 }

@@ -1,32 +1,14 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { nearestPlace, readPlaceNow } from "@/lib/geoCore.js";
+import { clearPlaceNow, readRaw, setPlaceNow, subscribe } from "@/lib/placeStore";
 
-/** Cidade onde a pessoa está agora (viagem), só neste aparelho e por até 7 dias. A cidade do perfil não muda e as coordenadas nunca são guardadas nem enviadas. */
-const KEY = "ic.place.now";
-const listeners = new Set<() => void>();
-const read = (): string => { try { return localStorage.getItem(KEY) ?? ""; } catch { return ""; } };
-const emit = () => listeners.forEach((l) => l());
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  const onStorage = (e: StorageEvent) => e.key === KEY && l();
-  window.addEventListener("storage", onStorage);
-  return () => { listeners.delete(l); window.removeEventListener("storage", onStorage); };
-};
-
-export function setPlaceNow(city: string, state: string) {
-  try { localStorage.setItem(KEY, JSON.stringify({ city, state, at: Date.now() })); } catch { /* sem armazenamento: vale só até recarregar */ }
-  emit();
-}
-export function clearPlaceNow() {
-  try { localStorage.removeItem(KEY); } catch { /* nada a limpar */ }
-  emit();
-}
+export { clearPlaceNow, setPlaceNow };
 
 /** Cidade que vale para mostrar casas e rituais: a do momento (se houver e estiver válida) ou a do perfil. */
 export function usePlace() {
   const { currentUser } = useApp();
-  const raw = useSyncExternalStore(subscribe, read, () => "");
+  const raw = useSyncExternalStore(subscribe, readRaw, () => "");
   const now = useMemo(() => readPlaceNow(raw), [raw]);
   const home = { city: currentUser?.city ?? "", state: currentUser?.state ?? "" };
   return { city: now?.city ?? home.city, state: now?.state ?? home.state, temporary: Boolean(now), home };
