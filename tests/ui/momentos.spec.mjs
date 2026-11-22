@@ -30,6 +30,28 @@ const setup = async (page, type, plan, extra = {}) => {
 const png = (name = "foto.png") => ({ name, mimeType: "image/png", buffer: PNG });
 
 test.describe("momentos das casas", () => {
+  test("avatar do cartão: anel e foto formam um círculo só (mesmo tamanho e centro)", async ({ page }) => {
+    await setup(page, "cliente", null);
+    await page.goto("/comunidade");
+    const anel = page.getByTestId("moment-card").first().locator("span.rounded-full").first();
+    const foto = anel.locator("div").first();
+    const [r, f] = [await anel.boundingBox(), await foto.boundingBox()];
+    expect(Math.abs(r.width - f.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.height - f.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.x - f.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.y - f.y)).toBeLessThanOrEqual(1);
+  });
+
+  test("página da casa: o anel dos momentos e a foto são um círculo só (sem segundo círculo deslocado)", async ({ page }) => {
+    const hA = { id: U(61), owner_id: CASA_A, name: "Casa de Oxum", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } };
+    await setup(page, "cliente", null, { rest: { houses: [hA] } });
+    await page.goto(`/casa/${CASA_A}`);
+    const botao = page.getByRole("button", { name: /Ver os momentos de/ });
+    await expect(botao).toBeVisible();
+    const [r, f] = [await botao.boundingBox(), await botao.locator("div").first().boundingBox()];
+    for (const k of ["x", "y", "width", "height"]) expect(Math.abs(r[k] - f[k])).toBeLessThanOrEqual(1);
+  });
+
   test("cliente: vê o carrossel (seguidas primeiro), sem 'Criar momento'; abre em tela cheia e navega", async ({ page }) => {
     await setup(page, "cliente", null);
     await page.goto("/comunidade");

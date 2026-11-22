@@ -113,7 +113,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
               >
                 {!broken[thumb] && <img src={thumb} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken((b) => ({ ...b, [thumb]: true }))} />}
                 <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/5 from-40% to-black/70" />
-                <span className={`absolute top-2 left-2 rounded-full ${done ? "ring-2 ring-white/60" : "ring-2 ring-gold"} ring-offset-1 ring-offset-black/30`}>
+                <span className={`absolute top-2 left-2 flex rounded-full leading-none ${done ? "ring-2 ring-white/60" : "ring-2 ring-gold"} ring-offset-1 ring-offset-black/30`}>
                   <Avatar src={g.avatar} name={g.name} size={34} />
                 </span>
                 {first.kind === "video" && <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/50 grid place-items-center text-white"><Play className="h-3 w-3" aria-hidden /></span>}
