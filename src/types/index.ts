@@ -51,6 +51,8 @@ export interface Post {
   kind: "trabalho" | "ritual" | "buzios" | "story" | "geral";
   /** Categoria escolhida pela casa ao publicar (ausente = geral). */
   category?: import("@/lib/postCategoryCore").PostCategory;
+  /** Ritual real (events.id) anexado pela casa: o feed mostra o cartão da gira com "Reservar vaga". */
+  eventId?: string;
   ritualId?: string;
   likes: string[]; // user ids visíveis (o banco só mostra as próprias curtidas; a dona da casa vê todas)
   likeCount?: number; // total público, vindo de post_like_counts

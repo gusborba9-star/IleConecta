@@ -10,6 +10,7 @@ import { EMPTY_STYLE, type StyleDraft } from "@/components/feed/postStyleDraft";
 import { useOwnerPlan } from "@/lib/housePlan";
 import { toColumn, validateDraft } from "@/lib/postCardCore";
 import { fitToMode, scrimPctFor } from "@/lib/postLettersCore";
+import { fetchHouseRituals, type RealRitual } from "@/lib/rituals";
 import { CATEGORIES, type PostCategory } from "@/lib/postCategoryCore.js";
 import { removeCardImage, uploadCardImage } from "@/lib/postImages";
 
@@ -19,6 +20,8 @@ export default function PostComposer() {
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
   const [category, setCategory] = useState<PostCategory>("geral");
+  const [eventId, setEventId] = useState("");
+  const [myRituals, setMyRituals] = useState<RealRitual[]>([]);
   const isHouse = currentUser?.type === "commercial";
   const [style, setStyle] = useState<StyleDraft>(EMPTY_STYLE);
   // A barra fica fechada (como "No que você está pensando?"); o editor completo abre numa janela.
@@ -31,6 +34,16 @@ export default function PostComposer() {
   useEffect(() => {
     if (wantsOpen && currentUser) setOpen(true);
   }, [wantsOpen, currentUser]);
+
+  // Giras e eventos: a casa pode anexar um dos seus rituais abertos (cartão com "Reservar vaga" no feed).
+  const wantsRitual = isHouse && isRemoteAuth && category === "evento";
+  const uid = currentUser?.id;
+  useEffect(() => {
+    if (!wantsRitual || !uid) return;
+    let alive = true;
+    void fetchHouseRituals(uid).then((l) => alive && setMyRituals(l.filter((r) => r.status === "publicado" && Date.parse(r.startsAt) > Date.now())));
+    return () => { alive = false; };
+  }, [wantsRitual, uid]);
 
   if (!currentUser) return null;
 
@@ -55,6 +68,7 @@ export default function PostComposer() {
         content: text.trim(),
         kind: "geral",
         category,
+        eventId: category === "evento" && eventId ? eventId : undefined,
         image: col ? undefined : image || undefined,
         card: col && style.image ? { style: col, image: style.image.previewUrl, scrimPct: col === "total" ? scrimPctFor(style.image.brightness, style.letters.color) : style.image.scrimPct, letters: fitToMode(style.letters, col) } : undefined,
       },
@@ -68,6 +82,7 @@ export default function PostComposer() {
     setText("");
     setImage("");
     setCategory("geral");
+    setEventId("");
     setStyle(EMPTY_STYLE);
     setOpen(false);
     toast.success(isRemoteAuth ? "Publicação enviada." : "Publicação adicionada ao feed local de demonstração.");
@@ -112,6 +127,15 @@ export default function PostComposer() {
                 );
               })}
             </div>
+          )}
+          {wantsRitual && myRituals.length > 0 && (
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold">Anexar um ritual (opcional)</span>
+              <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="h-11 w-full rounded-[14px] border border-input bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="">Sem ritual</option>
+                {myRituals.map((r) => <option key={r.id} value={r.id}>{r.title} · {new Date(r.startsAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}</option>)}
+              </select>
+            </label>
           )}
           <Textarea
             id="texto-da-publicacao"

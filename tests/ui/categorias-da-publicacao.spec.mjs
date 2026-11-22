@@ -38,3 +38,30 @@ test("casa escolhe a categoria e ela vai no envio", async ({ page }) => {
   await page.getByRole("button", { name: "Publicar", exact: true }).click();
   await expect.poll(() => calls.find((c) => c.kind === "rest" && c.name === "posts" && c.method === "POST")?.body?.category).toBe("evento");
 });
+
+const EV = (extra = {}) => ({ id: U(80), house_id: HID, title: "Gira de Caboclos", description: null, price_cents: 5000, seats_total: 10, mode: "presencial", starts_at: new Date(Date.now() + 3 * 86_400_000).toISOString(), duration_min: 90, status: "publicado", started_at: null, intake_fields: [], houses: { owner_id: OWNER, name: "Casa Axé" }, ...extra });
+
+test("post com ritual anexado mostra o cartão da gira com Reservar vaga; sem vaga vira Ver gira", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page, "cliente", CLIENT, { events: [EV()], posts: [{ ...post(U(905), HID, OWNER, "Venha para a gira", "evento"), event_id: U(80) }] });
+  await page.goto("/comunidade");
+  const cartao = page.getByRole("link", { name: "Reservar vaga" });
+  await expect(cartao).toHaveAttribute("href", `/casa/${OWNER}?aba=rituais`);
+  await expect(page.getByText("Gira de Caboclos").first()).toBeVisible();
+  await noHScroll(page);
+});
+
+test("casa em Giras e eventos escolhe o ritual e o envio leva event_id; só aparece ritual aberto e futuro", async ({ page }) => {
+  const calls = await setup(page, "casa", OWNER, { events: [EV(), EV({ id: U(81), title: "Já passou", starts_at: new Date(Date.now() - 86_400_000).toISOString() }), EV({ id: U(82), title: "Rascunho", status: "rascunho" })] });
+  await page.goto("/comunidade");
+  await page.getByRole("button", { name: /Diga algo/ }).click();
+  const d = page.getByRole("dialog");
+  await expect(d.getByLabel(/Anexar um ritual/)).toHaveCount(0);
+  await d.getByRole("button", { name: "Giras e eventos" }).click();
+  const sel = d.getByLabel(/Anexar um ritual/);
+  await expect(sel.locator("option")).toHaveCount(2); // "Sem ritual" + a gira aberta
+  await sel.selectOption(U(80));
+  await d.getByLabel("Texto da publicação").fill("Gira aberta sexta");
+  await d.getByRole("button", { name: "Publicar", exact: true }).click();
+  await expect.poll(() => calls.find((c) => c.kind === "rest" && c.name === "posts" && c.method === "POST")?.body?.event_id).toBe(U(80));
+});
