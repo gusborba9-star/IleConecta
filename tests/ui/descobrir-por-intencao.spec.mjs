@@ -51,3 +51,16 @@ test("Descobrir (desktop): um único campo de busca", async ({ page }) => {
   await page.goto("/rituais");
   await expect(page.getByLabel("Buscar casas e rituais")).toBeVisible();
 });
+
+test("Viajando em Manaus: 'Na minha cidade' passa a usar a cidade do momento", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: -3.119, longitude: -60.0217 });
+  await setup(page);
+  await page.goto("/descobrir");
+  await page.getByRole("button", { name: "Usar minha localização atual" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Você está em Manaus, AM" })).toBeVisible();
+  await page.getByRole("button", { name: "Na minha cidade" }).click();
+  await expect(page.getByText("Casa Manaus")).toBeVisible();
+  await expect(page.getByText("Casa Salvador", { exact: true })).toHaveCount(0);
+});

@@ -126,13 +126,14 @@ export default function Register() {
             <PasswordInput id="register-password" minLength={isRemoteAuth ? 8 : undefined} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
           <div>
-            <Label htmlFor="register-city">Cidade</Label>
+            <Label htmlFor="register-city">{type === "commercial" ? "Cidade" : "Cidade (opcional)"}</Label>
             <Input id="register-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
           </div>
           <div>
-            <Label htmlFor="register-state">Estado</Label>
+            <Label htmlFor="register-state">{type === "commercial" ? "Estado" : "Estado (opcional)"}</Label>
             <StateSelect id="register-state" value={form.state} onChange={(uf) => setForm({ ...form, state: uf })} />
           </div>
+          {type !== "commercial" && <p className="md:col-span-2 -mt-1 text-xs text-muted-foreground">Com sua cidade mostramos primeiro as casas e rituais perto de você. Você pode informar depois.</p>}
           {type === "commercial" && (
             <div className="md:col-span-2">
               <Label htmlFor="register-category">Categoria / tradição</Label>

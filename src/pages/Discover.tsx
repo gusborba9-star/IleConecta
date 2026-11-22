@@ -5,6 +5,8 @@ import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
 import { INTENTS, intentOf, matchesIntent } from "@/lib/intentsCore.js";
 import { sameCity } from "@/lib/postCategoryCore.js";
+import { usePlace } from "@/lib/placeNow";
+import PlaceNow from "@/components/profile/PlaceNow";
 import { fetchRitualCatalog, type CatalogRitual } from "@/lib/rituals";
 import { cn, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
@@ -43,7 +45,7 @@ export default function Discover() {
     setSearchParams(next, { replace: true });
   };
   const setChip = (id: string) => setParam({ cidade: id === "cidade" ? "1" : null, intencao: id && id !== "cidade" ? id : null });
-  const viewerCity = currentUser?.city;
+  const viewerCity = usePlace().city;
 
   useEffect(() => setQ(searchParams.get("q") ?? ""), [searchParams]);
 
@@ -138,6 +140,7 @@ export default function Discover() {
       </Card>
 
       {currentUser?.type === "personal" && <LocationPrompt context={chip === "cidade" ? "inline" : "home"} />}
+      {currentUser?.type === "personal" && <PlaceNow />}
 
       {isRemoteAuth && <BoostedServices boosted={promo.boosted} />}
 
