@@ -4,6 +4,7 @@ import { useReach } from "@/lib/useReach";
 import { canSee, reachSets } from "@/lib/reachCore.js";
 import WelcomeClient from "@/components/feed/WelcomeClient";
 import LocationPrompt from "@/components/profile/LocationPrompt";
+import PlaceNow from "@/components/profile/PlaceNow";
 import NearYou from "@/components/feed/NearYou";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
@@ -84,6 +85,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
       <PostComposer />
 
       {isClient && <LocationPrompt />}
+      {isClient && <PlaceNow />}
       {isClient && restrict && reach.ready && reach.follows.length + reach.bonds.length === 0 && <WelcomeClient name={currentUser?.name} />}
       {isClient && isRemoteAuth && <NearYou highlightOwners={promo.highlightOwners} allow={allowOwner ?? (() => false)} />}
       <div>

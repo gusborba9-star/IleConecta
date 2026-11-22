@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, MapPin } from "lucide-react";
+import { usePlace } from "@/lib/placeNow";
 import { useApp } from "@/contexts/AppContext";
 import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
 import { dateBlock, pickNearYou } from "@/lib/nearYouCore.js";
 
 /** "Na sua cidade e em destaque": próximas giras e rituais em cartões compactos (data em destaque, casa, cidade e vagas). Some se não houver nada. */
 export default function NearYou({ highlightOwners = [], allow }: { highlightOwners?: string[]; allow?: (ownerId: string, itemId: string) => boolean }) {
-  const { currentUser, users, isRemoteAuth } = useApp();
+  const { users, isRemoteAuth } = useApp();
+  const place = usePlace();
   const [list, setList] = useState<RealRitual[] | null>(null);
   useEffect(() => {
     if (!isRemoteAuth) return;
@@ -17,8 +19,8 @@ export default function NearYou({ highlightOwners = [], allow }: { highlightOwne
   }, [isRemoteAuth]);
 
   const items = useMemo(
-    () => pickNearYou({ rituals: (list ?? []).filter((r) => !allow || (r.ownerId !== null && allow(r.ownerId, r.id))), cityOf: (o: string) => users.find((u) => u.id === o)?.city, viewerCity: currentUser?.city, highlightOwners, limit: 8 }),
-    [list, users, currentUser?.city, highlightOwners, allow]
+    () => pickNearYou({ rituals: (list ?? []).filter((r) => !allow || (r.ownerId !== null && allow(r.ownerId, r.id))), cityOf: (o: string) => users.find((u) => u.id === o)?.city, viewerCity: place.city, highlightOwners, limit: 8 }),
+    [list, users, place.city, highlightOwners, allow]
   );
   if (items.length === 0) return null;
   // Só promete "sua cidade" quando há algo da cidade dela; sem localização a faixa segue com destaques e próximos rituais de qualquer lugar.

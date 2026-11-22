@@ -7,7 +7,7 @@ export const FAQ_CLIENT: FaqItem[] = [
   { q: "Como vou saber que o ritual começou?", a: "Quando a casa inicia e quando conclui, você recebe um aviso. Vale para quem reservou ou contratou, inclusive trabalhos à distância e em sigilo." },
   { q: "Como falo com a casa?", a: "Pelo chat, em Mensagens. A assistente da casa responde na hora sobre serviços, valores e vagas; se a pergunta for além, ela chama a casa e a resposta vem na mesma conversa." },
   { q: "A assistente pode errar?", a: "Ela usa só o que a casa cadastrou e avisa quando precisa confirmar algo. Em caso de dúvida, peça para falar com a casa." },
-  { q: "O que aparece no meu Início?", a: "O que as casas que você segue ou com as quais tem vínculo publicam, e os destaques da rede. Toque em Na minha cidade em Casas para ver as da sua cidade." },
+  { q: "O que aparece no meu Início?", a: "O que as casas que você segue ou com as quais tem vínculo publicam, e os destaques da rede. Toque em Na minha cidade em Casas para ver as da sua cidade. Viajando? Toque em Usar minha localização atual e, se você autorizar, mostramos o que há onde você está, sem guardar suas coordenadas." },
   { q: "Preciso cancelar ou tive um problema. O que faço?", a: "Fale primeiro com a casa pelo chat. Se não resolver, abra um chamado aqui em Suporte e a equipe acompanha com você." },
 ];
 

@@ -42,3 +42,28 @@ test("sem cidade informada: a faixa não promete cidade, mostra destaques e ritu
   await expect(page.getByText("Em qual cidade você está?")).toHaveCount(0);
   await noHScroll(page);
 });
+
+test("Viajando: GPS autorizado mostra a cidade do momento e dá para voltar; negado não muda nada", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: -23.55, longitude: -46.634 }); // São Paulo
+  await montar(page, [ev(U(90), H1, OWN1, "Casa Axé", "Gira de Caboclos", 3), ev(U(91), H2, OWN2, "Casa Longe", "Ritual da Prosperidade", 1)]);
+  await page.goto("/descobrir");
+  await page.getByRole("button", { name: "Usar minha localização atual" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Você está em São Paulo, SP" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem("ic.place.now")))).toBe(true);
+  expect(await page.evaluate(() => localStorage.getItem("ic.place.now"))).not.toMatch(/-23\.55|-46\.63|lat|lon/); // coordenadas não são guardadas
+  await page.getByRole("button", { name: "Voltar para Salvador" }).click();
+  await expect(page.getByRole("button", { name: "Usar minha localização atual" })).toBeVisible();
+  await noHScroll(page);
+});
+
+test("Viajando: sem autorização segue normal", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await context.clearPermissions();
+  await montar(page, [ev(U(90), H1, OWN1, "Casa Axé", "Gira de Caboclos", 3)]);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Usar minha localização atual" }).click();
+  await expect(page.getByText(/Sem autorização de localização/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Na sua cidade e em destaque" })).toBeVisible();
+});
