@@ -44,6 +44,7 @@ import PlatformHealthCard from "@/components/admin/PlatformHealthCard";
 import MaintenanceCard from "@/components/admin/MaintenanceCard";
 import OperatorCard from "@/components/admin/OperatorCard";
 import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
+import AdminEquityCard from "@/components/admin/AdminEquityCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -124,6 +125,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       {section === "visao" && can("dono") && <PlatformHealthCard />}
       {section === "visao" && can("dono") && <MaintenanceCard />}
       {section === "visao" && <AdminIndicatorsCard />}
+      {section === "visao" && <AdminEquityCard />}
 
       {section === "visao" && (!metrics ? (
         <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card>
