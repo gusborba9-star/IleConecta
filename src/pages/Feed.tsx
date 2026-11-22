@@ -1,5 +1,7 @@
 import { useApp } from "@/contexts/AppContext";
 import MomentsRail from "@/components/feed/MomentsRail";
+import { useReach } from "@/lib/useReach";
+import { canSee, reachSets } from "@/lib/reachCore.js";
 import NearYou from "@/components/feed/NearYou";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
@@ -36,9 +38,19 @@ export default function Feed({ home = false }: { home?: boolean }) {
   // As casas em destaque ficam num bloco próprio (FeedPromos); aqui só as publicações impulsionadas entram intercaladas.
   const [filter, setFilter] = useState("todos");
   const viewerCity = currentUser?.city ?? "";
+  // Alcance (conta real): só casas seguidas, com vínculo, em destaque ou o que está impulsionado; o link de uma publicação compartilhada sempre abre.
+  const restrict = isRemoteAuth && currentUser?.type !== "commercial"; // casas continuam vendo a rede; a regra vale para clientes
+  const reach = useReach(restrict, currentUser?.id);
+  const sets = useMemo(
+    () => reachSets({ follows: reach.follows, bonds: reach.bonds, highlightOwners: promo.highlightOwners, boostedItemIds: [...promo.boostedIds] }),
+    [reach.follows, reach.bonds, promo.highlightOwners, promo.boostedIds]
+  );
+  const allowOwner = useMemo(() => (restrict && reach.ready ? (ownerId: string, itemId?: string) => canSee({ viewerId: currentUser?.id, ownerId, itemId }, sets) : undefined), [restrict, reach.ready, sets, currentUser?.id]);
   const visible = useMemo(
-    () => posts.filter((p) => matchesFilter(filter, { category: p.category, authorCity: users.find((u) => u.id === p.houseId)?.city, viewerCity })),
-    [posts, filter, users, viewerCity]
+    () => (restrict && !reach.ready ? [] : posts)
+      .filter((p) => !restrict || p.id === wanted || canSee({ viewerId: currentUser?.id, ownerId: p.houseId, itemId: p.id }, sets))
+      .filter((p) => matchesFilter(filter, { category: p.category, authorCity: users.find((u) => u.id === p.houseId)?.city, viewerCity })),
+    [posts, filter, users, viewerCity, restrict, reach.ready, sets, wanted, currentUser?.id]
   );
   const ranked = useMemo(() => rankFeed(visible, { boostedPostIds: promo.boostedPostIds }), [visible, promo.boostedPostIds]);
   const feedItems: ({ kind: "post"; data: Post; tag: "destaque" | "promovido" | null } | { kind: "promo" })[] = [];
@@ -70,9 +82,9 @@ export default function Feed({ home = false }: { home?: boolean }) {
       )}
       <PostComposer />
 
-      {isClient && isRemoteAuth && <NearYou highlightOwners={promo.highlightOwners} />}
+      {isClient && isRemoteAuth && <NearYou highlightOwners={promo.highlightOwners} allow={allowOwner ?? (() => false)} />}
       <div>
-        <MomentsRail highlightOwners={promo.highlightOwners} />
+        <MomentsRail highlightOwners={promo.highlightOwners} allow={restrict ? (allowOwner ? (o: string) => allowOwner(o) : () => false) : undefined} />
       </div>
 
       <div role="group" aria-label="Filtrar publicações" className="sticky top-[60px] z-20 flex gap-2 overflow-x-auto rounded-full border border-border bg-background/95 px-2 py-2 backdrop-blur scroll-x">
@@ -89,6 +101,13 @@ export default function Feed({ home = false }: { home?: boolean }) {
 
       {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
 
+      {filter === "todos" && restrict && reach.ready && feedItems.length === 0 && (
+        <Card className="p-6 text-center">
+          <p className="text-[15px] font-semibold">Siga casas para ver o que elas publicam</p>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">As publicações das casas que você segue aparecem aqui.</p>
+          <Link to="/descobrir" className="mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">Descobrir casas</Link>
+        </Card>
+      )}
       {filter !== "todos" && feedItems.length === 0 && (
         <Card className="p-6 text-center text-sm text-muted-foreground">
           {filter === "perto" && !viewerCity ? "Informe sua cidade em Minha conta para ver o que acontece perto de você." : "Nenhuma publicação neste filtro ainda."}
@@ -106,7 +125,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
             <PostCard post={item.data} />
           </PromoTrack>
           </div>
-        ) : <PromotedBanner key={idx} />
+        ) : (currentUser?.type === "commercial" ? <PromotedBanner key={idx} /> : null)
       )}
     </div>
   );
@@ -114,21 +133,13 @@ export default function Feed({ home = false }: { home?: boolean }) {
 
 function PromotedBanner() {
   return (
-    <Card className="p-5 relative overflow-hidden border-0 text-white shadow-altar" style={{ background: "linear-gradient(135deg,#14543F,#0F3B2D)" }}>
-      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-gold/25 blur-2xl" />
-      <div className="relative flex items-center gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-gold text-gold-foreground grid place-items-center shadow-card">
-          <Sparkles className="h-6 w-6" />
-        </div>
-        <div className="flex-1">
-          <div className="text-xs uppercase tracking-widest text-gold">Publi · Ilê Conecta</div>
-          <div className="font-display font-bold text-lg">Simule o alcance da sua casa</div>
-          <div className="text-sm text-white/75">Experimente planos demonstrativos. Nenhuma mídia será comprada nem haverá cobrança real.</div>
-        </div>
-        <Link to="/impulsionar" className="px-4 py-2.5 rounded-[14px] bg-gold text-gold-foreground text-sm font-semibold shadow-card hover:brightness-105 transition">
-          Impulsionar
-        </Link>
-      </div>
+    <Card className="flex items-center gap-3 border-gold/40 p-3.5">
+      <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold text-gold-foreground"><Sparkles className="h-5 w-5" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">Alcance quem ainda não segue sua casa</span>
+        <span className="block text-xs text-muted-foreground">Impulsione uma publicação ou coloque a casa em destaque.</span>
+      </span>
+      <Link to="/impulsionar" className="inline-flex min-h-9 shrink-0 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground">Impulsionar</Link>
     </Card>
   );
 }

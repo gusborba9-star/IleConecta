@@ -6,7 +6,7 @@ import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
 import { dateBlock, pickNearYou } from "@/lib/nearYouCore.js";
 
 /** "Perto de você": próximas giras e rituais em cartões compactos (data em destaque, casa, cidade e vagas). Some se não houver nada. */
-export default function NearYou({ highlightOwners = [] }: { highlightOwners?: string[] }) {
+export default function NearYou({ highlightOwners = [], allow }: { highlightOwners?: string[]; allow?: (ownerId: string, itemId: string) => boolean }) {
   const { currentUser, users, isRemoteAuth } = useApp();
   const [list, setList] = useState<RealRitual[] | null>(null);
   useEffect(() => {
@@ -17,8 +17,8 @@ export default function NearYou({ highlightOwners = [] }: { highlightOwners?: st
   }, [isRemoteAuth]);
 
   const items = useMemo(
-    () => pickNearYou({ rituals: list ?? [], cityOf: (o: string) => users.find((u) => u.id === o)?.city, viewerCity: currentUser?.city, highlightOwners, limit: 8 }),
-    [list, users, currentUser?.city, highlightOwners]
+    () => pickNearYou({ rituals: (list ?? []).filter((r) => !allow || (r.ownerId !== null && allow(r.ownerId, r.id))), cityOf: (o: string) => users.find((u) => u.id === o)?.city, viewerCity: currentUser?.city, highlightOwners, limit: 8 }),
+    [list, users, currentUser?.city, highlightOwners, allow]
   );
   if (items.length === 0) return null;
 

@@ -22,7 +22,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 const setup = async (page, type, plan, extra = {}) => {
   const calls = await api(page, {
     rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house(plan)] : [], stories: [], services: [], events: [], posts: [], ...(extra.rest ?? {}) },
-    rpc: { moments_feed: feed, report_moment: "ok", report_client_error: true, ...(extra.rpc ?? {}) },
+    rpc: { house_follow_summary: { counts: {}, mine: [CASA_A, CASA_B] }, moments_feed: feed, report_moment: "ok", report_client_error: true, ...(extra.rpc ?? {}) },
   });
   await page.route("**/storage/v1/object/public/moments/**", (r) => r.fulfill({ status: 200, contentType: "image/png", body: PNG }));
   return calls;

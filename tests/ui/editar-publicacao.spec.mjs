@@ -18,7 +18,7 @@ const setup = (page, { type = "casa", id = OWNER, onPatch, onHide, locks = () =>
   rest: { profiles: profile(type, id), legal_consents: consents, houses: [mkHouse(HID, OWNER, "Casa Axé"), mkHouse(OTHER_HID, OTHER_OWNER, "Outra Casa")],
     post_comments: [cm(U(701), "Comentário visível"), cm(U(702), "Comentário oculto", true)],
     posts: (body, calls, req) => (req?.method === "PATCH" ? (onPatch ? onPatch(body, req) : [{ id: "x", edited_at: "2026-11-17T13:00:00Z" }]) : LIST()) },
-  rpc: { post_like_counts: [], post_comment_counts: [{ post_id: MINE, n: type === "casa" ? 2 : 1 }], my_post_text_locks: () => locks(), house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
+  rpc: { house_follow_summary: { counts: {}, mine: [OWNER, OTHER_OWNER] }, post_like_counts: [], post_comment_counts: [{ post_id: MINE, n: type === "casa" ? 2 : 1 }], my_post_text_locks: () => locks(), house_set_comment_hidden: (b) => (onHide ? onHide(b) : null) },
 });
 const patches = (calls) => calls.filter((c) => c.kind === "rest" && c.name === "posts" && c.method === "PATCH");
 const more = (page, id) => page.locator(`#post-${id}`).getByRole("button", { name: "Mais opções da publicação" });
