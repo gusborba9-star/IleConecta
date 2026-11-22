@@ -19,7 +19,7 @@ export declare function promoName(i: MyPromo): string;
 
 export declare function editDaysDraft(raw: string, cap?: number): { text: string; days: number | null };
 
-export interface PromoFunnel { chats: number; checkouts: number; payments: number }
+export interface PromoFunnel { chats: number; checkouts: number; payments: number; devicesNew?: number }
 export declare function resultsLine(i: { views?: number; opens?: number }, f?: PromoFunnel): string;
 export declare function readFunnel(raw: unknown): Record<string, PromoFunnel>;
 export interface FeedPostLike { id: string; houseId: string; kind?: string }

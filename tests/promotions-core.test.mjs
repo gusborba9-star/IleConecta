@@ -100,8 +100,11 @@ test("resultados por compra e nome da publicação impulsionada", async () => {
   assert.equal(resultsLine({ views: 12, opens: 3 }, { chats: 2, checkouts: 1, payments: 1 }), "12 visualizações · 3 aberturas · conversões atribuídas: 2 conversas, 1 pedido ou reserva, 1 pago");
   assert.equal(resultsLine({ views: 12, opens: 3 }, { chats: 0, checkouts: 0, payments: 0 }), "12 visualizações · 3 aberturas");
   const { readFunnel } = await import("../src/lib/promotionsCore.js");
-  assert.deepEqual(readFunnel([{ id: "a", chats: 2, checkouts: "1", payments: null }, { id: 5 }, null]), { a: { chats: 2, checkouts: 1, payments: 0 } });
+  assert.deepEqual(readFunnel([{ id: "a", chats: 2, checkouts: "1", payments: null }, { id: 5 }, null]), { a: { chats: 2, checkouts: 1, payments: 0, devicesNew: 0 } });
   assert.deepEqual(readFunnel("x"), {});
+  assert.equal(resultsLine({ views: 12, opens: 3 }, { chats: 0, checkouts: 0, payments: 0, devicesNew: 4 }), "12 visualizações · 3 aberturas · 4 aparelhos novos · frequência média estimada 3,0 por aparelho");
+  assert.equal(resultsLine({ views: 5, opens: 0 }, { chats: 1, checkouts: 0, payments: 0, devicesNew: 1 }), "5 visualizações · 0 aberturas · 1 aparelho novo · frequência média estimada 5,0 por aparelho · conversões atribuídas: 1 conversa, 0 pedidos ou reservas, 0 pagos");
+  assert.deepEqual(readFunnel([{ id: "a", devices_new: "7" }]), { a: { chats: 0, checkouts: 0, payments: 0, devicesNew: 7 } });
   assert.match(resultsLine({}), /Ainda sem resultados/);
   assert.equal(promoName({ kind: "boost", scope: "cidade", itemType: "post", title: "Oi" }), 'Impulso da publicação "Oi" · Cidade');
   const r = readMyPromotions({ has_house: true, items: [{ id: "a", kind: "boost", scope: "cidade", status: "ativa", views: "7", opens: 2 }, { id: "b", kind: "boost", scope: "cidade", status: "ativa" }] });
