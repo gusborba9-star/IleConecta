@@ -51,3 +51,13 @@ test("botão de pagamento no chat: marcador [[PAGAR]] vira ação e nunca chega 
   assert.equal(resolveCheckout("Consulta na casa", { events, services, selling: true }), null);
   assert.equal(resolveCheckout("", { events, services, selling: true }), null);
 });
+
+test("prompt ensina como o cliente é avisado do início e do fim (Iniciar/Concluir), sem passar para a casa por isso", () => {
+  const p = buildSystemPrompt({ house: { name: "Casa", category: "Umbanda" }, assistant: { display_name: "Ana" }, services: [{ kind: "outro", custom_kind: "Benzimento", delivery: "sigilo", title: "Benzimento", price_cents: 10000 }], events: [], plan: "maximo" });
+  assert.match(p, /Iniciar e Concluir/);
+  assert.match(p, /sigilo \(sem transmissão ao vivo\)/);
+  assert.match(p, /recebe um aviso no aplicativo/);
+  assert.match(p, /sem passar para a casa só por isso/);
+  const vazia = buildSystemPrompt({ house: { name: "Casa", category: "Umbanda" }, assistant: { display_name: "Ana" }, services: [], events: [], plan: "maximo" });
+  assert.doesNotMatch(vazia, /Iniciar e Concluir/); // casa sem nada publicado: sem peso extra
+});

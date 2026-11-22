@@ -73,3 +73,26 @@ test("foto de perfil da casa: anel e imagem concentricos (sem folga embaixo)", a
   expect(Math.abs(esq - dir)).toBeLessThanOrEqual(1);
   expect(Math.abs(topo - esq)).toBeLessThanOrEqual(1);
 });
+
+test("celular: ao enviar, cabeçalho, faixa 'Devolver à assistente' e campo ficam parados (a página não rola)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  const calls = await api(page, {
+    rest: { profiles: casa, legal_consents: consents, houses: [house], messages: (b, c, req) => (req?.method === "POST" ? [] : mensagens), assistants: [{ house_id: U(9), enabled: true, display_name: "Lara" }] },
+    rpc: { open_conversation: CONV, peer_info: [{ id: OTHER, name: "Maria", avatar_url: null, is_house: false, online: true }], conversation_handoff_state: [{ state: "ativa", handler_name: "Casa Axé", since: hoje.toISOString(), active: true }] },
+  });
+  await page.goto(`/mensagens/${OTHER}`);
+  const campo = page.getByLabel("Mensagem", { exact: true });
+  await expect(campo).toBeVisible();
+  const cabecalho = page.locator("header").filter({ has: page.getByRole("button", { name: "Voltar", exact: true }) });
+  const rolagem0 = await page.evaluate(() => window.scrollY);
+  const antes = [(await cabecalho.boundingBox()).y, (await campo.boundingBox()).y];
+  await campo.fill("Boa noite! Posso ajudar.");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect.poll(() => calls.some((c) => c.kind === "rest" && c.name === "messages" && c.method === "POST")).toBe(true);
+  await page.waitForTimeout(600);
+  const depois = [(await cabecalho.boundingBox()).y, (await campo.boundingBox()).y];
+  expect(depois[0]).toBe(antes[0]);
+  expect(Math.abs(depois[1] - antes[1])).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => window.scrollY)).toBe(rolagem0);
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe("hidden");
+});
