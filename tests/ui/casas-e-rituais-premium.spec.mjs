@@ -19,7 +19,7 @@ for (const w of [320, 390]) {
     await montar(page);
     await page.goto("/descobrir");
     await expect(page.getByRole("textbox", { name: "Buscar casas" })).toBeVisible();
-    const faixa = page.getByRole("group", { name: "Filtrar por tradição" });
+    const faixa = page.getByRole("group", { name: "Filtrar casas" });
     await expect(faixa).toBeVisible();
     expect((await faixa.boundingBox()).height).toBeLessThan(60); // uma linha só, rolando para o lado
     const nome = page.getByText(NOME).first();
@@ -30,8 +30,8 @@ for (const w of [320, 390]) {
     const c = await anel.boundingBox(); const i = await anel.locator("> *").first().boundingBox();
     const f = [i.x - c.x, c.x + c.width - (i.x + i.width), i.y - c.y, c.y + c.height - (i.y + i.height)];
     for (const x of f) expect(Math.abs(x - f[0])).toBeLessThan(1.5);
-    await page.getByRole("button", { name: "Umbanda", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Umbanda", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Proteção", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Proteção", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("button", { name: "Ver todas as casas" })).toBeVisible();
     await page.getByRole("button", { name: "Ver todas as casas" }).click();
     await expect(page.getByText(NOME).first()).toBeVisible();
