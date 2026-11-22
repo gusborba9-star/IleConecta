@@ -117,3 +117,19 @@ test("Reservar na página da própria casa troca para a aba Rituais (e de novo s
   await page.getByRole("link", { name: "Reservar" }).click();
   await expect(abaRituais).toHaveAttribute("aria-selected", "true");
 });
+
+test("atalhos Gira, Aviso e Foto da casa abrem a janela no tipo certo", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const calls = await setup(page, "casa", OWNER);
+  await page.goto("/comunidade");
+  const grupo = page.getByRole("group", { name: "Atalhos da publicação" });
+  await expect(grupo.getByRole("button")).toHaveCount(3);
+  await grupo.getByRole("button", { name: "Nova gira" }).click();
+  const d = page.getByRole("dialog");
+  await expect(d.getByRole("button", { name: "Giras e eventos" })).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await page.goto("/comunidade?novo=aviso");
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Avisos" })).toHaveAttribute("aria-pressed", "true");
+  void calls;
+  await noHScroll(page);
+});

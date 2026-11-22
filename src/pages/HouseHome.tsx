@@ -1,8 +1,8 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Bot, MessagesSquare, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound } from "lucide-react";
-import { Button, Card } from "@/components/base";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Bot, CalendarDays, ImagePlus, MessagesSquare, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound } from "lucide-react";
+import { Card } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import AssistantReportCard from "@/components/house/AssistantReportCard";
 import QuietHoursCard from "@/components/house/QuietHoursCard";
@@ -119,17 +119,22 @@ export default function HouseHome() {
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
       {isRemoteAuth && <BillingAlertCard />}
-      <Card className="relative overflow-hidden p-6 border-0 text-white shadow-altar" style={{ background: "linear-gradient(135deg, #14543F 0%, #0F3B2D 100%)" }}>
-        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #F4DC92 1px, transparent 0)", backgroundSize: "26px 26px" }} aria-hidden />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-        <div className="relative">
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Painel da casa</div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1 break-words">Olá, {house.name}</h1>
-          <p className="text-sm text-white/75 mt-1">{waiting > 0 ? `${waiting} ${waiting === 1 ? "assunto espera" : "assuntos esperam"} por você.` : "Seu resumo de hoje."}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="gold" onClick={() => nav(`/casa/${house.id}`)}>Ver minha página</Button>
-          </div>
+      <Card className="p-5">
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Painel da casa</div>
+        <h1 className="mt-1 break-words font-display text-2xl font-bold sm:text-3xl">Olá, {house.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{waiting > 0 ? `${waiting} ${waiting === 1 ? "assunto espera" : "assuntos esperam"} por você.` : "Tudo em dia por aqui."}</p>
+        <div role="group" aria-label="Publicar agora" className="mt-4 grid grid-cols-3 gap-2">
+          {([
+            { label: "Gira", to: "/comunidade?novo=gira", Icon: CalendarDays },
+            { label: "Aviso", to: "/comunidade?novo=aviso", Icon: Megaphone },
+            { label: "Foto", to: "/comunidade?novo=foto", Icon: ImagePlus },
+          ] as const).map(({ label, to, Icon }) => (
+            <Link key={label} to={to} className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-border text-sm font-semibold transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+              <Icon className="h-4 w-4 text-primary" aria-hidden /> {label}
+            </Link>
+          ))}
         </div>
+        <Link to={`/casa/${house.id}`} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">Ver minha página</Link>
       </Card>
 
       {isRemoteAuth && <HousePendingCard collapsible />}

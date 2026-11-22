@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Button, Card, Modal, Textarea } from "@/components/base";
-import { Image, ImagePlus, Sparkles, Radio } from "lucide-react";
+import { CalendarDays, Image, ImagePlus, Megaphone, Sparkles, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { toastSaveError } from "@/lib/planGuard";
 import PostStylePicker from "@/components/feed/PostStylePicker";
@@ -30,10 +30,14 @@ export default function PostComposer() {
   const allowed = caps?.styled_posts === true;
   // Atalho "Publicar" do Início da casa (`/comunidade?novo=publicacao`): leva o foco para o campo de texto.
   const [params] = useSearchParams();
-  const wantsOpen = params.get("novo") === "publicacao";
+  const novo = params.get("novo");
+  const wantsOpen = novo === "publicacao" || novo === "gira" || novo === "aviso" || novo === "foto";
   useEffect(() => {
-    if (wantsOpen && currentUser) setOpen(true);
-  }, [wantsOpen, currentUser]);
+    if (!wantsOpen || !currentUser) return;
+    if (novo === "gira") setCategory("evento");
+    else if (novo === "aviso") setCategory("aviso");
+    setOpen(true);
+  }, [wantsOpen, novo, currentUser]);
 
   // Giras e eventos: a casa pode anexar um dos seus rituais abertos (cartão com "Reservar vaga" no feed).
   const wantsRitual = isHouse && isRemoteAuth && category === "evento";
@@ -44,6 +48,13 @@ export default function PostComposer() {
     void fetchHouseRituals(uid).then((l) => alive && setMyRituals(l.filter((r) => r.status === "publicado" && Date.parse(r.startsAt) > Date.now())));
     return () => { alive = false; };
   }, [wantsRitual, uid]);
+
+  // Atalhos da casa: já abrem a janela no tipo certo (Gira, Aviso) ou no cartão com foto.
+  const openAs = (kind: "evento" | "aviso" | "foto") => {
+    if (kind === "foto") { if (allowed || !isRemoteAuth) setStyle((s) => (s.mode === "normal" ? { ...s, mode: "parcial", letters: fitToMode(s.letters, "parcial") } : s)); }
+    else setCategory(kind);
+    setOpen(true);
+  };
 
   if (!currentUser) return null;
 
@@ -103,15 +114,31 @@ export default function PostComposer() {
           >
             {draft ? `Rascunho: ${draft}` : prompt}
           </button>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="Escolher foto para a publicação"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-primary transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ImagePlus className="h-6 w-6" aria-hidden />
-          </button>
+          {!isHouse && (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Escolher foto para a publicação"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-primary transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ImagePlus className="h-6 w-6" aria-hidden />
+            </button>
+          )}
         </div>
+        {isHouse && (
+          <div role="group" aria-label="Atalhos da publicação" className="mt-2 grid grid-cols-3 gap-2">
+            {([
+              { id: "evento", label: "Gira", Icon: CalendarDays },
+              { id: "aviso", label: "Aviso", Icon: Megaphone },
+              { id: "foto", label: "Foto", Icon: ImagePlus },
+            ] as const).map(({ id, label, Icon }) => (
+              <button key={id} type="button" onClick={() => openAs(id)} aria-label={label === "Gira" ? "Nova gira" : label === "Aviso" ? "Novo aviso" : "Foto na publicação"}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-border text-sm font-semibold text-foreground transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+                <Icon className="h-4 w-4 text-primary" aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+        )}
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="Nova publicação" maxWidth="max-w-xl">
         <div className="space-y-3">

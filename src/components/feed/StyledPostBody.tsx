@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { SCRIM_MAX, SCRIM_MIN } from "@/lib/postCardCore";
 import { PAPER, lettersLook, type Letters } from "@/lib/postLettersCore";
 import "@/lib/postFonts";
@@ -25,6 +25,8 @@ function textStyle(look: ReturnType<typeof lettersLook>, base: CSSProperties): C
  * É o mesmo componente da prévia e do feed, então o que a casa vê antes de publicar é exatamente o que as pessoas veem.
  */
 export default function StyledPostBody({ text, card }: { text: string; card: StyledCard }) {
+  // A foto se ajusta sozinha: o card toma o formato dela (de 4:5 a 1,91:1); só passando disso há corte.
+  const [ratio, setRatio] = useState(16 / 9);
   const a = Math.min(SCRIM_MAX, Math.max(SCRIM_MIN, card.scrimPct / 100));
   const look = lettersLook(card.letters, card.style);
   if (card.style === "parcial") {
@@ -33,7 +35,8 @@ export default function StyledPostBody({ text, card }: { text: string; card: Sty
     return (
       <div data-card="parcial">
         <div className="border-y border-border bg-muted">
-          <img src={card.image} alt="" loading="lazy" decoding="async" className="w-full aspect-[16/9] object-cover" />
+          <img src={card.image} alt="" loading="lazy" decoding="async" style={{ aspectRatio: String(ratio) }} className="w-full object-cover"
+            onLoad={(e) => { const { naturalWidth: w, naturalHeight: h } = e.currentTarget; if (w > 0 && h > 0) setRatio(Math.min(1.91, Math.max(0.8, w / h))); }} />
         </div>
         <div className={`px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words ${look.align ? ALIGN[look.align] : ""}`} style={textStyle(look, paper ? { background: PAPER } : {})} data-letters={look.custom ? "1" : undefined}>{text}</div>
       </div>

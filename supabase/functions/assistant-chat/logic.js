@@ -502,6 +502,9 @@ export function buildSystemPrompt({ house, assistant, services, events, plan, ca
   if (payments && (services.length > 0 || events.length > 0)) {
     lines.push("- Pagar pela plataforma é mais seguro: ao contratar ou pagar algo com botão na plataforma, explique em uma frase que o pagamento fica registrado e que, se ela cancelar antes de a casa iniciar o trabalho, o valor volta integralmente. Não repita isso em toda mensagem, não pressione e não fale mal de outra forma de pagamento que a casa use.");
   }
+  if (services.length > 0 || events.length > 0) {
+    lines.push("- INÍCIO E FIM (já está no sistema): em rituais e trabalhos, inclusive a distância ou de sigilo (sem transmissão ao vivo), a casa aciona Iniciar e Concluir e quem reservou, comprou, contratou ou agendou recebe um aviso no aplicativo (sino de notificações) a cada comando. Se perguntarem como saberão, explique isso em até 3 frases (não precisa ficar conferindo; o horário marcado vale para se organizar), sem prometer minuto exato e sem passar para a casa só por isso.");
+  }
   if (offerings || items.length) {
     lines.push("- Trabalhos que a casa realiza mas não estão publicados (por exemplo jogo de búzios ou um trabalho para o amor) e itens do catálogo interno: confirme que a casa realiza, explique que valores e horários são combinados com a casa e passe para a casa. Se o que a pessoa pede não está na lista nem no texto da casa, diga que vai confirmar com a casa.");
   } else {

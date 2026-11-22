@@ -152,6 +152,15 @@ export default function RealMessages() {
     setQuery({}, { replace: true });
   }, [askTitle, convId, setQuery]);
 
+  // Celular: com a conversa aberta a página não rola (só a lista de mensagens), então cabeçalho, faixa de atendimento e campo de envio ficam parados ao enviar ou abrir o teclado.
+  useEffect(() => {
+    if (!otherId || typeof window.matchMedia !== "function" || !window.matchMedia("(max-width: 767px)").matches) return;
+    const el = document.documentElement;
+    const prev = el.style.overflow;
+    el.style.overflow = "hidden";
+    return () => { el.style.overflow = prev; };
+  }, [otherId]);
+
   // No celular, ao abrir uma conversa o cabeçalho (com o menu ⋮) volta para a tela.
   useEffect(() => {
     if (otherId) rootRef.current?.scrollIntoView({ block: "start" });

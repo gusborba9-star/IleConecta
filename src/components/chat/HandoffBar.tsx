@@ -14,7 +14,7 @@ export default function HandoffBar({ conversationId, handoff, viewer, canAct = t
 }) {
   const [busy, setBusy] = useState(false);
   const loading = handoff === null;
-  const base = loading ? (viewer === "house" && always ? { tone: "info" as const, text: "Verificando atendimento…", action: null, label: "" } : null) : handoffView(handoff, viewer, { always });
+  const base = loading ? (viewer === "house" ? { tone: "info" as const, text: "Verificando atendimento…", action: null, label: "" } : null) : handoffView(handoff, viewer, { always });
   const view = base && !canAct ? { ...base, action: null, alt: undefined } : base;
   if (!view) return null;
   const alt = view.alt;
