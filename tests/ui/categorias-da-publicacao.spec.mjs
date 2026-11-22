@@ -78,11 +78,13 @@ test("alcance: cliente só vê casas que segue; o que está impulsionado e casa 
   await expect(page.getByText("Texto sobre ervas")).toBeVisible(); // link compartilhado sempre abre
 });
 
-test("cliente sem seguir ninguém vê o convite para descobrir casas, sem banner de impulsionar", async ({ page }) => {
+test("cliente novo (sem seguir nem vínculo) vê as boas-vindas com o que pode fazer, sem banner de impulsionar", async ({ page }) => {
   await setup(page, "cliente", CLIENT, {}, []);
-  await page.goto("/comunidade");
-  await expect(page.getByText("Siga casas para ver o que elas publicam")).toBeVisible();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Bem-vindo/ })).toBeVisible();
+  await expect(page.getByText(/Encontre sua casa, conecte-se com quem orienta/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Descobrir casas" })).toHaveAttribute("href", "/descobrir");
+  await expect(page.getByRole("link", { name: "Ver rituais" })).toHaveAttribute("href", "/rituais");
   await expect(page.getByText("Alcance quem ainda não segue sua casa")).toHaveCount(0);
 });
 
@@ -91,4 +93,27 @@ test("alcance: post impulsionado de casa que não sigo aparece (e só ele); casa
   await page.goto("/comunidade");
   await expect(page.getByText("Texto sobre ervas")).toBeVisible();
   await expect(page.getByText("Conversa livre")).toHaveCount(0);
+});
+
+test("vínculo por serviço contratado ou vaga reservada: a casa aparece sem seguir; boas-vindas somem", async ({ page }) => {
+  const pedido = { id: U(960), service_id: null, title: "Jogo de búzios", price_cents: 9000, note: null, status: "em_andamento", client_id: CLIENT, created_at: "2026-11-10T10:00:00Z", stages_total: 1, modality: null, scheduled_at: null, houses: { name: "Casa Axé", owner_id: OWNER } };
+  await setup(page, "cliente", CLIENT, { rest: { service_orders: [pedido] } }, []);
+  await page.goto("/");
+  await expect(page.getByText("Gira de sábado")).toBeVisible();
+  await expect(page.getByText("Texto sobre ervas")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Bem-vindo/ })).toHaveCount(0);
+});
+
+test("Reservar na página da própria casa troca para a aba Rituais (e de novo se voltar ao feed)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page, "cliente", CLIENT, { rest: { events: [EV()], posts: [{ ...post(U(905), HID, OWNER, "Venha para a gira", "evento"), event_id: U(80) }] } }, [OWNER]);
+  await page.goto(`/casa/${OWNER}`);
+  const abaRituais = page.getByRole("tab", { name: "Rituais" });
+  await expect(abaRituais).toHaveAttribute("aria-selected", "false");
+  await page.getByRole("link", { name: "Reservar" }).click();
+  await expect(abaRituais).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Publicações" }).click();
+  await expect(abaRituais).toHaveAttribute("aria-selected", "false");
+  await page.getByRole("link", { name: "Reservar" }).click();
+  await expect(abaRituais).toHaveAttribute("aria-selected", "true");
 });

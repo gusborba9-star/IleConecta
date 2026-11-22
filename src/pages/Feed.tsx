@@ -2,6 +2,7 @@ import { useApp } from "@/contexts/AppContext";
 import MomentsRail from "@/components/feed/MomentsRail";
 import { useReach } from "@/lib/useReach";
 import { canSee, reachSets } from "@/lib/reachCore.js";
+import WelcomeClient from "@/components/feed/WelcomeClient";
 import NearYou from "@/components/feed/NearYou";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
@@ -82,6 +83,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
       )}
       <PostComposer />
 
+      {isClient && restrict && reach.ready && reach.follows.length + reach.bonds.length === 0 && <WelcomeClient name={currentUser?.name} />}
       {isClient && isRemoteAuth && <NearYou highlightOwners={promo.highlightOwners} allow={allowOwner ?? (() => false)} />}
       <div>
         <MomentsRail highlightOwners={promo.highlightOwners} allow={restrict ? (allowOwner ? (o: string) => allowOwner(o) : () => false) : undefined} />
@@ -101,12 +103,8 @@ export default function Feed({ home = false }: { home?: boolean }) {
 
       {isRemoteAuth && <FeedPromos owners={promo.highlightOwners} idByOwner={promo.idByOwner} boosted={promo.boosted} />}
 
-      {filter === "todos" && restrict && reach.ready && feedItems.length === 0 && (
-        <Card className="p-6 text-center">
-          <p className="text-[15px] font-semibold">Siga casas para ver o que elas publicam</p>
-          <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">As publicações das casas que você segue aparecem aqui.</p>
-          <Link to="/descobrir" className="mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">Descobrir casas</Link>
-        </Card>
+      {filter === "todos" && restrict && reach.ready && reach.follows.length + reach.bonds.length > 0 && feedItems.length === 0 && (
+        <Card className="p-6 text-center text-sm text-muted-foreground">As casas que você segue ainda não publicaram. Quando publicarem, aparece aqui.</Card>
       )}
       {filter !== "todos" && feedItems.length === 0 && (
         <Card className="p-6 text-center text-sm text-muted-foreground">

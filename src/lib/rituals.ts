@@ -161,6 +161,14 @@ export async function fetchMyUpcomingReservations(userId: string): Promise<MyUpc
   return out;
 }
 
+/** Donos das casas onde a pessoa já reservou vaga (vínculo para o alcance do Início). */
+export async function fetchMyReservationOwners(userId: string): Promise<string[]> {
+  if (!supabase) return [];
+  const { data } = await supabase.from("reservations").select("events(houses(owner_id))").eq("user_id", userId).limit(200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return [...new Set((data ?? []).flatMap((r: any) => { const e = Array.isArray(r.events) ? r.events[0] : r.events; const h = Array.isArray(e?.houses) ? e.houses[0] : e?.houses; return h?.owner_id ? [String(h.owner_id)] : []; }))];
+}
+
 /** Devolve null em caso de sucesso, ou a mensagem de erro em português. */
 /** Reserva a vaga. Devolve o erro (ou null) e o id da reserva, usado para abrir o pagamento. */
 export async function reserveSeat(eventId: string, answers: Record<string, string>): Promise<{ error: string | null; id: string | null }> {
