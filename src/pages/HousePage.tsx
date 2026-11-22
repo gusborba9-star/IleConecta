@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
 import { Camera, CheckCircle2, ChevronDown, MapPin, MessageCircle, Pencil, Star, TrendingUp, UserCheck, UserPlus } from "lucide-react";
@@ -43,6 +43,15 @@ export default function HousePage() {
   const [params] = useSearchParams();
   const startTab = params.get("aba");
   const [tab, setTab] = useState<Tab>(startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : startTab === "avaliacoes" ? "avaliacoes" : startTab === "calendario" ? "calendario" : "feed");
+  // Link para a mesma página com outra aba (ex.: "Reservar" no cartão da gira, estando já na casa): troca a aba e leva até ela.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const locKey = useLocation().key;
+  useEffect(() => {
+    const t: Tab | null = startTab === "servicos" ? "servicos" : startTab === "rituais" ? "rituais" : startTab === "avaliacoes" ? "avaliacoes" : startTab === "calendario" ? "calendario" : null;
+    if (!t) return;
+    setTab(t);
+    tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [startTab, locKey]);
   const [editing, setEditing] = useState(params.get("editar") === "1" && currentUser?.id === id);
   const [following, setFollowingState] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
@@ -234,7 +243,7 @@ export default function HousePage() {
 
       {/* Abas só com a palavra, em faixa que rola de lado (o degradê da direita avisa que há mais). */}
       <div className="relative mt-3">
-        <div className="scroll-x flex gap-1 rounded-2xl border border-border bg-card px-2 whitespace-nowrap" role="tablist" aria-label="Seções da página">
+        <div ref={tabsRef} className="scroll-x flex gap-1 scroll-mt-20 rounded-2xl border border-border bg-card px-2 whitespace-nowrap" role="tablist" aria-label="Seções da página">
           {tabs.map((t) => (
             <button
               key={t}
