@@ -1,10 +1,11 @@
+import PostEvent from "@/components/feed/PostEvent";
 import { categoryLabel } from "@/lib/postCategoryCore.js";
 import StyledPostBody from "@/components/feed/StyledPostBody";
 import { useEffect, useState } from "react";
 import type { Post } from "@/types";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2, Pencil, MessageCircleOff, EyeOff, Eye } from "lucide-react";
+import { BadgeCheck, Heart, MessageCircle, Share2, MoreHorizontal, Send, Trash2, Pencil, MessageCircleOff, EyeOff, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn, timeAgo } from "@/lib/utils";
@@ -114,7 +115,10 @@ export default function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <Card className="lift overflow-hidden">
+    <Card className="overflow-hidden">
+      {post.category && post.category !== "geral" && (
+        <div aria-hidden className={cn("h-[3px]", post.category === "evento" ? "bg-gold" : post.category === "aviso" ? "bg-primary" : "bg-forest/70")} />
+      )}
       <div className="p-4 flex items-start gap-3">
         {authorPath ? (
           <Link to={authorPath}>
@@ -126,11 +130,11 @@ export default function PostCard({ post }: { post: Post }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {authorPath ? (
-              <Link to={authorPath} className="font-semibold hover:underline">{author?.name}</Link>
+              <Link to={authorPath} className="text-[15px] font-semibold hover:underline">{author?.name}</Link>
             ) : (
-              <span className="font-semibold">{author?.name}</span>
+              <span className="text-[15px] font-semibold">{author?.name}</span>
             )}
-            {isHouse && houseAuthor?.verified && <Badge tone="primary">Verificada</Badge>}
+            {isHouse && houseAuthor?.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" role="img" aria-label="Casa verificada" />}
             {categoryLabel(post.category) && <Badge tone="gold">{categoryLabel(post.category)}</Badge>}
             {post.kind !== "geral" && (
               <Badge tone={post.kind === "ritual" ? "gold" : post.kind === "buzios" ? "forest" : "muted"}>
@@ -229,6 +233,8 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       )}
 
+      {post.eventId && <PostEvent eventId={post.eventId} city={isHouse ? houseAuthor?.city : undefined} />}
+
       {ritual && (
         <div className="p-4 pt-3 border-t border-border">
           <RitualCard ritual={ritual} compact />
@@ -240,7 +246,7 @@ export default function PostCard({ post }: { post: Post }) {
         <button onClick={() => setShowComments((v) => !v)}>{commentTotal === undefined ? "Comentários" : commentTotal === 1 ? "1 comentário" : `${commentTotal} comentários`}</button>
       </div>
 
-      <div className="px-2 pb-2 border-t border-border grid grid-cols-3">
+      <div className="px-2 pb-1.5 border-t border-border/60 grid grid-cols-3">
         <ActionBtn active={liked} onClick={() => toggleLike(post.id)} icon={Heart} label="Curtir" activeClass="text-primary" />
         <ActionBtn onClick={() => setShowComments((v) => !v)} icon={MessageCircle} label={commentsLocked ? "Comentários" : "Comentar"} />
         <ActionBtn onClick={() => void share()} icon={Share2} label="Compartilhar" />
@@ -336,7 +342,7 @@ function ActionBtn({
         active ? activeClass : "text-muted-foreground"
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0", active ? "fill-current" : "")} />
+      <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "fill-current" : "")} strokeWidth={1.75} aria-hidden />
       <span className="truncate">{label}</span>
     </button>
   );

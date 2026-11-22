@@ -219,3 +219,10 @@ export async function leaveWaitlist(eventId: string): Promise<string | null> {
   const { error } = await supabase.rpc("leave_event_waitlist", { p_event: eventId });
   return error ? error.message : null;
 }
+
+let publishedCache: { at: number; p: Promise<RealRitual[]> } | null = null;
+/** Rituais publicados, lidos uma vez a cada 60 s (vários cartões do feed usam a mesma lista). */
+export function fetchPublishedRitualsCached(): Promise<RealRitual[]> {
+  if (!publishedCache || Date.now() - publishedCache.at > 60_000) publishedCache = { at: Date.now(), p: fetchPublishedRituals() };
+  return publishedCache.p;
+}

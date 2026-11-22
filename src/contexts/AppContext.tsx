@@ -283,6 +283,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           content: post.content,
           kind: post.kind,
           category: post.category,
+          eventId: post.eventId,
           image: post.image,
           card: post.card && opts?.cardPath ? { style: post.card.style, path: opts.cardPath, scrimPct: post.card.scrimPct, letters: post.card.letters } : undefined,
         });
