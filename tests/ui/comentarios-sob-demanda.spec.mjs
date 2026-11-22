@@ -12,7 +12,7 @@ const post = (id, text) => ({ id, house_id: HID, kind: "geral", content: text, i
 const setup = (page, { comments = () => [cm(1, "Axé lindo"), cm(2, "Gratidão")], counts = () => [{ post_id: P1, n: 2 }, { post_id: P3, n: 150 }], onInsert } = {}) => api(page, {
   rest: { profiles: profile, legal_consents: consents, houses: [house], posts: [post(P1, "Com dois comentários"), post(P2, "Sem comentários"), post(P3, "Muito comentado")],
     post_comments: (body, calls, req) => (req?.method === "POST" ? (onInsert ? onInsert(body) : [{ id: U(999), created_at: "2026-11-17T12:00:00Z" }]) : comments(req)) },
-  rpc: { post_like_counts: [], post_comment_counts: () => counts() },
+  rpc: { house_follow_summary: { counts: {}, mine: [OWNER] }, post_like_counts: [], post_comment_counts: () => counts() },
 });
 const commentCalls = (calls) => calls.filter((c) => c.kind === "rest" && c.name === "post_comments" && c.method !== "POST");
 
