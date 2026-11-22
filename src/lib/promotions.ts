@@ -75,9 +75,9 @@ export async function fetchVisiblePromotions(): Promise<VisiblePromo[]> {
 }
 
 /** Registra que a promoção foi vista ou aberta. O banco só conta o que está no ar para quem vê, uma vez por pessoa por dia. Falha em silêncio. */
-export async function trackPromotions(ids: string[], kind: "view" | "open"): Promise<void> {
+export async function trackPromotions(ids: string[], kind: "view" | "open", newIds: string[] = []): Promise<void> {
   if (!supabase || ids.length === 0) return;
-  try { await supabase.rpc("promo_track", { p_ids: ids.slice(0, 50), p_kind: kind, ...placeArgs() }); } catch { /* contagem nunca atrapalha a tela */ }
+  try { await supabase.rpc("promo_track", { p_ids: ids.slice(0, 50), p_kind: kind, ...placeArgs(), ...(kind === "view" && newIds.length ? { p_new_ids: newIds.slice(0, 50) } : {}) }); } catch { /* contagem nunca atrapalha a tela */ }
 }
 
 /** Conversões atribuídas por anúncio (só da própria casa). Sem dado ou com falha: vazio, e a tela mostra só visualizações e aberturas. */

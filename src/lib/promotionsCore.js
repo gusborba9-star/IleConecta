@@ -96,15 +96,18 @@ export function resultsLine(i, f) {
   if (v === 0 && o === 0) return "Ainda sem resultados: aparecem aqui assim que alguém vir.";
   const base = `${v} ${v === 1 ? "visualização" : "visualizações"} · ${o} ${o === 1 ? "abertura" : "aberturas"}`;
   const c = Number(f?.chats) || 0, k = Number(f?.checkouts) || 0, p = Number(f?.payments) || 0;
-  if (!f || c + k + p === 0) return base;
-  return `${base} · conversões atribuídas: ${c} ${c === 1 ? "conversa" : "conversas"}, ${k} ${k === 1 ? "pedido ou reserva" : "pedidos ou reservas"}, ${p} ${p === 1 ? "pago" : "pagos"}`;
+  const d = Number(f?.devicesNew) || 0;
+  let out = base;
+  if (d > 0 && v > 0) out += ` · ${d} ${d === 1 ? "aparelho novo" : "aparelhos novos"} · frequência média estimada ${(v / d).toFixed(1).replace(".", ",")} por aparelho`;
+  if (c + k + p > 0) out += ` · conversões atribuídas: ${c} ${c === 1 ? "conversa" : "conversas"}, ${k} ${k === 1 ? "pedido ou reserva" : "pedidos ou reservas"}, ${p} ${p === 1 ? "pago" : "pagos"}`;
+  return out;
 }
 
 /** Lê o funil do banco ([{ id, chats, checkouts, payments }]) para um mapa por anúncio. */
 export function readFunnel(raw) {
   const out = {};
   for (const r of Array.isArray(raw) ? raw : []) {
-    if (r && typeof r.id === "string") out[r.id] = { chats: Number(r.chats) || 0, checkouts: Number(r.checkouts) || 0, payments: Number(r.payments) || 0 };
+    if (r && typeof r.id === "string") out[r.id] = { chats: Number(r.chats) || 0, checkouts: Number(r.checkouts) || 0, payments: Number(r.payments) || 0, devicesNew: Number(r.devices_new) || 0 };
   }
   return out;
 }
