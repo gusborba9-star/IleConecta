@@ -137,9 +137,9 @@ export default function HousePage() {
           </div>
         </div>
         <div className="relative z-10 px-4 sm:px-6 pb-5 text-center">
-          <div className="-mt-14 sm:-mt-16 mx-auto flex w-fit rounded-full p-1.5 bg-card shadow-card ring-1 ring-gold/60 [&>*]:block [&_img]:block">
+          <div className={cn("-mt-14 sm:-mt-16 mx-auto flex w-fit rounded-full p-1.5 bg-card shadow-card [&>*]:flex [&_img]:block", momentGroup ? "" : "ring-1 ring-gold/60")}>
             {momentGroup ? (
-              <button type="button" onClick={() => setMomentOpen(true)} aria-label={`Ver os momentos de ${house.name}`} className={cn("rounded-full ring-2 ring-offset-2 ring-offset-card focus-visible:outline-none focus-visible:ring-4", isGroupSeen(momentGroup, momentSeen) ? "ring-border" : "ring-gold")}>
+              <button type="button" onClick={() => setMomentOpen(true)} aria-label={`Ver os momentos de ${house.name}`} className={cn("flex rounded-full leading-none ring-2 ring-offset-2 ring-offset-card focus-visible:outline-none focus-visible:ring-4", isGroupSeen(momentGroup, momentSeen) ? "ring-border" : "ring-gold")}>
                 <Avatar src={house.avatar} name={house.name} size={104} />
               </button>
             ) : (
