@@ -3,7 +3,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const OWNER = U(1), HID = U(60), OTHER_OWNER = U(2), OTHER_HID = U(61), CLIENT = U(5);
 const profile = (type, id, city = "Salvador") => ({ id, account_type: type, display_name: type === "casa" ? "Casa Axé" : "Cliente Ana", avatar_url: null, bio: null, city, state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
-const consents = ["termos_casa", "termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_casa", "termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const mkHouse = (id, owner, name, city) => ({ id, owner_id: owner, name, category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city, state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const post = (id, hid, owner, text, category) => ({ id, house_id: hid, kind: "geral", category, content: text, image_url: null, card_style: null, card_image_path: null, card_scrim: 55, edited_at: null, comments_off: false, created_at: "2026-11-17T10:00:00Z", houses: { owner_id: owner }, post_likes: [] });
 const LIST = [post(U(901), HID, OWNER, "Gira de sábado", "evento"), post(U(902), HID, OWNER, "Aviso do mês", "aviso"), post(U(903), OTHER_HID, OTHER_OWNER, "Texto sobre ervas", "ensinamento"), post(U(904), OTHER_HID, OTHER_OWNER, "Conversa livre", "geral")];

@@ -4,7 +4,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Ana", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const ontem = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
 const pedido = (id, status, title) => ({ id: U(id), service_id: null, title, price_cents: 9000, note: null, status, client_id: ME, created_at: "2026-11-10T10:00:00Z", stages_total: 1, modality: null, scheduled_at: null, houses: { name: "Casa de Oxóssi", owner_id: U(41) } });
 const venc = [{ member_id: U(40), house_name: "Casa de Iansã", house_slug: "iansa", owner_id: U(42), monthly_cents: 5000, due_day: 10, can_pay_app: true, dues: [{ id: U(50), month: "2026-11-01", amount_cents: 5000, due_date: ontem, status: "aberta", paid_via: null }] }];

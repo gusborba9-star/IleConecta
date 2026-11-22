@@ -4,7 +4,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Ana", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const NOME = "Ilê Axé Opô Afonjá de Oxóssi e Oxum da Cidade Baixa";
 const casa = { id: U(80), account_type: "casa", display_name: NOME, avatar_url: null, bio: "Casa de tradição com mais de cinquenta anos de história e acolhimento.", city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const houseRow = { id: U(81), owner_id: U(80), name: NOME, category: "Candomblé Ketu", tags: [], cover_url: null, verified: true, offerings: "", plan: "gratis", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: casa.bio } };
