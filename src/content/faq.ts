@@ -19,3 +19,11 @@ export const FAQ_HOUSE: FaqItem[] = [
   { q: "Quem vê o que eu publico?", a: "Quem segue a casa ou tem vínculo com ela (reserva, serviço, membro). Para chegar a mais gente, use Crescer: destaque ou impulsionamento." },
   { q: "Onde acompanho pedidos, reservas e recebimentos?", a: "No Início, a Central de pendências mostra o que espera por você. Pedidos e Recebimentos ficam nas ferramentas; as regras de taxas e prazos estão nos Termos." },
 ];
+
+// Base de conhecimento da assistente Conecta (suporte da plataforma): ela pode explicar taxas e planos; a página Suporte não os mostra.
+export const FAQ: FaqItem[] = [
+  { q: "Como mudo o plano da minha casa?", a: "Veja os planos em Planos. Por enquanto a troca de plano é feita com a equipe da plataforma." },
+  { q: "Quando a casa recebe o valor de um evento?", a: "O pagamento do cliente vai direto para a conta de pagamento da casa, sem retenção pela plataforma. A tarifa do Stripe é cobrada da casa." },
+  { q: "Qual é a taxa da plataforma?", a: "15% sobre vagas de rituais e 4% sobre serviços contratados pela plataforma. Atendimentos combinados direto com a casa não têm taxa." },
+  { q: "A assistente virtual pode errar?", a: "Ela usa apenas os serviços, valores e horários cadastrados pela casa e avisa quando precisa confirmar algo. Em caso de dúvida, fale direto com a casa." },
+];
