@@ -1,5 +1,5 @@
 import { Brand } from "@/components/brand/Logo";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Home, MessageCircle, Search, Sparkles, Compass, User, LogOut, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import NotificationBell from "@/components/layout/NotificationBell";
@@ -19,6 +19,7 @@ export default function TopBar() {
   const staff = useStaffLink(isRemoteAuth && currentUser?.type !== "commercial" ? currentUser?.id : undefined);
   const { isAdmin } = usePlatformConfig();
   const nav = useNavigate();
+  const onDiscover = useLocation().pathname.startsWith("/descobrir"); // lá a página tem a própria busca: um campo só
   const [menu, setMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const box = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export default function TopBar() {
           <Brand size={38} compact />
         </Link>
 
-        <div className="flex-1 max-w-md ml-2 hidden md:block">
+        <div className={cn("flex-1 max-w-md ml-2 hidden", !onDiscover && "md:block")}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
