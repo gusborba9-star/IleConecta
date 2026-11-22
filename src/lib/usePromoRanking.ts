@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePlace } from "@/lib/placeNow";
 import { fetchVisiblePromotions, type VisiblePromo } from "@/lib/promotions";
 
 /** Ordem aleatória estável durante a visita: quem está em destaque se reveza entre as primeiras posições. */
@@ -10,13 +11,15 @@ export function shuffled<T>(list: T[], seed: number): T[] {
 /** Destaques e impulsionamentos que valem para quem está olhando (o banco já filtra pelo alcance e só entrega o que está no ar). */
 export function usePromoRanking(enabled: boolean) {
   const [list, setList] = useState<VisiblePromo[]>([]);
+  const place = usePlace();
+  const placeKey = place.temporary ? `${place.city}|${place.state}` : ""; // viajou: busca de novo os anúncios de onde está
   const [seed] = useState(() => Math.random() * 1000);
   useEffect(() => {
     if (!enabled) return;
     let alive = true;
     void fetchVisiblePromotions().then((r) => alive && setList(r));
     return () => { alive = false; };
-  }, [enabled]);
+  }, [enabled, placeKey]);
   return useMemo(() => {
     const owners = shuffled([...new Set(list.filter((p) => p.kind === "highlight").map((p) => p.ownerId))], seed);
     const items = list.filter((p) => p.kind === "boost" && p.itemId);

@@ -67,3 +67,22 @@ test("Viajando: sem autorização segue normal", async ({ page, context }) => {
   await expect(page.getByText(/Sem autorização de localização/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Na sua cidade e em destaque" })).toBeVisible();
 });
+
+test("Viajando: os anúncios são pedidos ao banco com a cidade do momento (e sem ela voltam ao perfil)", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: -23.55, longitude: -46.634 });
+  const bodies = [];
+  await api(page, {
+    rest: { profiles: pessoa, legal_consents: consents, houses: [house(H1, OWN1, "Casa Axé", "Salvador")], events: [], service_orders: [], reservations: [] },
+    rpc: { house_follow_summary: { counts: {}, mine: [OWN1] }, my_memberships: [], event_taken: [], post_like_counts: [], post_comment_counts: [], promotions_visible: (b) => { bodies.push(b ?? {}); return []; } },
+  });
+  await page.goto("/");
+  await expect.poll(() => bodies.length).toBeGreaterThan(0);
+  expect(bodies[0].p_city).toBeUndefined(); // antes de viajar: perfil
+  await page.getByRole("button", { name: "Usar minha localização atual" }).click();
+  await expect.poll(() => bodies.some((b) => b.p_city === "São Paulo" && b.p_state === "SP")).toBe(true);
+  await page.getByRole("button", { name: "Voltar para Salvador" }).click();
+  await expect.poll(() => bodies.length).toBeGreaterThan(2);
+  expect(bodies.at(-1).p_city).toBeUndefined();
+});
