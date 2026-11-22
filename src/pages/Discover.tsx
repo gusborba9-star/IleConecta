@@ -5,9 +5,10 @@ import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
 import { INTENTS, intentOf, matchesIntent } from "@/lib/intentsCore.js";
 import { sameCity } from "@/lib/postCategoryCore.js";
-import { fetchPublishedRitualsCached, type RealRitual } from "@/lib/rituals";
+import { fetchRitualCatalog, type CatalogRitual } from "@/lib/rituals";
 import { cn, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
+import LocationPrompt from "@/components/profile/LocationPrompt";
 import RitualCard from "@/components/feed/RitualCard";
 import { matchesDemoSearch } from "@/lib/demoState";
 import { fetchFeatured } from "@/lib/referral";
@@ -28,28 +29,39 @@ export default function Discover() {
     };
   }, [isRemoteAuth]);
   const promo = usePromoRanking(isRemoteAuth);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
-  // Filtro rápido: uma intenção (o que a pessoa procura) ou "Perto de mim" (a cidade do perfil). Sem lista de tradições.
-  const [chip, setChip] = useState<string>(() => searchParams.get("perto") === "1" ? "perto" : "");
+  // Filtro rápido: uma intenção (o que a pessoa procura) ou "Na minha cidade" (compara só a cidade do perfil; não calcula distância). Sem lista de tradições.
+  const chip = searchParams.get("cidade") === "1" || searchParams.get("perto") === "1" ? "cidade" : INTENTS.find((i) => i.id === searchParams.get("intencao"))?.id ?? "";
+  const onlyVerified = searchParams.get("verificada") === "1";
+  const onlyRated = searchParams.get("nota") === "1";
+  const setParam = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("perto");
+    for (const [k, v] of Object.entries(changes)) { if (v) next.set(k, v); else next.delete(k); }
+    setSearchParams(next, { replace: true });
+  };
+  const setChip = (id: string) => setParam({ cidade: id === "cidade" ? "1" : null, intencao: id && id !== "cidade" ? id : null });
   const viewerCity = currentUser?.city;
 
   useEffect(() => setQ(searchParams.get("q") ?? ""), [searchParams]);
 
   // Rituais publicados entram na busca por intenção ("trabalho de amor" acha a casa que o oferece).
-  const [real, setReal] = useState<RealRitual[]>([]);
+  const [real, setReal] = useState<CatalogRitual[]>([]);
   useEffect(() => {
     if (!isRemoteAuth) return;
     let alive = true;
-    void fetchPublishedRitualsCached().then((l) => alive && setReal(l));
+    void fetchRitualCatalog().then((c) => alive && setReal(c.items));
     return () => { alive = false; };
   }, [isRemoteAuth]);
 
   const intent = useMemo(() => INTENTS.find((i) => i.id === chip) ?? intentOf(q), [chip, q]);
   const filtered = useMemo(() => {
     return houses.filter((h) => {
-      if (chip === "perto" && !sameCity(h.city, viewerCity)) return false;
+      if (onlyVerified && !h.verified) return false;
+      if (onlyRated && !(h.rating >= 4)) return false;
+      if (chip === "cidade" && !sameCity(h.city, viewerCity)) return false;
       if (intent) {
         const own = rituals.filter((r) => r.houseId === h.id).flatMap((r) => [r.title, r.description]);
         const pub = real.filter((r) => r.ownerId === h.id).flatMap((r) => [r.title, r.description]);
@@ -57,7 +69,16 @@ export default function Discover() {
       } else if (q && !matchesDemoSearch(q, [h.name, h.city, h.state, h.category, h.bio, ...h.tags])) return false;
       return true;
     });
-  }, [houses, chip, q, intent, rituals, real, viewerCity]);
+  }, [houses, chip, q, intent, rituals, real, viewerCity, onlyVerified, onlyRated]);
+
+  // Verificada e nota só aparecem quando separam casas (ou já estão ligadas); a contagem considera o resto dos filtros.
+  const flagCount = (on: boolean, pred: (h: HouseUser) => boolean) => {
+    const base = houses.filter((h) => (chip !== "cidade" || sameCity(h.city, viewerCity)));
+    const yes = base.filter(pred).length;
+    return { yes, show: on || (yes > 0 && yes < base.length) };
+  };
+  const verFlag = flagCount(onlyVerified, (h) => h.verified);
+  const rateFlag = flagCount(onlyRated, (h) => h.rating >= 4);
 
   const matchingRituals = q.trim()
     ? rituals.filter((ritual) => {
@@ -87,7 +108,7 @@ export default function Discover() {
           <Input className="h-11 rounded-full bg-muted pl-11 border-transparent" placeholder="Casa, cidade ou o que você procura" aria-label="Buscar casas" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="scroll-x -mx-1 mt-3 flex gap-1.5 px-1 pb-0.5 whitespace-nowrap" role="group" aria-label="Filtrar casas">
-          {[{ id: "perto", label: "Perto de mim" }, ...INTENTS].map((t) => (
+          {[{ id: "cidade", label: "Na minha cidade" }, ...INTENTS].map((t) => (
             <button
               key={t.id}
               type="button"
@@ -98,11 +119,25 @@ export default function Discover() {
                 chip === t.id ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
               )}
             >
-              {t.id === "perto" && <MapPin className="h-3.5 w-3.5" aria-hidden />}{t.label}
+              {t.id === "cidade" && <MapPin className="h-3.5 w-3.5" aria-hidden />}{t.label}
             </button>
           ))}
+          {verFlag.show && (
+            <button type="button" aria-pressed={onlyVerified} onClick={() => setParam({ verificada: onlyVerified ? null : "1" })}
+              className={cn("inline-flex shrink-0 items-center gap-1 min-h-9 px-3.5 rounded-full text-xs font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", onlyVerified ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted")}>
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />Verificadas
+            </button>
+          )}
+          {rateFlag.show && (
+            <button type="button" aria-pressed={onlyRated} onClick={() => setParam({ nota: onlyRated ? null : "1" })}
+              className={cn("inline-flex shrink-0 items-center gap-1 min-h-9 px-3.5 rounded-full text-xs font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", onlyRated ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted")}>
+              <Star className="h-3.5 w-3.5" aria-hidden />Nota 4+
+            </button>
+          )}
         </div>
       </Card>
+
+      {currentUser?.type === "personal" && <LocationPrompt context={chip === "cidade" ? "inline" : "home"} />}
 
       {isRemoteAuth && <BoostedServices boosted={promo.boosted} />}
 
@@ -139,8 +174,8 @@ export default function Discover() {
           ))}
           {filtered.length === 0 && !q.trim() && (
             <Card className="p-8 text-center md:col-span-2">
-              <p className="text-muted-foreground">{chip === "perto" && !viewerCity ? "Informe sua cidade no perfil para ver as casas perto de você." : chip === "perto" ? "Ainda não há casas na sua cidade." : "Nenhuma casa encontrada."}</p>
-              {chip && <button type="button" className="mt-2 min-h-11 text-sm font-semibold text-primary hover:underline" onClick={() => setChip("")}>Ver todas as casas</button>}
+              <p className="text-muted-foreground">{chip === "cidade" && !viewerCity ? "Informe sua cidade para ver as casas da sua cidade." : chip === "cidade" ? "Ainda não há casas na sua cidade. Veja todas as casas." : "Nenhuma casa encontrada."}</p>
+              {(chip || onlyVerified || onlyRated) && <button type="button" className="mt-2 min-h-11 text-sm font-semibold text-primary hover:underline" onClick={() => setParam({ cidade: null, intencao: null, verificada: null, nota: null })}>Ver todas as casas</button>}
             </Card>
           )}
         </div>

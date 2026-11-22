@@ -1,4 +1,4 @@
-// "Perto de você": próximas giras e rituais, com a cidade do cliente e as casas em destaque na frente. Sem React: testável.
+// "Na sua cidade e em destaque": próximas giras e rituais, com a cidade do cliente e as casas em destaque na frente. Sem React: testável.
 const plain = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 const MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 

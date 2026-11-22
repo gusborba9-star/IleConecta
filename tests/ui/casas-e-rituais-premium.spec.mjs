@@ -47,7 +47,7 @@ for (const w of [320, 390]) {
     await expect(page.getByText("Ritual da Prosperidade")).toBeVisible();
     await expect(page.getByText("17 vagas")).toBeVisible();
     await expect(page.getByRole("link", { name: "Ver e reservar" })).toHaveAttribute("href", new RegExp(`/casa/${U(80)}\\?aba=rituais`));
-    await page.getByRole("button", { name: "à distância" }).click(); // nenhum ritual à distância
+    await page.getByLabel("Buscar rituais").fill("inexistente"); // nada combina
     await expect(page.getByText("Nenhum ritual encontrado com esses filtros.")).toBeVisible();
     await noHScroll(page);
   });

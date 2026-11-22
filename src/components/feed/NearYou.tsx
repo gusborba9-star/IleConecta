@@ -5,7 +5,7 @@ import { useApp } from "@/contexts/AppContext";
 import { fetchPublishedRituals, type RealRitual } from "@/lib/rituals";
 import { dateBlock, pickNearYou } from "@/lib/nearYouCore.js";
 
-/** "Perto de você": próximas giras e rituais em cartões compactos (data em destaque, casa, cidade e vagas). Some se não houver nada. */
+/** "Na sua cidade e em destaque": próximas giras e rituais em cartões compactos (data em destaque, casa, cidade e vagas). Some se não houver nada. */
 export default function NearYou({ highlightOwners = [], allow }: { highlightOwners?: string[]; allow?: (ownerId: string, itemId: string) => boolean }) {
   const { currentUser, users, isRemoteAuth } = useApp();
   const [list, setList] = useState<RealRitual[] | null>(null);
@@ -23,9 +23,9 @@ export default function NearYou({ highlightOwners = [], allow }: { highlightOwne
   if (items.length === 0) return null;
 
   return (
-    <section aria-labelledby="perto-de-voce">
+    <section aria-labelledby="na-sua-cidade">
       <div className="mb-2 flex items-center justify-between px-0.5">
-        <h2 id="perto-de-voce" className="text-[15px] font-semibold">Perto de você</h2>
+        <h2 id="na-sua-cidade" className="text-[15px] font-semibold">Na sua cidade e em destaque</h2>
         <Link to="/rituais" className="inline-flex min-h-9 items-center text-xs font-semibold text-primary hover:underline">Ver tudo</Link>
       </div>
       <ul className="scroll-x flex snap-x gap-2.5 pb-1">

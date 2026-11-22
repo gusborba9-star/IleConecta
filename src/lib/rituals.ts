@@ -70,6 +70,36 @@ export async function fetchHouseRituals(ownerId: string): Promise<RealRitual[]> 
   return withTaken(data);
 }
 
+/** Linha do catálogo de busca: ritual publicado, sem as vagas (que se buscam à parte, só do que aparece) e com o selo da casa. */
+export type CatalogRitual = RealRitual & { houseVerified: boolean };
+export const CATALOG_LIMIT = 500;
+const CATALOG_COLS = `${COLS.replace("houses(owner_id, name)", "houses(owner_id, name, verified)")}`;
+
+/** Todos os rituais publicados de hoje em diante, os mais próximos primeiro, até CATALOG_LIMIT. `extraIds` traz impulsionados que ficaram fora do corte. */
+export async function fetchRitualCatalog(extraIds: string[] = []): Promise<{ items: CatalogRitual[]; total: number }> {
+  if (!supabase) return { items: [], total: 0 };
+  const since = new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+  const { data, error, count } = await supabase.from("events").select(CATALOG_COLS, { count: "exact" })
+    .eq("status", "publicado").gt("starts_at", since).order("starts_at", { ascending: true }).limit(CATALOG_LIMIT);
+  if (error || !data) return { items: [], total: 0 };
+  let rows = data as Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const have = new Set(rows.map((r) => String(r.id)));
+  const missing = extraIds.filter((id) => !have.has(id)).slice(0, 50);
+  if (missing.length) {
+    const { data: more } = await supabase.from("events").select(CATALOG_COLS).eq("status", "publicado").gt("starts_at", since).in("id", missing);
+    if (more) rows = [...rows, ...(more as Record<string, any>[])]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  }
+  const items = rows.map((r) => ({ ...toRitual(r, 0), houseVerified: r.houses?.verified === true }));
+  return { items, total: Math.max(count ?? items.length, items.length) };
+}
+
+/** Vagas ocupadas de uma lista de rituais (uma consulta por ritual, só dos que a tela precisa). */
+export async function fetchTakenMany(ids: string[]): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  await Promise.all(ids.map(async (id) => { out[id] = await takenOf(id); }));
+  return out;
+}
+
 export async function fetchPublishedRituals(): Promise<RealRitual[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
