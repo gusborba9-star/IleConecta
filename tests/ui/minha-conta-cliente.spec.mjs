@@ -4,7 +4,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1);
 const cliente = { id: ME, account_type: "pessoa", display_name: "Gezebel Souza", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }];
 const membro = [{ member_id: U(40), house_name: "Casa de Oxóssi", house_slug: "oxossi", owner_id: U(41), monthly_cents: 5000, due_day: 10, can_pay_app: true, dues: [] }];
 const montar = (page, perfil = cliente, memberships = []) => api(page, { rest: { profiles: perfil, legal_consents: consents }, rpc: { my_memberships: memberships, report_client_error: true } });
 const aba = (page, nome) => page.getByRole("tab", { name: nome, exact: true });

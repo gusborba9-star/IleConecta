@@ -6,7 +6,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 const ME = U(1), HID = U(60);
 const perfilCasa = { id: ME, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const perfilPessoa = { ...perfilCasa, account_type: "pessoa", display_name: "Maria Cliente" };
-const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
+const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: HID, owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "intermediario", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city: "Salvador", state: "BA" } };
 const pendencias = (counts = {}, toPayCount = 0) => ({
   house_id: HID, house_name: "Casa Axé", role: "titular", total: 3, overdue: 0, counts, items: [],

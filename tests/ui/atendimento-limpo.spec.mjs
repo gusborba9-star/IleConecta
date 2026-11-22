@@ -9,7 +9,7 @@ const ontem = new Date(hoje.getTime() - 86_400_000);
 const m = (n, fromHouse, text, at, extra = {}) => ({ id: U(700 + n), from_house: fromHouse, text, created_at: at.toISOString(), staff_name: null, from_assistant: false, ...extra });
 
 const montar = (page, perms) => api(page, {
-  rest: { profiles: { id: ME, account_type: "pessoa", display_name: "Ana", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" }, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }] },
+  rest: { profiles: { id: ME, account_type: "pessoa", display_name: "Ana", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" }, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }] },
   rpc: {
     my_staff_house: [{ house_id: U(9), house_name: "Casa Axé", owner_id: U(8), staff_name: "Ana", perms }],
     staff_conversations: [{ conversation_id: CONV, other_id: PERSON, other_name: NOME, last_text: "Pode me explicar?", last_at: hoje.toISOString() }],

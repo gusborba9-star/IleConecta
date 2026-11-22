@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), HID = U(60);
-const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = { id: ME, account_type: "casa", display_name: "Minha Casa", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const house = { id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "base", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } };
 
