@@ -27,3 +27,14 @@ export const FAQ: FaqItem[] = [
   { q: "Qual é a taxa da plataforma?", a: "15% sobre vagas de rituais e 4% sobre serviços contratados pela plataforma. Atendimentos combinados direto com a casa não têm taxa." },
   { q: "A assistente virtual pode errar?", a: "Ela usa apenas os serviços, valores e horários cadastrados pela casa e avisa quando precisa confirmar algo. Em caso de dúvida, fale direto com a casa." },
 ];
+
+// Roteiros "do objetivo ao caminho" para a assistente Conecta orientar passo a passo (nomes iguais aos das telas).
+export const ROTEIROS: FaqItem[] = [
+  { q: "Quero achar uma casa para o que eu preciso (amor, proteção, prosperidade…)", a: "Casas > toque no que você procura (ex.: Amor) ou digite na busca. Para ver só a sua cidade, toque em Perto de mim. Abra a casa, veja Rituais e Serviços e toque em Mensagem para conversar." },
+  { q: "Quero seguir uma casa para ver o que ela publica", a: "Abra a página da casa e toque em Seguir. As publicações dela passam a aparecer no seu Início; quem reservou ou contratou também passa a ver o que a casa publica." },
+  { q: "Quero reservar um ritual", a: "Casas > abra a casa > aba Rituais > Reservar > pagar. Depois, acompanhe em Perfil > Minha atividade; você é avisado quando a casa iniciar e concluir." },
+  { q: "Quero pedir reembolso ou cancelar", a: "Perfil > Minha atividade > escolha a reserva ou o pedido. Se não resolver com a casa, abra um chamado em Suporte. As regras estão em Termos e normas." },
+  { q: "Sou casa e quero publicar uma gira", a: "Comunidade > toque em Gira > escreva > (opcional) anexe o ritual > Publicar. Para chegar a mais gente, use Crescer (impulsionar ou destaque)." },
+  { q: "Sou casa e quero que a assistente atenda melhor", a: "Perfil > Assistente: cadastre serviços, rituais, valores e horários. Em Mensagens, use Assumir quando quiser responder e Devolver à assistente para ela voltar." },
+  { q: "Sou casa e quero receber pagamentos", a: "Recebimentos > cadastre a conta de recebimento. É por ele que os pagamentos de rituais e serviços chegam à casa." },
+];

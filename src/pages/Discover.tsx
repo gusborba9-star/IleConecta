@@ -3,6 +3,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Card, Input } from "@/components/base";
 import { CheckCircle2, Compass, MapPin, Search, Star, TrendingUp } from "lucide-react";
+import { INTENTS, intentOf, matchesIntent } from "@/lib/intentsCore.js";
+import { sameCity } from "@/lib/postCategoryCore.js";
+import { fetchPublishedRitualsCached, type RealRitual } from "@/lib/rituals";
 import { cn, isPromotionActive } from "@/lib/utils";
 import type { HouseUser } from "@/types";
 import RitualCard from "@/components/feed/RitualCard";
@@ -13,7 +16,7 @@ import PromoTrack from "@/components/promo/PromoTrack";
 import BoostedServices from "@/components/promo/BoostedServices";
 
 export default function Discover() {
-  const { users, rituals, isRemoteAuth } = useApp();
+  const { users, rituals, isRemoteAuth, currentUser } = useApp();
   // Destaque ganho no Indique e ganhe (id da casa -> fim do prêmio).
   const [featured, setFeatured] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -28,19 +31,33 @@ export default function Discover() {
   const [searchParams] = useSearchParams();
   const houses = users.filter((u): u is HouseUser => u.type === "commercial");
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
-  const [tag, setTag] = useState("Todas");
+  // Filtro rápido: uma intenção (o que a pessoa procura) ou "Perto de mim" (a cidade do perfil). Sem lista de tradições.
+  const [chip, setChip] = useState<string>(() => searchParams.get("perto") === "1" ? "perto" : "");
+  const viewerCity = currentUser?.city;
 
   useEffect(() => setQ(searchParams.get("q") ?? ""), [searchParams]);
 
-  const tags = ["Todas", "Candomblé Ketu", "Umbanda", "Umbanda Omolokô", "Candomblé Nagô"];
+  // Rituais publicados entram na busca por intenção ("trabalho de amor" acha a casa que o oferece).
+  const [real, setReal] = useState<RealRitual[]>([]);
+  useEffect(() => {
+    if (!isRemoteAuth) return;
+    let alive = true;
+    void fetchPublishedRitualsCached().then((l) => alive && setReal(l));
+    return () => { alive = false; };
+  }, [isRemoteAuth]);
 
+  const intent = useMemo(() => INTENTS.find((i) => i.id === chip) ?? intentOf(q), [chip, q]);
   const filtered = useMemo(() => {
     return houses.filter((h) => {
-      if (tag !== "Todas" && h.category !== tag) return false;
-      if (q && !matchesDemoSearch(q, [h.name, h.city, h.state, h.category, h.bio, ...h.tags])) return false;
+      if (chip === "perto" && !sameCity(h.city, viewerCity)) return false;
+      if (intent) {
+        const own = rituals.filter((r) => r.houseId === h.id).flatMap((r) => [r.title, r.description]);
+        const pub = real.filter((r) => r.ownerId === h.id).flatMap((r) => [r.title, r.description]);
+        if (!matchesIntent(intent, [h.name, h.category, h.bio, ...h.tags, ...own, ...pub])) return false;
+      } else if (q && !matchesDemoSearch(q, [h.name, h.city, h.state, h.category, h.bio, ...h.tags])) return false;
       return true;
     });
-  }, [houses, tag, q]);
+  }, [houses, chip, q, intent, rituals, real, viewerCity]);
 
   const matchingRituals = q.trim()
     ? rituals.filter((ritual) => {
@@ -54,7 +71,8 @@ export default function Discover() {
   const isUp = (h: HouseUser) => isPromotionActive(h.boost?.expiresAt) || Boolean(featured[h.id]) || paidUp(h);
   // Quem contratou destaque aparece primeiro, revezando a ordem a cada visita.
   const promoted = filtered.filter(isUp).sort((a, b) => (promo.highlightOwners.indexOf(a.id) + 1 || 999) - (promo.highlightOwners.indexOf(b.id) + 1 || 999));
-  const rest = filtered.filter((h) => !isUp(h));
+  // Fora do pago, quem é da sua cidade vem antes; o resto segue a ordem normal.
+  const rest = filtered.filter((h) => !isUp(h)).sort((a, b) => Number(sameCity(b.city, viewerCity)) - Number(sameCity(a.city, viewerCity)));
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
@@ -63,24 +81,24 @@ export default function Discover() {
           <Compass className="h-5 w-5 text-forest" aria-hidden />
           <h1 className="font-display font-bold text-xl sm:text-2xl">Descobrir casas</h1>
         </div>
-        <p className="mt-0.5 text-sm text-muted-foreground">Explore casas por cidade, categoria e propósito.</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Busque pelo que você precisa e fale com a casa certa.</p>
         <div className="relative mt-3">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input className="h-11 rounded-full bg-muted pl-11 border-transparent" placeholder="Buscar por nome ou cidade" aria-label="Buscar casas" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input className="h-11 rounded-full bg-muted pl-11 border-transparent" placeholder="Casa, cidade ou o que você procura" aria-label="Buscar casas" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <div className="scroll-x -mx-1 mt-3 flex gap-1.5 px-1 pb-0.5 whitespace-nowrap" role="group" aria-label="Filtrar por tradição">
-          {tags.map((t) => (
+        <div className="scroll-x -mx-1 mt-3 flex gap-1.5 px-1 pb-0.5 whitespace-nowrap" role="group" aria-label="Filtrar casas">
+          {[{ id: "perto", label: "Perto de mim" }, ...INTENTS].map((t) => (
             <button
-              key={t}
+              key={t.id}
               type="button"
-              aria-pressed={tag === t}
-              onClick={() => setTag(t)}
+              aria-pressed={chip === t.id}
+              onClick={() => setChip(chip === t.id ? "" : t.id)}
               className={cn(
-                "shrink-0 min-h-9 px-3.5 rounded-full text-xs font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                tag === t ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
+                "inline-flex shrink-0 items-center gap-1 min-h-9 px-3.5 rounded-full text-xs font-semibold border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                chip === t.id ? "bg-forest text-forest-foreground border-forest shadow-card" : "border-border bg-card hover:bg-muted"
               )}
             >
-              {t}
+              {t.id === "perto" && <MapPin className="h-3.5 w-3.5" aria-hidden />}{t.label}
             </button>
           ))}
         </div>
@@ -121,8 +139,8 @@ export default function Discover() {
           ))}
           {filtered.length === 0 && !q.trim() && (
             <Card className="p-8 text-center md:col-span-2">
-              <p className="text-muted-foreground">Nenhuma casa encontrada.</p>
-              {tag !== "Todas" && <button type="button" className="mt-2 min-h-11 text-sm font-semibold text-primary hover:underline" onClick={() => setTag("Todas")}>Ver todas as casas</button>}
+              <p className="text-muted-foreground">{chip === "perto" && !viewerCity ? "Informe sua cidade no perfil para ver as casas perto de você." : chip === "perto" ? "Ainda não há casas na sua cidade." : "Nenhuma casa encontrada."}</p>
+              {chip && <button type="button" className="mt-2 min-h-11 text-sm font-semibold text-primary hover:underline" onClick={() => setChip("")}>Ver todas as casas</button>}
             </Card>
           )}
         </div>

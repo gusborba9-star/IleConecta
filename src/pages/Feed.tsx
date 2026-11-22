@@ -19,7 +19,6 @@ import PromoTrack from "@/components/promo/PromoTrack";
 import FeedPromos from "@/components/promo/FeedPromos";
 import type { Post } from "@/types";
 import { CATEGORIES, matchesFilter } from "@/lib/postCategoryCore.js";
-import { MapPin } from "lucide-react";
 
 export default function Feed({ home = false }: { home?: boolean }) {
   const { posts, refreshRemote, isRemoteAuth, currentUser, users } = useApp();
@@ -90,12 +89,12 @@ export default function Feed({ home = false }: { home?: boolean }) {
       </div>
 
       <div role="group" aria-label="Filtrar publicações" className="sticky top-[60px] z-20 flex gap-2 overflow-x-auto rounded-full border border-border bg-background/95 px-2 py-2 backdrop-blur scroll-x">
-        {[{ id: "todos", label: "Todos" }, ...CATEGORIES, { id: "perto", label: "Perto de mim" }].map((c) => {
+        {[{ id: "todos", label: "Todos" }, ...CATEGORIES].map((c) => {
           const on = filter === c.id;
           return (
             <button key={c.id} type="button" aria-pressed={on} onClick={() => setFilter(c.id)}
               className={`inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border px-3.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted"}`}>
-              {c.id === "perto" && <MapPin className="h-3.5 w-3.5" aria-hidden />}{c.label}
+              {c.label}
             </button>
           );
         })}
@@ -108,7 +107,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
       )}
       {filter !== "todos" && feedItems.length === 0 && (
         <Card className="p-6 text-center text-sm text-muted-foreground">
-          {filter === "perto" && !viewerCity ? "Informe sua cidade em Minha conta para ver o que acontece perto de você." : "Nenhuma publicação neste filtro ainda."}
+          Nenhuma publicação neste filtro ainda.
         </Card>
       )}
       {feedItems.map((item, idx) =>

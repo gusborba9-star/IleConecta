@@ -13,7 +13,8 @@ const scr = await load("src/content/screens.ts");
 
 const pageText = (p) => [`## ${p.title}`, p.summary, ...p.sections.flatMap((s) => [s.heading ? `### ${s.heading}` : "", ...(s.paragraphs ?? []), ...(s.bullets ?? []).map((b) => `- ${b}`)])].filter(Boolean).join("\n");
 const out = [
-  "# Perguntas frequentes", ...faq.FAQ.map((f) => `P: ${f.q}\nR: ${f.a}`),
+  "# Perguntas frequentes", ...[...faq.FAQ, ...faq.FAQ_CLIENT, ...faq.FAQ_HOUSE].map((f) => `P: ${f.q}\nR: ${f.a}`),
+  "# Como chegar lá (roteiros passo a passo)", ...faq.ROTEIROS.map((f) => `Objetivo: ${f.q}\nCaminho: ${f.a}`),
   "# Mapa de telas", ...scr.SCREENS.map((s) => `- ${s.name} (${s.path}) [${s.audience ?? "todos"}]: ${s.what}`),
   "# Documentos oficiais (revisados pelo advogado)", ...inst.INFO_PAGES.map(pageText),
 ].join("\n\n");
