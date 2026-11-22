@@ -249,6 +249,19 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Métricas de desempenho e conversões atribuídas",
+        paragraphs: [
+          "Os relatórios de destaque e impulsionamento mostram visualizações, cliques e conversões atribuídas. Conversão atribuída é qualquer conversa, pedido ou reserva iniciada com a Casa em até 7 dias depois de o anúncio ser aberto no mesmo aparelho.",
+          "A métrica é estatística e não prova que o anúncio foi a causa exclusiva do contato. O número de aparelhos novos é uma estimativa por aparelho e pode representar mais de uma pessoa. Nenhum relatório identifica clientes.",
+        ],
+      },
+      {
+        heading: "Distribuição e equilíbrio dos anúncios",
+        paragraphs: [
+          "Destaques e impulsionamentos são exibidos por sorteio e rodízio automáticos dentro da região e da modalidade contratadas, sem garantia de número de visualizações. A plataforma acompanha internamente a exposição média diária para manter o equilíbrio técnico e a isonomia entre as Casas.",
+        ],
+      },
+      {
         heading: "Divulgação e ética dos anúncios",
         paragraphs: [
           "É proibido publicar anúncios, descrições de serviços ou comunicações com promessas absolutas, prazos determinantes ou garantia de resultados materiais, afetivos, financeiros ou de saúde (por exemplo, \"trago seu amor de volta em 3 dias, garantido\", \"cura definitiva\" ou \"ganho financeiro certo\"). Anúncios assim violam a legislação de defesa do consumidor e estão sujeitos a remoção imediata e à suspensão da conta.",
@@ -326,7 +339,34 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: "Métricas de visualização e impulsionamento",
         paragraphs: [
-          "Para fornecer relatórios transparentes de desempenho às casas e evitar contagens duplicadas, registramos temporariamente a interação (aparição ou clique) de cada visitante em conteúdos impulsionados ou em destaque. Esse registro técnico bruto é tratado com base no legítimo interesse (LGPD, art. 7º, IX), é eliminado automaticamente a cada 24 horas e deixa apenas totais consolidados por dia, sem identificação do visitante nos relatórios exibidos às casas.",
+          "Para fornecer relatórios transparentes de desempenho às casas e evitar contagens duplicadas, registramos temporariamente a interação (aparição ou clique) em conteúdos impulsionados ou em destaque. Esse registro técnico é usado apenas para medir a entrega do serviço contratado pela casa (execução de contrato, LGPD, art. 7º, V), sem perfilamento individual e sem uso de dados sobre crença ou religião.",
+          "Os registros individuais de acesso são eliminados em até 24 horas, permanecendo apenas os totais diários sem identificação de usuários.",
+        ],
+      },
+      {
+        heading: "Contagem por aparelho e limite de repetição",
+        paragraphs: [
+          "Para estimar quantos aparelhos diferentes viram um anúncio e evitar repeti-lo em excesso, o aplicativo guarda no próprio aparelho uma lista local dos anúncios já exibidos. Essa lista não identifica você, é limpa periodicamente (cerca de 30 dias) e pode ser apagada a qualquer momento ao limpar os dados do navegador. Só enviamos ao servidor o aviso de que um anúncio apareceu pela primeira vez naquele aparelho, sem associá-lo a um perfil.",
+        ],
+      },
+      {
+        heading: "Conversões atribuídas aos anúncios",
+        paragraphs: [
+          "Quando você abre um anúncio, o aplicativo guarda no aparelho um código técnico temporário, válido por 7 dias, sem nenhum dado pessoal. Se, nesse prazo e no mesmo aparelho, você iniciar uma conversa, um pedido ou uma reserva com a casa anunciante, registramos apenas a ligação entre o anúncio, o tipo de ação, o identificador da ação e a data.",
+          "Esse registro serve para informar à casa, de forma agregada, o resultado do serviço contratado. Ele é mantido por 13 (treze) meses e depois excluído automaticamente; também é excluído quando a conversa, o pedido ou a reserva de origem deixam de existir, para que nunca sirva de atalho para identificar alguém.",
+        ],
+      },
+      {
+        heading: "Busca pela localização atual",
+        paragraphs: [
+          "Se você escolher usar a sua localização atual, o navegador ou o aparelho pede a sua autorização. As coordenadas do GPS são convertidas em cidade e estado no próprio aparelho; elas nunca são enviadas nem guardadas por nós. Somente a cidade e o estado são usados na consulta (por exemplo, para mostrar casas e anúncios da região).",
+          "A cidade e o estado do momento ficam guardados por até 7 dias apenas no seu aparelho, e você pode desfazer a escolha quando quiser.",
+        ],
+      },
+      {
+        heading: "Registros técnicos da infraestrutura",
+        paragraphs: [
+          "Os servidores de hospedagem registram temporariamente dados técnicos básicos de conexão (como endereço IP e os parâmetros de cidade/estado da busca) apenas para segurança, estabilidade e cumprimento de obrigação legal, sendo descartados automaticamente após o prazo técnico.",
         ],
       },
       {
@@ -365,6 +405,8 @@ export const INFO_PAGES: InfoPage[] = [
           "Registros técnicos de erro do aplicativo (sem endereço IP, e-mail ou identificador da conta): 30 (trinta) dias, sendo descartados automaticamente;",
           "Momentos: arquivo eliminado em até 48 (quarenta e oito) horas após a publicação; curtidas e comentários em até 2 (dois) dias após a expiração; registros de Momento denunciado, até 90 (noventa) dias após a análise;",
           "Interações brutas de visualização e clique em impulsionamentos: 24 (vinte e quatro) horas, mantendo-se posteriormente apenas os totais diários consolidados e anônimos.",
+          "Conversões atribuídas a anúncios (ligação entre anúncio, tipo de ação, identificador e data, sem dados pessoais): 13 (treze) meses, com exclusão automática, ou antes, se a conversa, o pedido ou a reserva de origem forem excluídos;",
+          "Lista local de anúncios já exibidos e cidade/estado da localização atual: apenas no seu aparelho, por cerca de 30 dias e 7 dias, respectivamente.",
         ],
       },
       {

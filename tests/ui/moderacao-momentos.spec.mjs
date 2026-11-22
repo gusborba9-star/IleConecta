@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { api, U } from "./_api.mjs";
 
 const pessoa = { id: U(1), account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const row = (n, extra = {}) => ({ story_id: U(500 + n), house_id: U(10 + n), house_name: `Casa ${n}`, caption: null, media_kind: "image", media_path: null, poster_path: null, first_report: `2026-11-20T1${n}:00:00Z`, n_reports: 1, reasons: ["golpe"], hidden: false, ...extra });
 const rpc = (reports, extra = {}) => ({ is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: reports, admin_moment_decide: "ok", ...extra });
 const cardOf = (page, n) => page.locator("div.rounded-lg").filter({ hasText: new RegExp(`Casa ${n} · foto`) });

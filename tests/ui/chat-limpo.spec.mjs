@@ -4,7 +4,7 @@ import { api, U, noHScroll } from "./_api.mjs";
 
 const ME = U(1), OTHER = U(2), CONV = "c0000000-0000-0000-0000-000000000001";
 const casa = { id: ME, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_casa"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_casa"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: U(9), owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "intermediario", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null } };
 const NOME = "Gustavo dos Santos Albuquerque Borba Filho";
 const msg = (n, from, text, at, extra = {}) => ({ id: U(500 + n), conversation_id: CONV, sender_id: from, text, from_assistant: false, created_at: at, read: true, delivered_at: at, deleted_at: null, ...extra });

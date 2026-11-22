@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
 
 const CLIENT = U(5), A = U(1), AH = U(60), B = U(2), BH = U(61), C = U(3), CH = U(62);
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-11", accepted_at: "2026-11-01T10:00:00Z" }));
 const cliente = { id: CLIENT, account_type: "cliente", display_name: "Cliente Ana", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
 const casa = (id, owner, name, city, bio) => ({ id, owner_id: owner, name, category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio, city, state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const HOUSES = [
