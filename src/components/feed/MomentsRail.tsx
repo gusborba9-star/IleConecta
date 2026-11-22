@@ -14,7 +14,7 @@ import { canPostMoments, isGroupSeen, sortGroups, startIndex, type MomentGroup }
 import { readSeen, saveSeen } from "@/lib/momentsSeen";
 
 /** Carrossel de momentos no topo do feed. Só casas publicam (a partir do Essencial); cliente só assiste. */
-export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?: string[] }) {
+export default function MomentsRail({ highlightOwners = [], allow }: { highlightOwners?: string[]; allow?: (ownerId: string) => boolean }) {
   const { currentUser, isRemoteAuth, stories, users } = useApp();
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const isHouse = currentUser?.type === "commercial";
@@ -44,7 +44,7 @@ export default function MomentsRail({ highlightOwners = [] }: { highlightOwners?
     return [...by.values()];
   }, [isRemoteAuth, stories, users]);
 
-  const groups = useMemo(() => sortGroups(remote ?? demo, { highlightOwners, seen }), [remote, demo, highlightOwners, seen]);
+  const groups = useMemo(() => sortGroups((remote ?? demo).filter((g) => !allow || g.followed || allow(g.ownerId)), { highlightOwners, seen }), [remote, demo, highlightOwners, seen, allow]);
   const markSeen = useCallback((id: string) => {
     setSeen((prev) => {
       if (prev.has(id)) return prev;
