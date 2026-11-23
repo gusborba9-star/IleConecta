@@ -10,7 +10,21 @@ const url = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const authClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+
 const rec = createRecovery({
+  signIn: async (email: string, password: string) => {
+    const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+    if (error || !data.session || !data.user) {
+      const code = (error as { code?: string } | null)?.code ?? "";
+      if (code === "email_not_confirmed") return { ok: false, error: "nao_confirmado" };
+      const status = (error as { status?: number } | null)?.status ?? 0;
+      if (status >= 500 || status === 429) return { ok: false, error: "indisponivel" };
+      return { ok: false, error: "credenciais" };
+    }
+    return { ok: true, user_id: data.user.id, access_token: data.session.access_token, refresh_token: data.session.refresh_token };
+  },
   rpc: async (fn: string, args: Record<string, unknown>) => {
     const { data, error } = await admin.rpc(fn, args);
     if (error) throw new Error(`${fn}: ${error.code ?? "erro"}`);

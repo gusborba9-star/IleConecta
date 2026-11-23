@@ -32,6 +32,8 @@ const MyCases = lazy(() => import("@/pages/MyCases"));
 const ForgotPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ResetPassword })));
 const RecoverAccess = lazy(() => import("@/pages/RecoverAccess").then((m) => ({ default: m.RecoverAccess })));
+const SecurityActivity = lazy(() => import("@/pages/Security"));
+const SecurityConfirm = lazy(() => import("@/pages/Security").then((m) => ({ default: m.SecurityConfirm })));
 const ConfirmRecovery = lazy(() => import("@/pages/RecoverAccess").then((m) => ({ default: m.ConfirmRecovery })));
 const Terms = lazy(() => import("@/pages/Terms"));
 const AudioCredits = lazy(() => import("@/pages/AudioCredits"));
@@ -100,6 +102,7 @@ export default function App() {
       <Route path="/redefinir-senha" element={<ResetPassword />} />
       <Route path="/recuperar-acesso" element={<RecoverAccess />} />
       <Route path="/recuperar-acesso/confirmar" element={<ConfirmRecovery />} />
+      <Route path="/seguranca/confirmar" element={<SecurityConfirm />} />
       <Route element={<PublicLayout />}>
         <Route path="/sobre/:slug" element={<Info />} />
         <Route path="/c/:slug" element={<PublicHousePage />} />
@@ -128,6 +131,7 @@ export default function App() {
         <Route path="/recebimentos" element={<Recebimentos />} />
         <Route path="/planos" element={<Plans />} />
         <Route path="/atividade" element={<Navigate to="/perfil?aba=atividade" replace />} />
+        <Route path="/seguranca" element={<SecurityActivity />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/suporte/chamados" element={<MyCases />} />
         <Route path="/suporte/chamados/:id" element={<MyCases />} />

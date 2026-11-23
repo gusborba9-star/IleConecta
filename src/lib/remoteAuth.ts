@@ -1,6 +1,7 @@
 import { reportClientError } from "@/lib/clientErrors";
 import type { AccountType, HouseUser, PersonalUser, User } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { secureLogin } from "@/lib/secureLogin";
 
 export interface AuthResult {
   ok: boolean;
@@ -97,9 +98,12 @@ export async function fetchRemoteUser(userId: string, email: string): Promise<Us
 
 export async function remoteLogin(email: string, password: string): Promise<AuthResult> {
   if (!supabase) return { ok: false, error: "Servidor indisponível." };
-  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-  if (error || !data.user) return { ok: false, error: translateAuthError(error?.message) };
-  const user = await fetchRemoteUser(data.user.id, data.user.email ?? email);
+  // O login passa pelo servidor, que aplica o bloqueio progressivo e registra o aparelho (avisos de segurança).
+  const r = await secureLogin(email, password);
+  if (r.ok === false) return { ok: false, error: r.error };
+  const { data: sess } = await supabase.auth.getUser();
+  if (!sess.user) return { ok: false, error: "Serviço indisponível agora. Tente novamente em instantes." };
+  const user = await fetchRemoteUser(sess.user.id, sess.user.email ?? email);
   if (!user) return { ok: false, error: "Sua conta existe, mas o perfil não foi encontrado. Fale com o suporte." };
   return { ok: true, user };
 }

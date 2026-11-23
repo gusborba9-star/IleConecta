@@ -2,6 +2,7 @@
 // Princípios: resposta e tempo IGUAIS para qualquer entrada válida (não revela se a conta existe); a palavra de segurança
 // digitada nunca é gravada; o link de confirmação vai SÓ para o e-mail novo; ninguém (nem o dono) define ou vê senha.
 import { DEFAULT_SCORING, emailKey, evaluate, identificationScore } from "./engine.js";
+import { createSecurity } from "./security.js";
 
 export const MIN_RESPONSE_MS = 1500;
 export const UNIFORM_MESSAGE = "Recebemos o seu pedido. Se as informações fizerem sentido, a decisão chega por e-mail em até 24 horas.";
@@ -59,6 +60,7 @@ export function sanitizeScoring(raw) {
 
 export function createRecovery(deps) {
   const { rpc, sendMail, adminUpdateEmail, sleep, now, randomHex, sha256, cronOk, siteUrl, log = () => {} } = deps;
+  const security = createSecurity(deps);
   const rpcOk = async (fn, args) => { const r = await rpc(fn, args); return r; };
 
   async function doSubmit(inp, ip) {
@@ -97,11 +99,8 @@ export function createRecovery(deps) {
     });
     if (ev.lane === "normal" && top) {
       const ownerMail = await rpcOk("recovery_claim_owner_notice", { p_request: id });
-      if (ownerMail) await sendMail({
-        to: ownerMail, subject: "Alguém pediu para recuperar o acesso da sua conta",
-        text: "Recebemos um pedido de recuperação de acesso para a sua conta no Ilê Conecta.\n\nSe foi você, não precisa fazer nada: a nossa equipe analisa o pedido com cuidado.\nSe NÃO foi você, a sua conta continua protegida: nada muda sem uma análise e sem um prazo de segurança de 24 horas. Se quiser, entre agora e troque a sua senha.",
-        idempotency_key: `rec-dono-${id}`, link: siteUrl, link_label: "Entrar no Ilê Conecta",
-      });
+      // O aviso ao dono sai pela fila de segurança (mesmo texto, "se foi você", botão "Não fui eu" e sino no app).
+      if (ownerMail) await rpcOk("sec_event_push", { p_user: top.user_id, p_kind: "recuperacao_pedida", p_detail: { to: ownerMail } });
     }
   }
 
@@ -142,12 +141,13 @@ export function createRecovery(deps) {
             text: "Passou o prazo de segurança. Para concluir a recuperação, confirme este e-mail no botão abaixo. O link vale por 7 dias e só funciona uma vez.\n\nDepois de confirmar, você cria uma nova senha. Ninguém da nossa equipe vê ou define a sua senha.",
             link: `${siteUrl}/recuperar-acesso/confirmar#t=${token}`, link_label: "Confirmar novo e-mail" });
           const old = await rpcOk("recovery_account_email", { p_user: r.decision_account });
-          if (old) await sendMail({ to: old, subject: "Aviso de segurança sobre a sua conta", idempotency_key: `rec-aviso-${r.id}`,
-            text: "Um pedido de troca do e-mail desta conta foi aprovado pela nossa equipe e está aguardando a confirmação no novo endereço.\n\nSe NÃO foi você, entre agora e troque a sua senha, e fale com o suporte." });
+          if (old) await rpcOk("sec_event_push", { p_user: r.decision_account, p_kind: "recuperacao_aprovada", p_detail: { to: old } });
           await rpcOk("recovery_mark_mail", { p_id: r.id, p_kind: "confirmacao" }); sent++;
         }
       } catch (e) { log("recovery_fila_erro", String(e?.message ?? e).slice(0, 200)); }
     }
+    try { sent += await security.processEvents(); } catch (e) { log("sec_fila_erro", String(e?.message ?? e).slice(0, 200)); }
+    try { sent += await security.processAnnouncements(); } catch (e) { log("ann_fila_erro", String(e?.message ?? e).slice(0, 200)); }
     return { status: 200, body: { ok: true, processed: sent } };
   }
 
@@ -161,8 +161,7 @@ export function createRecovery(deps) {
     const old = await rpcOk("recovery_account_email", { p_user: r.user_id });
     try { await adminUpdateEmail(r.user_id, r.new_email); } catch { throw new HttpError(409, "nao_foi_possivel"); }
     await rpcOk("recovery_burn_token", { p_id: r.id });
-    if (old) { try { await sendMail({ to: old, subject: "O e-mail da sua conta foi alterado", idempotency_key: `rec-feito-${r.id}`,
-      text: "O e-mail da sua conta no Ilê Conecta foi alterado depois de uma recuperação de acesso aprovada. Todas as sessões foram encerradas.\n\nSe NÃO foi você, fale com o suporte imediatamente." }); } catch { /* aviso é bônus */ } }
+    if (old) { try { await rpcOk("sec_event_push", { p_user: r.user_id, p_kind: "email_alterado", p_detail: { to: old } }); } catch { /* aviso é bônus */ } }
     return { status: 200, body: { ok: true, email: r.new_email } };
   }
 
@@ -185,6 +184,9 @@ export function createRecovery(deps) {
       if (action === "confirm") return await confirm(body, ip);
       if (action === "submit") return await submit(body, ip);
       if (action === "round2_info") return await round2Info(body, ip);
+      if (action === "login") return await security.login(body, ip);
+      if (action === "sec_unlock") return await security.unlock(body, ip);
+      if (action === "sec_report") return await security.report(body, ip);
       return { status: 400, body: { error: "acao_invalida" } };
     } catch (e) {
       if (e instanceof HttpError) return { status: e.status, body: { error: e.code } };

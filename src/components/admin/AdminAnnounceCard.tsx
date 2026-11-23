@@ -15,6 +15,7 @@ export default function AdminAnnounceCard() {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Recipient[]>([]);
   const [picked, setPicked] = useState<Recipient[]>([]);
+  const [alsoEmail, setAlsoEmail] = useState(false);
   const [confirm, setConfirm] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<AnnounceRow[]>([]);
@@ -39,7 +40,7 @@ export default function AdminAnnounceCard() {
   const send = async () => {
     setBusy(true);
     try {
-      const n = await sendAnnouncement(text.trim(), href, audience, picked.map((p) => p.id));
+      const n = await sendAnnouncement(text.trim(), href, audience, picked.map((p) => p.id), alsoEmail);
       toast.success(`Aviso enviado para ${n} pessoa(s).`);
       reset(); await loadHistory();
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
@@ -91,11 +92,13 @@ export default function AdminAnnounceCard() {
               {LINK_OPTIONS.map((l) => <option key={l.href} value={l.href}>{l.label}</option>)}
             </select>
           </label>
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={alsoEmail} onChange={(e) => { setAlsoEmail(e.target.checked); setConfirm(null); }} />
+            <span><span className="font-semibold">Enviar também por e-mail</span><span className="block text-xs text-muted-foreground">Só para regras, Termos e informações importantes da plataforma. Promoção não vai por aqui. O e-mail sai em lotes, em poucos minutos.</span></span></label>
           {confirm === null ? (
             <Button disabled={busy || !!problem} onClick={() => void prepare()}>Revisar e enviar</Button>
           ) : (
             <div className="rounded-lg border border-border p-3 space-y-2">
-              <p className="font-semibold">Confirme o envio para {confirm} pessoa(s) — {AUDIENCE_LABEL[audience]}. Não dá para desfazer.</p>
+              <p className="font-semibold">Confirme o envio para {confirm} pessoa(s) — {AUDIENCE_LABEL[audience]}{alsoEmail ? ", no app e por e-mail" : ", só no app"}. Não dá para desfazer.</p>
               <p className="rounded-md bg-muted/50 p-2">{text.trim()}</p>
               <div className="flex gap-2"><Button disabled={busy} onClick={() => void send()}>Enviar agora</Button><Button variant="outline" disabled={busy} onClick={() => setConfirm(null)}>Voltar e editar</Button></div>
             </div>
@@ -105,7 +108,7 @@ export default function AdminAnnounceCard() {
             {history.length === 0 && <p className="text-muted-foreground">Nenhum aviso enviado pelo painel ainda.</p>}
             {history.map((h) => (
               <div key={h.id} className="rounded-md border border-border/70 p-2">
-                <div className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")} · {AUDIENCE_LABEL[h.audience]} · {h.recipients} pessoa(s)</div>
+                <div className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")} · {AUDIENCE_LABEL[h.audience]} · {h.recipients} pessoa(s){h.also_email ? " · e-mail" : ""}</div>
                 <p>{h.text}</p>
               </div>
             ))}

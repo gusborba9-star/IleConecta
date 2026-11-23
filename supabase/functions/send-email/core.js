@@ -54,15 +54,26 @@ export function parseRequest(input) {
   const link = input.link == null || input.link === "" ? null : safeLink(input.link);
   if (input.link && !link) throw new EmailError("Link fora do domínio da plataforma.", "invalid_link");
   const linkLabel = String(input.link_label ?? "Abrir no Ilê Conecta").replace(/[\r\n]+/g, " ").slice(0, 60);
-  return { to, subject, text, key, replyTo, link, linkLabel };
+  // Botões extras (até 3), todos do próprio domínio. Qualquer link fora do domínio recusa o envio inteiro.
+  const extra = [];
+  if (input.extra_links != null) {
+    if (!Array.isArray(input.extra_links) || input.extra_links.length > 3) throw new EmailError("Links extras inválidos.", "invalid_link");
+    for (const x of input.extra_links) {
+      const u = safeLink(x?.url);
+      if (!u) throw new EmailError("Link fora do domínio da plataforma.", "invalid_link");
+      extra.push({ url: u, label: String(x?.label ?? "Abrir").replace(/[\r\n]+/g, " ").slice(0, 60) });
+    }
+  }
+  return { to, subject, text, key, replyTo, link, linkLabel, extra };
 }
 
 /** Monta HTML simples e seguro (tudo escapado) e a versão em texto puro. */
-export function render({ subject, text, link, linkLabel }) {
+export function render({ subject, text, link, linkLabel, extra = [] }) {
   const paragraphs = text.split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px;line-height:1.55">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("");
   const button = link ? `<p style="margin:22px 0"><a href="${escapeHtml(link)}" style="background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block">${escapeHtml(linkLabel)}</a></p>` : "";
-  const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f6f1e9;font-family:Arial,Helvetica,sans-serif;color:#2b2118"><div style="max-width:560px;margin:0 auto;padding:28px 20px"><p style="font-size:13px;letter-spacing:.08em;color:#8a6d2f;margin:0 0 18px">${escapeHtml(FROM_NAME.toUpperCase())}</p><h1 style="font-size:20px;margin:0 0 18px">${escapeHtml(subject)}</h1>${paragraphs}${button}<p style="font-size:12px;color:#7a6c5d;margin-top:28px">Você recebeu este aviso importante por e-mail porque tem uma conta no Ilê Conecta.</p></div></body></html>`;
-  return { html, plain: link ? `${text}\n\n${linkLabel}: ${link}` : text };
+  const more = extra.map((x) => `<p style="margin:10px 0"><a href="${escapeHtml(x.url)}" style="color:#b4532a;text-decoration:underline">${escapeHtml(x.label)}</a></p>`).join("");
+  const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f6f1e9;font-family:Arial,Helvetica,sans-serif;color:#2b2118"><div style="max-width:560px;margin:0 auto;padding:28px 20px"><p style="font-size:13px;letter-spacing:.08em;color:#8a6d2f;margin:0 0 18px">${escapeHtml(FROM_NAME.toUpperCase())}</p><h1 style="font-size:20px;margin:0 0 18px">${escapeHtml(subject)}</h1>${paragraphs}${button}${more}<p style="font-size:12px;color:#7a6c5d;margin-top:28px">Você recebeu este aviso importante por e-mail porque tem uma conta no Ilê Conecta.</p></div></body></html>`;
+  return { html, plain: [text, link ? `${linkLabel}: ${link}` : null, ...extra.map((x) => `${x.label}: ${x.url}`)].filter(Boolean).join("\n\n") };
 }
 
 /** Adaptador Resend. fetchImpl injetável para teste; tempo limite para não prender a função. */
