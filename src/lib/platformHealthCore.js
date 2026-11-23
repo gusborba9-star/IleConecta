@@ -73,6 +73,8 @@ export const CRON_DESCRIPTIONS = {
   "purge-message-archive": "Limpeza de privacidade: apaga o arquivo de mensagens cujo prazo de guarda terminou.",
   "purge-staff-audit": "Limpeza de privacidade: apaga o registro de ações da equipe cujo prazo de guarda terminou.",
   "purge-promo-conversions": "Limpeza de privacidade: apaga as conversões atribuídas a anúncios com mais de 13 meses (guarda só anúncio e referência, sem a pessoa).",
+  "video-close-stale": "Vídeo: encerra reuniões marcadas que ficaram abertas por mais de 3 horas depois do fim previsto.",
+  "purge-video-usage": "Limpeza de privacidade: apaga o consumo de vídeo (quem entrou e quando) com mais de 12 meses.",
   "purge-music-license-log": "Limpeza de privacidade: apaga do registro de faixas retiradas o que já passou dos 5 anos de guarda.",
   "purge-support-cases": "Limpeza de privacidade: apaga os chamados de suporte encerrados depois do prazo.",
   "purge-system-events": "Limpeza: apaga os erros registrados nesta tela depois de 30 dias e o histórico antigo das rotinas.",
