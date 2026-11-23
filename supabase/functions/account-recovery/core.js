@@ -7,7 +7,7 @@ export const MIN_RESPONSE_MS = 1500;
 export const UNIFORM_MESSAGE = "Recebemos o seu pedido. Se as informações fizerem sentido, a decisão chega por e-mail em até 24 horas.";
 const EMAIL_RE = /^[^\s@<>()",;:\\]{1,64}@[^\s@<>()",;:\\]{1,190}\.[A-Za-z]{2,24}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const LIMITS = { ip: 6, email: 3, global: 300, wordPerAccount: 10, confirmIp: 20 };
+const LIMITS = { ip: 6, email: 3, global: 300, wordPerAccount: 10, confirmIp: 20, infoIp: 20 };
 
 export class HttpError extends Error { constructor(status, code) { super(code); this.status = status; this.code = code; } }
 
@@ -128,7 +128,7 @@ export function createRecovery(deps) {
         if (r.kind === "decisao") {
           if (r.decision === "segunda_rodada") {
             await sendMail({ to: r.contact_email, subject: "Precisamos de mais algumas informações", idempotency_key: `rec-dec-${r.id}`,
-              text: "Quase lá. Para confirmar com segurança que a conta é sua, precisamos de mais algumas informações. Use o botão abaixo (vale uma única vez).",
+              text: "Quase lá. Para confirmar com segurança que a conta é sua, precisamos de mais algumas informações.\n\nNo botão abaixo, as respostas que você já deu aparecem preenchidas e as que ficaram em branco vêm destacadas. Tente lembrar de: a última compra ou pagamento (tipo, valor e mês), quando você criou a conta e entrou pela última vez, com quem você mais conversou e outros e-mails que já usou.\n\nO botão vale uma única vez.",
               link: `${siteUrl}/recuperar-acesso#r=${r.id}`, link_label: "Responder mais perguntas" });
           } else {
             const m = DECISION_MAIL[r.decision]; if (!m) continue;
@@ -166,6 +166,17 @@ export function createRecovery(deps) {
     return { status: 200, body: { ok: true, email: r.new_email } };
   }
 
+  /** Segunda rodada: devolve à pessoa o que ela mesma informou antes (para preencher só o que faltou). Exige código do pedido + mesmo e-mail. */
+  async function round2Info(body, ip) {
+    const parent = typeof body?.parent_id === "string" ? body.parent_id.trim().toLowerCase() : "";
+    const contact = clip(body?.contact_email, 254).toLowerCase();
+    if (!UUID_RE.test(parent) || !EMAIL_RE.test(contact)) throw new HttpError(400, "pedido_invalido");
+    if (ip && !(await rpcOk("recovery_throttle_hit", { p_bucket: `in:${ip}`, p_limit: LIMITS.infoIp }))) throw new HttpError(429, "muitas_tentativas");
+    const info = await rpcOk("recovery_parent_info", { p_parent: parent, p_key: emailKey(contact) });
+    if (!info) throw new HttpError(400, "pedido_invalido");
+    return { status: 200, body: { ok: true, claimed: info.claimed ?? {}, answers: info.answers ?? {} } };
+  }
+
   async function handle({ method, headers, body, ip }) {
     if (method !== "POST") return { status: 405, body: { error: "metodo_nao_permitido" } };
     try {
@@ -173,6 +184,7 @@ export function createRecovery(deps) {
       if (action === "process_queue") return await processQueue(headers.get("x-recovery-secret"));
       if (action === "confirm") return await confirm(body, ip);
       if (action === "submit") return await submit(body, ip);
+      if (action === "round2_info") return await round2Info(body, ip);
       return { status: 400, body: { error: "acao_invalida" } };
     } catch (e) {
       if (e instanceof HttpError) return { status: e.status, body: { error: e.code } };
@@ -181,5 +193,5 @@ export function createRecovery(deps) {
     }
   }
 
-  return { handle, submit, processQueue, confirm };
+  return { handle, submit, processQueue, confirm, round2Info };
 }

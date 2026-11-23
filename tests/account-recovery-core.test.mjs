@@ -19,6 +19,7 @@ function harness(over = {}) {
       case "recovery_throttle_hit": { const n = (state.thr.get(a.p_bucket) ?? 0) + 1; state.thr.set(a.p_bucket, n); return n <= (over.limits?.[a.p_bucket.split(":")[0]] ?? a.p_limit); }
       case "recovery_blocked": return state.blocked;
       case "recovery_use_parent": return state.parentOk;
+      case "recovery_parent_info": state.infoArgs = a; return state.info ?? null;
       case "recovery_scoring_get": return null;
       case "recovery_candidate_facts": return state.facts;
       case "check_security_word": return a.p_word === "" ? "not_answered" : state.word;
@@ -172,4 +173,26 @@ test("confirmação: falha ao trocar não queima o código nem avisa; limite por
   const y = harness(); let last;
   for (let i = 0; i < 25; i++) last = await y.rec.handle({ method: "POST", headers: h(), body: { action: "confirm", token: "ef".repeat(32) }, ip: "8.8.8.8" });
   assert.equal(last.status, 429);
+});
+
+test("segunda rodada: devolve só o que a própria pessoa informou, exigindo código do pedido e o mesmo e-mail", async () => {
+  const parent = "33333333-3333-4333-8333-333333333333";
+  const x = harness({ state: { info: { claimed: { type: "cliente", name: "Joao" }, answers: { plan: "" } } } });
+  const r = await x.rec.handle({ method: "POST", headers: h(), body: { action: "round2_info", parent_id: parent, contact_email: "Novo@Exemplo.com" }, ip: "5.5.5.5" });
+  assert.equal(r.status, 200); assert.equal(r.body.claimed.name, "Joao");
+  assert.deepEqual(x.state.infoArgs, { p_parent: parent, p_key: "novo@exemplo.com" });
+  const y = harness(); // banco não achou (código errado, e-mail diferente ou já usado)
+  assert.equal((await y.rec.handle({ method: "POST", headers: h(), body: { action: "round2_info", parent_id: parent, contact_email: "outro@exemplo.com" }, ip: "5.5.5.5" })).status, 400);
+  for (const body of [{ action: "round2_info" }, { action: "round2_info", parent_id: "x", contact_email: "a@b.com" }, { action: "round2_info", parent_id: parent, contact_email: "nao-e-email" }])
+    assert.equal((await harness().rec.handle({ method: "POST", headers: h(), body, ip: "" })).status, 400);
+  const z = harness({ state: { info: { claimed: {}, answers: {} } } }); let last;
+  for (let i = 0; i < 25; i++) last = await z.rec.handle({ method: "POST", headers: h(), body: { action: "round2_info", parent_id: parent, contact_email: "a@b.com" }, ip: "7.7.7.7" });
+  assert.equal(last.status, 429);
+});
+
+test("e-mail da segunda rodada orienta o que lembrar, sem dizer o que falhou", async () => {
+  const x = harness({ state: { due: [{ id: "r3", kind: "decisao", contact_email: "t@exemplo.com", decision: "segunda_rodada", round: 1 }] } });
+  await x.rec.handle({ method: "POST", headers: h({ "x-recovery-secret": "segredo-do-cron-com-mais-de-20" }), body: { action: "process_queue" }, ip: "" });
+  const m = x.mails[0]; assert.match(m.text, /destacadas/); assert.match(m.text, /última compra/);
+  assert.doesNotMatch(m.text, /errou|incorret|não confere/i); assert.match(m.link, /#r=r3$/);
 });
