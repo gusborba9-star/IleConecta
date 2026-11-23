@@ -56,3 +56,16 @@ test("QR code: tamanho por versão, marcas de posição e recusa de texto longo"
   assert.throws(() => makeQr("z".repeat(300)));
   assert.match(qrSvg("abc"), /^<svg [^>]*viewBox="0 0 29 29"/);
 });
+
+test("pelo endereço antigo da Vercel, o mapa do site e a página compartilhável apontam para o domínio próprio", async () => {
+  await withFetch([{ slug: "casa-x1", updated_at: "2026-11-01T00:00:00Z", name: "Casa X", category: "Terreiro", profiles: { city: "Salvador", state: "BA" } }], async () => {
+    const r1 = mkRes();
+    await sitemap({ headers: { host: "ile-conecta.vercel.app" } }, r1);
+    assert.match(r1.body, /https:\/\/ileconecta\.com\.br\/c\/casa-x1/);
+    assert.doesNotMatch(r1.body, /vercel\.app/);
+    const r2 = mkRes();
+    await casa({ headers: { host: "ile-conecta.vercel.app" }, query: { slug: "casa-x1" } }, r2);
+    assert.match(r2.body, /https:\/\/ileconecta\.com\.br\/c\/casa-x1/);
+    assert.doesNotMatch(r2.body, /vercel\.app/);
+  });
+});
