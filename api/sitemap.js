@@ -5,7 +5,8 @@ export default async function handler(req, res) {
   const base = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
   const host = req.headers["x-forwarded-host"] || req.headers.host || "ile-conecta.vercel.app";
-  const origin = `https://${host}`;
+  // o endereço antigo da Vercel não vira endereço oficial: o Google e os links compartilhados usam sempre o domínio próprio
+  const origin = host === "ile-conecta.vercel.app" ? "https://ileconecta.com.br" : `https://${host}`;
   let rows = [];
   if (base && key) {
     try {

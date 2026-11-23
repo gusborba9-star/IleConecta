@@ -1,14 +1,15 @@
 // Pré-visualização da casa para o WhatsApp, Facebook, Telegram, Google e afins.
 // O vercel.json só manda para cá quem é "robô de link"; pessoas continuam no app normal.
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1503756234508-e32369269deb?w=1200&h=630&fit=crop";
+const DEFAULT_IMAGE = "https://ileconecta.com.br/og.png";
 const SLUG = /^[a-z0-9-]{3,60}$/;
 
 export default async function handler(req, res) {
   const base = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
   const host = req.headers["x-forwarded-host"] || req.headers.host || "ile-conecta.vercel.app";
-  const origin = `https://${host}`;
+  // o endereço antigo da Vercel não vira endereço oficial: o Google e os links compartilhados usam sempre o domínio próprio
+  const origin = host === "ile-conecta.vercel.app" ? "https://ileconecta.com.br" : `https://${host}`;
   const slug = String(req.query?.slug ?? "").toLowerCase();
 
   let house = null;
