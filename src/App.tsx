@@ -36,6 +36,8 @@ const AudioCredits = lazy(() => import("@/pages/AudioCredits"));
 const Moderation = lazy(() => import("@/pages/Moderation"));
 const HouseMembers = lazy(() => import("@/pages/HouseMembers"));
 const Divulgacao = lazy(() => import("@/pages/Divulgacao"));
+const Reunioes = lazy(() => import("@/pages/Reunioes"));
+const Sala = lazy(() => import("@/pages/Sala"));
 const Equipe = lazy(() => import("@/pages/Equipe"));
 const EquipeConvite = lazy(() => import("@/pages/EquipeConvite"));
 const Atendimento = lazy(() => import("@/pages/Atendimento"));
@@ -130,6 +132,8 @@ export default function App() {
         <Route path="/moderacao" element={<Moderation />} />
         <Route path="/painel/membros" element={<HouseMembers />} />
         <Route path="/divulgacao" element={<Divulgacao />} />
+        <Route path="/reunioes" element={<Reunioes />} />
+        <Route path="/reunioes/:id" element={<Sala />} />
         <Route path="/equipe" element={<Equipe />} />
         <Route path="/equipe/convite/:token" element={<EquipeConvite />} />
         <Route path="/atendimento" element={<Atendimento />} />

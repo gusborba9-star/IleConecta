@@ -11,12 +11,14 @@ import MoreSheet from "@/components/layout/MoreSheet";
 import { navGroups } from "@/components/layout/navConfig";
 import { OPEN_MENU_EVENT } from "@/components/layout/MobileBar";
 import { useStaffLink } from "@/lib/staff";
+import { useVideoNav } from "@/lib/video";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 export default function TopBar() {
   const { currentUser, logout, isRemoteAuth } = useApp();
   const staff = useStaffLink(isRemoteAuth && currentUser?.type !== "commercial" ? currentUser?.id : undefined);
+  const hasVideo = useVideoNav(isRemoteAuth ? currentUser?.id : undefined, currentUser?.type === "commercial");
   const { isAdmin } = usePlatformConfig();
   const nav = useNavigate();
   const onDiscover = useLocation().pathname.startsWith("/descobrir"); // lá a página tem a própria busca: um campo só
@@ -116,7 +118,7 @@ export default function TopBar() {
               open={menu}
               onClose={closeMenu}
               onLogout={() => { setMenu(false); logout(); nav("/login"); }}
-              groups={navGroups({ isHouse: currentUser?.type === "commercial", isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff) })}
+              groups={navGroups({ isHouse: currentUser?.type === "commercial", isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff), hasVideo })}
               isAdmin={isAdmin}
               user={currentUser ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar, isHouse: currentUser.type === "commercial" } : null}
             />

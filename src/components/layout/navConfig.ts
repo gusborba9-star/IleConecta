@@ -1,10 +1,10 @@
-import { CalendarDays, Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, Settings, LifeBuoy, Users, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
+import { Video, CalendarDays, Newspaper, Home, Compass, Sparkles, MessageCircle, User, TrendingUp, Crown, Settings, LifeBuoy, Users, UsersRound, Headset, Megaphone, FileText, ClipboardList, Leaf, Landmark, Contact, type LucideIcon } from "lucide-react";
 
 export interface NavEntry { to: string; icon: LucideIcon; label: string; tone?: "gold"; /** Número de pendências mostrado em bolinha (vem da central de pendências da casa). */ badge?: "mensagens" | "pedidos" | "membros" | "faturas" }
 export interface NavGroup { title?: string; items: NavEntry[] }
 
 /** Menu único: a lateral do computador e o menu "Mais" do celular mostram exatamente os mesmos grupos. */
-export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse: boolean; isRemoteAuth: boolean; userId?: string; isStaff?: boolean }): NavGroup[] {
+export function navGroups({ isHouse, isRemoteAuth, userId, isStaff, hasVideo }: { isHouse: boolean; isRemoteAuth: boolean; userId?: string; isStaff?: boolean; hasVideo?: boolean }): NavGroup[] {
   if (isHouse) {
     return [
       { items: [
@@ -12,6 +12,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
         { to: "/mensagens", icon: MessageCircle, label: "Mensagens", badge: "mensagens" },
         { to: "/pedidos", icon: ClipboardList, label: "Pedidos", badge: "pedidos" },
         ...(isRemoteAuth ? [{ to: "/agenda", icon: CalendarDays, label: "Agenda" }] : []),
+        ...(isRemoteAuth && hasVideo ? [{ to: "/reunioes", icon: Video, label: "Reuniões por vídeo" }] : []),
         ...(isRemoteAuth ? [{ to: "/painel/membros", icon: Users, label: "Membros", badge: "membros" as const }, { to: "/pessoas", icon: Contact, label: "Pessoas da casa" }] : []),
       ] },
       { title: "Minha casa", items: [
@@ -37,6 +38,7 @@ export function navGroups({ isHouse, isRemoteAuth, userId, isStaff }: { isHouse:
       { to: "/descobrir", icon: Compass, label: "Casas" },
       { to: "/rituais", icon: Sparkles, label: "Rituais" },
       { to: "/mensagens", icon: MessageCircle, label: "Mensagens" },
+      ...(isRemoteAuth && hasVideo ? [{ to: "/reunioes", icon: Video, label: "Reuniões por vídeo" }] : []),
     ] },
     { title: "Minha conta", items: [
       ...(isStaff ? [{ to: "/atendimento", icon: Headset, label: "Atendimento da casa", tone: "gold" as const }] : []),
