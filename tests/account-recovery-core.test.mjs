@@ -36,7 +36,7 @@ function harness(over = {}) {
   const sleeps = [];
   const rec = createRecovery({ rpc, sendMail: async (m) => { if (over.mailFails) throw new Error("x"); mails.push(m); }, adminUpdateEmail: async (u, e) => { if (over.updateFails) throw new Error("x"); state.updated.push([u, e]); },
     sleep: async (ms) => { sleeps.push(ms); }, now: () => state.clock, randomHex: () => "ab".repeat(32), sha256: async (s) => createHash("sha256").update(s).digest("hex"),
-    cronSecret: "segredo-do-cron", siteUrl: "https://ileconecta.com.br", safeEqual: (a, b) => a === b, log: () => {} });
+    cronOk: async (x) => x === "segredo-do-cron-com-mais-de-20", siteUrl: "https://ileconecta.com.br", log: () => {} });
   return { rec, calls, mails, state, sleeps };
 }
 const h = (o = {}) => ({ get: (k) => o[k.toLowerCase()] ?? null });
@@ -132,7 +132,7 @@ test("fila: decisão vai só ao e-mail novo; confirmação com link só no novo 
     { id: "r2", kind: "decisao", contact_email: "outro@exemplo.com", decision: "recusado", round: 1 },
     { id: "r3", kind: "decisao", contact_email: "terceiro@exemplo.com", decision: "segunda_rodada", round: 1 },
     { id: "r4", kind: "confirmacao", contact_email: "novo@exemplo.com", decision: "aprovado", decision_account: casa.user_id } ] } });
-  const r = await x.rec.handle({ method: "POST", headers: h({ "x-recovery-secret": "segredo-do-cron" }), body: { action: "process_queue" }, ip: "" });
+  const r = await x.rec.handle({ method: "POST", headers: h({ "x-recovery-secret": "segredo-do-cron-com-mais-de-20" }), body: { action: "process_queue" }, ip: "" });
   assert.equal(r.body.processed, 4);
   const conf = x.mails.find((m) => m.subject.startsWith("Confirme")); assert.equal(conf.to, "novo@exemplo.com");
   assert.match(conf.link, /^https:\/\/ileconecta\.com\.br\/recuperar-acesso\/confirmar#t=[0-9a-f]{64}$/);
@@ -145,7 +145,7 @@ test("fila: decisão vai só ao e-mail novo; confirmação com link só no novo 
 
 test("fila: e-mail que falha não é marcado como enviado (tenta de novo depois)", async () => {
   const x = harness({ mailFails: true, state: { due: [{ id: "r1", kind: "decisao", contact_email: "a@b.com", decision: "recusado" }] } });
-  await x.rec.handle({ method: "POST", headers: h({ "x-recovery-secret": "segredo-do-cron" }), body: { action: "process_queue" }, ip: "" });
+  await x.rec.handle({ method: "POST", headers: h({ "x-recovery-secret": "segredo-do-cron-com-mais-de-20" }), body: { action: "process_queue" }, ip: "" });
   assert.equal(x.state.marked.length, 0);
 });
 

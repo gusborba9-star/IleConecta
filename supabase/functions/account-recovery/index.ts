@@ -10,13 +10,6 @@ const url = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const safeEqual = (a: string, b: string) => {
-  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
-  let d = x.length ^ y.length;
-  for (let i = 0; i < Math.max(x.length, y.length); i++) d |= (x[i] ?? 0) ^ (y[i] ?? 0);
-  return d === 0;
-};
-
 const rec = createRecovery({
   rpc: async (fn: string, args: Record<string, unknown>) => {
     const { data, error } = await admin.rpc(fn, args);
@@ -35,9 +28,8 @@ const rec = createRecovery({
   now: () => Date.now(),
   randomHex: (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join(""),
   sha256: async (s: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join(""),
-  cronSecret: Deno.env.get("RECOVERY_CRON_SECRET") ?? "",
+  cronOk: async (secret: string) => { const { data, error } = await admin.rpc("recovery_cron_ok", { p_secret: secret }); return !error && data === true; },
   siteUrl: SITE,
-  safeEqual,
   log: (kind: string, detail: string) => { console.error(kind, detail); },
 });
 

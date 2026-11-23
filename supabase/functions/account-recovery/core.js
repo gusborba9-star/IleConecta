@@ -57,10 +57,8 @@ export function sanitizeScoring(raw) {
   return out;
 }
 
-const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-
 export function createRecovery(deps) {
-  const { rpc, sendMail, adminUpdateEmail, sleep, now, randomHex, sha256, cronSecret, siteUrl, safeEqual, log = () => {} } = deps;
+  const { rpc, sendMail, adminUpdateEmail, sleep, now, randomHex, sha256, cronOk, siteUrl, log = () => {} } = deps;
   const rpcOk = async (fn, args) => { const r = await rpc(fn, args); return r; };
 
   async function doSubmit(inp, ip) {
@@ -122,7 +120,7 @@ export function createRecovery(deps) {
   };
 
   async function processQueue(secret) {
-    if (!cronSecret || !secret || !safeEqual(secret, cronSecret)) throw new HttpError(401, "nao_autorizado");
+    if (typeof secret !== "string" || secret.length < 20 || secret.length > 200 || !(await cronOk(secret))) throw new HttpError(401, "nao_autorizado");
     const rows = (await rpcOk("recovery_due_mails", {})) ?? [];
     let sent = 0;
     for (const r of rows.slice(0, 20)) {
@@ -185,4 +183,3 @@ export function createRecovery(deps) {
 
   return { handle, submit, processQueue, confirm };
 }
-export { hex };

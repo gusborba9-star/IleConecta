@@ -15,6 +15,7 @@ type Scoring = { weights: Record<string, number>; approve: { minStrongHits: numb
 const REC: Record<string, string> = { aprovar: "Sugestão: aprovar", recusar: "Sugestão: recusar", segunda_rodada: "Sugestão: pedir mais informações", insuficiente: "Informação insuficiente" };
 const RES: Record<string, string> = { confere: "Confere", parecido: "Parecido", nao_confere: "Não confere", nao_respondeu: "Não respondeu" };
 const fmt = (d: string) => new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const mask = (e: string | null) => { if (!e) return "—"; const [l, d = ""] = e.split("@"); return `${l.slice(0, 2)}***@${d}`; };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Só o dono decide. O sistema sugere (regras fixas, sem IA) e explica; a decisão é sempre humana. Ninguém vê nem define senha. */
@@ -140,7 +141,7 @@ export default function AdminRecoveryCard() {
             {open.candidate_accounts.map((c) => (
               <label key={c.user_id} className="flex items-start gap-2 rounded-xl border border-border p-2 text-sm">
                 <input type="radio" name="rec-account" className="mt-1" checked={account === c.user_id} onChange={() => setAccount(c.user_id)} />
-                <span className="min-w-0"><span className="font-semibold">{c.house_name || c.name || "Sem nome"}</span> ({c.type})<br /><span className="text-xs text-muted-foreground break-all">Atual: {c.current_email ?? "—"}{c.linked_emails.length > 1 ? ` · vinculados: ${c.linked_emails.join(", ")}` : ""}</span></span>
+                <span className="min-w-0"><span className="font-semibold">{c.house_name || c.name || "Sem nome"}</span> ({c.type})<br /><span className="text-xs text-muted-foreground break-all">Atual: {mask(c.current_email)}{c.linked_emails.length > 1 ? ` · vinculados: ${c.linked_emails.map(mask).join(", ")}` : ""}</span></span>
               </label>
             ))}
             {open.lane === "sem_conta" && <p className="text-xs text-muted-foreground">Nenhuma conta combinou. Se você identificar a conta por outro meio, informe o ID dela abaixo; caso contrário, recuse.</p>}
