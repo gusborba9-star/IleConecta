@@ -41,7 +41,7 @@ export function ForgotPassword() {
           </form>
         )}
         <Link to="/login" className="text-sm text-primary font-semibold hover:underline">Voltar para entrar</Link>
-        <p className="text-xs text-muted-foreground">Sem acesso ao e-mail? Abra um chamado depois de entrar ou escreva para o suporte (página Suporte).</p>
+        <p className="text-xs text-muted-foreground">Sem acesso ao e-mail da conta? <Link to="/recuperar-acesso" className="text-primary font-semibold hover:underline">Perdi o acesso à minha conta</Link></p>
       </Card>
     </main>
   );

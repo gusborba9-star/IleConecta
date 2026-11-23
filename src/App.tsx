@@ -31,6 +31,8 @@ const Support = lazy(() => import("@/pages/Support"));
 const MyCases = lazy(() => import("@/pages/MyCases"));
 const ForgotPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import("@/pages/Recover").then((m) => ({ default: m.ResetPassword })));
+const RecoverAccess = lazy(() => import("@/pages/RecoverAccess").then((m) => ({ default: m.RecoverAccess })));
+const ConfirmRecovery = lazy(() => import("@/pages/RecoverAccess").then((m) => ({ default: m.ConfirmRecovery })));
 const Terms = lazy(() => import("@/pages/Terms"));
 const AudioCredits = lazy(() => import("@/pages/AudioCredits"));
 const Moderation = lazy(() => import("@/pages/Moderation"));
@@ -96,6 +98,8 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/recuperar-senha" element={<ForgotPassword />} />
       <Route path="/redefinir-senha" element={<ResetPassword />} />
+      <Route path="/recuperar-acesso" element={<RecoverAccess />} />
+      <Route path="/recuperar-acesso/confirmar" element={<ConfirmRecovery />} />
       <Route element={<PublicLayout />}>
         <Route path="/sobre/:slug" element={<Info />} />
         <Route path="/c/:slug" element={<PublicHousePage />} />

@@ -4,6 +4,7 @@ import { MapPin, Pencil } from "lucide-react";
 import { useState } from "react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import AssistantSettings from "@/components/assistant/AssistantSettings";
+import SecurityWordCard from "@/components/account/SecurityWordCard";
 import ClientAccount from "@/pages/ClientAccount";
 
 export default function Profile() {
@@ -38,6 +39,7 @@ export default function Profile() {
       </Card>
       <EditProfileModal open={editing} onClose={() => setEditing(false)} />
       <AssistantSettings />
+      <SecurityWordCard />
       {/* A casa tem a aparência no topo e o modo discreto em Preferências, no Início; aqui ficam só o perfil e a assistente. */}
 
     </div>

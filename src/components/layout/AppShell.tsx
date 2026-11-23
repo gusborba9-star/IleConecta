@@ -19,6 +19,7 @@ import Footer from "./Footer";
 import MobileBar from "./MobileBar";
 import BackBar from "./BackBar";
 import MaintenanceBanner from "./MaintenanceBanner";
+import SecurityWordCard from "@/components/account/SecurityWordCard";
 
 export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
@@ -108,6 +109,7 @@ export default function AppShell() {
         <main id="conteudo" tabIndex={-1} className="min-w-0 outline-none">
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
           {!gate && <BackBar />}
+          {!gate && isRemoteAuth && <div className="mb-4 empty:hidden"><SecurityWordCard nudge /></div>}
           {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
         </main>
         {!isRemoteAuth && (

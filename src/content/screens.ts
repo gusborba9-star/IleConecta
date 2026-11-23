@@ -23,6 +23,7 @@ export const SCREENS: Screen[] = [
   { path: "/suporte/chamados", name: "Meus chamados", what: "Acompanhar chamados, responder à equipe e enviar fotos ou documentos (só se você escolher).", audience: "todos" },
   { path: "/login", name: "Entrar", what: "Entrar na conta; aqui está o link “Esqueci a senha”.", audience: "todos" },
   { path: "/recuperar-senha", name: "Recuperar acesso", what: "Pedir por e-mail o link para criar nova senha.", audience: "todos" },
+  { path: "/recuperar-acesso", name: "Perdi o acesso à minha conta", what: "Formulário guiado para quem não tem mais acesso ao e-mail da conta; a decisão chega por e-mail.", audience: "todos" },
 ];
 export const SCREEN_PATHS = SCREENS.map((s) => s.path);
 
