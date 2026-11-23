@@ -99,9 +99,9 @@ export function RecoverAccess() {
             {step === 2 && (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Sobre a conta. Responda o que lembrar; “não lembro” não prejudica o seu pedido.</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 items-end gap-3">
                   <div><Label htmlFor="ra-signup">Mês do cadastro</Label><Input id="ra-signup" type="month" {...inp("signup")} /></div>
-                  <div><Label htmlFor="ra-last">Último acesso (mês)</Label><Input id="ra-last" type="month" {...inp("lastAccess")} /></div>
+                  <div><Label htmlFor="ra-last">Último acesso</Label><Input id="ra-last" type="month" {...inp("lastAccess")} /></div>
                 </div>
                 {casa && (
                   <div><Label htmlFor="ra-plan">Plano da casa</Label>
@@ -111,9 +111,9 @@ export function RecoverAccess() {
                 )}
                 <YesNo id="ra-tx" label="Já fez compras ou pagamentos pela plataforma?" value={f.hadTx} onChange={set("hadTx")} />
                 {f.hadTx === "sim" && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 items-end gap-3">
                     <div><Label htmlFor="ra-txm">Mês da última</Label><Input id="ra-txm" type="month" {...inp("lastTxMonth")} /></div>
-                    <div><Label htmlFor="ra-txv">Valor aproximado (R$)</Label><Input id="ra-txv" inputMode="decimal" maxLength={20} {...inp("lastTxValue")} /></div>
+                    <div><Label htmlFor="ra-txv">Valor (R$)</Label><Input id="ra-txv" inputMode="decimal" maxLength={20} {...inp("lastTxValue")} /></div>
                   </div>
                 )}
                 {casa ? (
