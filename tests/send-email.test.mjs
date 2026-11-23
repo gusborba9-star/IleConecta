@@ -85,3 +85,17 @@ test("falhas do provedor viram erro seguro, sem vazar a resposta dele", async ()
   await assert.rejects(() => createResendAdapter({ apiKey: "k", fetchImpl: async () => { throw new Error("rede"); } }).send(base), (e) => e.code === "provider_unreachable");
   assert.throws(() => createResendAdapter({ apiKey: "" }), (e) => e.code === "not_configured");
 });
+
+import { readFileSync, readdirSync } from "node:fs";
+test("modelos de e-mail do login: em português, com o link do Supabase e sem recursos externos", () => {
+  const dir = new URL("../docs/email-templates/", import.meta.url);
+  const files = readdirSync(dir).filter((f) => f.endsWith(".html"));
+  assert.equal(files.length, 3);
+  for (const f of files) {
+    const h = readFileSync(new URL(f, dir), "utf8");
+    assert.match(h, /href="\{\{ \.ConfirmationURL \}\}"/, f);
+    assert.match(h, /lang="pt-BR"/, f);
+    assert.equal(/<script|<img|<link|src=/i.test(h), false, f);
+    assert.equal(/Reset your password|Confirm your/i.test(h), false, f);
+  }
+});
