@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   const { data: subs } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("user_id", body.user_id).limit(10);
   if (!subs?.length) return json(200, { sent: 0 });
 
-  webpush.setVapidDetails("https://ile-conecta.vercel.app", VAPID_PUBLIC, cfg.vapid_private);
+  webpush.setVapidDetails("https://ileconecta.com.br", VAPID_PUBLIC, cfg.vapid_private);
   const payload = JSON.stringify({
     // Modo discreto: nada que revele o app ou o assunto na tela do celular.
     title: body.discreet === true ? "Nova notificação" : "Ilê Conecta",

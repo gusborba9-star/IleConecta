@@ -20,7 +20,7 @@ Feitos e conferidos: função `platform-billing` publicada; segredos `PLATFORM_S
 2. **Segredos da função** (Supabase, Edge Functions, Secrets). Nunca no código nem em chat:
    - `PLATFORM_STRIPE_SECRET_KEY`: chave secreta restrita da conta da plataforma (permissões de Checkout Sessions, PaymentIntents e Balance Transactions, leitura).
    - `PLATFORM_STRIPE_WEBHOOK_SECRET`: segredo de assinatura do aviso (passo 4).
-   - `APP_URL`: endereço do site (padrão `https://ile-conecta.vercel.app`).
+   - `APP_URL`: endereço do site (padrão `https://ileconecta.com.br`).
 3. **Teste com chave de teste antes da chave real** (modo teste do Stripe): emitir uma fatura de teste, pagar com o cartão de teste e com Pix de teste, conferir fatura `paga`, livro-razão, tarifa e o card da casa sumindo.
 4. **Aviso (webhook) no Stripe:** endpoint `https://filsjhnfrpnqukedlkhf.supabase.co/functions/v1/platform-billing`, eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`. Copiar o segredo de assinatura para o segredo do passo 2.
 5. **Segredo da rotina (Vault):** criar `platform_billing_cron_secret` com um valor longo e aleatório (só o proprietário o vê). A função `check_platform_billing_cron_secret` já existe e nega sempre enquanto o segredo não existe.

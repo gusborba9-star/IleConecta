@@ -15,7 +15,7 @@ import { CREDIT_PACKS, creditPurchaseError, PROMO_ITEMS, PROMO_KINDS, PROMO_SCOP
 
 const SECRET = Deno.env.get("PLATFORM_STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("PLATFORM_STRIPE_WEBHOOK_SECRET") ?? "";
-const APP_URL = (Deno.env.get("APP_URL") ?? "https://ile-conecta.vercel.app").replace(/\/$/, "");
+const APP_URL = (Deno.env.get("APP_URL") ?? "https://ileconecta.com.br").replace(/\/$/, "");
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 
 // Registra uma falha inesperada para o painel "Saúde da plataforma" (nunca atrapalha a resposta).

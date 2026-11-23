@@ -15,7 +15,7 @@ import { maintenanceFor } from "./maintenance.js";
 
 const SECRET = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
-const APP_URL = (Deno.env.get("APP_URL") ?? "https://ile-conecta.vercel.app").replace(/\/$/, "");
+const APP_URL = (Deno.env.get("APP_URL") ?? "https://ileconecta.com.br").replace(/\/$/, "");
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(SB_URL, SB_SERVICE, { auth: { persistSession: false } });
