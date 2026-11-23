@@ -11,7 +11,7 @@ const legit = { action: "submit", contact_email: "novo@exemplo.com", claimed: { 
   security_word: "agua viva" };
 
 function harness(over = {}) {
-  const calls = []; const mails = []; const state = { clock: 0, updated: [], burned: [], marked: [], thr: new Map(), word: "ok", blocked: false, parentOk: true, facts: [casa], due: [], lookup: [], owner: "dono@x.com" };
+  const calls = []; const mails = []; const state = { clock: 0, updated: [], burned: [], marked: [], pushed: [], secDue: [], secCalls: [], signIn: { ok: true, user_id: "11111111-1111-4111-8111-111111111111", access_token: "at", refresh_token: "rt" }, secState: { locked: false }, thr: new Map(), word: "ok", blocked: false, parentOk: true, facts: [casa], due: [], lookup: [], owner: "dono@x.com" };
   Object.assign(state, over.state ?? {});
   const rpc = async (fn, a) => {
     calls.push([fn, a]);
@@ -31,11 +31,21 @@ function harness(over = {}) {
       case "recovery_account_email": return "antigo@x.com";
       case "recovery_confirm_lookup": return state.lookup;
       case "recovery_burn_token": state.burned.push(a.p_id); return null;
+      case "sec_event_push": state.pushed.push(a); return "ev1";
+      case "sec_due_events": return state.secDue;
+      case "ann_due_mails": return state.annDue ?? [];
+      case "ann_mark_mailed": state.annMarked = (state.annMarked ?? 0) + 1; return null;
+      case "sec_event_set_token": state.secCalls.push([fn, a]); return true;
+      case "sec_event_mark_mailed": state.secCalls.push([fn, a]); return null;
+      case "sec_login_check": state.secCalls.push([fn, a]); return state.secState;
+      case "sec_login_fail": state.secCalls.push([fn, a]); return state.failResult ?? { locked: false };
+      case "sec_login_ok": state.secCalls.push([fn, a]); return null;
+      case "sec_unlock": case "sec_report": state.secCalls.push([fn, a]); return state.tokenOk ?? true;
       default: throw new Error("rpc desconhecida " + fn);
     }
   };
   const sleeps = [];
-  const rec = createRecovery({ rpc, sendMail: async (m) => { if (over.mailFails) throw new Error("x"); mails.push(m); }, adminUpdateEmail: async (u, e) => { if (over.updateFails) throw new Error("x"); state.updated.push([u, e]); },
+  const rec = createRecovery({ rpc, signIn: async () => state.signIn, sendMail: async (m) => { if (over.mailFails) throw new Error("x"); mails.push(m); }, adminUpdateEmail: async (u, e) => { if (over.updateFails) throw new Error("x"); state.updated.push([u, e]); },
     sleep: async (ms) => { sleeps.push(ms); }, now: () => state.clock, randomHex: () => "ab".repeat(32), sha256: async (s) => createHash("sha256").update(s).digest("hex"),
     cronOk: async (x) => x === "segredo-do-cron-com-mais-de-20", siteUrl: "https://ileconecta.com.br", log: () => {} });
   return { rec, calls, mails, state, sleeps };
@@ -49,7 +59,8 @@ test("pedido legítimo: grava avaliação, nunca grava a palavra digitada e resp
   assert.equal(x.state.submitted.p_recommendation, "aprovar");
   assert.equal(x.state.submitted.p_word_checked, true);
   assert.equal(JSON.stringify(x.state.submitted).includes("agua viva"), false, "palavra não pode ser gravada");
-  assert.equal(x.mails.length, 1); assert.equal(x.mails[0].to, "dono@x.com");
+  assert.equal(x.mails.length, 0, "o aviso ao dono sai pela fila de segurança, não direto");
+  assert.deepEqual(x.state.pushed, [{ p_user: casa.user_id, p_kind: "recuperacao_pedida", p_detail: { to: "dono@x.com" } }]);
   assert.equal(x.mails.some((m) => m.to === "novo@exemplo.com"), false, "nada ao e-mail novo antes da decisão");
 });
 
@@ -137,10 +148,10 @@ test("fila: decisão vai só ao e-mail novo; confirmação com link só no novo 
   assert.equal(r.body.processed, 4);
   const conf = x.mails.find((m) => m.subject.startsWith("Confirme")); assert.equal(conf.to, "novo@exemplo.com");
   assert.match(conf.link, /^https:\/\/ileconecta\.com\.br\/recuperar-acesso\/confirmar#t=[0-9a-f]{64}$/);
-  const aviso = x.mails.find((m) => m.to === "antigo@x.com"); assert.ok(aviso); assert.equal(aviso.link, undefined, "aviso ao antigo não leva link");
+  assert.deepEqual(x.state.pushed, [{ p_user: casa.user_id, p_kind: "recuperacao_aprovada", p_detail: { to: "antigo@x.com" } }]);
   assert.equal(x.state.issued.p_hash, createHash("sha256").update("ab".repeat(32)).digest("hex"));
   assert.equal(JSON.stringify(x.mails).includes("agua viva"), false);
-  assert.ok(x.mails.every((m) => m.to !== "antigo@x.com" || m.subject.includes("Aviso")));
+  assert.equal(x.mails.some((m) => m.to === "antigo@x.com"), false);
   assert.equal(x.state.marked.length, 4);
 });
 
@@ -156,7 +167,7 @@ test("confirmação: link válido troca o e-mail, queima o código e avisa o ant
   const r = await x.rec.handle({ method: "POST", headers: h(), body: { action: "confirm", token }, ip: "198.51.100.5" });
   assert.equal(r.status, 200); assert.deepEqual(x.state.updated, [[casa.user_id, "novo@exemplo.com"]]); assert.deepEqual(x.state.burned, ["r4"]);
   assert.equal(x.calls.find((c) => c[0] === "recovery_confirm_lookup")[1].p_hash, createHash("sha256").update(token).digest("hex"), "só o hash vai ao banco");
-  assert.equal(x.mails[0].to, "antigo@x.com");
+  assert.deepEqual(x.state.pushed, [{ p_user: casa.user_id, p_kind: "email_alterado", p_detail: { to: "antigo@x.com" } }]);
 });
 
 test("confirmação: link inválido, expirado, adulterado ou repetido não faz nada", async () => {

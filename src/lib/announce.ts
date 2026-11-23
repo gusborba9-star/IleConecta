@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export type Audience = "todos" | "casas" | "clientes" | "selecionados";
 export interface Recipient { id: string; display_name: string; account_type: "casa" | "cliente"; house_name: string | null }
-export interface AnnounceRow { id: string; text: string; href: string | null; audience: Audience; recipients: number; created_at: string }
+export interface AnnounceRow { id: string; text: string; href: string | null; audience: Audience; recipients: number; created_at: string; also_email?: boolean }
 
 export const ANNOUNCE_MAX = 400;
 export const ANNOUNCE_MIN = 10;
@@ -41,9 +41,9 @@ export async function searchRecipients(q: string): Promise<Recipient[]> {
   if (error) throw fail(error, "Não foi possível buscar.");
   return (data as Recipient[]) ?? [];
 }
-export async function sendAnnouncement(text: string, href: string, audience: Audience, userIds: string[]): Promise<number> {
+export async function sendAnnouncement(text: string, href: string, audience: Audience, userIds: string[], alsoEmail = false): Promise<number> {
   if (!supabase) throw new Error("Sem conexão.");
-  const { data, error } = await supabase.rpc("admin_announce", { p_text: text, p_href: href || null, p_audience: audience, p_user_ids: audience === "selecionados" ? userIds : null });
+  const { data, error } = await supabase.rpc("admin_announce", { p_text: text, p_href: href || null, p_audience: audience, p_user_ids: audience === "selecionados" ? userIds : null, p_email: alsoEmail });
   if (error) throw fail(error, "Não foi possível enviar o aviso.");
   return Number(data ?? 0);
 }

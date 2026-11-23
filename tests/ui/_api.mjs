@@ -15,7 +15,7 @@ export async function api(page, { rpc: rpcIn = {}, rest = {}, fn = {}, storageOk
     let body = null; try { body = req.postDataJSON(); } catch { /* sem corpo */ }
     const send = (v) => { const o = typeof v === "function" ? v(body, calls, { method: req.method(), search: url.search }) : v; const r = o && typeof o === "object" && "status" in o && "body" in o ? o : { status: 200, body: o }; return route.fulfill({ status: r.status, headers: { ...CORS, "content-type": "application/json" }, body: JSON.stringify(r.body) }); };
     const m = url.pathname.match(/\/rest\/v1\/rpc\/(.+)$/);
-    if (m) { calls.push({ kind: "rpc", name: m[1], body }); return send(rpc[m[1]] ?? null); }
+    if (m) { calls.push({ kind: "rpc", name: m[1], body }); return send(rpc[m[1]] ?? (m[1] === "has_security_word" ? true : null)); } // por padrão a conta de teste já tem palavra de segurança (o aviso único não atrapalha as outras telas)
     const t = url.pathname.match(/\/rest\/v1\/(.+)$/);
     if (t) { calls.push({ kind: "rest", name: t[1], body, method: req.method(), search: url.search }); const v = rest[t[1]] ?? []; return send(req.headers()["accept"]?.includes("vnd.pgrst.object") ? (Array.isArray(v) ? v[0] ?? null : v) : v); }
     const f = url.pathname.match(/\/functions\/v1\/(.+)$/);
