@@ -4,6 +4,7 @@ import { Avatar, Card } from "@/components/base";
 import { cn } from "@/lib/utils";
 import { useStaffLink } from "@/lib/staff";
 import { navGroups, type NavEntry } from "./navConfig";
+import { useVideoNav } from "@/lib/video";
 import { useHouseBadges } from "@/lib/useHouseBadges";
 import { NavBadge, NavBadgeText } from "./NavBadge";
 
@@ -11,7 +12,8 @@ export default function SideNav() {
   const { currentUser, isRemoteAuth } = useApp();
   const isHouse = currentUser?.type === "commercial";
   const staff = useStaffLink(isRemoteAuth && !isHouse ? currentUser?.id : undefined);
-  const groups = navGroups({ isHouse, isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff) });
+  const hasVideo = useVideoNav(isRemoteAuth ? currentUser?.id : undefined, isHouse);
+  const groups = navGroups({ isHouse, isRemoteAuth, userId: currentUser?.id, isStaff: Boolean(staff), hasVideo });
   const badges = useHouseBadges(isHouse && isRemoteAuth);
 
   return (
