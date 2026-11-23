@@ -18,6 +18,7 @@ on:
           - assistant-chat
           - support-admin
           - conecta
+          - video
           - push-notify
 
 permissions:
