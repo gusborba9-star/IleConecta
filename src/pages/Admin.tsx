@@ -28,6 +28,7 @@ import BillingAdminCard from "@/components/admin/BillingAdminCard";
 import PriceChangeCard from "@/components/admin/PriceChangeCard";
 import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
 import PromoLimitsCard from "@/components/admin/PromoLimitsCard";
+import AdminRecoveryCard from "@/components/admin/AdminRecoveryCard";
 import VideoCard from "@/components/admin/VideoCard";
 import ChatReportsCard from "@/components/admin/ChatReportsCard";
 import AdminModerationCard from "@/components/admin/AdminModerationCard";
@@ -248,6 +249,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       </>}
       {can("dono") && <PlanMatrixCard />}
       {can("dono") && <PromoLimitsCard />}
+      {can("dono") && <AdminRecoveryCard />}
       {can("dono") && <VideoCard />}
 
       {can("dono") && <HousePlansCard />}

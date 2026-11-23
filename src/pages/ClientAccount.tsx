@@ -1,3 +1,4 @@
+import SecurityWordCard from "@/components/account/SecurityWordCard";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Heart, MapPin, Pencil, Sparkles } from "lucide-react";
@@ -81,6 +82,7 @@ export default function ClientAccount() {
           </Card>
           <ThemeSwitch />
           <DiscreetModeCard />
+          <SecurityWordCard />
         </div>
       )}
       {!loadingMembers && tab === "atividade" && (

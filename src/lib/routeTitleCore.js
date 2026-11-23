@@ -1,6 +1,6 @@
 // Título de cada tela (leitores de tela e abas do navegador). Sem rede, testável.
 const EXATOS = {
-  "/": "Início", "/login": "Entrar", "/register": "Criar conta", "/recuperar-senha": "Recuperar acesso", "/redefinir-senha": "Nova senha",
+  "/": "Início", "/login": "Entrar", "/register": "Criar conta", "/recuperar-senha": "Recuperar acesso", "/redefinir-senha": "Nova senha", "/recuperar-acesso": "Perdi o acesso", "/recuperar-acesso/confirmar": "Confirmar novo e-mail",
   "/comunidade": "Comunidade", "/descobrir": "Casas", "/rituais": "Rituais", "/perfil": "Meu perfil", "/mensagens": "Mensagens", "/impulsionar": "Impulsionar",
   "/destaques": "Destaques", "/planos": "Planos e faturas", "/pedidos": "Pedidos", "/agenda": "Agenda", "/recebimentos": "Recebimentos", "/crescer": "Crescer", "/atividade": "Atividade", "/suporte": "Suporte", "/suporte/chamados": "Meus chamados", "/termos": "Termos e normas", "/creditos-de-audio": "Créditos de áudio",
   "/moderacao": "Moderação", "/painel/membros": "Membros", "/divulgacao": "Divulgação", "/reunioes": "Reuniões por vídeo", "/equipe": "Equipe", "/atendimento": "Atendimento", "/mensalidades": "Mensalidades",

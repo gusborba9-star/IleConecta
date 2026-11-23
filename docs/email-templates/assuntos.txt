@@ -1,0 +1,3 @@
+confirmar-cadastro|Confirme seu cadastro no Ilê Conecta
+recuperar-senha|Crie uma nova senha no Ilê Conecta
+trocar-email|Confirme seu novo e-mail no Ilê Conecta
