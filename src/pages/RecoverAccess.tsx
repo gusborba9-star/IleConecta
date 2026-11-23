@@ -15,6 +15,12 @@ type Form = {
 };
 const EMPTY: Form = { type: "", name: "", oldEmail: "", city: "", contact: "", signup: "", lastAccess: "", plan: "", hadTx: "", lastTxMonth: "", lastTxValue: "", lastTxKind: "", usesAssistant: "", assistantName: "", hasMembers: "", membersCount: "", hasStaff: "", topHouses: "", word: "", website: "" };
 
+/** Destaca (só na segunda rodada) a pergunta que ficou em branco na primeira vez. */
+function Mark({ on, children }: { on: boolean; children: React.ReactNode }) {
+  if (!on) return <>{children}</>;
+  return <div className="rounded-xl border border-primary/60 bg-primary/5 p-2"><div className="mb-1 text-xs font-semibold text-primary">Ficou em branco na primeira vez</div>{children}</div>;
+}
+
 function YesNo({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
@@ -33,9 +39,35 @@ export function RecoverAccess() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const parent = useMemo(() => { const m = /^#r=([0-9a-f-]{36})$/i.exec(window.location.hash); return m ? m[1].toLowerCase() : null; }, []);
+  // Segunda rodada: antes do formulário, a pessoa confirma o e-mail de contato; devolvemos o que ELA mesma informou na primeira vez.
+  const [gate, setGate] = useState<"pedir" | "buscando" | "pronto" | "invalido">(parent ? "pedir" : "pronto");
+  const [blanks, setBlanks] = useState<Set<string>>(new Set());
   const set = (k: keyof Form) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   const inp = (k: keyof Form) => ({ value: f[k], onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k)(e.target.value) });
   useEffect(() => { window.scrollTo(0, 0); }, [step]);
+
+  const loadRound2 = async () => {
+    if (!supabase || !parent) return;
+    if (!EMAIL_RE.test(f.contact.trim())) return void toast.error("Informe o e-mail onde você recebeu a mensagem.");
+    setGate("buscando");
+    const { data, error } = await supabase.functions.invoke("account-recovery", { body: { action: "round2_info", parent_id: parent, contact_email: f.contact.trim() } });
+    if (error || !data?.ok) return void setGate("invalido");
+    const c = (data.claimed ?? {}) as Record<string, string>, a = (data.answers ?? {}) as Record<string, unknown>;
+    const str = (v: unknown) => (typeof v === "string" ? v : "");
+    const top = Array.isArray(a.top_houses) ? (a.top_houses as unknown[]).map(str).filter(Boolean).join(", ") : "";
+    const next: Form = { ...EMPTY, contact: f.contact.trim(), type: c.type === "casa" ? "casa" : c.type === "cliente" ? "cliente" : "", name: str(c.name), oldEmail: str(c.old_email), city: str(c.city),
+      signup: str(a.signup_month), lastAccess: str(a.last_access_month), plan: str(a.plan), hadTx: str(a.had_tx), lastTxMonth: str(a.last_tx_month), lastTxValue: str(a.last_tx_value), lastTxKind: str(a.last_tx_kind),
+      usesAssistant: str(a.uses_assistant), assistantName: str(a.assistant_name), hasMembers: str(a.has_members), membersCount: str(a.members_count), hasStaff: str(a.has_staff), topHouses: top };
+    const empty = (v: string) => !v || v === NL;
+    const b = new Set<string>();
+    if (empty(next.oldEmail)) b.add("oldEmail");
+    if (empty(next.city)) b.add("city");
+    for (const k of ["signup", "lastAccess", "hadTx", "topHouses"] as const) if (empty(next[k])) b.add(k);
+    if (next.type === "casa") for (const k of ["plan", "usesAssistant", "hasMembers", "hasStaff"] as const) if (empty(next[k])) b.add(k);
+    if (next.hadTx === "sim" && empty(next.lastTxValue)) b.add("lastTxValue");
+    if (next.hadTx === "sim" && empty(next.lastTxMonth)) b.add("lastTxMonth");
+    setBlanks(b); setF(next); setGate("pronto");
+  };
 
   const next1 = () => {
     if (!f.type) return void toast.error("Diga se é uma conta de cliente ou de casa.");
@@ -72,66 +104,102 @@ export function RecoverAccess() {
           </>
         ) : (
           <>
-            <div className="space-y-1">
+            {gate === "pronto" && <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Etapa {step} de 3{parent ? " · segunda rodada" : ""}</div>
               <Progress value={(step / 3) * 100} />
-            </div>
-            {parent && <p className="text-xs text-muted-foreground">Precisamos de mais informações. Refaça o pedido com o mesmo e-mail de contato e responda o máximo que lembrar.</p>}
+            </div>}
+            {parent && gate !== "pronto" && <p className="text-xs text-muted-foreground">Precisamos de mais algumas informações para confirmar que a conta é sua.</p>}
             <div aria-hidden className="absolute -left-[9999px]"><label>Site<input tabIndex={-1} autoComplete="off" {...inp("website")} /></label></div>
 
-            {step === 1 && (
+            {parent && gate !== "pronto" && (
+              <div className="space-y-3">
+                {gate === "invalido" ? (
+                  <p role="alert" className="text-sm text-destructive">Não foi possível abrir a segunda rodada. Confira se o e-mail é o mesmo em que você recebeu a mensagem; o link vale uma única vez e por tempo limitado.</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Para continuar, confirme o e-mail onde você recebeu a nossa mensagem.</p>
+                )}
+                <div><Label htmlFor="ra-gate">E-mail de contato</Label><Input id="ra-gate" type="email" autoComplete="email" maxLength={254} {...inp("contact")} /></div>
+                <Button className="w-full" disabled={gate === "buscando" || !supabase} onClick={() => void loadRound2()}>{gate === "buscando" ? "Conferindo…" : "Continuar"}</Button>
+              </div>
+            )}
+
+            {gate === "pronto" && step === 1 && (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">Vamos descobrir de qual conta você está falando. Tudo bem não lembrar de algo: responda o que souber.</p>
                 <div><Label htmlFor="ra-type">Sua conta é de…</Label>
-                  <select id="ra-type" className={SELECT} value={f.type} onChange={(e) => set("type")(e.target.value)}>
+                  <select id="ra-type" className={SELECT} value={f.type} disabled={Boolean(parent)} onChange={(e) => set("type")(e.target.value)}>
                     <option value="">Escolha</option><option value="cliente">Cliente</option><option value="casa">Casa</option>
                   </select></div>
                 <div><Label htmlFor="ra-name">{casa ? "Nome da casa ou do responsável" : "Seu nome na plataforma"}</Label><Input id="ra-name" maxLength={120} {...inp("name")} /></div>
-                <div><Label htmlFor="ra-old">E-mail que você usava (ou o mais parecido que lembrar)</Label><Input id="ra-old" maxLength={254} placeholder="ex.: ma***@gmail.com" {...inp("oldEmail")} />
-                  <button type="button" className="mt-1 text-xs text-primary font-semibold hover:underline" onClick={() => set("oldEmail")(NL)}>Não lembro</button></div>
-                <div><Label htmlFor="ra-city">Cidade</Label><Input id="ra-city" maxLength={80} {...inp("city")} /></div>
-                <div><Label htmlFor="ra-contact">E-mail NOVO, onde você quer receber a resposta</Label><Input id="ra-contact" type="email" autoComplete="email" maxLength={254} {...inp("contact")} />
+                <Mark on={blanks.has("oldEmail")}><div><Label htmlFor="ra-old">E-mail que você usava (ou o mais parecido que lembrar)</Label><Input id="ra-old" maxLength={254} placeholder="ex.: ma***@gmail.com" {...inp("oldEmail")} />
+                  <button type="button" className="mt-1 text-xs text-primary font-semibold hover:underline" onClick={() => set("oldEmail")(NL)}>Não lembro</button></div></Mark>
+                <Mark on={blanks.has("city")}><div><Label htmlFor="ra-city">Cidade</Label><Input id="ra-city" maxLength={80} {...inp("city")} /></div></Mark>
+                <div><Label htmlFor="ra-contact">E-mail NOVO, onde você quer receber a resposta</Label><Input id="ra-contact" type="email" autoComplete="email" maxLength={254} readOnly={Boolean(parent)} {...inp("contact")} />
                   <p className="mt-1 text-xs text-muted-foreground">Use um e-mail que você acessa agora. Este será o novo e-mail da conta, se o pedido for aprovado.</p></div>
                 <Button className="w-full" onClick={next1}>Continuar</Button>
               </div>
             )}
 
-            {step === 2 && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Sobre a conta. Responda o que lembrar; “não lembro” não prejudica o seu pedido.</p>
-                <div className="grid grid-cols-2 items-end gap-3">
-                  <div><Label htmlFor="ra-signup">Mês do cadastro</Label><Input id="ra-signup" type="month" {...inp("signup")} /></div>
-                  <div><Label htmlFor="ra-last">Último acesso</Label><Input id="ra-last" type="month" {...inp("lastAccess")} /></div>
-                </div>
-                {casa && (
-                  <div><Label htmlFor="ra-plan">Plano da casa</Label>
-                    <select id="ra-plan" className={SELECT} value={f.plan} onChange={(e) => set("plan")(e.target.value)}>
-                      <option value="">Prefiro não responder</option><option value="gratis">Grátis</option><option value="essencial">Essencial</option><option value="profissional">Profissional</option><option value="maximo">Máximo</option><option value={NL}>Não lembro</option>
-                    </select></div>
-                )}
-                <YesNo id="ra-tx" label="Já fez compras ou pagamentos pela plataforma?" value={f.hadTx} onChange={set("hadTx")} />
-                {f.hadTx === "sim" && (
-                  <div className="grid grid-cols-2 items-end gap-3">
-                    <div><Label htmlFor="ra-txm">Mês da última</Label><Input id="ra-txm" type="month" {...inp("lastTxMonth")} /></div>
-                    <div><Label htmlFor="ra-txv">Valor (R$)</Label><Input id="ra-txv" inputMode="decimal" maxLength={20} {...inp("lastTxValue")} /></div>
+            {gate === "pronto" && step === 2 && (() => {
+              const blocks: Record<string, React.ReactNode> = {
+                datas: (
+                  <div key="datas" className="grid grid-cols-2 items-end gap-3">
+                    <Mark on={blanks.has("signup")}><div><Label htmlFor="ra-signup">Mês do cadastro</Label><Input id="ra-signup" type="month" {...inp("signup")} /></div></Mark>
+                    <Mark on={blanks.has("lastAccess")}><div><Label htmlFor="ra-last">Último acesso</Label><Input id="ra-last" type="month" {...inp("lastAccess")} /></div></Mark>
                   </div>
-                )}
-                {casa ? (
-                  <>
-                    <YesNo id="ra-mem" label="Tem membros cadastrados na casa?" value={f.hasMembers} onChange={set("hasMembers")} />
+                ),
+                plano: (
+                  <Mark key="plano" on={blanks.has("plan")}>
+                    <div><Label htmlFor="ra-plan">Plano da casa</Label>
+                      <select id="ra-plan" className={SELECT} value={f.plan} onChange={(e) => set("plan")(e.target.value)}>
+                        <option value="">Prefiro não responder</option><option value="gratis">Grátis</option><option value="essencial">Essencial</option><option value="profissional">Profissional</option><option value="maximo">Máximo</option><option value={NL}>Não lembro</option>
+                      </select></div>
+                  </Mark>
+                ),
+                transacao: (
+                  <div key="transacao" className="space-y-3">
+                    <Mark on={blanks.has("hadTx")}><YesNo id="ra-tx" label="Já fez compras ou pagamentos pela plataforma?" value={f.hadTx} onChange={set("hadTx")} /></Mark>
+                    {f.hadTx === "sim" && (
+                      <div className="grid grid-cols-2 items-end gap-3">
+                        <Mark on={blanks.has("lastTxMonth")}><div><Label htmlFor="ra-txm">Mês da última</Label><Input id="ra-txm" type="month" {...inp("lastTxMonth")} /></div></Mark>
+                        <Mark on={blanks.has("lastTxValue")}><div><Label htmlFor="ra-txv">Valor (R$)</Label><Input id="ra-txv" inputMode="decimal" maxLength={20} {...inp("lastTxValue")} /></div></Mark>
+                      </div>
+                    )}
+                  </div>
+                ),
+                membros: (
+                  <div key="membros" className="space-y-3">
+                    <Mark on={blanks.has("hasMembers")}><YesNo id="ra-mem" label="Tem membros cadastrados na casa?" value={f.hasMembers} onChange={set("hasMembers")} /></Mark>
                     {f.hasMembers === "sim" && <div><Label htmlFor="ra-memn">Quantos, mais ou menos?</Label><Input id="ra-memn" inputMode="numeric" maxLength={8} {...inp("membersCount")} /></div>}
-                    <YesNo id="ra-ast" label="Usa a assistente?" value={f.usesAssistant} onChange={set("usesAssistant")} />
+                  </div>
+                ),
+                assistente: (
+                  <div key="assistente" className="space-y-3">
+                    <Mark on={blanks.has("usesAssistant")}><YesNo id="ra-ast" label="Usa a assistente?" value={f.usesAssistant} onChange={set("usesAssistant")} /></Mark>
                     {f.usesAssistant === "sim" && <div><Label htmlFor="ra-astn">Nome da assistente</Label><Input id="ra-astn" maxLength={60} {...inp("assistantName")} /></div>}
-                    <YesNo id="ra-staff" label="Tem equipe cadastrada?" value={f.hasStaff} onChange={set("hasStaff")} />
-                  </>
-                ) : (
-                  <div><Label htmlFor="ra-top">Casas com quem mais conversou (até 3, separadas por vírgula)</Label><Input id="ra-top" maxLength={240} {...inp("topHouses")} /></div>
-                )}
-                <div className="flex gap-2"><Button variant="outline" onClick={() => setStep(1)}>Voltar</Button><Button className="flex-1" onClick={() => setStep(3)}>Continuar</Button></div>
-              </div>
-            )}
+                  </div>
+                ),
+                equipe: <Mark key="equipe" on={blanks.has("hasStaff")}><YesNo id="ra-staff" label="Tem equipe cadastrada?" value={f.hasStaff} onChange={set("hasStaff")} /></Mark>,
+                casas: (
+                  <Mark key="casas" on={blanks.has("topHouses")}>
+                    <div><Label htmlFor="ra-top">Casas com quem mais conversou (até 3, separadas por vírgula)</Label><Input id="ra-top" maxLength={240} {...inp("topHouses")} /></div>
+                  </Mark>
+                ),
+              };
+              // Primeira rodada: ordem natural. Segunda rodada: as provas mais fortes primeiro.
+              const order = casa
+                ? (parent ? ["transacao", "membros", "datas", "assistente", "plano", "equipe"] : ["datas", "plano", "transacao", "membros", "assistente", "equipe"])
+                : (parent ? ["transacao", "casas", "datas"] : ["datas", "transacao", "casas"]);
+              return (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{parent ? "Preenchemos o que você já respondeu. Complete o que ficou em branco (destacado) e corrija o que lembrar melhor. “Não lembro” não prejudica o seu pedido." : "Sobre a conta. Responda o que lembrar; “não lembro” não prejudica o seu pedido."}</p>
+                  {order.map((k) => blocks[k])}
+                  <div className="flex gap-2"><Button variant="outline" onClick={() => setStep(1)}>Voltar</Button><Button className="flex-1" onClick={() => setStep(3)}>Continuar</Button></div>
+                </div>
+              );
+            })()}
 
-            {step === 3 && (
+            {gate === "pronto" && step === 3 && (
               <div className="space-y-3">
                 <div><Label htmlFor="ra-word">Palavra de segurança (se você cadastrou uma)</Label><Input id="ra-word" maxLength={80} autoComplete="off" {...inp("word")} />
                   <p className="mt-1 text-xs text-muted-foreground">Deixe em branco se não lembrar. Nunca perguntamos a sua senha, e a nossa equipe nunca precisa dela.</p></div>
