@@ -134,3 +134,16 @@ test("pesos e limites podem ser ajustados pelo dono sem mexer no código", () =>
   const r = evaluate({ claimed: legitClaim, answers: legitAnswers }, [cand(casa)], { approve: { minStrongHits: 99 } });
   assert.notEqual(r.recommendation, "aprovar");
 });
+
+test("critérios de casa não aparecem nos motivos de uma conta de cliente (nem como 'não respondeu')", () => {
+  const r = evaluate({ claimed: { type: "cliente", name: "Joao Pereira", old_email: "joao.p@gmail.com", city: "Recife" }, answers: { signup_month: "2026-06", had_tx: "sim", last_tx_kind: "jogo", top_houses: ["Casa Luz do Caminho"] } }, [cand(cliente)]);
+  const codes = r.reasons.map((x) => x.code);
+  for (const k of ["members", "assistant_name", "plan", "uses_assistant", "staff"]) assert.equal(codes.includes(k), false, k);
+  assert.ok(codes.includes("top_houses"));
+});
+
+test("critério de cliente (casas com quem conversou) não aparece nos motivos de uma casa", () => {
+  const r = evaluate({ claimed: legitClaim, answers: legitAnswers }, [cand(casa)]);
+  assert.equal(r.reasons.some((x) => x.code === "top_houses"), false);
+  assert.ok(r.reasons.some((x) => x.code === "plan"));
+});

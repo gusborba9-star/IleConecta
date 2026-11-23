@@ -97,7 +97,7 @@ function countMatch(typed, actual) {
 }
 const boolMatch = (typed, actual) => (typed === "sim" || typed === "nao" ? (typed === "sim") === Boolean(actual) : null);
 
-/** Cada critério devolve null (não se aplica ou não respondeu) ou 0..1. */
+/** Cada critério devolve undefined (não se aplica a este tipo de conta: nem aparece), null (não respondeu) ou 0..1. */
 function criteria(claimed, answers, f, wordState) {
   const isHouse = f.type === "casa";
   const out = {};
@@ -118,14 +118,14 @@ function criteria(claimed, answers, f, wordState) {
   } else if (answers.had_tx === "nao" && (f.tx?.count ?? 0) > 0) subs.push(0);
   const got = subs.filter((x) => x !== null);
   out.last_tx = got.length ? got.reduce((a, b) => a + b, 0) / got.length : null;
-  out.members = !isHouse ? null : answers.has_members === "nao" ? ((f.members_count ?? 0) === 0 ? 1 : 0) : blank(answers.members_count) ? null : countMatch(answers.members_count, f.members_count ?? 0);
-  out.top_houses = isHouse || !Array.isArray(answers.top_houses) || !answers.top_houses.filter((x) => !blank(x)).length ? null
+  out.members = !isHouse ? undefined : answers.has_members === "nao" ? ((f.members_count ?? 0) === 0 ? 1 : 0) : blank(answers.members_count) ? null : countMatch(answers.members_count, f.members_count ?? 0);
+  out.top_houses = isHouse ? undefined : !Array.isArray(answers.top_houses) || !answers.top_houses.filter((x) => !blank(x)).length ? null
     : (() => { const typed = answers.top_houses.filter((x) => !blank(x)); const real = f.top_house_names ?? [];
       const hits = typed.filter((t) => real.some((r) => textSim(t, r) >= 0.75)).length; return hits / typed.length; })();
-  out.assistant_name = !isHouse || blank(answers.assistant_name) ? null : textSim(answers.assistant_name, f.assistant_name);
-  out.plan = !isHouse || blank(answers.plan) ? null : norm(answers.plan) === norm(f.plan) ? 1 : 0;
-  out.uses_assistant = !isHouse ? null : boolMatch(answers.uses_assistant, f.uses_assistant);
-  out.staff = !isHouse ? null : boolMatch(answers.has_staff, f.has_staff);
+  out.assistant_name = !isHouse ? undefined : blank(answers.assistant_name) ? null : textSim(answers.assistant_name, f.assistant_name);
+  out.plan = !isHouse ? undefined : blank(answers.plan) ? null : norm(answers.plan) === norm(f.plan) ? 1 : 0;
+  out.uses_assistant = !isHouse ? undefined : boolMatch(answers.uses_assistant, f.uses_assistant);
+  out.staff = !isHouse ? undefined : boolMatch(answers.has_staff, f.has_staff);
   return out;
 }
 
@@ -158,6 +158,7 @@ export function evaluate({ claimed = {}, answers = {}, round = 1 }, candidates =
   let earned = 0, possible = 0, strongHits = 0, strongMiss = 0, answered = 0;
   const reasons = [];
   for (const [k, v] of Object.entries(crit)) {
+    if (v === undefined) continue;
     const w = S.weights[k] ?? 0;
     if (v === null) { reasons.push({ code: k, label: LABELS[k], result: "nao_respondeu" }); continue; }
     const isId = k === "name" || k === "city";
