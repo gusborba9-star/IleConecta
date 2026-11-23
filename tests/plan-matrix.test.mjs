@@ -33,7 +33,7 @@ test("os valores iniciais batem com a matriz aprovada pelo proprietário (14/11/
 });
 
 test("anti-divergência: o padrão do código é idêntico ao plan_matrix_default() do banco", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0162_momentos_das_casas.sql", import.meta.url), "utf8"); // definição vigente (a 0140 acrescentou a ferramenta "posts com a cara da sua casa")
+  const sql = readFileSync(new URL("../supabase/migrations/0178_minutos_de_video_na_matriz.sql", import.meta.url), "utf8"); // definição vigente (a 0140 acrescentou a ferramenta "posts com a cara da sua casa")
   const m = sql.match(/select '(\{"caps".*?\})'::jsonb;/s);
   assert.ok(m, "semente não encontrada");
   assert.deepEqual(JSON.parse(m[1]), DEFAULT_PLAN_MATRIX);
@@ -188,4 +188,23 @@ test("tabela de comparação: 4 colunas por linha, sem undefined/NaN/{} e valore
   assert.deepEqual(by("members_area"), ["—", "—", "—", "Incluído"]);
   assert.ok(!compareRows(DEFAULT_PLAN_MATRIX, (f) => f !== "ritual_video").some((r) => r.key === "ritual_video"));
   assert.equal(compareRows(null).length, rows.length);
+});
+
+test("vídeo: minutos por mês começam em 0 em todos os planos e a linha só aparece na comparação quando algum plano tiver minutos", async () => {
+  const { compareRows } = await import("../src/lib/planMatrixCore.js");
+  for (const plan of ["gratis", "base", "intermediario", "maximo"]) assert.equal(DEFAULT_PLAN_MATRIX.caps[plan].video_minutes_month, 0, plan);
+  assert.ok(!compareRows(clone()).some((r) => r.key === "video_minutes_month"));
+  const m = clone(); m.caps.maximo.video_minutes_month = 3000;
+  const row = compareRows(m).find((r) => r.key === "video_minutes_month");
+  assert.ok(row);
+  assert.deepEqual(row.cells, ["—", "—", "—", "3.000"]);
+  assert.equal(sanitizePlanMatrix({ ...m, caps: { ...m.caps, maximo: { ...m.caps.maximo, video_minutes_month: -5 } } }).caps.maximo.video_minutes_month, 0);
+});
+
+test("0178: validação exige 20 limites por plano, a chave nova tem teto, e a matriz salva só ganha o que falta", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/0178_minutos_de_video_na_matriz.sql", import.meta.url), "utf8").replace(/--.*$/gm, "");
+  assert.match(sql, /"video_minutes_month":\[0,100000\]/);
+  assert.match(sql, /count\(\*\) from jsonb_object_keys\(v\)\) <> 20/);
+  assert.match(sql, /not \(\(v -> 'caps' -> p\) \? 'video_minutes_month'\)/);
+  assert.ok(!/drop\s|truncate|delete\s+from/i.test(sql));
 });

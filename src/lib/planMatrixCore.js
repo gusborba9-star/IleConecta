@@ -17,6 +17,8 @@ export const CAP_NUMBERS = {
   limit_rituals: [0, 1000, "Rituais ativos (0 = sem limite)"],
   limit_posts_month: [0, 1000, "Publicações por mês (0 = sem limite)"],
   moments_per_day: [0, 50, "Momentos por dia (0 = a casa não publica momentos)"],
+  // Banco mensal de minutos de vídeo (soma dos minutos de cada pessoa conectada). 0 = o plano não tem reunião nem consulta por vídeo.
+  video_minutes_month: [0, 100000, "Minutos de vídeo por mês (0 = sem vídeo)"],
 };
 /** Ferramentas liga/desliga por plano: rótulo no painel. */
 export const CAP_FLAGS = {
@@ -36,10 +38,10 @@ export const CAP_FLAG_KEYS = Object.keys(CAP_FLAGS);
 
 export const DEFAULT_PLAN_MATRIX = {
   caps: {
-    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, moments_per_day: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
-    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 3, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
-    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 5, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true, moment_video: false },
-    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 10, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true, moment_video: true },
+    gratis: { assistant_replies: 0, campaign_links: 0, campaign_card_styles: 0, quick_replies: 0, included_seats: 0, limit_services: 3, limit_rituals: 2, limit_posts_month: 8, moments_per_day: 0, video_minutes_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
+    base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 3, video_minutes_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
+    intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 5, video_minutes_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true, moment_video: false },
+    maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 10, video_minutes_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true, moment_video: true },
   },
   // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month}, {moments_per_day} viram o número do plano na hora de mostrar.
   // "feature" esconde o item até o interruptor do painel ser ligado (aparece sozinho, como novidade).
@@ -169,6 +171,7 @@ const COMPARE_NUMBERS = [
   ["limit_rituals", "Rituais ativos", "all"],
   ["limit_posts_month", "Publicações por mês", "all"],
   ["moments_per_day", "Momentos por dia (24 h no ar)", "none"],
+  ["video_minutes_month", "Minutos de vídeo por mês", "none"],
   ["assistant_replies", "Respostas da assistente por mês", "none"],
   ["quick_replies", "Respostas rápidas", "none"],
   ["campaign_links", "Links de divulgação", "none"],
@@ -189,6 +192,8 @@ const COMPARE_FLAGS = [
 export function compareRows(matrix, isOn = () => true) {
   const rows = [];
   for (const [key, label, zero] of COMPARE_NUMBERS) {
+    // Vídeo só aparece na comparação quando algum plano tiver minutos (antes disso a linha seria só traços).
+    if (key === "video_minutes_month" && PLAN_IDS.every((p) => !(Number(planCap(matrix, p, key)) > 0))) continue;
     rows.push({ key, label, cells: PLAN_IDS.map((p) => {
       const n = Number(planCap(matrix, p, key)) || 0;
       if (n > 0) return n.toLocaleString("pt-BR");
