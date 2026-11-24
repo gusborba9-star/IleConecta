@@ -4,7 +4,7 @@ import { cloneDefaultMatrix, sanitizePlanMatrix } from "./planMatrixCore.js";
 
 export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
-export const PLAN_IDS = ["base", "intermediario", "maximo"];
+export const PLAN_IDS = ["base", "intermediario", "maximo", "plus"];
 export const HOUSE_PLAN_IDS = ["gratis", ...PLAN_IDS];
 export const FREE_PLAN_NAME = "Grátis";
 export const FEATURE_STATES = ["off", "beta", "on"];
@@ -32,9 +32,11 @@ export const DEFAULT_CONFIG = {
       base: { name: "Essencial", monthly: 89.9 },
       intermediario: { name: "Profissional", monthly: 179.9 },
       maximo: { name: "Premium", monthly: 299.9 },
+      // Plus (vídeo): nasce sem mensalidade e fora da venda; só a administração atribui a casas piloto até o dono definir o preço.
+      plus: { name: "Plus", monthly: null },
     },
     // Acesso extra da equipe da casa, por mês e conforme o plano da casa (sobe sozinho quando a casa muda de plano).
-    extra_seat: { base: 29.9, intermediario: 39.9, maximo: 39.9 },
+    extra_seat: { base: 29.9, intermediario: 39.9, maximo: 39.9, plus: 39.9 },
     boost_per_day: { cidade: 19.9, estado: 29.9, pais: 39.9, exterior: null },
     highlight_per_day: { cidade: 29.9, estado: 39.9, pais: 49.9, exterior: null },
   },
@@ -103,6 +105,17 @@ export function sanitizeConfig(raw) {
   };
 
   return { features, pricing: { plans, extra_seat, boost_per_day: perDay("boost_per_day"), highlight_per_day: perDay("highlight_per_day") }, scopes, referral, plan_matrix: sanitizePlanMatrix(r.plan_matrix) };
+}
+
+/** Planos que a pessoa pode contratar agora: os que têm mensalidade definida (o Plus só entra na lista quando o preço for definido). */
+export function sellablePlanIds(config) {
+  return PLAN_IDS.filter((id) => config?.pricing?.plans?.[id]?.monthly !== null && config?.pricing?.plans?.[id]?.monthly !== undefined);
+}
+
+/** Planos que a tela mostra: Grátis, os que estão à venda e, se for o caso, o plano atual da casa (mesmo sem preço, como o Plus de uma casa piloto). */
+export function visiblePlanIds(config, current) {
+  const sell = sellablePlanIds(config);
+  return HOUSE_PLAN_IDS.filter((id) => id === "gratis" || sell.includes(id) || id === current);
 }
 
 /** Recurso ligado? "beta" liga só para as casas listadas (ids dos donos). */

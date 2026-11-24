@@ -12,7 +12,7 @@ export async function fetchPlanChange(): Promise<PlanChangeStatus | null> {
 }
 
 /** Agenda a descida de plano para a próxima renovação (sem devolução). */
-export async function schedulePlanDowngrade(plan: Exclude<PlanId, "maximo">): Promise<{ error: string | null; effectiveOn: string | null }> {
+export async function schedulePlanDowngrade(plan: Exclude<PlanId, "plus">): Promise<{ error: string | null; effectiveOn: string | null }> {
   if (!supabase) return { error: "Indisponível neste modo de demonstração.", effectiveOn: null };
   const { data, error } = await supabase.rpc("my_plan_change_schedule", { p_plan: plan });
   if (error) return { error: clean(error, "Não foi possível agendar agora. Tente novamente."), effectiveOn: null };

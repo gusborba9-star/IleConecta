@@ -33,14 +33,14 @@ test("os valores iniciais batem com a matriz aprovada pelo proprietário (14/11/
 });
 
 test("anti-divergência: o padrão do código é idêntico ao plan_matrix_default() do banco", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0178_minutos_de_video_na_matriz.sql", import.meta.url), "utf8"); // definição vigente (a 0140 acrescentou a ferramenta "posts com a cara da sua casa")
+  const sql = readFileSync(new URL("../supabase/migrations/0206_plano_plus.sql", import.meta.url), "utf8"); // definição vigente (a 0206 acrescentou o plano Plus)
   const m = sql.match(/select '(\{"caps".*?\})'::jsonb;/s);
   assert.ok(m, "semente não encontrada");
   assert.deepEqual(JSON.parse(m[1]), DEFAULT_PLAN_MATRIX);
 });
 
 test("anti-divergência: a assistente (constantes de reserva) bate com a matriz inicial", () => {
-  for (const plan of ["gratis", "base", "intermediario", "maximo"]) {
+  for (const plan of ["gratis", "base", "intermediario", "maximo", "plus"]) {
     const c = DEFAULT_PLAN_MATRIX.caps[plan];
     assert.deepEqual(PLAN_LIMITS[plan], { monthlyReplies: c.assistant_replies, canSell: c.assistant_sells, canDiscount: c.assistant_discount }, plan);
   }
@@ -165,7 +165,7 @@ test("minPlanFor: o primeiro plano que inclui a ferramenta (para o selo da tela 
   assert.equal(minPlanFor(DEFAULT_PLAN_MATRIX, "assistant_sells"), "gratis");
   const m = clone(); m.caps.base.campaign_links = 1;
   assert.equal(minPlanFor(m, "campaign_links"), "base", "mudar a matriz muda o selo");
-  for (const k of CAP_FLAG_KEYS) m.caps.maximo[k] = false;
+  for (const k of CAP_FLAG_KEYS) { m.caps.maximo[k] = false; m.caps.plus[k] = false; }
   m.caps.maximo.members_area = false;
   assert.equal(minPlanFor(m, "members_area"), null, "ninguém inclui");
 });

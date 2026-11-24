@@ -3,7 +3,7 @@ import { Check, Minus } from "lucide-react";
 import { Card } from "@/components/base";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { compareRows } from "@/lib/planMatrixCore";
-import { FREE_PLAN_NAME, HOUSE_PLAN_IDS, isFeatureOn, type FeatureKey, type HousePlanId } from "@/lib/platformConfigCore";
+import { FREE_PLAN_NAME, isFeatureOn, visiblePlanIds, type FeatureKey, type HousePlanId } from "@/lib/platformConfigCore";
 import { formatMoney } from "@/lib/pricing";
 
 /** Celular estreito: a tabela de 4 colunas não cabe, então mostra um plano por vez (escolhido nos botões acima da lista). */
@@ -24,14 +24,16 @@ function useNarrow() {
 /** "Compare os planos": ferramentas nas linhas, planos nas colunas. Lê tudo da matriz de planos; o plano da casa fica destacado. */
 export default function PlanCompare({ mine, userId }: { mine: HousePlanId | null; userId?: string }) {
   const { config } = usePlatformConfig();
-  const rows = compareRows(config.plan_matrix, (f) => isFeatureOn(config, f as FeatureKey, userId));
+  // colunas: Grátis, planos com preço e o plano atual (o Plus só aparece quando tiver preço ou for o plano da casa)
+  const ids = visiblePlanIds(config, mine);
+  const rows = compareRows(config.plan_matrix, (f) => isFeatureOn(config, f as FeatureKey, userId), ids);
   const name = (id: HousePlanId) => (id === "gratis" ? FREE_PLAN_NAME : config.pricing.plans[id].name);
   const price = (id: HousePlanId) => (id === "gratis" ? "R$ 0" : formatMoney(config.pricing.plans[id].monthly));
   const narrow = useNarrow();
   const [pick, setPick] = useState<HousePlanId | null>(null);
-  const shownId: HousePlanId = pick ?? mine ?? HOUSE_PLAN_IDS[1];
-  const shownIdx = HOUSE_PLAN_IDS.indexOf(shownId);
-  const cellCls = (i: number) => (mine === HOUSE_PLAN_IDS[i] ? "bg-primary/10" : "");
+  const shownId: HousePlanId = pick && ids.includes(pick) ? pick : mine ?? ids[1];
+  const shownIdx = ids.indexOf(shownId);
+  const cellCls = (i: number) => (mine === ids[i] ? "bg-primary/10" : "");
   return (
     <Card className="p-4 sm:p-6">
       <h2 className="font-display font-bold text-xl">Compare os planos</h2>
@@ -39,7 +41,7 @@ export default function PlanCompare({ mine, userId }: { mine: HousePlanId | null
       {narrow ? (
         <div className="mt-4">
           <div role="radiogroup" aria-label="Plano a ver" className="flex flex-wrap gap-2">
-            {HOUSE_PLAN_IDS.map((id) => (
+            {ids.map((id) => (
               <button key={id} type="button" role="radio" aria-checked={shownId === id} onClick={() => setPick(id)}
                 className={`min-h-11 rounded-full border px-4 text-sm font-semibold ${shownId === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"}`}>
                 {name(id)}{mine === id ? " · seu plano" : ""}
@@ -69,7 +71,7 @@ export default function PlanCompare({ mine, userId }: { mine: HousePlanId | null
           <thead>
             <tr>
               <th scope="col" className="sticky left-0 z-10 bg-card p-2 text-left font-medium text-muted-foreground">Ferramenta</th>
-              {HOUSE_PLAN_IDS.map((id, i) => (
+              {ids.map((id, i) => (
                 <th key={id} scope="col" className={`p-2 text-center align-bottom ${cellCls(i)}`}>
                   <span className="block font-display font-bold">{name(id)}</span>
                   <span className="block text-xs font-normal text-muted-foreground">{price(id)}{id !== "gratis" && " / mês"}</span>

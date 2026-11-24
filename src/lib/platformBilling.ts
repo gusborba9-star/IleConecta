@@ -120,7 +120,7 @@ export async function removeCard(): Promise<string | null> {
 }
 
 /** Casa cancelada por reembolso: emite a fatura de reativação e abre o pagamento. Ao pagar, a casa volta sozinha. Devolve o erro, ou null se já redirecionou. */
-export async function startReactivation(plan: "base" | "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+export async function startReactivation(plan: "base" | "intermediario" | "maximo" | "plus", method: "pix" | "card" | null): Promise<string | null> {
   const r = await call({ action: "reactivate", plan, method });
   if (r.error) return r.error;
   if (!r.url) return "Não foi possível abrir o pagamento.";
@@ -129,7 +129,7 @@ export async function startReactivation(plan: "base" | "intermediario" | "maximo
 }
 
 /** Casa sem assinatura ativa: paga o plano escolhido (mensalidade cheia). Ao confirmar, o plano muda e o vencimento passa a ser o dia do pagamento. */
-export async function startSubscribe(plan: "base" | "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+export async function startSubscribe(plan: "base" | "intermediario" | "maximo" | "plus", method: "pix" | "card" | null): Promise<string | null> {
   const r = await call({ action: "subscribe", plan, method });
   if (r.error) return r.error;
   if (!r.url) return "Não foi possível abrir o pagamento.";
@@ -138,7 +138,7 @@ export async function startSubscribe(plan: "base" | "intermediario" | "maximo", 
 }
 
 /** Casa assinante: sobe de plano pagando só a diferença proporcional aos dias que faltam no ciclo. */
-export async function startUpgrade(plan: "intermediario" | "maximo", method: "pix" | "card" | null): Promise<string | null> {
+export async function startUpgrade(plan: "intermediario" | "maximo" | "plus", method: "pix" | "card" | null): Promise<string | null> {
   const r = await call({ action: "upgrade", plan, method });
   if (r.error) return r.error;
   if (!r.url) return "Não foi possível abrir o pagamento.";

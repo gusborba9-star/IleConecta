@@ -297,7 +297,7 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await expect(tile("Pessoas ativas no período")).toContainText("40");
       await expect(page.getByText(/registro dos dias de atividade começou em 16\/11\/2026/)).toBeVisible();
       await expect(tile("Casas em plano pago")).toContainText("3");
-      await expect(page.getByText("Casas por plano hoje: Grátis 3 · Essencial 2 · Profissional 0 · Premium 1.")).toBeVisible();
+      await expect(page.getByText("Casas por plano hoje: Grátis 3 · Essencial 2 · Profissional 0 · Premium 1 · Plus 0.")).toBeVisible();
       await expect(page.getByText("O que é:")).toHaveCount(0);
       await noHScroll(page);
       await page.getByRole("button", { name: /Respondidos no prazo: como é calculado/ }).click();

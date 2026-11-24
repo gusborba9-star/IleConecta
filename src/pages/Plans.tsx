@@ -7,7 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { fetchMyAssistant } from "@/lib/assistant";
 import { formatMoney, type PlanId } from "@/lib/pricing";
 import { benefitsFor } from "@/lib/planMatrixCore";
-import { FREE_PLAN_NAME, HOUSE_PLAN_IDS, isFeatureOn, type FeatureKey, type HousePlanId } from "@/lib/platformConfigCore";
+import { FREE_PLAN_NAME, isFeatureOn, visiblePlanIds, type FeatureKey, type HousePlanId } from "@/lib/platformConfigCore";
 import { PEOPLE_FOR_24H, staffCost, staffMultiple } from "@/lib/pricingCore";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -146,6 +146,9 @@ export default function Plans() {
       </Card>
   );
   const tabsOn = isRemoteAuth && isHouse;
+  // planos mostrados: Grátis, os que têm preço e o plano atual da casa; o mais alto da lista leva o destaque dourado
+  const visible = visiblePlanIds(config, mine);
+  const top = visible[visible.length - 1];
   const mudar = (
     <>
       <div ref={panelRef} className="scroll-mt-20 empty:hidden">
@@ -153,33 +156,33 @@ export default function Plans() {
           <PlanChangePanel status={change} target={target} onClose={() => setTarget(null)} onChanged={() => { setBillingTick((n) => n + 1); }} />
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {HOUSE_PLAN_IDS.map((id) => {
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${visible.length > 4 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
+        {visible.map((id) => {
           const p = { id };
           const info = id === "gratis" ? { name: FREE_PLAN_NAME, monthly: 0 } : config.pricing.plans[id];
           // Textos e números vêm da matriz de planos (painel admin). Item ligado a uma ferramenta só aparece com o interruptor ligado.
           const copy = config.plan_matrix.copy[p.id];
           const benefits = benefitsFor(config.plan_matrix, p.id, (f) => isFeatureOn(config, f as FeatureKey, userId));
           return (
-          <Card key={p.id} className={`lift p-5 flex flex-col ${mine === p.id ? "border-primary" : ""} ${p.id === "maximo" ? "!border-gold !bg-gradient-to-br from-[#14543F] to-[#0F3B2D] !text-white shadow-altar ring-1 ring-gold/60" : p.id === "intermediario" ? "!bg-[#E8F1EA] dark:!bg-forest/10" : ""}`}>
-            {p.id === "maximo" && <span className="sheen -mt-1 mb-2 w-fit rounded-full bg-gold px-3 py-1 text-xs font-bold text-gold-foreground">Mais completo</span>}
+          <Card key={p.id} className={`lift p-5 flex flex-col ${mine === p.id ? "border-primary" : ""} ${p.id === top ? "!border-gold !bg-gradient-to-br from-[#14543F] to-[#0F3B2D] !text-white shadow-altar ring-1 ring-gold/60" : p.id === "intermediario" ? "!bg-[#E8F1EA] dark:!bg-forest/10" : ""}`}>
+            {p.id === top && <span className="sheen -mt-1 mb-2 w-fit rounded-full bg-gold px-3 py-1 text-xs font-bold text-gold-foreground">Mais completo</span>}
             <div className="flex items-center gap-2">
               <h2 className="font-display font-bold text-xl flex-1">{info.name}</h2>
               {mine === p.id && <Badge tone="primary">Seu plano</Badge>}
             </div>
-            <p className={`text-sm ${p.id === "maximo" ? "text-white/75" : "text-muted-foreground"}`}>{copy.tagline}</p>
+            <p className={`text-sm ${p.id === top ? "text-white/75" : "text-muted-foreground"}`}>{copy.tagline}</p>
             <div className="mt-3">
-              <span className={`font-display font-bold text-3xl ${p.id === "maximo" ? "text-white" : "text-primary"}`}>{p.id === "gratis" ? "R$ 0" : formatMoney(info.monthly)}</span>
-              {info.monthly !== null && p.id !== "gratis" && <span className={`text-sm ${p.id === "maximo" ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
+              <span className={`font-display font-bold text-3xl ${p.id === top ? "text-white" : "text-primary"}`}>{p.id === "gratis" ? "R$ 0" : formatMoney(info.monthly)}</span>
+              {info.monthly !== null && p.id !== "gratis" && <span className={`text-sm ${p.id === top ? "text-white/70" : "text-muted-foreground"}`}> / mês</span>}
             </div>
             <ul className="mt-4 space-y-2 text-sm flex-1">
               {benefits.map((b) => (
-                <li key={b.text} className="flex gap-2"><Check className={`h-4 w-4 shrink-0 mt-0.5 ${p.id === "maximo" ? "text-gold" : "text-forest"}`} /><span>{b.text}{b.isNew && <span className="ml-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-gold-foreground">Novo</span>}</span></li>
+                <li key={b.text} className="flex gap-2"><Check className={`h-4 w-4 shrink-0 mt-0.5 ${p.id === top ? "text-gold" : "text-forest"}`} /><span>{b.text}{b.isNew && <span className="ml-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-gold-foreground">Novo</span>}</span></li>
               ))}
             </ul>
             {isHouse ? (
               isRemoteAuth && change && !change.cancelled ? (
-                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "gratis")} onClick={() => choose(p.id)}>
+                <Button className="w-full mt-5" variant={p.id === top ? "gold" : "outline"} disabled={change.plan === p.id || (!change.subscribed && p.id === "gratis")} onClick={() => choose(p.id)}>
                   {change.plan === p.id ? "Plano atual"
                     : p.id === "gratis" && !change.subscribed ? "Plano gratuito"
                     : !change.subscribed ? "Assinar este plano"
@@ -188,7 +191,7 @@ export default function Plans() {
                     : "Passar para este plano na renovação"}
                 </Button>
               ) : (
-                <Button className="w-full mt-5" variant={p.id === "maximo" ? "gold" : "outline"} disabled={mine === p.id} onClick={() => nav("/suporte")}>
+                <Button className="w-full mt-5" variant={p.id === top ? "gold" : "outline"} disabled={mine === p.id} onClick={() => nav("/suporte")}>
                   {mine === p.id ? "Plano atual" : "Falar com o suporte"}
                 </Button>
               )

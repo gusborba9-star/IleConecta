@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export interface AssistantReport {
   days: number;
-  plan: "gratis" | "base" | "intermediario" | "maximo";
+  plan: "gratis" | "base" | "intermediario" | "maximo" | "plus";
   assistantReplies: number;
   clientsAttended: number;
   handoffs: number;
@@ -25,7 +25,7 @@ export async function fetchAssistantReport(days = 7): Promise<AssistantReport | 
   const hours = Array.isArray(r.replies_by_hour) ? r.replies_by_hour.map(n) : [];
   return {
     days: n(r.days) || days,
-    plan: r.plan === "base" || r.plan === "intermediario" || r.plan === "maximo" ? r.plan : "gratis",
+    plan: r.plan === "base" || r.plan === "intermediario" || r.plan === "maximo" || r.plan === "plus" ? r.plan : "gratis",
     assistantReplies: n(r.assistant_replies),
     clientsAttended: n(r.clients_attended),
     handoffs: n(r.handoffs),

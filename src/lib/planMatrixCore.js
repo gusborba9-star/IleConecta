@@ -2,7 +2,9 @@
 // A fonte da verdade é platform_settings.plan_matrix (editável no painel admin). Aqui ficam os valores iniciais
 // (idênticos aos que já valiam antes da matriz), a validação e o texto com números calculados. Puro e testável.
 // Os mesmos valores iniciais existem em plan_matrix_default() no banco; tests/plan-matrix.test.mjs garante que não divergem.
-const PLAN_IDS = ["gratis", "base", "intermediario", "maximo"];
+const PLAN_IDS = ["gratis", "base", "intermediario", "maximo", "plus"];
+/** Planos que a pessoa pode contratar hoje (o Plus fica fora até a mensalidade ser definida). A tabela de comparação usa a lista que a tela passar. */
+export const ALL_PLAN_IDS = PLAN_IDS;
 const COPY_FEATURES = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
 
 /** Limites numéricos por plano: [mínimo, máximo, rótulo no painel]. */
@@ -42,6 +44,7 @@ export const DEFAULT_PLAN_MATRIX = {
     base: { assistant_replies: 100, campaign_links: 0, campaign_card_styles: 0, quick_replies: 3, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 3, video_minutes_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: false, moment_video: false },
     intermediario: { assistant_replies: 500, campaign_links: 2, campaign_card_styles: 1, quick_replies: 10, included_seats: 0, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 5, video_minutes_month: 0, assistant_sells: true, assistant_discount: false, chat_media: false, members_area: false, calendar_full: false, campaign_daily_count: false, campaign_insights_full: false, ritual_video: false, styled_posts: true, moment_video: false },
     maximo: { assistant_replies: 1700, campaign_links: 30, campaign_card_styles: 3, quick_replies: 50, included_seats: 1, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 10, video_minutes_month: 0, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true, moment_video: true },
+    plus: { assistant_replies: 3400, campaign_links: 60, campaign_card_styles: 3, quick_replies: 100, included_seats: 3, limit_services: 0, limit_rituals: 0, limit_posts_month: 0, moments_per_day: 20, video_minutes_month: 3000, assistant_sells: true, assistant_discount: true, chat_media: true, members_area: true, calendar_full: true, campaign_daily_count: true, campaign_insights_full: true, ritual_video: true, styled_posts: true, moment_video: true },
   },
   // {assistant_replies}, {campaign_links}, {quick_replies}, {included_seats}, {limit_services}, {limit_rituals} e {limit_posts_month}, {moments_per_day} viram o número do plano na hora de mostrar.
   // "feature" esconde o item até o interruptor do painel ser ligado (aparece sozinho, como novidade).
@@ -96,6 +99,17 @@ export const DEFAULT_PLAN_MATRIX = {
         { text: "{included_seats} acesso de equipe incluso, para quem ajuda a cuidar da casa", feature: null },
         { text: "Vídeo de 30 segundos nos registros dos rituais", feature: "ritual_video" },
         { text: "Momentos em vídeo de até 30 segundos, além das fotos (até {moments_per_day} por dia)", feature: null },
+      ],
+    },
+    plus: {
+      tagline: "A casa completa, com vídeo e atendimento ampliado.",
+      benefits: [
+        { text: "Tudo do Premium", feature: null },
+        { text: "Reuniões por vídeo com os membros e consultas individuais por vídeo, com até {video_minutes_month} minutos por mês", feature: null },
+        { text: "A assistente com até {assistant_replies} respostas por mês", feature: null },
+        { text: "Até {campaign_links} links de divulgação e {quick_replies} respostas rápidas", feature: null },
+        { text: "{included_seats} acessos de equipe inclusos", feature: null },
+        { text: "Momentos em foto e vídeo (até {moments_per_day} por dia)", feature: null },
       ],
     },
   },
@@ -189,12 +203,12 @@ const COMPARE_FLAGS = [
 ];
 
 /** Linhas da tabela "Compare os planos": cada célula é um texto pronto ("Sem limite", "—", número ou "Incluído"). Nunca "undefined". */
-export function compareRows(matrix, isOn = () => true) {
+export function compareRows(matrix, isOn = () => true, planIds = PLAN_IDS.filter((p) => p !== "plus")) {
   const rows = [];
   for (const [key, label, zero] of COMPARE_NUMBERS) {
     // Vídeo só aparece na comparação quando algum plano tiver minutos (antes disso a linha seria só traços).
-    if (key === "video_minutes_month" && PLAN_IDS.every((p) => !(Number(planCap(matrix, p, key)) > 0))) continue;
-    rows.push({ key, label, cells: PLAN_IDS.map((p) => {
+    if (key === "video_minutes_month" && planIds.every((p) => !(Number(planCap(matrix, p, key)) > 0))) continue;
+    rows.push({ key, label, cells: planIds.map((p) => {
       const n = Number(planCap(matrix, p, key)) || 0;
       if (n > 0) return n.toLocaleString("pt-BR");
       return zero === "all" ? "Sem limite" : "—";
@@ -202,7 +216,7 @@ export function compareRows(matrix, isOn = () => true) {
   }
   for (const [key, label] of COMPARE_FLAGS) {
     if (key === "ritual_video" && !isOn("ritual_video")) continue;
-    rows.push({ key, label, cells: PLAN_IDS.map((p) => (planCap(matrix, p, key) === true ? "Incluído" : "—")) });
+    rows.push({ key, label, cells: planIds.map((p) => (planCap(matrix, p, key) === true ? "Incluído" : "—")) });
   }
   return rows;
 }

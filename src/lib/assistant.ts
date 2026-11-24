@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isAssistantPhotoPath } from "@/lib/assistantPhotoCore";
 
-export type Plan = "gratis" | "base" | "intermediario" | "maximo";
+export type Plan = "gratis" | "base" | "intermediario" | "maximo" | "plus";
 
 export type Tone = "acolhedor" | "formal" | "descontraido";
 export interface FaqItem { q: string; a: string }

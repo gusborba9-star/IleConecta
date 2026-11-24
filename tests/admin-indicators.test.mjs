@@ -30,7 +30,7 @@ test("lê o formato do banco e calcula os derivados", () => {
   assert.equal(v.items.casas_pagantes.current, 2);
   assert.deepEqual(v.items.cancelamentos, { current: 2, previous: 1 });
   assert.deepEqual(v.items.ativos_no_periodo, { current: 4, previous: 2 });
-  assert.deepEqual(v.plans.map((p) => [p.plan, p.count]), [["gratis", 0], ["base", 1], ["intermediario", 0], ["maximo", 1]]);
+  assert.deepEqual(v.plans.map((p) => [p.plan, p.count]), [["gratis", 0], ["base", 1], ["intermediario", 0], ["maximo", 1], ["plus", 0]]);
 });
 
 test("aviso de registro parcial só quando os dias de atividade começaram depois do período anterior", () => {
@@ -101,7 +101,7 @@ test("todo indicador tem grupo, definição e origem escritas", () => {
   const g = groupedIndicators(readAdminIndicators(raw()));
   assert.deepEqual(g.map((x) => x.group), GROUPS);
   assert.equal(g.reduce((a, x) => a + x.items.length, 0), Object.keys(INDICATORS).length);
-  assert.deepEqual(Object.keys(PLAN_LABELS), ["gratis", "base", "intermediario", "maximo"]);
+  assert.deepEqual(Object.keys(PLAN_LABELS), ["gratis", "base", "intermediario", "maximo", "plus"]);
 });
 
 test("coerência com o SQL: toda chave lida existe na função e vice-versa", () => {

@@ -8,6 +8,8 @@ export const PLAN_LIMITS = {
   base: { monthlyReplies: 100, canSell: true, canDiscount: false },
   intermediario: { monthlyReplies: 500, canSell: true, canDiscount: false },
   maximo: { monthlyReplies: 1700, canSell: true, canDiscount: true },
+  // Plus: mesmo conjunto do Premium com mais respostas (valor provisório; a matriz do painel é a fonte).
+  plus: { monthlyReplies: 3400, canSell: true, canDiscount: true },
 };
 
 export const USER_RATE = { windowMinutes: 10, maxReplies: 20 };

@@ -1,8 +1,8 @@
 /** Leitura do que o banco informa sobre a troca de plano (my_plan_change_status). Tudo que não for reconhecido vira "sem informação". */
-const isPlan = (v) => v === "gratis" || v === "base" || v === "intermediario" || v === "maximo";
+const isPlan = (v) => v === "gratis" || v === "base" || v === "intermediario" || v === "maximo" || v === "plus";
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : Number.isFinite(Number(v)) ? Number(v) : NaN);
 
-export const PLAN_RANK = { gratis: 0, base: 1, intermediario: 2, maximo: 3 };
+export const PLAN_RANK = { gratis: 0, base: 1, intermediario: 2, maximo: 3, plus: 4 };
 
 export function readPlanChange(raw) {
   if (!raw || typeof raw !== "object") return null;
