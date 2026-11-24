@@ -129,13 +129,15 @@ export function adapterFor(provider, fetchImpl, keys) {
 
 /**
  * Entrada: confere acesso (o banco decide), cria a sala só na primeira vez e devolve o que a tela precisa.
- * deps: { joinCheck(meetingId), roomGet(meetingId), roomSet(meetingId, ref, url, hostUrl), adapter }
+ * deps: { joinCheck(meetingId), roomGet(meetingId), roomSet(meetingId, ref, url, hostUrl), meteringReady(provider), adapter }
  */
 export async function joinMeeting(meetingId, deps) {
   if (typeof meetingId !== "string" || !/^[0-9a-f-]{36}$/i.test(meetingId)) return { ok: false, reason: "pedido_invalido" };
   const chk = await deps.joinCheck(meetingId);
   if (!chk || chk.ok !== true) return { ok: false, reason: chk?.reason ?? "indisponivel", starts_at: chk?.starts_at ?? null };
   if (!deps.adapter || deps.adapter.name !== chk.provider) return { ok: false, reason: "provedor_indisponivel" };
+  // Sem o aviso de entrada/saída do provedor os minutos não seriam medidos (consumo sem cobrança do banco): nesse caso a sala não abre.
+  if (typeof deps.meteringReady !== "function" || !(await deps.meteringReady(chk.provider))) return { ok: false, reason: "medicao_indisponivel" };
   let room = await deps.roomGet(meetingId);
   if (!room?.ref || !room?.url) {
     const made = await deps.adapter.ensureRoom({ roomName: chk.room_name, startsAt: chk.starts_at, durationMin: chk.duration_min, maxParticipants: chk.max_participants });

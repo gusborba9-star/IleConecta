@@ -16,6 +16,7 @@ const REASONS = {
   sem_minutos: "Os minutos de vídeo da casa neste mês acabaram.",
   lotada: "A sala está cheia.",
   provedor_indisponivel: "O serviço de vídeo não respondeu. Tente de novo em instantes.",
+  medicao_indisponivel: "O vídeo ainda não está pronto: falta ligar a medição dos minutos. Fale com o suporte.",
   pedido_invalido: "Endereço de reunião inválido.",
 };
 

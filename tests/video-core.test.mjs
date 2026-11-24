@@ -101,6 +101,7 @@ function deps(over = {}) {
   const state = { room: null, created: 0 };
   return { state, d: {
     joinCheck: async () => ({ ok: true, room_name: "ic-1", provider: "daily", is_host: false, display_name: "Ana", user_id: UID, kind: "reuniao", title: "Encontro", starts_at: START, duration_min: 60, max_participants: 50, ends_at: START }),
+    meteringReady: async () => true,
     roomGet: async () => state.room,
     roomSet: async (id, ref, url, host) => { if (!state.room) state.room = { ref, url, host_url: host }; return state.room; },
     adapter: { name: "daily", ensureRoom: async () => { state.created++; return { ref: "ic-1", url: "https://x.daily.co/ic-1", hostUrl: null }; }, accessFor: async ({ room }) => ({ url: room.url, token: "T" }) },
@@ -148,4 +149,30 @@ test("eventos do Daily e do Whereby são normalizados; desconhecidos viram null"
   const wl = normalizeWherebyEvent({ type: "room.client.left", createdAt: "2026-12-01T18:30:00Z", data: { meetingId: "M1", participantId: "p1" } });
   assert.equal(wl.kind, "left"); assert.equal(wl.joinedAt, null);
   assert.equal(normalizeWherebyEvent({ type: "room.session.started", data: {} }), null);
+});
+
+test("entrada: sem a medição de minutos do provedor a sala não abre e nada é criado", async () => {
+  const { state, d } = deps({ meteringReady: async (p) => p !== "daily" });
+  assert.deepEqual(await joinMeeting(MID, d), { ok: false, reason: "medicao_indisponivel" });
+  assert.equal(state.created, 0);
+  const sem = deps(); delete sem.d.meteringReady;
+  assert.equal((await joinMeeting(MID, sem.d)).reason, "medicao_indisponivel", "esquecer de passar a conferência também fecha a sala");
+});
+
+test("0207: meeting.ended só encerra a reunião depois do horário previsto; o consumo fecha do mesmo jeito", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0207_video_sala_nao_fecha_cedo.sql", import.meta.url), "utf8").replace(/--.*$/gm, "");
+  const f = sql.split("function public.video_close_room")[1];
+  assert.match(f, /status = 'agendada' and now\(\) >= starts_at \+ make_interval\(mins => duration_min\)/);
+  assert.match(f, /update public\.video_usage u set left_at/);
+  assert.match(f, /coalesce\(auth\.role\(\), ''\) <> 'service_role'/);
+});
+
+test("função de vídeo: confere a medição antes de abrir a sala e limpa avisos antigos ao cadastrar de novo", async () => {
+  const { readFileSync } = await import("node:fs");
+  const ts = readFileSync(new URL("../supabase/functions/video/index.ts", import.meta.url), "utf8");
+  assert.match(ts, /meteringReady: async \(provider: string\)/);
+  assert.match(ts, /WHEREBY_WEBHOOK_SECRET/);
+  assert.match(ts, /method: "DELETE"/);
+  assert.match(ts, /w\.url === target/);
 });
