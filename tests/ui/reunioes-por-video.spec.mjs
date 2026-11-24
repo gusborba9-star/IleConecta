@@ -66,7 +66,7 @@ test("casa sem vídeo liberado: aviso e sem formulário", async ({ page }) => {
 });
 
 test("dona cancela a reunião depois de confirmar", async ({ page }) => {
-  const calls = await setup(page, "casa", { upcoming: [meeting({ is_host: true })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  const calls = await setup(page, "casa", { upcoming: [meeting({ is_host: true, starts_at: new Date(Date.now() + 3 * 3600000).toISOString() })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
   await page.goto("/reunioes");
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await page.getByRole("button", { name: "Cancelar reunião" }).click();
@@ -127,4 +127,11 @@ test("pedido na URL que não é um código válido é ignorado (nada é escolhid
   await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
   await page.goto("/reunioes?pedido=<script>");
   await expect(page.getByLabel("Tipo")).toHaveValue("reuniao");
+});
+
+test("dona com a sala aberta não vê Cancelar (só entra e encerra pela sala)", async ({ page }) => {
+  await setup(page, "casa", { upcoming: [meeting({ is_host: true })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/reunioes");
+  await expect(page.getByRole("link", { name: "Entrar" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toHaveCount(0);
 });
