@@ -38,6 +38,15 @@ export async function cancelMeeting(id: string): Promise<boolean> {
   return !error;
 }
 
+/** Encerra a reunião em andamento (só a dona da casa): a sala fecha para todos. */
+export async function endMeetingNow(id: string): Promise<{ ok: boolean; roomClosed?: boolean }> {
+  if (!supabase) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("video", { body: { action: "end", meeting_id: id } });
+  const d = data as { ok?: boolean; room_closed?: boolean } | null;
+  if (error || !d?.ok) return { ok: false };
+  return { ok: true, roomClosed: d.room_closed === true };
+}
+
 /** Pede a entrada na sala. Quem decide é o servidor (login, vínculo, horário, minutos, lotação). */
 export async function joinMeeting(id: string): Promise<JoinResult> {
   if (!supabase) return { ok: false, reason: "sem_login" };

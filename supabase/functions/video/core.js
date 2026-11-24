@@ -95,6 +95,11 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
       if (!d.token) throw new Error("provedor_resposta_invalida");
       return { url: room.url, token: d.token };
     },
+    /** Fecha a sala para todos (quem está dentro é retirado). Sala que já não existe conta como fechada. */
+    async closeRoom({ roomName }) {
+      const res = await fetchImpl(`${base}/rooms/${encodeURIComponent(roomName)}`, { method: "DELETE", headers });
+      return res.ok || res.status === 404;
+    },
   };
 }
 
@@ -117,6 +122,12 @@ export function wherebyAdapter(fetchImpl, apiKey, base = "https://api.whereby.de
       u.searchParams.set("embed", "");
       u.searchParams.set("displayName", String(displayName ?? "Participante").replace(/[$!<>:;]/g, "").slice(0, 40) || "Participante");
       return { url: u.toString().replace("embed=", "embed") };
+    },
+    /** Fecha a reunião para todos. Reunião que já não existe conta como fechada. */
+    async closeRoom({ ref }) {
+      if (!ref) return false;
+      const res = await fetchImpl(`${base}/meetings/${encodeURIComponent(ref)}`, { method: "DELETE", headers });
+      return res.ok || res.status === 404;
     },
   };
 }
@@ -178,4 +189,23 @@ export function normalizeWherebyEvent(evt) {
   if (evt?.type === "room.client.joined" && d.meetingId && session) return { kind: "joined", room: String(d.meetingId), session, userId: ext, at, joinedAt: at };
   if (evt?.type === "room.client.left" && d.meetingId && session) return { kind: "left", room: String(d.meetingId), session, userId: ext, at, joinedAt: null };
   return null;
+}
+
+/**
+ * Encerrar reunião (só a dona da casa; o banco confere): marca como encerrada, fecha a sala no provedor e fecha os minutos em uso.
+ * deps: { endMeeting(id) -> { provider, room_name, provider_ref }, adapterFor(provider), closeUsage(room) }
+ * Mesmo que o provedor falhe, a reunião já está encerrada no banco (ninguém novo entra); a falha é devolvida para o aviso.
+ */
+export async function endMeeting(meetingId, deps) {
+  if (typeof meetingId !== "string" || !/^[0-9a-f-]{36}$/i.test(meetingId)) return { ok: false, reason: "pedido_invalido" };
+  let info;
+  try { info = await deps.endMeeting(meetingId); } catch (e) { return { ok: false, reason: "recusado", message: String(e?.message ?? "") }; }
+  if (!info) return { ok: false, reason: "recusado" };
+  let roomClosed = false;
+  try {
+    const adapter = deps.adapterFor(info.provider);
+    if (adapter && typeof adapter.closeRoom === "function") roomClosed = await adapter.closeRoom({ roomName: info.room_name, ref: info.provider_ref });
+  } catch { roomClosed = false; }
+  try { await deps.closeUsage(info.provider === "whereby" ? (info.provider_ref ?? info.room_name) : info.room_name); } catch { /* o aviso do provedor e a limpeza fecham depois */ }
+  return { ok: true, room_closed: roomClosed };
 }

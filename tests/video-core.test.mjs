@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
-import { adapterFor, dailyAdapter, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, roomWindow, verifyDailySignature, verifyWherebySignature, wherebyAdapter } from "../supabase/functions/video/core.js";
+import { adapterFor, dailyAdapter, endMeeting, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, roomWindow, verifyDailySignature, verifyWherebySignature, wherebyAdapter } from "../supabase/functions/video/core.js";
 
 const UID = "11111111-1111-4111-8111-111111111111";
 const MID = "22222222-2222-4222-8222-222222222222";
@@ -175,4 +175,56 @@ test("função de vídeo: confere a medição antes de abrir a sala e limpa avis
   assert.match(ts, /WHEREBY_WEBHOOK_SECRET/);
   assert.match(ts, /method: "DELETE"/);
   assert.match(ts, /w\.url === target/);
+});
+
+test("encerrar reunião: fecha a sala no provedor e os minutos; recusa do banco não toca no provedor", async () => {
+  const calls = [];
+  const adapter = { closeRoom: async (a) => { calls.push(["sala", a]); return true; } };
+  const ok = await endMeeting(MID, {
+    endMeeting: async () => ({ provider: "daily", room_name: "ic-x", provider_ref: "ic-x" }),
+    adapterFor: () => adapter, closeUsage: async (room) => { calls.push(["uso", room]); },
+  });
+  assert.deepEqual(ok, { ok: true, room_closed: true });
+  assert.deepEqual(calls, [["sala", { roomName: "ic-x", ref: "ic-x" }], ["uso", "ic-x"]]);
+  const negado = []; 
+  const r = await endMeeting(MID, { endMeeting: async () => { throw new Error("Sem permissão."); }, adapterFor: () => { negado.push(1); return adapter; }, closeUsage: async () => negado.push(2) });
+  assert.equal(r.ok, false); assert.deepEqual(negado, []);
+  assert.equal((await endMeeting("x", {})).reason, "pedido_invalido");
+});
+
+test("encerrar reunião: provedor fora do ar não desfaz o encerramento; Whereby fecha os minutos pela referência", async () => {
+  const usos = [];
+  const r = await endMeeting(MID, {
+    endMeeting: async () => ({ provider: "whereby", room_name: "ic-w", provider_ref: "ref-9" }),
+    adapterFor: () => ({ closeRoom: async () => { throw new Error("rede"); } }), closeUsage: async (room) => usos.push(room),
+  });
+  assert.deepEqual(r, { ok: true, room_closed: false });
+  assert.deepEqual(usos, ["ref-9"]);
+});
+
+test("adaptadores fecham a sala (Daily por nome, Whereby por código); sala inexistente conta como fechada", async () => {
+  const urls = [];
+  const f = (status) => async (u, o) => { urls.push([o.method, u]); return res(status, {}); };
+  assert.equal(await dailyAdapter(f(200), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), true);
+  assert.equal(await dailyAdapter(f(404), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), true);
+  assert.equal(await dailyAdapter(f(500), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), false);
+  assert.equal(await wherebyAdapter(f(204), "k", "https://w.test").closeRoom({ ref: "m1" }), true);
+  assert.equal(await wherebyAdapter(f(204), "k", "https://w.test").closeRoom({ ref: "" }), false);
+  assert.deepEqual(urls[0], ["DELETE", "https://d.test/rooms/ic-a"]);
+  assert.deepEqual(urls[3], ["DELETE", "https://w.test/meetings/m1"]);
+});
+
+test("encerrar reunião: banco só deixa a dona, só com a sala aberta, e cancelar não vale para sala aberta", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0208_video_encerrar_reuniao.sql", import.meta.url), "utf8");
+  assert.match(sql, /create or replace function public\.video_end/);
+  assert.match(sql, /is_house_owner\(m\.house_id\)/);
+  assert.match(sql, /now\(\) < m\.starts_at - interval '10 minutes'/);
+  assert.match(sql, /now\(\) >= m\.starts_at - interval '10 minutes' then raise exception 'A sala já abriu/);
+  assert.match(sql, /grant execute on function public\.video_end\(uuid\) to authenticated/);
+  const ts = readFileSync(new URL("../supabase/functions/video/index.ts", import.meta.url), "utf8");
+  assert.match(ts, /body\.action === "end"/);
+  assert.match(ts, /asUser\.rpc\("video_end"/);
+  const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
+  assert.match(sala, /st\.host &&/);
 });
