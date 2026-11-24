@@ -237,3 +237,20 @@ export async function endMeeting(meetingId, deps) {
   try { await deps.closeUsage(info.room_name); } catch { /* o aviso do provedor e a limpeza fecham depois */ }
   return { ok: true, room_closed: roomClosed };
 }
+
+/**
+ * Rotina (a cada 5 min): fecha no provedor as salas que passaram do horário-limite e ainda têm gente medida como dentro.
+ * deps: { rooms() -> [{ room_name, provider }], adapterFor(provider), closeUsage(room) }. Uma falha não impede as demais.
+ */
+export async function sweepRooms(deps) {
+  const rooms = (await deps.rooms()) ?? [];
+  let closed = 0, failed = 0;
+  for (const r of rooms) {
+    try {
+      const adapter = deps.adapterFor(r.provider);
+      if (!adapter || typeof adapter.closeRoom !== "function") { failed++; continue; }
+      if (await adapter.closeRoom({ roomName: r.room_name })) { await deps.closeUsage(r.room_name); closed++; } else failed++;
+    } catch { failed++; }
+  }
+  return { ok: true, total: rooms.length, closed, failed };
+}
