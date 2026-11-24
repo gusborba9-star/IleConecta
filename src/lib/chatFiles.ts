@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { reportClientError } from "@/lib/clientErrors";
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
@@ -89,7 +90,11 @@ export async function signedUrl(bucket: string, path: string): Promise<string | 
   const hit = cache.get(key);
   if (hit && hit.exp > Date.now()) return hit.url;
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-  if (error || !data?.signedUrl) return null;
+  if (error || !data?.signedUrl) {
+    // "Arquivo indisponível" na tela: sem isso o erro ficava invisível (foi assim com a 0203). Aparece em "Saúde da plataforma"; só o bucket e o motivo, nunca o caminho.
+    reportClientError(new Error(`link de arquivo falhou (${bucket}): ${error?.message ?? "sem link"}`));
+    return null;
+  }
   cache.set(key, { url: data.signedUrl, exp: Date.now() + 50 * 60_000 });
   return data.signedUrl;
 }
