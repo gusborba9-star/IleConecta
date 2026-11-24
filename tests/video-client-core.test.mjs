@@ -86,3 +86,24 @@ test("validateSchedule: reunião com pessoas escolhidas exige de 1 a 99 e dispen
   assert.equal(validateSchedule({ ...base, max: 50 }), null);
   assert.equal(validateSchedule({ kind: "consulta", title: "x", startsAtIso: base.startsAtIso, duration: 30, orderId: "o", audience: "escolher", invitees: [] }), null);
 });
+
+test("cartões da tela inicial: só o que abre em até 24 h ou está aberto, ordenado e com estado certo", async () => {
+  const { homeMeetingCards } = await import("../src/lib/videoCore.js");
+  const now = Date.parse("2026-11-24T15:00:00-03:00");
+  const at = (min) => new Date(now + min * 60_000).toISOString();
+  const lista = [
+    { id: "longe", startsAt: at(60 * 30), durationMin: 30 },
+    { id: "amanha", startsAt: at(60 * 20), durationMin: 30 },
+    { id: "encerrada", startsAt: at(-120), durationMin: 30 },
+    { id: "aberta", startsAt: at(-5), durationMin: 30 },
+    { id: "hoje", startsAt: at(120), durationMin: 30 },
+    { id: "quebrada", startsAt: "xx", durationMin: 30 },
+  ];
+  const r = homeMeetingCards(lista, now);
+  assert.deepEqual(r.map((x) => [x.id, x.state]), [["aberta", "aberta"], ["hoje", "hoje"], ["amanha", "amanha"]]);
+  assert.equal(homeMeetingCards(null, now).length, 0);
+  assert.equal(homeMeetingCards(Array.from({ length: 8 }, (_, i) => ({ id: `r${i}`, startsAt: at(i + 1), durationMin: 30 })), now).length, 3);
+  // 10 min antes já conta como aberta; 11 min antes ainda não
+  assert.equal(homeMeetingCards([{ id: "a", startsAt: at(10), durationMin: 30 }], now)[0].state, "aberta");
+  assert.equal(homeMeetingCards([{ id: "a", startsAt: at(11), durationMin: 30 }], now)[0].state, "hoje");
+});

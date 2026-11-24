@@ -377,3 +377,15 @@ test("migração 0214: convite confere na entrada e na lista; lista de membros s
   assert.match(sql, /Convide só membros ativos da sua casa/);
   assert.match(sql, /insert into public\.notifications/);
 });
+
+test("migração 0215: lembrete uma vez por reunião, só do servidor, a cada minuto, com link para a sala", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0215_video_lembrete.sql", import.meta.url), "utf8");
+  assert.match(sql, /reminded_at is null/);
+  assert.match(sql, /set reminded_at = now\(\)/);
+  assert.match(sql, /'\/reunioes\/' \|\| r\.id/);
+  assert.match(sql, /video_enabled_for\(m\.house_id\)/);
+  assert.match(sql, /revoke all on function public\.video_send_reminders\(\) from public, anon, authenticated/);
+  assert.match(sql, /cron\.schedule\('video-lembrete', '\* \* \* \* \*'/);
+  assert.match(sql, /hm\.user_id <> h\.owner_id/);
+});

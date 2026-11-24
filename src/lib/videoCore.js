@@ -44,6 +44,25 @@ export function meetingPhase(m, nowMs = Date.now()) {
   return "aberta";
 }
 
+/**
+ * Cartões da tela inicial: reuniões que abrem nas próximas 24 horas ou estão em andamento (até 3), da mais próxima para a mais distante.
+ * estado: "aberta" (pode entrar), "hoje" ou "amanha" (ainda fechada). Reunião encerrada ou além de 24 horas não aparece.
+ */
+export function homeMeetingCards(list, nowMs = Date.now()) {
+  const out = [];
+  for (const m of Array.isArray(list) ? list : []) {
+    const start = Date.parse(m?.startsAt ?? m?.starts_at ?? "");
+    if (!Number.isFinite(start)) continue;
+    const phase = meetingPhase({ starts_at: new Date(start).toISOString(), duration_min: m.durationMin ?? m.duration_min }, nowMs);
+    if (phase === "encerrada") continue;
+    if (phase === "cedo" && start - nowMs > 24 * 3_600_000) continue;
+    const day = (ms) => new Date(ms).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const state = phase === "aberta" ? "aberta" : day(start) === day(nowMs) ? "hoje" : "amanha";
+    out.push({ ...m, start, state });
+  }
+  return out.sort((a, b) => a.start - b.start).slice(0, 3);
+}
+
 /** Banco do mês para a tela: percentual usado e nível (ok, aviso a partir de 80%, esgotado). */
 export function bankView(b) {
   const cap = Math.max(0, Number(b?.cap) || 0), used = Math.max(0, Number(b?.used) || 0);

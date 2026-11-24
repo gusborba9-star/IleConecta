@@ -1,4 +1,5 @@
 import HousePendingCard from "@/components/house/HousePendingCard";
+import UpcomingMeetingCard from "@/components/video/UpcomingMeetingCard";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Bot, CalendarDays, ImagePlus, MessagesSquare, Contact, Crown, Landmark, Megaphone, Pencil, Plus, Sparkles, Star, TrendingUp, Users, UsersRound } from "lucide-react";
@@ -136,6 +137,8 @@ export default function HouseHome() {
         </div>
         <Link to={`/casa/${house.id}`} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">Ver minha página</Link>
       </Card>
+
+      {isRemoteAuth && <UpcomingMeetingCard />}
 
       {isRemoteAuth && <HousePendingCard collapsible />}
 

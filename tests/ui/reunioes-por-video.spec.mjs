@@ -276,3 +276,31 @@ test("acessibilidade e celular: seletor de convidados sem violações e sem rola
   const b = await page.getByLabel("Ana Souza").boundingBox();
   expect(b.width).toBeGreaterThanOrEqual(20);
 });
+
+test("tela inicial do cliente: cartão com a reunião aberta e botão Entrar; fechada mostra só o horário", async ({ page }) => {
+  await setup(page, "pessoa", { upcoming: [
+    meeting({ id: U(301), title: "Gira aberta", starts_at: new Date(Date.now() - 2 * 60000).toISOString() }),
+    meeting({ id: U(302), title: "Reunião de logo mais", starts_at: new Date(Date.now() + 90 * 60000).toISOString() }),
+  ] });
+  await page.goto("/");
+  const card = page.getByTestId("video-home-card");
+  await expect(card).toBeVisible();
+  await expect(page.getByTestId("video-home-item")).toHaveCount(2);
+  await expect(card).toContainText("Sala aberta agora");
+  await expect(page.getByTestId("video-home-enter")).toHaveAttribute("href", `/reunioes/${U(301)}`);
+  await expect(page.getByTestId("video-home-enter")).toHaveCount(1);
+  await expect(card.getByRole("link", { name: "Ver reunião" })).toHaveAttribute("href", "/reunioes");
+});
+
+test("tela inicial sem reunião não mostra cartão", async ({ page }) => {
+  await setup(page, "pessoa", { upcoming: [] });
+  await page.goto("/");
+  await expect(page.getByTestId("video-home-card")).toHaveCount(0);
+});
+
+test("painel da casa mostra o cartão da reunião aberta", async ({ page }) => {
+  await setup(page, "casa", { upcoming: [meeting({ is_host: true, title: "Encontro de membros" })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/");
+  await expect(page.getByTestId("video-home-card")).toContainText("Encontro de membros");
+  await expect(page.getByTestId("video-home-enter")).toBeVisible();
+});

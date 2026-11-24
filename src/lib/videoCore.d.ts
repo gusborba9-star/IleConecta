@@ -17,3 +17,4 @@ export function validateSchedule(i: { kind: string; title: string; startsAtIso: 
 export function embedUrl(provider: string, url: string, token?: string | null): string | null;
 export function readVideoConfig(raw: unknown): VideoConfig;
 export function livekitServerUrl(url: string): string | null;
+export function homeMeetingCards<T extends { startsAt?: string; starts_at?: string; durationMin?: number; duration_min?: number }>(list: T[] | null | undefined, nowMs?: number): (T & { start: number; state: "aberta" | "hoje" | "amanha" })[];
