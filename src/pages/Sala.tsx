@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { Button, Card } from "@/components/base";
+import { Button } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/base/Confirm";
 import { endMeetingNow, joinMeeting, type JoinResult } from "@/lib/video";
 import { embedUrl, joinReasonText } from "@/lib/videoCore";
 
-type State = { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; src: string; title: string; host: boolean };
+type State = { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; src: string; title: string; host: boolean; endsAt?: string };
 
 /** Sala de vídeo: o servidor confere o acesso e devolve o endereço da sala; só endereços dos dois provedores entram no quadro. */
 export default function Sala() {
@@ -34,31 +35,40 @@ export default function Sala() {
       if (!alive) return;
       if (!r.ok) return setSt({ s: "negado", text: joinReasonText(r.reason, r.startsAt) });
       const src = embedUrl(r.provider ?? "", r.url ?? "", r.token);
-      setSt(src ? { s: "pronta", src, title: r.title ?? "Reunião", host: r.isHost === true } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
+      setSt(src ? { s: "pronta", src, title: r.title ?? "Reunião", host: r.isHost === true, endsAt: r.endsAt } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
     });
     return () => { alive = false; };
   }, [id, tick]);
   if (!currentUser || !isRemoteAuth) return <Navigate to="/" replace />;
+  const fim = st.s === "pronta" && st.endsAt && Number.isFinite(Date.parse(st.endsAt)) ? new Date(st.endsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
   return (
-    <div className="space-y-3 pb-16 lg:pb-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="min-w-0 break-words font-display text-xl font-bold">{st.s === "pronta" ? st.title : "Reunião por vídeo"}</h1>
-        <div className="flex shrink-0 items-center gap-3">
-          {st.s === "pronta" && st.host && <Button variant="outline" size="sm" onClick={() => void end()} disabled={ending} data-testid="video-end">{ending ? "Encerrando…" : "Encerrar reunião"}</Button>}
-          <Link to="/reunioes" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Sair da sala</Link>
+    // Tela cheia: a sala usa toda a largura e a altura visível do celular e a página atrás não rola (a rolagem não disputa com o vídeo).
+    <div className="fixed inset-0 z-[45] flex flex-col bg-background" data-testid="video-room" role="region" aria-label="Sala de vídeo">
+      <header className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <Link to="/reunioes" aria-label="Sair da sala" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-primary hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+          <ArrowLeft className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Sair da sala</span>
+        </Link>
+        <div className="min-w-0 flex-1 text-center">
+          <h1 className="truncate font-display text-base font-bold leading-tight">{st.s === "pronta" ? st.title : "Reunião por vídeo"}</h1>
+          {fim && <p className="text-xs text-muted-foreground">Termina às {fim}</p>}
         </div>
-      </div>
-      {st.s === "carregando" && <Card className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</Card>}
-      {st.s === "negado" && (
-        <Card className="space-y-3 p-5" role="alert">
-          <p className="text-sm">{st.text}</p>
-          <Button variant="outline" onClick={() => setTick((n) => n + 1)}>Tentar de novo</Button>
-        </Card>
-      )}
-      {st.s === "pronta" && (
-        <iframe title={st.title} src={st.src} allow="camera; microphone; fullscreen; display-capture; autoplay" referrerPolicy="strict-origin-when-cross-origin"
-          className="h-[78vh] w-full rounded-2xl border border-border bg-black" data-testid="video-frame" />
-      )}
+        {st.s === "pronta" && st.host
+          ? <Button variant="outline" size="sm" onClick={() => void end()} disabled={ending} className="min-h-11 shrink-0 border-destructive text-destructive" data-testid="video-end">{ending ? "Encerrando…" : "Encerrar"}</Button>
+          : <span className="w-11 shrink-0" aria-hidden />}
+      </header>
+      <main className="min-h-0 flex-1">
+        {st.s === "carregando" && <p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}
+        {st.s === "negado" && (
+          <div className="m-4 space-y-3 rounded-2xl border border-border bg-card p-5" role="alert">
+            <p className="text-sm">{st.text}</p>
+            <Button variant="outline" onClick={() => setTick((n) => n + 1)}>Tentar de novo</Button>
+          </div>
+        )}
+        {st.s === "pronta" && (
+          <iframe title={st.title} src={st.src} allow="camera; microphone; fullscreen; display-capture; autoplay" referrerPolicy="strict-origin-when-cross-origin"
+            className="block h-full w-full border-0 bg-black" data-testid="video-frame" />
+        )}
+      </main>
     </div>
   );
 }

@@ -66,7 +66,7 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
     name: "daily",
     async ensureRoom({ roomName, startsAt, durationMin, maxParticipants }) {
       const w = roomWindow(startsAt, durationMin);
-      const props = { exp: sec(w.closes), nbf: sec(w.opens), max_participants: Math.min(Math.max(Number(maxParticipants) || 2, 2), 100), enable_prejoin_ui: true, enable_knocking: false, eject_at_room_exp: true };
+      const props = { exp: sec(w.closes), nbf: sec(w.opens), max_participants: Math.min(Math.max(Number(maxParticipants) || 2, 2), 100), enable_prejoin_ui: true, enable_knocking: false, eject_at_room_exp: true, lang: "pt-BR" };
       const make = (withGeo) => fetchImpl(`${base}/rooms`, { method: "POST", headers, body: JSON.stringify({ name: roomName, privacy: "private", properties: withGeo ? { ...props, geo: "sa-east-1" } : props }) });
       let res = await make(true);
       if (res.status === 400) {
