@@ -54,6 +54,13 @@ export async function ackMeeting(id: string, version: string): Promise<boolean> 
   return !error;
 }
 
+/** A própria pessoa já aceitou o aviso desta reunião, na versão atual dos textos? (sair e voltar à mesma chamada não pede de novo) */
+export async function hasAckedMeeting(id: string, version: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc("video_acked", { p_meeting: id, p_version: version });
+  return !error && data === true;
+}
+
 /** Pede a entrada na sala. Quem decide é o servidor (login, vínculo, horário, minutos, lotação). */
 export async function joinMeeting(id: string): Promise<JoinResult> {
   if (!supabase) return { ok: false, reason: "sem_login" };

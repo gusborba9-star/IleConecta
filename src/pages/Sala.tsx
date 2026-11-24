@@ -6,18 +6,18 @@ import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/base/Confirm";
 import { LEGAL_VERSION } from "@/lib/legalCore";
-import { ackMeeting, endMeetingNow, joinMeeting, type JoinResult } from "@/lib/video";
+import { ackMeeting, endMeetingNow, hasAckedMeeting, joinMeeting, type JoinResult } from "@/lib/video";
 import { embedUrl, joinReasonText, livekitServerUrl } from "@/lib/videoCore";
 
 const LivekitRoomView = lazy(() => import("@/components/video/LivekitRoom"));
 
-type State = { s: "aviso" } | { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; kind: "iframe"; src: string; title: string; host: boolean; endsAt?: string } | { s: "pronta"; kind: "livekit"; server: string; token: string; title: string; host: boolean; endsAt?: string };
+type State = { s: "checando" } | { s: "aviso" } | { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; kind: "iframe"; src: string; title: string; host: boolean; endsAt?: string } | { s: "pronta"; kind: "livekit"; server: string; token: string; title: string; host: boolean; endsAt?: string };
 
 /** Sala de vídeo: o servidor confere o acesso e devolve o endereço da sala; só endereços dos dois provedores entram no quadro. */
 export default function Sala() {
   const { id = "" } = useParams();
   const { currentUser, isRemoteAuth } = useApp();
-  const [st, setSt] = useState<State>({ s: "aviso" });
+  const [st, setSt] = useState<State>({ s: "checando" });
   const [accepted, setAccepted] = useState(false);
   const [acking, setAcking] = useState(false);
   const [tick, setTick] = useState(0);
@@ -40,6 +40,12 @@ export default function Sala() {
     if (!ok) return void toast.error("Não consegui registrar o aceite. Tente de novo.");
     setAccepted(true);
   };
+  // Já aceitou esta reunião (na versão atual dos textos)? Então entra direto; senão mostra o aviso.
+  useEffect(() => {
+    let alive = true;
+    void hasAckedMeeting(id, LEGAL_VERSION).then((ok) => { if (!alive) return; if (ok) setAccepted(true); else setSt((c) => (c.s === "checando" ? { s: "aviso" } : c)); });
+    return () => { alive = false; };
+  }, [id]);
   useEffect(() => {
     if (!accepted) return;
     let alive = true;
@@ -85,7 +91,7 @@ export default function Sala() {
             </div>
           </div>
         )}
-        {st.s === "carregando" && <p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}
+        {(st.s === "carregando" || st.s === "checando") && <p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}
         {st.s === "negado" && (
           <div className="m-4 space-y-3 rounded-2xl border border-border bg-card p-5" role="alert">
             <p className="text-sm">{st.text}</p>
