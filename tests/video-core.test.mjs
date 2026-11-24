@@ -365,6 +365,7 @@ test("migração 0213: só a própria pessoa, mesma reunião e mesma versão dos
   assert.match(sql, /revoke execute on function public\.video_acked\(uuid, text\) from public, anon/);
   const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
   assert.match(sala, /hasAckedMeeting\(id, LEGAL_VERSION\)/);
+});
 
 test("migração 0214: convite confere na entrada e na lista; lista de membros só da dona; aviso por convidado", async () => {
   const { readFileSync } = await import("node:fs");

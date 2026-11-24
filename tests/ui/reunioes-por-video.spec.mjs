@@ -215,6 +215,7 @@ test("quem já aceitou esta reunião entra direto, sem ver o aviso nem aceitar d
   await expect(page.getByTestId("video-aviso")).toHaveCount(0);
   expect(calls.some((c) => c.name === "video_ack")).toBe(false);
   expect(calls.find((c) => c.name === "video_acked").body).toMatchObject({ p_meeting: MID });
+});
 
 const MEMBROS = [{ user_id: U(21), name: "Ana Souza", bond: "Filha de santo" }, { user_id: U(22), name: "Bruno Lima", bond: "Ogã" }, { user_id: U(23), name: "Carla Dias", bond: "" }];
 const agendar = async (page, calls) => {
