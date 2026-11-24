@@ -248,7 +248,8 @@ test("parecer jurídico: ciência registrada pelo banco, retenção 12 meses/5 a
   const t = readFileSync(new URL("../src/content/institutional.ts", import.meta.url), "utf8");
   assert.match(t, /atualmente, o Daily e o Whereby/);
   assert.match(t, /não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo/);
-  assert.match(t, /cláusulas-padrão contratuais/);
+  assert.doesNotMatch(t, /cláusulas-padrão contratuais previstas na regulamentação da ANPD/);
+  assert.match(t, /estritamente necessária para a execução do serviço de videoconferência solicitado por você \(LGPD, art\. 33, IX/);
   assert.match(t, /7\. Reuniões e consultas por vídeo/);
   assert.match(t, /isentar a \$\{BRAND\} e a ressarci-la/);
   assert.match(t, /maiores de 18 \(dezoito\) anos/);

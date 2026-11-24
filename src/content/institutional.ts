@@ -459,13 +459,14 @@ export const INFO_PAGES: InfoPage[] = [
           `A ${BRAND} não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo das chamadas. Os provedores de videoconferência tratam o fluxo em tempo real e mantêm apenas registros técnicos operacionais temporários, estritamente necessários para a qualidade e a segurança da transmissão.`,
           "Guardamos apenas o registro de uso (quem entrou, o horário de entrada e de saída e os minutos consumidos), que serve para controlar o limite de minutos do plano e comprovar a prestação do serviço, e o registro de que você leu o aviso da sala antes de entrar. O registro de uso é eliminado após 12 (doze) meses. O registro de agendamento (título, data, horário, casa e pessoas convidadas) é eliminado após 12 (doze) meses, no caso de reuniões da casa sem vínculo financeiro, e após 5 (cinco) anos, no caso de consultas por vídeo ligadas a um pedido pago, ou antes disso se a conta for excluída, ressalvadas as obrigações legais.",
           "Cada participante é responsável por não gravar nem divulgar a reunião sem o consentimento de todos. Em consultas por vídeo, a conversa pode envolver dados pessoais sensíveis (como convicção religiosa); por isso, compartilhe apenas o que for necessário. A base legal é a execução do contrato do atendimento e, para os dados sensíveis, o seu consentimento.",
+          "A transferência internacional de dados nas reuniões por vídeo ocorre de forma estritamente necessária para a execução do serviço de videoconferência solicitado por você (LGPD, art. 33, IX, combinado com o art. 7º, V), apoiada nos compromissos de proteção de dados e de segurança assumidos pelos provedores (DPA).",
         ],
       },
       {
         heading: "Transferência internacional de dados",
         paragraphs: [
           `Para viabilizar a operação tecnológica da plataforma, a ${BRAND} utiliza serviços de provedores de infraestrutura em nuvem, de processamento de pagamentos (como o Stripe) e de inteligência artificial, cujos servidores podem estar localizados fora do Brasil.`,
-          "Nesses casos, a transferência internacional de dados é necessária para a execução do serviço contratado (LGPD, art. 33, IX, combinado com o art. 7º, V) e ocorre por meio de provedores globais que adotam garantias contratuais e padrões internacionais de segurança da informação, em conformidade com o art. 33 da LGPD e com a regulamentação da ANPD. Quando o país de destino não tem decisão de adequação, a transferência se apoia em garantias contratuais, incluindo as cláusulas-padrão contratuais previstas na regulamentação da ANPD, incorporadas aos termos de tratamento de dados (DPA) firmados com cada provedor.",
+          "Nesses casos, a transferência internacional de dados é necessária para a execução do serviço contratado (LGPD, art. 33, IX, combinado com o art. 7º, V) e ocorre por meio de provedores globais que adotam garantias contratuais e padrões internacionais de segurança da informação, em conformidade com o art. 33 da LGPD e com a regulamentação da ANPD.",
         ],
       },
       {
