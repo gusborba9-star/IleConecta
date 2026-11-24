@@ -331,3 +331,28 @@ test("migração 0211 libera a LiveKit na configuração, na mensagem do painel 
   assert.match(sql, /check \(provider in \('daily', 'livekit'\)\)/);
   assert.match(sql, /provedor \(Daily ou LiveKit\)/);
 });
+
+test("rotina: fecha as salas vencidas, fecha o uso, e uma falha não impede as outras", async () => {
+  const { sweepRooms } = await import("../supabase/functions/video/core.js");
+  const fechadas = [], usos = [];
+  const r = await sweepRooms({
+    rooms: async () => [{ room_name: "a", provider: "livekit" }, { room_name: "b", provider: "livekit" }, { room_name: "c", provider: "livekit" }, { room_name: "d", provider: "outro" }],
+    adapterFor: (p) => (p === "livekit" ? { closeRoom: async ({ roomName }) => { if (roomName === "b") throw new Error("rede"); fechadas.push(roomName); return roomName !== "c"; } } : null),
+    closeUsage: async (room) => usos.push(room),
+  });
+  assert.deepEqual(r, { ok: true, total: 4, closed: 1, failed: 3 });
+  assert.deepEqual(fechadas, ["a", "c"]); assert.deepEqual(usos, ["a"]);
+  assert.deepEqual(await sweepRooms({ rooms: async () => null, adapterFor: () => null, closeUsage: async () => {} }), { ok: true, total: 0, closed: 0, failed: 0 });
+});
+
+test("migração 0212: rotina só do servidor, segredo no cofre, a cada 5 minutos", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0212_video_fecha_sala_no_limite.sql", import.meta.url), "utf8");
+  assert.match(sql, /vault\.create_secret[\s\S]*video_cron_secret/);
+  assert.match(sql, /grant execute on function public\.video_cron_ok\(text\), public\.video_rooms_to_close\(\) to service_role/);
+  assert.match(sql, /revoke all on function public\.video_cron_ok\(text\), public\.video_rooms_to_close\(\) from public, anon, authenticated/);
+  assert.match(sql, /cron\.schedule\('video-sweep', '\*\/5 \* \* \* \*'/);
+  assert.match(sql, /x-video-cron-secret/);
+  const idx = readFileSync(new URL("../supabase/functions/video/index.ts", import.meta.url), "utf8");
+  assert.match(idx, /video_cron_ok/);
+});

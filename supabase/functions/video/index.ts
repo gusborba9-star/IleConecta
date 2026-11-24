@@ -3,7 +3,7 @@
 // Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos do provedor entram por ?hook=daily
 // e só valem com assinatura correta; só eles gravam consumo de minutos.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeLivekitEvent, verifyDailySignature, verifyLivekitWebhook } from "./core.js";
+import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeLivekitEvent, sweepRooms, verifyDailySignature, verifyLivekitWebhook } from "./core.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +53,19 @@ Deno.serve(async (req) => {
       : await admin.rpc("video_record_usage", { p_room: n.room, p_session: n.session, p_user: n.userId, p_joined: iso(n.joinedAt), p_left: n.kind === "left" ? iso(n.at) : null });
     if (error) { console.error("video_hook_erro", error.message); return json(500, { error: "falha_ao_registrar" }); }
     return json(200, { ok: true });
+  }
+
+  // ---- rotina agendada: fecha salas vencidas (sem login: vale pelo segredo guardado no cofre) ----
+  const cron = req.headers.get("x-video-cron-secret");
+  if (cron) {
+    const { data: okCron } = await admin.rpc("video_cron_ok", { p_secret: cron });
+    if (okCron !== true) return json(401, { error: "nao_autorizado" });
+    const r = await sweepRooms({
+      rooms: async () => (await admin.rpc("video_rooms_to_close")).data ?? [],
+      adapterFor: (provider: string) => adapterFor(provider, fetch, keys),
+      closeUsage: async (room: string) => { await admin.rpc("video_close_room", { p_room: room }); },
+    });
+    return json(200, r as unknown as Record<string, unknown>);
   }
 
   // ---- ações da pessoa logada ----
