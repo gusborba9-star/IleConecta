@@ -1,0 +1,37 @@
+name: Ativar gancho de cadastro (manual)
+
+# Liga, na autenticação do Supabase, o gancho "antes de criar usuário" que aplica o limite de cadastros por rede (migração 0199).
+# Só roda quando alguém clicar em "Run workflow", só na main, e só mexe nesses dois campos da configuração de autenticação.
+# Usa o mesmo segredo SUPABASE_ACCESS_TOKEN da publicação das funções. O token nunca é impresso.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_REF: filsjhnfrpnqukedlkhf
+  HOOK_URI: pg-functions://postgres/public/hook_before_user_created
+
+jobs:
+  enable:
+    name: Ligar o gancho antes de criar usuário
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Ligar e conferir
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          API="https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth"
+          show() { jq -c '{enabled: .hook_before_user_created_enabled, uri: .hook_before_user_created_uri}'; }
+          echo "Antes:"
+          curl -fsS -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" "$API" | show
+          curl -fsS -X PATCH -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" -H "Content-Type: application/json" \
+            -d "{\"hook_before_user_created_enabled\": true, \"hook_before_user_created_uri\": \"${HOOK_URI}\"}" "$API" > /dev/null
+          echo "Depois:"
+          curl -fsS -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" "$API" | show | tee /tmp/after.json
+          jq -e --arg u "$HOOK_URI" '.enabled == true and .uri == $u' /tmp/after.json > /dev/null
