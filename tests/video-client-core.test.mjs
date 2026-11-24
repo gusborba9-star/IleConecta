@@ -76,3 +76,13 @@ test("LiveKit: só servidor wss da LiveKit Cloud; nunca vai para iframe", async 
   assert.equal(livekitServerUrl("javascript:1"), null);
   assert.equal(embedUrl("livekit", "https://x.livekit.cloud/r", "T"), null);
 });
+
+test("validateSchedule: reunião com pessoas escolhidas exige de 1 a 99 e dispensa o limite de lotação", () => {
+  const base = { kind: "reuniao", title: "Gira", startsAtIso: new Date(Date.now() + 3600_000).toISOString(), duration: 60, max: "xx" };
+  assert.equal(validateSchedule({ ...base, audience: "escolher", invitees: [] }), "Escolha pelo menos uma pessoa para convidar.");
+  assert.equal(validateSchedule({ ...base, audience: "escolher", invitees: ["a", "a"] }), null);
+  assert.equal(validateSchedule({ ...base, audience: "escolher", invitees: Array.from({ length: 100 }, (_, i) => `u${i}`) }), "Escolha até 99 pessoas.");
+  assert.equal(validateSchedule({ ...base, audience: "todos" }), "A reunião comporta de 2 a 100 pessoas.");
+  assert.equal(validateSchedule({ ...base, max: 50 }), null);
+  assert.equal(validateSchedule({ kind: "consulta", title: "x", startsAtIso: base.startsAtIso, duration: 30, orderId: "o", audience: "escolher", invitees: [] }), null);
+});
