@@ -323,7 +323,7 @@ export const INFO_PAGES: InfoPage[] = [
           "Cadastro: nome, e-mail, cidade e estado, e o tipo de conta (cliente ou casa).",
           "Conteúdo: fotos, publicações, comentários e mensagens.",
           "Uso do sistema: ações dentro da plataforma, como reservas e conversas com a assistente.",
-          "Registros de acesso: endereço IP, data e hora em que a sua conta acessa a plataforma. Guardamos por 6 meses, por obrigação legal (LGPD, art. 7º, II, e Marco Civil da Internet, art. 15), e depois apagamos automaticamente.",
+          "Registros de acesso: endereço IP, data e hora em que a sua conta acessa a plataforma. Guardamos por 6 meses, por obrigação legal (LGPD, art. 7º, II, e Marco Civil da Internet, art. 15), e depois apagamos automaticamente. Também usamos esses registros, junto com o código técnico do dispositivo, para prevenir fraudes, abusos e a criação de várias contas para repetir benefícios (legítimo interesse, LGPD, art. 7º, IX). O IP, sozinho, nunca é motivo de bloqueio, porque várias pessoas podem compartilhar a mesma rede.",
           "Registros de segurança e dispositivos: para proteger a sua conta contra acessos não autorizados e prevenir fraudes, guardamos um identificador técnico anônimo do dispositivo (um código gerado sem dados do seu aparelho), a identificação genérica do sistema e do navegador, e a data e hora do acesso. Esses registros ficam por até 12 meses sem uso do dispositivo, e os alertas de segurança enviados a você ficam por 24 meses, com base no nosso legítimo interesse de segurança (LGPD, art. 7º, IX) e no dever de adotar medidas de segurança (LGPD, art. 46).",
           "Documento do responsável pela casa (CPF ou CNPJ), informado ao contratar plano ou recursos pagos.",
         ],

@@ -23,6 +23,11 @@ test("Política: registros de segurança e dispositivos com prazos de 12 e 24 me
 });
 
 test("a versão dos textos subiu junto com a mudança", () => {
-  assert.equal(LEGAL_VERSION, "2026-11-rascunho-13");
+  assert.equal(LEGAL_VERSION, "2026-11-rascunho-14");
   assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
+});
+
+test("Política: o IP também serve para prevenir fraude, junto com o aparelho, e nunca bloqueia sozinho", () => {
+  assert.match(txt, /junto com o código técnico do dispositivo, para prevenir fraudes, abusos e a criação de várias contas/);
+  assert.match(txt, /O IP, sozinho, nunca é motivo de bloqueio/);
 });
