@@ -97,3 +97,46 @@ export async function fetchSharedEmailAccounts(): Promise<SharedEmailAccount[]> 
     })),
   }));
 }
+
+export interface SamePersonOther {
+  nome: string;
+  tipo: string;
+  desde: string | null;
+  sinais: ("aparelho" | "rede")[];
+  nivel: "forte" | "fraco";
+  reembolsoUsado: boolean;
+}
+export interface SamePersonSignal {
+  userId: string;
+  accountType: string;
+  name: string;
+  emailMasked: string;
+  joinedAt: string;
+  nivel: "forte" | "fraco";
+  others: SamePersonOther[];
+  refundUsed: boolean;
+}
+
+/** Contas que parecem ser da mesma pessoa (mesmo aparelho, ou mesma rede com contas criadas em datas próximas). Só leitura; o IP nunca é exibido. */
+export async function fetchSamePersonSignals(): Promise<SamePersonSignal[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("admin_same_person_signals");
+  if (error) return [];
+  return ((data as Record<string, unknown>[] | null) ?? []).map((r) => ({
+    userId: String(r.user_id),
+    accountType: String(r.account_type ?? ""),
+    name: String(r.display_name ?? ""),
+    emailMasked: String(r.email_masked ?? ""),
+    joinedAt: String(r.joined_at ?? ""),
+    nivel: r.nivel === "forte" ? "forte" : "fraco",
+    refundUsed: r.refund_used === true,
+    others: (Array.isArray(r.others) ? (r.others as Record<string, unknown>[]) : []).map((o) => ({
+      nome: String(o.nome ?? ""),
+      tipo: String(o.tipo ?? ""),
+      desde: o.desde ? String(o.desde) : null,
+      sinais: (Array.isArray(o.sinais) ? (o.sinais as unknown[]) : []).map((x) => (x === "aparelho" ? "aparelho" : "rede")),
+      nivel: o.nivel === "forte" ? "forte" : "fraco",
+      reembolsoUsado: o.reembolso_usado === true,
+    })),
+  }));
+}
