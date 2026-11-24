@@ -3,7 +3,7 @@
 // Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos dos provedores entram por ?hook=daily|whereby
 // e só valem com assinatura correta; só eles gravam consumo de minutos.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { adapterFor, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, verifyDailySignature, verifyWherebySignature } from "./core.js";
+import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, verifyDailySignature, verifyWherebySignature } from "./core.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -94,6 +94,19 @@ Deno.serve(async (req) => {
       console.error("video_join", (e as Error).message);
       return json(502, { ok: false, reason: "provedor_indisponivel" });
     }
+  }
+
+  if (body.action === "end") {
+    const r = await endMeeting(String(body.meeting_id ?? ""), {
+      endMeeting: async (id: string) => {
+        const { data, error } = await asUser.rpc("video_end", { p_meeting: id });
+        if (error) throw new Error(error.message);
+        return data;
+      },
+      adapterFor: (provider: string) => adapterFor(provider, fetch, keys),
+      closeUsage: async (room: string) => { await admin.rpc("video_close_room", { p_room: room }); },
+    });
+    return json(r.ok ? 200 : 403, r as unknown as Record<string, unknown>);
   }
 
   // Cadastra o aviso de entrada/saída do Daily (uma vez, pela administração). A chave de assinatura fica guardada só no servidor.

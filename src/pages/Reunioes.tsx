@@ -98,7 +98,7 @@ function MeetingRow({ m, onCancel }: { m: UpcomingMeeting; onCancel: (m: Upcomin
         <Badge tone={m.kind === "consulta" ? "plum" : "primary"} className="mt-1">{KINDS[m.kind]}</Badge>
       </div>
       <div className="flex gap-2">
-        {m.isHost && <Button variant="outline" size="sm" onClick={() => onCancel(m)}>Cancelar</Button>}
+        {m.isHost && phase === "cedo" && <Button variant="outline" size="sm" onClick={() => onCancel(m)}>Cancelar</Button>}
         {phase === "aberta" ? <Link to={`/reunioes/${m.id}`} className="inline-flex h-10 items-center rounded-[14px] bg-primary px-4 text-sm font-semibold text-primary-foreground">Entrar</Link>
           : <span className="text-xs text-muted-foreground">{phase === "cedo" ? "Abre 10 min antes" : "Encerrada"}</span>}
       </div>
