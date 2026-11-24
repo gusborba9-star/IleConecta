@@ -3,7 +3,8 @@ import { Card } from "@/components/base";
 import { fetchSamePersonSignals, type SamePersonSignal } from "@/lib/returningAccounts";
 
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "—");
-const why = (s: ("aparelho" | "rede")[]) => s.map((x) => (x === "aparelho" ? "mesmo aparelho" : "mesma rede")).join(" e ");
+const WHY = { aparelho: "mesmo aparelho", rede: "mesma rede", documento: "mesmo CPF/CNPJ" } as const;
+const why = (s: ("aparelho" | "rede" | "documento")[]) => s.map((x) => WHY[x]).join(" e ");
 
 /** Sinais de contas que podem ser da mesma pessoa. Só leitura: nenhum bloqueio é automático e o IP nunca aparece aqui. */
 export default function SamePersonSignalsCard() {
@@ -16,7 +17,7 @@ export default function SamePersonSignalsCard() {
     <Card className="p-5 space-y-3">
       <h2 className="font-display font-bold text-lg">Contas que podem ser da mesma pessoa</h2>
       <p className="text-xs text-muted-foreground">
-        Cruzamos o aparelho e a rede de acesso. Sinal forte: mesmo aparelho, ou mesma rede com contas criadas em até 14 dias. Sinal fraco: só a mesma rede. Rede de operadora e Wi-Fi compartilhado (como o de uma casa ou faculdade) geram falsos alarmes, por isso nada é bloqueado
+        Cruzamos o aparelho, a rede de acesso e o CPF/CNPJ informado ao contratar plano (o número nunca aparece aqui). Sinal forte: mesmo aparelho, mesmo CPF/CNPJ, ou mesma rede com contas criadas em até 14 dias. Sinal fraco: só a mesma rede. Uma pessoa pode ter, de forma legítima, mais de uma Casa. Rede de operadora e Wi-Fi compartilhado (como o de uma casa ou faculdade) geram falsos alarmes, por isso nada é bloqueado
         automaticamente: use como pista, junto com o histórico de pagamentos e reembolsos, e decida caso a caso.
       </p>
       {rows === null && <p className="text-sm text-muted-foreground">Carregando…</p>}
