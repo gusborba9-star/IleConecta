@@ -37,6 +37,9 @@ export function translateAuthError(message: string | undefined): string {
   if (m.includes("invalid login credentials")) return "E-mail ou senha inválidos.";
   if (m.includes("email not confirmed")) return "Confirme seu e-mail antes de entrar. Enviamos um link para você.";
   if (m.includes("already registered") || m.includes("already been registered")) return "Já existe uma conta com esse e-mail.";
+  if (m.includes("different from the old password") || m.includes("same_password")) {
+    return "A nova senha precisa ser diferente da senha atual. Escolha outra.";
+  }
   if (m.includes("password") && (m.includes("least") || m.includes("weak") || m.includes("short"))) {
     return `A senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
   }
