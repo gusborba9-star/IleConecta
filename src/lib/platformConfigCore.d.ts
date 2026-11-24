@@ -2,7 +2,7 @@ import type { PlanMatrix } from "@/lib/planMatrixCore";
 export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews" | "calendar";
 export type ScopeKey = "cidade" | "estado" | "pais" | "exterior";
 /** Planos com mensalidade (cobrança e tabela de preços): base = Essencial. */
-export type PlanId = "base" | "intermediario" | "maximo";
+export type PlanId = "base" | "intermediario" | "maximo" | "plus";
 /** Plano da casa: inclui o Grátis (sem mensalidade nem preço). */
 export type HousePlanId = "gratis" | PlanId;
 export type FeatureState = "off" | "beta" | "on";
@@ -37,3 +37,6 @@ export declare const DEFAULT_CONFIG: PlatformConfig;
 export declare function sanitizeConfig(raw: unknown): PlatformConfig;
 export declare function isFeatureOn(config: PlatformConfig, key: FeatureKey, ownerId?: string): boolean;
 export declare function availableScopes(config: PlatformConfig, kind: "boost" | "highlight"): ScopeKey[];
+
+export declare function sellablePlanIds(config: PlatformConfig | null | undefined): PlanId[];
+export declare function visiblePlanIds(config: PlatformConfig | null | undefined, current?: HousePlanId | null): HousePlanId[];

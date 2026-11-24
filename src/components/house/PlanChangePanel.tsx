@@ -34,7 +34,7 @@ export default function PlanChangePanel({ status, target, onClose, onChanged }: 
     if (error) { setBusy(null); toast.error(error); }
   };
   const schedule = async () => {
-    if (target === "maximo") return;
+    if (target === "plus") return;
     setBusy("agendar");
     const r = await schedulePlanDowngrade(target);
     setBusy(null);

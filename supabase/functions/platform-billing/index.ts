@@ -126,14 +126,14 @@ Deno.serve(async (req) => {
     }
     if (input.action === "reactivate") {
       const method = input.method === "pix" || input.method === "card" ? input.method : null;
-      const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" ? input.plan : null;
+      const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" || input.plan === "plus" ? input.plan : null;
       if (input.plan != null && plan === null) return fail("Escolha um plano válido.");
       const r = await core.reactivate({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });
       return json({ url: r.url });
     }
     if (input.action === "subscribe" || input.action === "upgrade") {
       const method = input.method === "pix" || input.method === "card" ? input.method : null;
-      const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" ? input.plan : null;
+      const plan = input.plan === "base" || input.plan === "intermediario" || input.plan === "maximo" || input.plan === "plus" ? input.plan : null;
       if (plan === null) return fail("Escolha um plano válido.");
       const fn = input.action === "subscribe" ? core.subscribe : core.upgrade;
       const r = await fn({ registry, store, userId: user.id, plan, method, email: user.email, appUrl: APP_URL });

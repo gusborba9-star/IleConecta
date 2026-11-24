@@ -12,7 +12,7 @@ export interface PlanInfo {
 }
 
 // Textos, limites e ferramentas de cada plano ficam na matriz central (platform_settings.plan_matrix, editável no painel admin).
-export const PLANS: PlanInfo[] = [{ id: "base" }, { id: "intermediario" }, { id: "maximo" }];
+export const PLANS: PlanInfo[] = [{ id: "base" }, { id: "intermediario" }, { id: "maximo" }, { id: "plus" }];
 
 export function formatMoney(value: Money): string {
   return value === null ? "A definir" : value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

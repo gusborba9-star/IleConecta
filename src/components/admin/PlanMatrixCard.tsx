@@ -25,6 +25,8 @@ export default function PlanMatrixCard() {
   useEffect(() => { setDraft(clone(saved)); }, [saved]);
 
   const changed = JSON.stringify(draft) !== JSON.stringify(saved);
+  // o vídeo é exclusivo do Plus (o banco também recusa minutos em outro plano)
+  const videoOk = PLAN_IDS.every((id) => id === "plus" || draft.caps[id].video_minutes_month === 0);
   const textsOk = PLAN_IDS.every((id) => draft.copy[id].tagline.trim() && draft.copy[id].benefits.every((b) => b.text.trim()));
 
   const setNum = (plan: PlanId, key: CapNumberKey, raw: string) => {
@@ -37,7 +39,7 @@ export default function PlanMatrixCard() {
   const setCopy = (plan: PlanId, fn: (c: PlanMatrix["copy"][PlanId]) => PlanMatrix["copy"][PlanId]) => setDraft((d) => ({ ...d, copy: { ...d.copy, [plan]: fn(d.copy[plan]) } }));
 
   const save = async () => {
-    if (!supabase || !changed || !textsOk) return;
+    if (!supabase || !changed || !textsOk || !videoOk) return;
     const yes = await confirm({ title: "Salvar a matriz de planos?", message: "Limites, ferramentas e textos mudam na hora para todas as casas.", confirmLabel: "Salvar" });
     if (!yes) return;
     setSaving(true);
@@ -103,8 +105,9 @@ export default function PlanMatrixCard() {
         </details>
       ))}
       {!textsOk && <p className="text-sm text-destructive">Preencha a frase e o texto de todos os itens (ou remova os vazios).</p>}
+      {!videoOk && <p className="text-sm text-destructive">Os minutos de vídeo só podem ser maiores que zero no plano Plus.</p>}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={save} disabled={saving || !changed || !textsOk}>{saving ? "Salvando…" : "Salvar planos"}</Button>
+        <Button onClick={save} disabled={saving || !changed || !textsOk || !videoOk}>{saving ? "Salvando…" : "Salvar planos"}</Button>
         <Button variant="ghost" onClick={() => setDraft(clone(saved))} disabled={!changed || saving}>Desfazer</Button>
       </div>
     </Card>

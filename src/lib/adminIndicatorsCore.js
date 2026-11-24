@@ -86,7 +86,7 @@ export const INDICATORS = {
     definition: "Casos de suporte que ainda não foram resolvidos nem recusados (de todo o tempo).", source: "Casos de suporte." },
 };
 export const GROUPS = ["Crescimento", "Negócio das casas", "Receita da plataforma", "Reembolsos e disputas", "Atendimento", "IA e uso", "Base de hoje"];
-export const PLAN_LABELS = { gratis: "Grátis", base: "Essencial", intermediario: "Profissional", maximo: "Premium" };
+export const PLAN_LABELS = { gratis: "Grátis", base: "Essencial", intermediario: "Profissional", maximo: "Premium", plus: "Plus" };
 
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const rawNum = (v) => (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : num(v));
