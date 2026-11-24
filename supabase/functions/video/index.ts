@@ -73,6 +73,14 @@ Deno.serve(async (req) => {
           if (error) throw new Error(error.message);
           return data;
         },
+        // minutos só podem ser medidos se o aviso do provedor estiver ligado (Daily: chave gravada ao cadastrar; Whereby: segredo do aviso)
+        meteringReady: async (provider: string) => {
+          if (provider === "daily") {
+            const { data } = await admin.from("app_secrets").select("key").eq("key", "daily_webhook_hmac").maybeSingle();
+            return Boolean(data) || Boolean(Deno.env.get("DAILY_WEBHOOK_HMAC"));
+          }
+          return provider === "whereby" && Boolean(Deno.env.get("WHEREBY_WEBHOOK_SECRET"));
+        },
         roomGet: async (id: string) => (await admin.rpc("video_room_get", { p_meeting: id })).data,
         roomSet: async (id: string, ref: string, u: string, host: string | null) => {
           const { data, error } = await admin.rpc("video_set_room", { p_meeting: id, p_ref: ref, p_url: u, p_host_url: host });
@@ -93,13 +101,21 @@ Deno.serve(async (req) => {
     const { data: can } = await asUser.rpc("admin_can", { p_module: "dono" });
     if (!can) return json(403, { error: "sem_permissao" });
     if (!keys.daily) return json(503, { error: "daily_sem_chave" });
+    // apaga avisos antigos que apontam para esta função (cadastrar de novo troca a chave de assinatura; o aviso velho passaria a falhar)
+    const target = `${url}/functions/v1/video?hook=daily`;
+    try {
+      const old = await fetch("https://api.daily.co/v1/webhooks", { headers: { Authorization: `Bearer ${keys.daily}` } });
+      const list = (await old.json().catch(() => [])) as unknown;
+      const rows = (Array.isArray(list) ? list : (list as { data?: unknown[] })?.data ?? []) as { uuid?: string; url?: string }[];
+      for (const w of rows) if (w?.uuid && w.url === target) await fetch(`https://api.daily.co/v1/webhooks/${encodeURIComponent(w.uuid)}`, { method: "DELETE", headers: { Authorization: `Bearer ${keys.daily}` } });
+    } catch (e) { console.error("video_setup_webhook_limpeza", (e as Error).message); }
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     const hmac = btoa(String.fromCharCode(...bytes));
     const { error: se } = await admin.from("app_secrets").upsert({ key: "daily_webhook_hmac", value: hmac });
     if (se) return json(500, { error: "falha_ao_guardar" });
     const res = await fetch("https://api.daily.co/v1/webhooks", {
       method: "POST", headers: { Authorization: `Bearer ${keys.daily}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ url: `${url}/functions/v1/video?hook=daily`, eventTypes: ["participant.joined", "participant.left", "meeting.ended"], hmac, retryType: "exponential" }),
+      body: JSON.stringify({ url: target, eventTypes: ["participant.joined", "participant.left", "meeting.ended"], hmac, retryType: "exponential" }),
     });
     const out = await res.json().catch(() => ({}));
     if (!res.ok) { console.error("video_setup_webhook", res.status, JSON.stringify(out).slice(0, 300)); return json(502, { error: "daily_recusou", status: res.status }); }
