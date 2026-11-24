@@ -147,6 +147,18 @@ export async function remoteRegister(input: RegisterInput): Promise<AuthResult> 
   return { ok: true, user };
 }
 
+/** Reenvia o e-mail de confirmação do cadastro (a resposta é sempre neutra, não revela se o e-mail existe). */
+export async function remoteResendConfirmation(email: string): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: "Servidor indisponível." };
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: email.trim().toLowerCase(),
+    options: { emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined },
+  });
+  if (error) return { ok: false, error: translateAuthError(error.message) };
+  return { ok: true };
+}
+
 export async function remoteLogout(): Promise<void> {
   if (supabase) await supabase.auth.signOut();
 }

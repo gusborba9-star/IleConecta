@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { CalendarClock, Video } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Progress } from "@/components/base";
@@ -31,14 +31,14 @@ function Bank({ bank }: { bank: VideoBank }) {
   );
 }
 
-function ScheduleForm({ houseId, onDone }: { houseId: string; onDone: () => void }) {
-  const [kind, setKind] = useState<VideoKind>("reuniao");
+function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDone: () => void; presetOrder?: string }) {
+  const [kind, setKind] = useState<VideoKind>(presetOrder ? "consulta" : "reuniao");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("60");
   const [max, setMax] = useState("50");
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(presetOrder ?? "");
   const [orders, setOrders] = useState<{ id: string; title: string; clientName: string }[]>([]);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (kind === "consulta") void fetchConsultOrders(houseId).then(setOrders); }, [kind, houseId]);
@@ -74,7 +74,7 @@ function ScheduleForm({ houseId, onDone }: { houseId: string; onDone: () => void
             <option value="">Escolha…</option>
             {orders.map((o) => <option key={o.id} value={o.id}>{o.clientName} — {o.title}</option>)}
           </select>
-          {orders.length === 0 && <p className="mt-1 text-xs text-muted-foreground">Não há pedidos em andamento. A consulta é sempre ligada a um pedido.</p>}
+          {orders.length === 0 && <p className="mt-1 text-xs text-muted-foreground">Não há pedidos pagos em andamento. A consulta é sempre ligada a um pedido já pago.</p>}
         </div>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -110,6 +110,8 @@ function MeetingRow({ m, onCancel }: { m: UpcomingMeeting; onCancel: (m: Upcomin
 export default function Reunioes() {
   const { currentUser, isRemoteAuth } = useApp();
   const confirm = useConfirm();
+  const [params] = useSearchParams();
+  const presetOrder = /^[0-9a-f-]{36}$/i.test(params.get("pedido") ?? "") ? (params.get("pedido") as string) : undefined;
   const isHouse = currentUser?.type === "commercial";
   const [list, setList] = useState<UpcomingMeeting[] | null>(null);
   const [houseId, setHouseId] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export default function Reunioes() {
       </Card>
       {isHouse && bank && bank.enabled && <Bank bank={bank} />}
       {isHouse && bank && !bank.enabled && <Card className="p-5 text-sm text-muted-foreground">O vídeo ainda não está liberado para a sua casa.</Card>}
-      {canSchedule && houseId && <ScheduleForm houseId={houseId} onDone={() => void reload()} />}
+      {canSchedule && houseId && <ScheduleForm houseId={houseId} presetOrder={presetOrder} onDone={() => void reload()} />}
       <Card className="space-y-1 p-5">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold"><CalendarClock className="h-5 w-5 text-primary" aria-hidden />Próximas reuniões</h2>
         {list === null ? <p className="text-sm text-muted-foreground">Carregando…</p>
