@@ -135,3 +135,26 @@ test("dona com a sala aberta não vê Cancelar (só entra e encerra pela sala)",
   await expect(page.getByRole("link", { name: "Entrar" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toHaveCount(0);
 });
+
+test("sala em tela cheia: barra com sair, horário de término e Encerrar só para a dona", async ({ page }) => {
+  const fn = (host) => ({ video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: host, title: "Encontro de membros", kind: "reuniao", ends_at: "2026-12-01T18:30:00.000Z" } });
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  await setup(page, "casa", { fn: fn(true) });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-room")).toBeVisible();
+  await expect(page.getByTestId("video-end")).toBeVisible();
+  await expect(page.getByText(/Termina às/)).toBeVisible();
+  const box = await page.getByTestId("video-frame").boundingBox();
+  const vp = page.viewportSize();
+  expect(box.width).toBeGreaterThanOrEqual(vp.width - 1);
+  expect(box.height).toBeGreaterThan(vp.height * 0.7);
+  await noHScroll(page);
+});
+
+test("sala: quem não é dona não vê Encerrar", async ({ page }) => {
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "x", kind: "reuniao" } } });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-frame")).toBeVisible();
+  await expect(page.getByTestId("video-end")).toHaveCount(0);
+});

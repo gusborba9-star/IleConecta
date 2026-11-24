@@ -226,5 +226,13 @@ test("encerrar reunião: banco só deixa a dona, só com a sala aberta, e cancel
   assert.match(ts, /body\.action === "end"/);
   assert.match(ts, /asUser\.rpc\("video_end"/);
   const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
-  assert.match(sala, /st\.host &&/);
+  assert.match(sala, /st\.s === "pronta" && st\.host/);
+});
+
+test("sala do Daily nasce em português do Brasil", async () => {
+  let body;
+  const f = async (u, o) => { if (String(u).endsWith("/rooms")) body = JSON.parse(o.body); return res(200, { url: "https://x.daily.co/ic-a" }); };
+  await dailyAdapter(f, "k", "https://d.test").ensureRoom({ roomName: "ic-a", startsAt: START, durationMin: 30, maxParticipants: 5 });
+  assert.equal(body.properties.lang, "pt-BR");
+  assert.equal(body.privacy, "private");
 });
