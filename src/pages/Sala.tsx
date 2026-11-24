@@ -5,16 +5,19 @@ import { Button } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/base/Confirm";
-import { endMeetingNow, joinMeeting, type JoinResult } from "@/lib/video";
+import { LEGAL_VERSION } from "@/lib/legalCore";
+import { ackMeeting, endMeetingNow, joinMeeting, type JoinResult } from "@/lib/video";
 import { embedUrl, joinReasonText } from "@/lib/videoCore";
 
-type State = { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; src: string; title: string; host: boolean; endsAt?: string };
+type State = { s: "aviso" } | { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; src: string; title: string; host: boolean; endsAt?: string };
 
 /** Sala de vídeo: o servidor confere o acesso e devolve o endereço da sala; só endereços dos dois provedores entram no quadro. */
 export default function Sala() {
   const { id = "" } = useParams();
   const { currentUser, isRemoteAuth } = useApp();
-  const [st, setSt] = useState<State>({ s: "carregando" });
+  const [st, setSt] = useState<State>({ s: "aviso" });
+  const [accepted, setAccepted] = useState(false);
+  const [acking, setAcking] = useState(false);
   const [tick, setTick] = useState(0);
   const [ending, setEnding] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +31,15 @@ export default function Sala() {
     toast.success(r.roomClosed ? "Reunião encerrada." : "Reunião encerrada. A sala fecha por completo em instantes.");
     navigate("/reunioes");
   };
+  const accept = async () => {
+    setAcking(true);
+    const ok = await ackMeeting(id, LEGAL_VERSION);
+    setAcking(false);
+    if (!ok) return void toast.error("Não consegui registrar o aceite. Tente de novo.");
+    setAccepted(true);
+  };
   useEffect(() => {
+    if (!accepted) return;
     let alive = true;
     setSt({ s: "carregando" });
     void joinMeeting(id).then((r: JoinResult) => {
@@ -38,7 +49,7 @@ export default function Sala() {
       setSt(src ? { s: "pronta", src, title: r.title ?? "Reunião", host: r.isHost === true, endsAt: r.endsAt } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
     });
     return () => { alive = false; };
-  }, [id, tick]);
+  }, [id, tick, accepted]);
   if (!currentUser || !isRemoteAuth) return <Navigate to="/" replace />;
   const fim = st.s === "pronta" && st.endsAt && Number.isFinite(Date.parse(st.endsAt)) ? new Date(st.endsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
   return (
@@ -57,6 +68,16 @@ export default function Sala() {
           : <span className="w-11 shrink-0" aria-hidden />}
       </header>
       <main className="min-h-0 flex-1">
+        {st.s === "aviso" && (
+          <div className="mx-auto mt-6 max-w-md space-y-4 px-4" data-testid="video-aviso">
+            <div className="space-y-3 rounded-2xl border border-border bg-card p-5">
+              <h2 className="font-display text-lg font-bold">Antes de entrar</h2>
+              <p className="text-sm leading-relaxed">Esta chamada não é gravada pela plataforma. Ao entrar, você concorda com o tratamento dos seus dados para a realização deste encontro e se compromete a não gravar nem compartilhar imagens ou áudios sem a autorização de todos os participantes.</p>
+              <p className="text-xs text-muted-foreground">Veja a <a href="/sobre/privacidade-lgpd" target="_blank" rel="noopener noreferrer" className="text-primary underline">Política de Privacidade (abre em outra aba)</a>.</p>
+              <Button className="min-h-12 w-full" onClick={() => void accept()} disabled={acking} data-testid="video-aceitar">{acking ? "Registrando…" : "Concordo e entrar na sala"}</Button>
+            </div>
+          </div>
+        )}
         {st.s === "carregando" && <p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}
         {st.s === "negado" && (
           <div className="m-4 space-y-3 rounded-2xl border border-border bg-card p-5" role="alert">

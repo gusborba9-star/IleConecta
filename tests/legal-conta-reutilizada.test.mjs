@@ -23,7 +23,7 @@ test("Política: registros de segurança e dispositivos com prazos de 12 e 24 me
 });
 
 test("a versão dos textos subiu junto com a mudança", () => {
-  assert.equal(LEGAL_VERSION, "2026-11-rascunho-18");
+  assert.equal(LEGAL_VERSION, "2026-11-rascunho-19");
   assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
 });
 

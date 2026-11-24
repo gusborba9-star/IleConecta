@@ -1,9 +1,9 @@
 // Textos de aceite versionados. Rascunho: precisa de revisão jurídica antes de os pagamentos serem ligados.
 // Ao mudar qualquer texto, mude também LEGAL_VERSION: cada aceite do usuário guarda a versão que ele viu.
-export const LEGAL_VERSION = "2026-11-rascunho-18";
+export const LEGAL_VERSION = "2026-11-rascunho-19";
 
 /** Versões em ordem. Uma versão fora desta lista conta como antiga. */
-export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18"];
+export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18", "2026-11-rascunho-19"];
 
 /**
  * Versão mínima que cada documento exige na tela de aceite. Regra do aceite único (decisão do proprietário, validada pelo advogado em
@@ -24,7 +24,7 @@ export const CONSENT_DOCS = {
   },
   dados_sensiveis: {
     text:
-      "Autorizo, de forma livre, informada e inequívoca, o Ilê Conecta a tratar os dados e as informações que eu fornecer sobre minha convicção religiosa ou necessidades espirituais, somente para viabilizar a contratação, a realização e a comunicação dos serviços com as casas espirituais, conforme a Política de Privacidade.",
+      "Autorizo, de forma livre, informada e inequívoca, o Ilê Conecta a tratar os dados e as informações que eu fornecer sobre minha convicção religiosa ou necessidades espirituais, somente para viabilizar a contratação, a realização e a comunicação dos serviços com as casas espirituais, incluindo atendimentos e reuniões por áudio e vídeo, conforme a Política de Privacidade.",
     links: ["privacidade-lgpd"],
   },
   termos_casa: {
