@@ -8,6 +8,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Gift, User, Store } from "lucide-react";
 import { LogoMark } from "@/components/brand/Logo";
 import { toast } from "sonner";
+import { remoteResendConfirmation } from "@/lib/remoteAuth";
 import Footer from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import type { AccountType } from "@/types";
@@ -17,6 +18,7 @@ export default function Register() {
   const { register, isRemoteAuth } = useApp();
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
   const nav = useNavigate();
   const [search] = useSearchParams();
   const [type, setType] = useState<AccountType>(search.get("tipo") === "casa" ? "commercial" : "personal");
@@ -40,6 +42,24 @@ export default function Register() {
     country: "Brasil",
     category: "",
   });
+
+  // contagem regressiva do "Reenviar e-mail" (evita cliques repetidos e respeita o limite do servidor)
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+  useEffect(() => {
+    if (pendingEmail) setCooldown(60);
+  }, [pendingEmail]);
+
+  const resend = async () => {
+    if (!pendingEmail || cooldown > 0) return;
+    setCooldown(60);
+    const r = await remoteResendConfirmation(pendingEmail);
+    if (r.ok) toast.success("Reenviamos o e-mail. Veja também a caixa de spam.");
+    else toast.error(r.error ?? "Não foi possível reenviar agora.");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +90,13 @@ export default function Register() {
             Enviamos um link para <strong>{pendingEmail}</strong>. Abra o e-mail, confirme e volte para entrar.
           </p>
           <Link to="/login" className="text-primary font-semibold hover:underline text-sm">Ir para o login</Link>
+          {isRemoteAuth && (
+            <div>
+              <button type="button" onClick={resend} disabled={cooldown > 0} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 disabled:no-underline disabled:opacity-60">
+                {cooldown > 0 ? `Não chegou? Reenviar em ${cooldown}s` : "Não chegou? Reenviar e-mail"}
+              </button>
+            </div>
+          )}
         </Card>
       </main>
     );
