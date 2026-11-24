@@ -45,7 +45,7 @@ export default function AccountTools() {
   return (
     <Card className="p-6 space-y-3">
       <h2 className="font-display font-bold text-lg">Minha conta e meus dados</h2>
-      {st.suspensa && <p role="alert" className="text-sm text-destructive">Sua conta está suspensa. Abra um chamado do tipo “Acesso à conta” para entender o motivo.</p>}
+      {st.suspensa && <p role="alert" className="text-sm text-destructive">Sua conta foi suspensa por violação aos nossos Termos de Uso. Por motivos de segurança, não detalhamos os critérios internos que motivaram o bloqueio. Se achar que foi um engano, abra um chamado do tipo “Acesso à conta”.</p>}
       <div>
         <Button variant="outline" onClick={() => void download()} disabled={busy}>Baixar meus dados</Button>
         <p className="text-xs text-muted-foreground mt-1">Um arquivo com o que a plataforma guarda sobre você.</p>
