@@ -102,7 +102,7 @@ export interface SamePersonOther {
   nome: string;
   tipo: string;
   desde: string | null;
-  sinais: ("aparelho" | "rede")[];
+  sinais: ("aparelho" | "rede" | "documento")[];
   nivel: "forte" | "fraco";
   reembolsoUsado: boolean;
 }
@@ -134,7 +134,7 @@ export async function fetchSamePersonSignals(): Promise<SamePersonSignal[]> {
       nome: String(o.nome ?? ""),
       tipo: String(o.tipo ?? ""),
       desde: o.desde ? String(o.desde) : null,
-      sinais: (Array.isArray(o.sinais) ? (o.sinais as unknown[]) : []).map((x) => (x === "aparelho" ? "aparelho" : "rede")),
+      sinais: (Array.isArray(o.sinais) ? (o.sinais as unknown[]) : []).map((x) => (x === "aparelho" ? "aparelho" : x === "documento" ? "documento" : "rede")),
       nivel: o.nivel === "forte" ? "forte" : "fraco",
       reembolsoUsado: o.reembolso_usado === true,
     })),

@@ -23,3 +23,18 @@ test("o IP nunca sai na resposta e o nível forte exige aparelho igual ou contas
 test("não coleta nada novo: só lê tabelas que já existem", () => {
   assert.doesNotMatch(sql, /create table|alter table|insert into/i);
 });
+
+const sql2 = readFileSync(new URL("../supabase/migrations/0198_sinal_mesmo_documento.sql", import.meta.url), "utf8");
+
+test("mesmo CPF/CNPJ é sinal forte, comparado por dentro da função, e o número nunca sai", () => {
+  assert.match(sql2, /'documento'::text/);
+  assert.match(sql2, /pr\.sinais && array\['aparelho','documento'\]/);
+  assert.match(sql2, /pgp_sym_decrypt\(t\.doc_enc, public\.tax_id_key\(\)\)/);
+  const saida = sql2.split("select s.me")[1];
+  assert.doesNotMatch(saida, /pgp_sym_decrypt|doc_enc|\bd\b ?,/);
+});
+
+test("a função continua restrita ao admin e não coleta nada novo", () => {
+  assert.match(sql2, /admin_can\('comunicacao'\)/);
+  assert.doesNotMatch(sql2, /create table|alter table|insert into/i);
+});
