@@ -84,6 +84,31 @@ test("sala Daily: quadro só com endereço do provedor e permissões de câmera 
   await expect(frame).toHaveAttribute("allow", /camera; microphone/);
 });
 
+test("sala LiveKit: tela própria com controles grandes em português, sem quadro de terceiros", async ({ page }) => {
+  await setup(page, "pessoa", { fn: { video: { ok: true, provider: "livekit", url: "wss://ile-teste.livekit.cloud", token: "a.b.c", is_host: false, title: "Encontro de membros", kind: "reuniao", ends_at: new Date(Date.now() + 3600000).toISOString() } } });
+  await page.routeWebSocket(/livekit\.cloud/, () => { /* conexão fica pendente: só conferimos a tela */ });
+  await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
+  await expect(page.getByTestId("video-livekit")).toBeVisible();
+  await expect(page.getByTestId("video-frame")).toHaveCount(0);
+  for (const id of ["lk-mic", "lk-cam", "lk-leave"]) {
+    await expect(page.getByTestId(id)).toBeVisible();
+    const b = await page.getByTestId(id).boundingBox();
+    expect(b.width).toBeGreaterThanOrEqual(44); expect(b.height).toBeGreaterThanOrEqual(44);
+  }
+  await expect(page.getByRole("toolbar", { name: "Controles da chamada" })).toBeVisible();
+  await expect(page.getByTestId("lk-tile").first()).toBeVisible();
+  await noHScroll(page);
+});
+
+test("sala LiveKit: servidor fora da LiveKit Cloud é recusado", async ({ page }) => {
+  await setup(page, "pessoa", { fn: { video: { ok: true, provider: "livekit", url: "wss://evil.example.com", token: "a.b.c", title: "x", kind: "reuniao" } } });
+  await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
+  await expect(page.getByRole("alert")).toContainText("não respondeu");
+  await expect(page.getByTestId("video-livekit")).toHaveCount(0);
+});
+
 test("sala: endereço de fora dos provedores é recusado e nada é embutido", async ({ page }) => {
   await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://evil.example.com/x", token: "T", title: "x", kind: "reuniao" } } });
   await page.goto(`/reunioes/${MID}`);

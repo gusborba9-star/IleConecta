@@ -65,3 +65,14 @@ test("configuração: valores inválidos voltam ao padrão seguro", () => {
   assert.deepEqual(readVideoConfig({ state: "beta", provider: "whereby", beta_houses: [id, id, "x", 3] }), { state: "beta", provider: "daily", beta_houses: [id] });
   assert.equal(readVideoConfig({ state: "hack" }).state, "off");
 });
+
+test("LiveKit: só servidor wss da LiveKit Cloud; nunca vai para iframe", async () => {
+  const { livekitServerUrl, VIDEO_PROVIDERS } = await import("../src/lib/videoCore.js");
+  assert.ok(VIDEO_PROVIDERS.includes("livekit"));
+  assert.equal(livekitServerUrl("wss://ile-abc.livekit.cloud"), "wss://ile-abc.livekit.cloud");
+  assert.equal(livekitServerUrl("wss://evil.com"), null);
+  assert.equal(livekitServerUrl("wss://livekit.cloud.evil.com"), null);
+  assert.equal(livekitServerUrl("https://x.livekit.cloud"), null);
+  assert.equal(livekitServerUrl("javascript:1"), null);
+  assert.equal(embedUrl("livekit", "https://x.livekit.cloud/r", "T"), null);
+});

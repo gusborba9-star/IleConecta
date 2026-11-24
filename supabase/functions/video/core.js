@@ -89,8 +89,91 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
   };
 }
 
+
+const b64url = (buf) => bytesToB64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const b64urlJson = (o) => b64url(te.encode(JSON.stringify(o)));
+const fromB64url = (t) => { const p = t.replace(/-/g, "+").replace(/_/g, "/"); return atob(p + "=".repeat((4 - (p.length % 4)) % 4)); };
+
+/** JWT HS256 assinado com o segredo da LiveKit (usado nas entradas, nas ordens ao servidor e na conferência dos avisos). */
+export async function signLivekitJwt(apiKey, apiSecret, claims) {
+  const head = b64urlJson({ alg: "HS256", typ: "JWT" });
+  const payload = b64urlJson({ iss: apiKey, ...claims });
+  const sig = b64url(await hmac(te.encode(apiSecret), `${head}.${payload}`));
+  return `${head}.${payload}.${sig}`;
+}
+
+/** LiveKit: o aviso traz no cabeçalho Authorization um JWT assinado com a mesma chave/segredo, com o sha256 (base64) do corpo. */
+export async function verifyLivekitWebhook({ apiKey, apiSecret, authorization, rawBody, nowMs = Date.now() }) {
+  try {
+    if (!apiKey || !apiSecret || !authorization || typeof rawBody !== "string") return false;
+    const token = authorization.replace(/^Bearer\s+/i, "").trim();
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const expected = b64url(await hmac(te.encode(apiSecret), `${parts[0]}.${parts[1]}`));
+    if (!safeEqual(expected, parts[2])) return false;
+    const head = JSON.parse(fromB64url(parts[0]));
+    if (head.alg !== "HS256") return false;
+    const c = JSON.parse(fromB64url(parts[1]));
+    if (c.iss !== apiKey) return false;
+    const nowS = nowMs / 1000;
+    if (typeof c.exp === "number" && nowS > c.exp + 60) return false;
+    if (typeof c.nbf === "number" && nowS < c.nbf - 60) return false;
+    const digest = bytesToB64(await crypto.subtle.digest("SHA-256", te.encode(rawBody)));
+    return safeEqual(digest, String(c.sha256 ?? ""));
+  } catch { return false; }
+}
+
+/** LiveKit: sala por reunião; quem entra recebe um token curto (identidade = id da pessoa). A tela é nossa (não há iframe). */
+export function livekitAdapter(fetchImpl, { url, apiKey, apiSecret }) {
+  const host = String(url ?? "").replace(/^wss:/i, "https:").replace(/^ws:/i, "http:").replace(/\/+$/, "");
+  const wss = host.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:");
+  const admin = (room) => signLivekitJwt(apiKey, apiSecret, { sub: "ile-conecta", nbf: sec(Date.now()) - 10, exp: sec(Date.now()) + 300, video: { roomCreate: true, roomAdmin: true, roomList: true, room } });
+  const twirp = async (method, body, room) => fetchImpl(`${host}/twirp/livekit.RoomService/${method}`, { method: "POST", headers: { Authorization: `Bearer ${await admin(room)}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return {
+    name: "livekit",
+    async ensureRoom({ roomName, startsAt, durationMin, maxParticipants }) {
+      const w = roomWindow(startsAt, durationMin);
+      const res = await twirp("CreateRoom", { name: roomName, max_participants: Math.min(Math.max(Number(maxParticipants) || 2, 2), 100), empty_timeout: 600, departure_timeout: 20 }, roomName);
+      if (!res.ok) throw new Error("provedor_indisponivel");
+      void w;
+      return { ref: roomName, url: wss, hostUrl: null };
+    },
+    async accessFor({ room, roomName, userId, displayName, isHost, startsAt, durationMin }) {
+      const w = roomWindow(startsAt, durationMin);
+      const now = Date.now();
+      const exp = sec(Math.max(w.closes, now + 5 * 60_000));
+      const token = await signLivekitJwt(apiKey, apiSecret, {
+        sub: String(userId ?? "").slice(0, 36) || "convidado", name: String(displayName ?? "Participante").slice(0, 40), nbf: sec(now) - 10, exp,
+        video: { room: roomName, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true },
+        metadata: JSON.stringify({ host: Boolean(isHost) }),
+      });
+      return { url: room.url || wss, token };
+    },
+    /** Fecha a sala para todos (quem está dentro é retirado). Sala que já não existe conta como fechada. */
+    async closeRoom({ roomName }) {
+      const res = await twirp("DeleteRoom", { room: roomName }, roomName);
+      return res.ok || res.status === 404;
+    },
+  };
+}
+
 export function adapterFor(provider, fetchImpl, keys) {
   if (provider === "daily" && keys.daily) return dailyAdapter(fetchImpl, keys.daily);
+  if (provider === "livekit" && keys.livekit?.url && keys.livekit?.apiKey && keys.livekit?.apiSecret) return livekitAdapter(fetchImpl, keys.livekit);
+  return null;
+}
+
+/** LiveKit → mesmo formato do Daily. participant_joined/left/room_finished. */
+export function normalizeLivekitEvent(evt) {
+  const type = evt?.event;
+  const room = evt?.room?.name;
+  const p = evt?.participant ?? {};
+  const evAt = toMs(evt?.createdAt) ?? Date.now();
+  const id = typeof p.identity === "string" && /^[0-9a-f-]{36}$/i.test(p.identity) ? p.identity : null;
+  const joinedAt = toMs(Number(p.joinedAt)) ?? null;
+  if (type === "participant_joined" && room && p.sid) return { kind: "joined", room: String(room), session: String(p.sid), userId: id, at: joinedAt ?? evAt, joinedAt: joinedAt ?? evAt };
+  if (type === "participant_left" && room && p.sid) return { kind: "left", room: String(room), session: String(p.sid), userId: id, at: evAt, joinedAt: joinedAt ?? evAt };
+  if (type === "room_finished" && room) return { kind: "ended", room: String(room), at: evAt };
   return null;
 }
 

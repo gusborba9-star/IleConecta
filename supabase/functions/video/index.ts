@@ -3,7 +3,7 @@
 // Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos do provedor entram por ?hook=daily
 // e só valem com assinatura correta; só eles gravam consumo de minutos.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, verifyDailySignature } from "./core.js";
+import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeLivekitEvent, verifyDailySignature, verifyLivekitWebhook } from "./core.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,25 +21,30 @@ Deno.serve(async (req) => {
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, service, { auth: { persistSession: false } });
-  const keys = { daily: Deno.env.get("DAILY_API_KEY") ?? "" };
+  const keys = {
+    daily: Deno.env.get("DAILY_API_KEY") ?? "",
+    livekit: { url: Deno.env.get("LIVEKIT_URL") ?? "", apiKey: Deno.env.get("LIVEKIT_API_KEY") ?? "", apiSecret: Deno.env.get("LIVEKIT_API_SECRET") ?? "" },
+  };
   const hook = new URL(req.url).searchParams.get("hook");
 
   // ---- avisos dos provedores (sem login: valem pela assinatura) ----
-  if (hook === "daily") {
+  if (hook === "daily" || hook === "livekit") {
     const raw = await req.text();
     let evt: unknown;
     let ok = false;
-    {
+    if (hook === "daily") {
       const { data } = await admin.from("app_secrets").select("value").eq("key", "daily_webhook_hmac").maybeSingle();
       const secret = (data?.value as string | undefined) ?? Deno.env.get("DAILY_WEBHOOK_HMAC") ?? "";
       ok = await verifyDailySignature({ secretB64: secret, timestamp: req.headers.get("x-webhook-timestamp") ?? "", signature: req.headers.get("x-webhook-signature") ?? "", rawBody: raw });
+    } else {
+      ok = await verifyLivekitWebhook({ apiKey: keys.livekit.apiKey, apiSecret: keys.livekit.apiSecret, authorization: req.headers.get("authorization") ?? "", rawBody: raw });
     }
     if (!ok) return json(401, { error: "assinatura_invalida" });
     try { evt = JSON.parse(raw); } catch { return json(200, { ok: true, ignorado: "json" }); }
-    const n = normalizeDailyEvent(evt);
+    const n = hook === "daily" ? normalizeDailyEvent(evt) : normalizeLivekitEvent(evt);
     if (!n) {
-      const e = evt as { type?: unknown; payload?: unknown; data?: unknown };
-      console.error("video_hook_ignorado", hook, String(e?.type ?? "?").slice(0, 60), Object.keys((e?.payload ?? e?.data ?? {}) as object).slice(0, 20).join(","));
+      const e = evt as { type?: unknown; event?: unknown; payload?: unknown; data?: unknown };
+      console.error("video_hook_ignorado", hook, String(e?.type ?? e?.event ?? "?").slice(0, 60), Object.keys((e?.payload ?? e?.data ?? {}) as object).slice(0, 20).join(","));
       return json(200, { ok: true, ignorado: "tipo" });
     }
     const iso = (ms: number | null) => (ms === null ? null : new Date(ms).toISOString());
@@ -76,6 +81,11 @@ Deno.serve(async (req) => {
           if (provider === "daily") {
             const { data } = await admin.from("app_secrets").select("key").eq("key", "daily_webhook_hmac").maybeSingle();
             return Boolean(data) || Boolean(Deno.env.get("DAILY_WEBHOOK_HMAC"));
+          }
+          if (provider === "livekit") {
+            // o aviso da LiveKit é cadastrado à mão no painel dela; a administração marca "pronto" depois de conferir
+            const { data } = await admin.from("app_secrets").select("key").eq("key", "livekit_webhook_ready").maybeSingle();
+            return Boolean(data) && Boolean(keys.livekit.apiKey && keys.livekit.apiSecret);
           }
           return false;
         },
