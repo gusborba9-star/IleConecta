@@ -60,3 +60,40 @@ export async function sendReturningNotice(userId: string, template: NoticeKey, n
   const { error } = await supabase.rpc("admin_notify_returning", { p_user: userId, p_template: template, p_note: note.trim() || null, p_reason: reason });
   return error ? friendly(error.message) : null;
 }
+
+export interface SharedEmailOther {
+  nome: string;
+  situacao: "ativa" | "excluída";
+  desde: string | null;
+  reembolsoUsado: boolean;
+}
+export interface SharedEmailAccount {
+  userId: string;
+  accountType: string;
+  name: string;
+  emailMasked: string;
+  joinedAt: string;
+  others: SharedEmailOther[];
+  refundUsed: boolean;
+}
+
+/** Contas ativas cujo e-mail (atual ou anterior) também esteve vinculado a outra conta. */
+export async function fetchSharedEmailAccounts(): Promise<SharedEmailAccount[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("admin_shared_email_accounts");
+  if (error) return [];
+  return ((data as Record<string, unknown>[] | null) ?? []).map((r) => ({
+    userId: String(r.user_id),
+    accountType: String(r.account_type ?? ""),
+    name: String(r.display_name ?? ""),
+    emailMasked: String(r.email_masked ?? ""),
+    joinedAt: String(r.joined_at ?? ""),
+    refundUsed: r.refund_used === true,
+    others: (Array.isArray(r.others) ? (r.others as Record<string, unknown>[]) : []).map((o) => ({
+      nome: String(o.nome ?? ""),
+      situacao: o.situacao === "ativa" ? "ativa" : "excluída",
+      desde: o.desde ? String(o.desde) : null,
+      reembolsoUsado: o.reembolso_usado === true,
+    })),
+  }));
+}

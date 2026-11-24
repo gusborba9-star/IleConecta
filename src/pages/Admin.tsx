@@ -39,6 +39,7 @@ import AdminAnnounceCard from "@/components/admin/AdminAnnounceCard";
 import AdminTaxIdCard from "@/components/admin/AdminTaxIdCard";
 import HousePlansCard from "@/components/admin/HousePlansCard";
 import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
+import SharedEmailAccountsCard from "@/components/admin/SharedEmailAccountsCard";
 import StaffAuditCard from "@/components/admin/StaffAuditCard";
 import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
 import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
@@ -258,6 +259,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       {can("indicadores") && <StaffAuditCard />}
 
       {can("comunicacao") && <ReturningAccountsCard />}
+      {can("comunicacao") && <SharedEmailAccountsCard />}
 
       {can("moderacao") && <ReportedReviewsCard />}
 
