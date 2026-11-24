@@ -16,7 +16,7 @@ Sem o cruzamento do IP, do aparelho, do documento e do cartão, não há como pe
 O impacto sobre o usuário legítimo é mínimo e controlado:
 - IP usado por mais de 10 contas (rede móvel e Wi-Fi compartilhado) é ignorado;
 - o painel da administração não mostra o IP, o CPF/CNPJ nem a impressão do cartão: mostra só o motivo ("mesmo aparelho", "mesma rede", "mesmo CPF/CNPJ", "mesmo cartão de pagamento");
-- o cartão só entra como sinal e na regra do reembolso de 7 dias, que só é negado quando a outra conta ligada já o usou; a contratação nunca é barrada (CDC, art. 49), e familiares podem pagar com o mesmo cartão, por isso o painel pede decisão caso a caso;
+- o cartão é só sinal para análise humana, nunca nega reembolso nem contratação automaticamente (CDC, art. 49); familiares podem pagar com o mesmo cartão, por isso a administração decide caso a caso (devolve o dinheiro e, se for a mesma Casa, suspende por abuso de direito);
 - o limite de cadastros por rede é temporário ("tente mais tarde"), por hora, não bane ninguém e, se falhar, o cadastro segue;
 - não existe bloqueio automático: o sistema só sinaliza, e qualquer suspensão passa por análise humana;
 - IP sozinho nunca fundamenta suspensão; mais de uma Casa com o mesmo responsável pode ser legítima.

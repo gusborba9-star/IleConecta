@@ -145,13 +145,14 @@ test("0200: a impressão fica só como hash, sem chave estrangeira, só o servid
   assert.match(sql, /pr\.sinais && array\['aparelho','documento','cartao'\]/);
 });
 
-test("0200: o reembolso de 7 dias continua negado SÓ quando a outra conta ligada já usou o reembolso (nada é barrado antes)", () => {
-  const sql = readFileSync(new URL("../supabase/migrations/0200_chave_do_cartao_do_pagador.sql", import.meta.url), "utf8").replace(/--.*$/gm, "");
+test("0202: o cartão é SÓ sinal: a regra automática do reembolso de 7 dias olha e-mail vinculado e conta excluída, nunca o cartão", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/0202_cartao_so_sinal.sql", import.meta.url), "utf8").replace(/--.*$/gm, "");
   const regra = sql.split("function public.house_owner_refund_used_before")[1].split("$$;")[0];
-  assert.match(regra, /account_card_others\(h\.owner_id\)/);
   assert.match(regra, /account_linked_others\(h\.owner_id\)/);
   assert.match(regra, /account_prior_deleted\(h\.owner_id\)/);
   assert.match(regra, /r\.status in \('pendente', 'concluido'\)/);
-  // nenhuma regra de cadastro ou de contratação foi tocada
-  assert.doesNotMatch(sql, /platform_subscribe_issue|handle_new_user|raise exception 'Conta reutilizada/);
+  assert.doesNotMatch(regra, /card|payer/i);
+  assert.match(sql, /drop function if exists public\.account_card_others\(uuid\)/);
+  // o sinal continua no painel (0200); nenhuma regra de cadastro ou de contratação foi tocada
+  assert.doesNotMatch(sql, /platform_subscribe_issue|handle_new_user/);
 });
