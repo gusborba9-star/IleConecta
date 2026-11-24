@@ -13,7 +13,7 @@ const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa",
 const setup = async (page, type, { upcoming = [], bank = null, fn = {}, rest = {} } = {}) =>
   api(page, {
     rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house] : [], stories: [], services: [], events: [], posts: [], service_orders: [], ...rest },
-    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null },
+    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null, video_acked: false },
     fn,
   });
 
@@ -201,4 +201,18 @@ test("aviso antes de entrar: nada é pedido ao servidor até aceitar; o aceite r
   const ack = calls.find((c) => c.name === "video_ack");
   expect(ack.body.p_meeting).toBe(MID);
   expect(ack.body.p_version).toMatch(/^2026-11-rascunho-\d+$/);
+});
+
+test("quem já aceitou esta reunião entra direto, sem ver o aviso nem aceitar de novo", async ({ page }) => {
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  const calls = await api(page, {
+    rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
+    rpc: { video_my_upcoming: [], video_bank: null, report_client_error: true, moments_feed: [], moments_published_today: 0, video_ack: null, video_acked: true },
+    fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "x", kind: "reuniao" } },
+  });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-frame")).toBeVisible();
+  await expect(page.getByTestId("video-aviso")).toHaveCount(0);
+  expect(calls.some((c) => c.name === "video_ack")).toBe(false);
+  expect(calls.find((c) => c.name === "video_acked").body).toMatchObject({ p_meeting: MID });
 });

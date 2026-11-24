@@ -356,3 +356,13 @@ test("migração 0212: rotina só do servidor, segredo no cofre, a cada 5 minuto
   const idx = readFileSync(new URL("../supabase/functions/video/index.ts", import.meta.url), "utf8");
   assert.match(idx, /video_cron_ok/);
 });
+
+test("migração 0213: só a própria pessoa, mesma reunião e mesma versão dos textos", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0213_video_aceite_uma_vez.sql", import.meta.url), "utf8");
+  assert.match(sql, /a\.user_id = auth\.uid\(\)/);
+  assert.match(sql, /a\.version = left\(/);
+  assert.match(sql, /revoke execute on function public\.video_acked\(uuid, text\) from public, anon/);
+  const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
+  assert.match(sala, /hasAckedMeeting\(id, LEGAL_VERSION\)/);
+});
