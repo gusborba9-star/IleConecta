@@ -75,6 +75,7 @@ export const CRON_DESCRIPTIONS = {
   "purge-promo-conversions": "Limpeza de privacidade: apaga as conversões atribuídas a anúncios com mais de 13 meses (guarda só anúncio e referência, sem a pessoa).",
   "video-close-stale": "Vídeo: a cada 15 minutos fecha as sessões sem saída registrada (contando só até o fim previsto da reunião) e encerra reuniões esquecidas.",
   "purge-video-usage": "Limpeza de privacidade: apaga o consumo de vídeo (quem entrou e quando) com mais de 12 meses.",
+  "purge-video-meetings": "Limpeza de privacidade: apaga o agendamento de reuniões da casa com mais de 12 meses e o de consultas por vídeo com mais de 5 anos.",
   "purge-music-license-log": "Limpeza de privacidade: apaga do registro de faixas retiradas o que já passou dos 5 anos de guarda.",
   "purge-support-cases": "Limpeza de privacidade: apaga os chamados de suporte encerrados depois do prazo.",
   "recovery-purge": "Limpeza: apaga e-mails vinculados vencidos, contadores de limite e pedidos de recuperação de acesso com mais de 24 meses.",

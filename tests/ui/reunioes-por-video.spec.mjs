@@ -13,7 +13,7 @@ const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa",
 const setup = async (page, type, { upcoming = [], bank = null, fn = {}, rest = {} } = {}) =>
   api(page, {
     rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house] : [], stories: [], services: [], events: [], posts: [], service_orders: [], ...rest },
-    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null },
+    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null },
     fn,
   });
 
@@ -78,6 +78,7 @@ test("sala Daily: quadro só com endereço do provedor e permissões de câmera 
   await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "Encontro de membros", kind: "reuniao", ends_at: new Date(Date.now() + 3600000).toISOString() } } });
   await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
   await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
   const frame = page.getByTestId("video-frame");
   await expect(frame).toHaveAttribute("src", "https://ileconecta.daily.co/ic-1?t=TKN");
   await expect(frame).toHaveAttribute("allow", /camera; microphone/);
@@ -86,6 +87,7 @@ test("sala Daily: quadro só com endereço do provedor e permissões de câmera 
 test("sala: endereço de fora dos provedores é recusado e nada é embutido", async ({ page }) => {
   await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://evil.example.com/x", token: "T", title: "x", kind: "reuniao" } } });
   await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
   await expect(page.getByRole("alert")).toContainText("não respondeu");
   await expect(page.getByTestId("video-frame")).toHaveCount(0);
 });
@@ -93,6 +95,7 @@ test("sala: endereço de fora dos provedores é recusado e nada é embutido", as
 test("sala: recusa do servidor mostra o motivo em português e permite tentar de novo", async ({ page }) => {
   await setup(page, "pessoa", { fn: { video: { ok: false, reason: "sem_minutos" } } });
   await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
   await expect(page.getByRole("alert")).toContainText("minutos de vídeo da casa neste mês acabaram");
   await expect(page.getByRole("button", { name: "Tentar de novo" })).toBeVisible();
 });
@@ -141,6 +144,7 @@ test("sala em tela cheia: barra com sair, horário de término e Encerrar só pa
   await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
   await setup(page, "casa", { fn: fn(true) });
   await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
   await expect(page.getByTestId("video-room")).toBeVisible();
   await expect(page.getByTestId("video-end")).toBeVisible();
   await expect(page.getByText(/Termina às/)).toBeVisible();
@@ -155,6 +159,21 @@ test("sala: quem não é dona não vê Encerrar", async ({ page }) => {
   await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
   await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "x", kind: "reuniao" } } });
   await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
   await expect(page.getByTestId("video-frame")).toBeVisible();
   await expect(page.getByTestId("video-end")).toHaveCount(0);
+});
+
+test("aviso antes de entrar: nada é pedido ao servidor até aceitar; o aceite registra a versão dos textos", async ({ page }) => {
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  const calls = await setup(page, "pessoa", { fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "x", kind: "reuniao" } } });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-aviso")).toContainText("Esta chamada não é gravada pela plataforma");
+  await expect(page.getByTestId("video-frame")).toHaveCount(0);
+  expect(calls.some((c) => c.name === "video")).toBe(false);
+  await page.getByTestId("video-aceitar").click();
+  await expect(page.getByTestId("video-frame")).toBeVisible();
+  const ack = calls.find((c) => c.name === "video_ack");
+  expect(ack.body.p_meeting).toBe(MID);
+  expect(ack.body.p_version).toMatch(/^2026-11-rascunho-\d+$/);
 });

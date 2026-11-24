@@ -47,6 +47,7 @@ export const INFO_PAGES: InfoPage[] = [
           "A plataforma não grava as reuniões. Não grave, fotografe a tela nem capte o áudio de uma reunião sem o consentimento de todas as pessoas presentes.",
           "A casa que marca a reunião é responsável por avisar os participantes sobre o que será tratado e por conduzir o encontro com respeito.",
           "O link da sala é pessoal: não compartilhe o acesso com quem não foi convidado.",
+          "A presença de menores de 18 anos em reunião ou consulta exige autorização e acompanhamento do responsável legal.",
         ],
       },
       {
@@ -165,6 +166,14 @@ export const INFO_PAGES: InfoPage[] = [
           `Você declara estar ciente de que consultas oraculares (como jogo de búzios e cartas), rituais, limpezas espirituais, aconselhamentos e trabalhos religiosos têm natureza espiritual, subjetiva e de fé. Os serviços são obrigação de meio (a realização do ritual ou atendimento conforme a tradição da casa), nunca obrigação de resultado. A ${BRAND} e as casas não garantem a concretização de desejos, curas físicas ou emocionais, retorno amoroso, ganhos financeiros ou qualquer resultado material específico.`,
           `Cada casa tem autonomia litúrgica, doutrinária e operacional sobre seus rituais, preços e orientações. A ${BRAND} não interfere nas práticas religiosas e não responde pela insatisfação com o teor das revelações ou com os efeitos espirituais percebidos, por decisões pessoais, financeiras, médicas ou jurídicas tomadas com base em aconselhamento espiritual, nem por materiais, insumos ou oferendas pedidos diretamente pela casa.`,
           "Os serviços religiosos têm caráter de fé e acolhimento espiritual e não substituem diagnósticos, tratamentos ou acompanhamentos médicos, psicológicos, psiquiátricos ou jurídicos.",
+        ],
+      },
+      {
+        heading: "7. Reuniões e consultas por vídeo",
+        paragraphs: [
+          "A plataforma é apenas o meio técnico de conexão: não participa, não modera ao vivo, não grava e não interfere no conteúdo religioso, espiritual ou pessoal tratado nas reuniões e consultas. A casa organizadora e os participantes respondem pela legalidade e pelo respeito do que é dito e praticado na sala.",
+          "É proibido gravar, fotografar a tela, captar o áudio ou divulgar imagens e falas de uma reunião ou consulta sem a autorização de todos os participantes. A captação e a divulgação indevidas violam direitos de imagem e de intimidade e sujeitam quem as praticou à exclusão imediata da conta e à responsabilização civil e criminal perante as pessoas prejudicadas. A plataforma não oferece ferramenta de gravação.",
+          "As consultas por vídeo individuais são permitidas apenas a maiores de 18 (dezoito) anos, ou a menores representados ou assistidos pelo responsável legal, que deve acompanhar o atendimento.",
         ],
       },
     ],
@@ -315,6 +324,15 @@ export const INFO_PAGES: InfoPage[] = [
           "É proibido prometer, divulgar ou sugerir garantia de resultado específico, prazos certos para desfechos de vida privada, saúde, reconciliação ou ganhos financeiros. Os serviços têm natureza espiritual e de convicção pessoal. A casa responde por qualquer publicidade que induza o cliente a erro.",
         ],
       },
+      {
+        heading: "Reuniões e consultas por vídeo",
+        paragraphs: [
+          `A casa é a única responsável pela condução das reuniões que marca e das consultas que realiza por vídeo, pelo cumprimento do que foi contratado e pelo respeito aos direitos dos participantes. A ${BRAND} atua apenas como meio técnico de conexão: não participa, não modera ao vivo, não grava e não interfere no conteúdo religioso, espiritual ou pessoal tratado na sala.`,
+          `A casa responde pelos atos que praticar ou permitir dentro da sala e se compromete a isentar a ${BRAND} e a ressarci-la se ela for acionada por esses atos, na forma da lei.`,
+          "Nas reuniões abertas da casa, se participarem menores de 18 (dezoito) anos, cabe exclusivamente à casa garantir a autorização expressa e o acompanhamento dos pais ou responsáveis legais. Consultas individuais por vídeo são permitidas apenas a maiores de 18 (dezoito) anos, ou a menores representados ou assistidos pelo responsável legal.",
+          "A casa não pode gravar nem divulgar a reunião ou a consulta sem a autorização de todos os participantes.",
+        ],
+      },
     ],
   },
   {
@@ -407,6 +425,7 @@ export const INFO_PAGES: InfoPage[] = [
         bullets: [
           "Registros de acesso à aplicação (logs de IP, data e hora): 6 (seis) meses, com base no legítimo interesse de segurança e prevenção a fraudes e, quando aplicável, no cumprimento do art. 15 do Marco Civil da Internet;",
           "Registros financeiros, pagamentos, estornos e documentos fiscais: 5 (cinco) anos, para cumprimento de obrigações fiscais e contábeis;",
+          "Reuniões por vídeo: registro de uso e de ciência do aviso, 12 (doze) meses; agendamento de reunião da casa sem vínculo financeiro, 12 (doze) meses; agendamento de consulta por vídeo ligada a pedido pago, 5 (cinco) anos. A plataforma não grava o áudio nem o vídeo;",
           "Logs de aceite dos Termos e e-mails vinculados a cada conta (os atuais, os anteriores e os de contas excluídas): até 5 (cinco) anos, armazenados em base restrita e auditada, para exercício regular de direitos e prevenção a fraudes ou uso abusivo de benefícios;",
           "Código irreversível da impressão do cartão de pagamento: 24 (vinte e quatro) meses desde o último uso, para prevenção a fraudes e uso abusivo de benefícios; e código irreversível da rede de cada tentativa de cadastro (limite de cadastros por rede): até 3 (três) dias;",
           "Registros de segurança e dispositivos (código anônimo do dispositivo, sistema, navegador, data e hora): 12 (doze) meses sem uso; alertas de segurança enviados à conta: 24 (vinte e quatro) meses, para segurança da conta e prevenção a fraudes;",
@@ -436,16 +455,17 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: "Reuniões por vídeo",
         paragraphs: [
-          `As reuniões por vídeo (reuniões de casas com seus membros e consultas por vídeo ligadas a um pedido) são realizadas por provedores especializados contratados pela ${BRAND}, que atuam como operadores: o Daily e, como reserva, o Whereby. Ao entrar na sala, o seu áudio e o seu vídeo são transmitidos em tempo real pelo provedor aos demais participantes, junto com o seu nome de exibição e o identificador da sua conta. O provedor também pode tratar dados técnicos de conexão, como endereço IP e informações do aparelho, para fazer a chamada funcionar e proteger o serviço.`,
-          "A plataforma não grava o áudio nem o vídeo das reuniões. Ela guarda apenas o registro de uso: quem entrou, o horário de entrada e de saída e os minutos consumidos, que servem para controlar o limite de minutos do plano da casa. Esses registros são eliminados automaticamente após 12 (doze) meses. O registro de agendamento da reunião (título, data, horário, casa e pessoas convidadas) fica guardado enquanto for necessário para o funcionamento da conta e do pedido a que se refere.",
-          "Cada participante é responsável por não gravar nem divulgar a reunião sem o consentimento de todos. Em consultas por vídeo, o conteúdo da conversa pode envolver dados pessoais sensíveis (como convicção religiosa); por isso, compartilhe apenas o que for necessário e lembre-se de que a base legal é a execução do contrato do atendimento e, para os dados sensíveis, o seu consentimento.",
+          `As reuniões por vídeo (reuniões de casas com seus membros e consultas por vídeo ligadas a um pedido) são realizadas por provedores especializados de infraestrutura de videoconferência contratados pela ${BRAND}, que atuam como operadores (atualmente, o Daily e o Whereby). Ao entrar na sala, o seu áudio e o seu vídeo são transmitidos em tempo real pelo provedor aos demais participantes, junto com o seu nome de exibição e o identificador da sua conta. O provedor também pode tratar dados técnicos de conexão, como endereço IP e informações do aparelho, para fazer a chamada funcionar e proteger o serviço.`,
+          `A ${BRAND} não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo das chamadas. Os provedores de videoconferência tratam o fluxo em tempo real e mantêm apenas registros técnicos operacionais temporários, estritamente necessários para a qualidade e a segurança da transmissão.`,
+          "Guardamos apenas o registro de uso (quem entrou, o horário de entrada e de saída e os minutos consumidos), que serve para controlar o limite de minutos do plano e comprovar a prestação do serviço, e o registro de que você leu o aviso da sala antes de entrar. O registro de uso é eliminado após 12 (doze) meses. O registro de agendamento (título, data, horário, casa e pessoas convidadas) é eliminado após 12 (doze) meses, no caso de reuniões da casa sem vínculo financeiro, e após 5 (cinco) anos, no caso de consultas por vídeo ligadas a um pedido pago, ou antes disso se a conta for excluída, ressalvadas as obrigações legais.",
+          "Cada participante é responsável por não gravar nem divulgar a reunião sem o consentimento de todos. Em consultas por vídeo, a conversa pode envolver dados pessoais sensíveis (como convicção religiosa); por isso, compartilhe apenas o que for necessário. A base legal é a execução do contrato do atendimento e, para os dados sensíveis, o seu consentimento.",
         ],
       },
       {
         heading: "Transferência internacional de dados",
         paragraphs: [
           `Para viabilizar a operação tecnológica da plataforma, a ${BRAND} utiliza serviços de provedores de infraestrutura em nuvem, de processamento de pagamentos (como o Stripe) e de inteligência artificial, cujos servidores podem estar localizados fora do Brasil.`,
-          "Nesses casos, a transferência internacional de dados é necessária para a execução do serviço contratado (LGPD, art. 33, IX, combinado com o art. 7º, V) e ocorre por meio de provedores globais que adotam garantias contratuais e padrões internacionais de segurança da informação, em conformidade com o art. 33 da LGPD e com a regulamentação da ANPD.",
+          "Nesses casos, a transferência internacional de dados é necessária para a execução do serviço contratado (LGPD, art. 33, IX, combinado com o art. 7º, V) e ocorre por meio de provedores globais que adotam garantias contratuais e padrões internacionais de segurança da informação, em conformidade com o art. 33 da LGPD e com a regulamentação da ANPD. Quando o país de destino não tem decisão de adequação, a transferência se apoia em garantias contratuais, incluindo as cláusulas-padrão contratuais previstas na regulamentação da ANPD, incorporadas aos termos de tratamento de dados (DPA) firmados com cada provedor.",
         ],
       },
       {

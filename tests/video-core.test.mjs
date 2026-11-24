@@ -236,3 +236,25 @@ test("sala do Daily nasce em português do Brasil", async () => {
   assert.equal(body.properties.lang, "pt-BR");
   assert.equal(body.privacy, "private");
 });
+
+test("parecer jurídico: ciência registrada pelo banco, retenção 12 meses/5 anos e textos com os pontos do advogado", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0209_video_ciencia_e_retencao.sql", import.meta.url), "utf8");
+  assert.match(sql, /enable row level security/);
+  assert.match(sql, /revoke all on public\.video_acks from public, anon, authenticated/);
+  assert.match(sql, /video_join_check\(p_meeting\)/);
+  assert.match(sql, /kind = 'reuniao' and starts_at < now\(\) - interval '12 months'/);
+  assert.match(sql, /kind = 'consulta' and starts_at < now\(\) - interval '5 years'/);
+  const t = readFileSync(new URL("../src/content/institutional.ts", import.meta.url), "utf8");
+  assert.match(t, /atualmente, o Daily e o Whereby/);
+  assert.match(t, /não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo/);
+  assert.match(t, /cláusulas-padrão contratuais/);
+  assert.match(t, /7\. Reuniões e consultas por vídeo/);
+  assert.match(t, /isentar a \$\{BRAND\} e a ressarci-la/);
+  assert.match(t, /maiores de 18 \(dezoito\) anos/);
+  const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
+  assert.match(sala, /Esta chamada não é gravada pela plataforma/);
+  assert.match(sala, /ackMeeting\(id, LEGAL_VERSION\)/);
+  const lc = readFileSync(new URL("../src/lib/legalCore.js", import.meta.url), "utf8");
+  assert.match(lc, /atendimentos e reuniões por áudio e vídeo/);
+});

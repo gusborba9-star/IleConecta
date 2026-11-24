@@ -47,6 +47,13 @@ export async function endMeetingNow(id: string): Promise<{ ok: boolean; roomClos
   return { ok: true, roomClosed: d.room_closed === true };
 }
 
+/** Registra a ciência do aviso da sala (a regra de quem pode é a da entrada). */
+export async function ackMeeting(id: string, version: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc("video_ack", { p_meeting: id, p_version: version });
+  return !error;
+}
+
 /** Pede a entrada na sala. Quem decide é o servidor (login, vínculo, horário, minutos, lotação). */
 export async function joinMeeting(id: string): Promise<JoinResult> {
   if (!supabase) return { ok: false, reason: "sem_login" };
