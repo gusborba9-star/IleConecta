@@ -42,6 +42,14 @@ export const INFO_PAGES: InfoPage[] = [
         ],
       },
       {
+        heading: "Reuniões por vídeo",
+        bullets: [
+          "A plataforma não grava as reuniões. Não grave, fotografe a tela nem capte o áudio de uma reunião sem o consentimento de todas as pessoas presentes.",
+          "A casa que marca a reunião é responsável por avisar os participantes sobre o que será tratado e por conduzir o encontro com respeito.",
+          "O link da sala é pessoal: não compartilhe o acesso com quem não foi convidado.",
+        ],
+      },
+      {
         heading: "Medidas da plataforma",
         paragraphs: ["Conteúdos e contas que violem estas normas podem ser removidos ou suspensos."],
       },
@@ -423,6 +431,14 @@ export const INFO_PAGES: InfoPage[] = [
         heading: "Assistente virtual",
         paragraphs: [
           "As mensagens enviadas à assistente de uma casa são processadas por um provedor externo de inteligência artificial para gerar a resposta, e ficam registradas na conversa. Não envie senhas, dados de cartão ou documentos pelo chat.",
+        ],
+      },
+      {
+        heading: "Reuniões por vídeo",
+        paragraphs: [
+          `As reuniões por vídeo (reuniões de casas com seus membros e consultas por vídeo ligadas a um pedido) são realizadas por provedores especializados contratados pela ${BRAND}, que atuam como operadores: o Daily e, como reserva, o Whereby. Ao entrar na sala, o seu áudio e o seu vídeo são transmitidos em tempo real pelo provedor aos demais participantes, junto com o seu nome de exibição e o identificador da sua conta. O provedor também pode tratar dados técnicos de conexão, como endereço IP e informações do aparelho, para fazer a chamada funcionar e proteger o serviço.`,
+          "A plataforma não grava o áudio nem o vídeo das reuniões. Ela guarda apenas o registro de uso: quem entrou, o horário de entrada e de saída e os minutos consumidos, que servem para controlar o limite de minutos do plano da casa. Esses registros são eliminados automaticamente após 12 (doze) meses. O registro de agendamento da reunião (título, data, horário, casa e pessoas convidadas) fica guardado enquanto for necessário para o funcionamento da conta e do pedido a que se refere.",
+          "Cada participante é responsável por não gravar nem divulgar a reunião sem o consentimento de todos. Em consultas por vídeo, o conteúdo da conversa pode envolver dados pessoais sensíveis (como convicção religiosa); por isso, compartilhe apenas o que for necessário e lembre-se de que a base legal é a execução do contrato do atendimento e, para os dados sensíveis, o seu consentimento.",
         ],
       },
       {
