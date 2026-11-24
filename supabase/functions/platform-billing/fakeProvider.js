@@ -72,7 +72,7 @@ export function createFakeProvider({ id = "fake", now = () => Date.now() } = {})
       const s = sessions.get(ref);
       if (!s) throw new ProviderError("Sessão desconhecida.", "not_found");
       const expired = s.state === "open" && s.expiresAtSec > 0 && s.expiresAtSec * 1000 <= now();
-      return { ref, status: expired ? "expired" : s.state, url: s.url, paid: s.paid, pending: s.pending, amountCents: s.amountCents, currency: s.currency, feeCents: s.paid ? s.feeCents : null };
+      return { ref, status: expired ? "expired" : s.state, url: s.url, paid: s.paid, pending: s.pending, amountCents: s.amountCents, currency: s.currency, feeCents: s.paid ? s.feeCents : null, payerKey: s.paid ? (s.payerKey ?? null) : null };
     },
 
     verifyWebhook(_raw, headers) {
@@ -87,7 +87,7 @@ export function createFakeProvider({ id = "fake", now = () => Date.now() } = {})
 
     // ---- controles do teste ----
     completeSetup(ref, method = { id: "pm_fake", brand: "visa", last4: "4242", expMonth: 12, expYear: 2031 }) { const s = this.setups.get(ref); s.complete = true; s.method = method; },
-    markPaid(ref, { feeCents = null, amountCents } = {}) { const s = sessions.get(ref); s.state = "complete"; s.paid = true; s.pending = false; s.feeCents = feeCents; if (amountCents != null) s.amountCents = amountCents; },
+    markPaid(ref, { feeCents = null, amountCents, payerKey = null } = {}) { const s = sessions.get(ref); s.state = "complete"; s.paid = true; s.pending = false; s.feeCents = feeCents; s.payerKey = payerKey; if (amountCents != null) s.amountCents = amountCents; },
     markPending(ref) { const s = sessions.get(ref); s.state = "complete"; s.paid = false; s.pending = true; },
     markExpired(ref) { sessions.get(ref).state = "expired"; },
     setFee(ref, feeCents) { sessions.get(ref).feeCents = feeCents; },

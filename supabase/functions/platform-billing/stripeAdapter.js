@@ -13,6 +13,12 @@ export function fingerprint(text) {
   return h.toString(16).padStart(8, "0");
 }
 
+/** Impressão do cartão (a mesma para o mesmo cartão). Só vale para pagamento em cartão; Pix e outros não têm. */
+export function cardFingerprint(charge) {
+  const f = charge?.payment_method_details?.card?.fingerprint;
+  return typeof f === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(f) ? f : null;
+}
+
 export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE_API_VERSION, fetchImpl = fetch, log = console }) {
   async function call(path, opts = {}) {
     const headers = { Authorization: `Bearer ${secret}`, "Stripe-Version": apiVersion };
@@ -66,6 +72,7 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
           amountCents: Number.isFinite(Number(p.amount)) ? Number(p.amount) : null,
           currency: String(p.currency ?? "").toLowerCase(),
           feeCents: paid ? feeFromBalanceTransaction(charge?.balance_transaction) : null,
+          payerKey: paid ? cardFingerprint(charge) : null,
         };
       }
       const s = await call(`/v1/checkout/sessions/${encodeURIComponent(ref)}?expand[0]=payment_intent.latest_charge.balance_transaction`);
@@ -82,6 +89,7 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
         amountCents: Number.isFinite(Number(s.amount_total)) ? Number(s.amount_total) : null,
         currency: String(s.currency ?? "").toLowerCase(),
         feeCents: paid ? feeFromBalanceTransaction(charge?.balance_transaction) : null,
+        payerKey: paid ? cardFingerprint(charge) : null,
       };
     },
 
@@ -108,7 +116,7 @@ export function createStripeAdapter({ secret, webhookSecret, apiVersion = STRIPE
         complete,
         houseId: s.metadata?.house_id ?? null,
         customer: typeof s.customer === "string" ? s.customer : s.customer?.id ?? null,
-        method: complete ? { id: String(pm.id), brand: String(card.brand ?? "card"), last4: String(card.last4 ?? ""), expMonth: Number(card.exp_month), expYear: Number(card.exp_year) } : null,
+        method: complete ? { id: String(pm.id), brand: String(card.brand ?? "card"), last4: String(card.last4 ?? ""), expMonth: Number(card.exp_month), expYear: Number(card.exp_year), fingerprint: typeof card.fingerprint === "string" ? card.fingerprint : null } : null,
       };
     },
 

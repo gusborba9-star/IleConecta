@@ -110,7 +110,7 @@ export function planRefundText(p, now = Date.now()) {
 }
 
 /** Texto mostrado quando uma conta anterior do mesmo e-mail (excluída) já usou o reembolso de 7 dias. */
-export const RETURNING_REFUND_TEXT = "Conta reutilizada: o reembolso de 7 dias do plano já foi utilizado em uma conta anterior vinculada a este e-mail e não é concedido novamente.";
+export const RETURNING_REFUND_TEXT = "Conta reutilizada: o reembolso de 7 dias do plano já foi utilizado em uma conta anterior vinculada a esta e não é concedido novamente.";
 
 /** Reembolso da primeira contratação da vaga extra (my_seat_refunds): leitura defensiva do que o banco devolve. */
 export function readSeatRefunds(raw) {

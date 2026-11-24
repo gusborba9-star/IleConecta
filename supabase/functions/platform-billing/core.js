@@ -59,6 +59,19 @@ export async function openPayment({ registry, store, chargeId, userId, method = 
   return { url: session.url, reused: false };
 }
 
+// ---------- chave do cartão do pagador (sinal contra várias contas; nunca bloqueia nem atrapalha o pagamento) ----------
+/** Guarda só o hash da impressão do cartão, ligado à dona da casa. Qualquer falha é só registrada: o pagamento já foi confirmado. */
+export async function rememberPayerKey({ store, houseId, fingerprint, log = console }) {
+  if (!fingerprint || !houseId) return false;
+  try {
+    const owner = await store.houseOwner(houseId);
+    return owner ? (await store.payerKey(owner, fingerprint)) === true : false;
+  } catch (e) {
+    log.error("payer_key_failed", msg(e));
+    return false;
+  }
+}
+
 // ---------- conferir uma referência no provedor e refletir no banco ----------
 /** hint: "failed" quando o aviso diz que a tentativa falhou. Devolve { outcome }. */
 export async function settleRef({ store, adapter, ref, hint = null, log = console }) {
@@ -72,6 +85,7 @@ export async function settleRef({ store, adapter, ref, hint = null, log = consol
       const expected = Number(await store.expected(adapter.id, ref));
       if (s.currency !== "brl" || !Number.isFinite(expected) || s.amountCents !== expected) throw new DivergenceError(`valor_divergente: provedor ${s.amountCents} ${s.currency}, esperado ${expected}, fatura ${charge.amount_cents}`);
       const res = await store.confirm(adapter.id, ref, s.amountCents, s.feeCents ?? null);
+      await rememberPayerKey({ store, houseId: charge.house_id, fingerprint: s.payerKey, log });
       return { outcome: res?.duplicate ? "duplicate" : "paid", charge: chargeId };
     }
     if (hint === "failed" || s.status === "expired") {
@@ -356,6 +370,7 @@ export async function cardSync({ registry, store, userId, sessionRef, log = cons
   } catch (e) {
     throw cardError(e);
   }
+  await rememberPayerKey({ store, houseId, fingerprint: s.method.fingerprint, log });
   if (saved?.previous_method && saved.previous_method !== s.method.id) await adapter.detachCard({ method: saved.previous_method }).catch((e) => log.error("detach_failed", msg(e)));
   return { ok: true };
 }

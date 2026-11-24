@@ -78,6 +78,7 @@ export const CRON_DESCRIPTIONS = {
   "purge-music-license-log": "Limpeza de privacidade: apaga do registro de faixas retiradas o que já passou dos 5 anos de guarda.",
   "purge-support-cases": "Limpeza de privacidade: apaga os chamados de suporte encerrados depois do prazo.",
   "recovery-purge": "Limpeza: apaga e-mails vinculados vencidos, contadores de limite e pedidos de recuperação de acesso com mais de 24 meses.",
+  "payer-keys-purge": "Limpeza: apaga os códigos irreversíveis de cartão de pagamento guardados há mais de 24 meses desde o último uso.",
   "recovery-expire": "Fecha pedidos de recuperação de acesso sem decisão há 30 dias e links de confirmação não usados em 7 dias.",
   "security-purge": "Limpeza: apaga registros de bloqueio por tentativas, aparelhos sem uso há 12 meses, avisos de segurança com mais de 24 meses e e-mails de comunicados já enviados.",
   "recovery-queue": "Envia os e-mails da recuperação de acesso (decisão depois do prazo de 24 horas e link de confirmação só para o e-mail novo).",
