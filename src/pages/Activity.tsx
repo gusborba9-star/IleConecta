@@ -8,6 +8,8 @@ import { useApp } from "@/contexts/AppContext";
 import { goToCheckout, settleRefunds } from "@/lib/payments";
 import { formatBRL, timeAgo } from "@/lib/utils";
 import { HandHeart } from "lucide-react";
+import OrderVideo from "@/components/services/OrderVideo";
+import { fetchOrderMeetings, type OrderMeeting } from "@/lib/video";
 
 export default function Activity({ embedded = false }: { embedded?: boolean }) {
   const confirm = useConfirm();
@@ -16,6 +18,7 @@ export default function Activity({ embedded = false }: { embedded?: boolean }) {
   const [orders, setOrders] = useState<(ServiceOrder & { houseName: string; houseOwnerId: string | null })[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [orderVideo, setOrderVideo] = useState<Map<string, OrderMeeting[]>>(new Map());
   const uid = currentUser?.id;
   const reload = useCallback(async () => {
     if (uid) { setOrders(await fetchMyOrders(uid)); setLoaded(true); }
@@ -44,6 +47,13 @@ export default function Activity({ embedded = false }: { embedded?: boolean }) {
       off();
     };
   }, [uid]);
+  const activeKey = orders.filter((o) => o.status === "confirmado" || o.status === "em_andamento").map((o) => o.id).join(",");
+  useEffect(() => {
+    if (!activeKey) return;
+    let alive = true;
+    void fetchOrderMeetings(activeKey.split(",")).then((m) => alive && setOrderVideo(m));
+    return () => { alive = false; };
+  }, [activeKey]);
   if (!currentUser) return null;
 
   return (
@@ -72,6 +82,7 @@ export default function Activity({ embedded = false }: { embedded?: boolean }) {
                   )}
                   <div className="text-xs text-muted-foreground">{o.houseName} · {ORDER_LABEL[o.status]} · {timeAgo(o.createdAt)}</div>
                   {o.status === "reembolsado" && <div className="text-xs text-forest mt-0.5">Valor devolvido integralmente.</div>}
+                  {(o.status === "confirmado" || o.status === "em_andamento") && <OrderVideo orderId={o.id} meetings={orderVideo.get(o.id) ?? []} />}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {o.houseOwnerId && <Button size="sm" variant="outline" onClick={() => nav(`/casa/${o.houseOwnerId}`)}>Ver na casa</Button>}
                     {o.status === "aguardando_pagamento" && (

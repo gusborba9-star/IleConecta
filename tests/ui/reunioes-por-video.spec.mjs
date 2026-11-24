@@ -104,3 +104,27 @@ test("acessibilidade da tela de reuniões", async ({ page }) => {
   const r = await new AxeBuilder({ page }).analyze();
   expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
 });
+
+test("atalho do pedido: Reuniões abre já como consulta com o pedido escolhido e envia o pedido ao marcar", async ({ page }) => {
+  const OID = U(900);
+  const calls = await setup(page, "casa", {
+    bank: { cap: 6000, used: 0, remaining: 6000, enabled: true },
+    rest: { service_orders: [{ id: OID, title: "Orientação", status: "confirmado", profiles: { display_name: "Joana" } }] },
+  });
+  await page.goto(`/reunioes?pedido=${OID}`);
+  await expect(page.getByLabel("Tipo")).toHaveValue("consulta");
+  await expect(page.getByLabel("Pedido do cliente")).toHaveValue(OID);
+  await page.getByLabel("Título").fill("Consulta de orientação");
+  const d = new Date(Date.now() + 2 * 86400000);
+  await page.getByLabel("Dia").fill(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  await page.getByLabel("Hora").fill("15:00");
+  await page.getByRole("button", { name: "Marcar reunião" }).click();
+  await expect.poll(() => calls.some((c) => c.name === "video_schedule")).toBe(true);
+  expect(calls.find((x) => x.name === "video_schedule").body).toMatchObject({ p_kind: "consulta", p_order: OID, p_max_participants: 2 });
+});
+
+test("pedido na URL que não é um código válido é ignorado (nada é escolhido)", async ({ page }) => {
+  await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/reunioes?pedido=<script>");
+  await expect(page.getByLabel("Tipo")).toHaveValue("reuniao");
+});

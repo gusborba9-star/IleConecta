@@ -19,6 +19,9 @@ import { createService, deleteService, fetchServices, updateService, type Servic
 import {
   ORDER_LABEL, canCancelOrder, cancelOrder, fetchHouseOrders, fetchStageProgress, finishOrder, isOpenOrder, payNextStage, remindNextStage, startOrder, subscribeOrders, type ServiceOrder,
 } from "@/lib/serviceOrders";
+import OrderVideo from "@/components/services/OrderVideo";
+import { fetchOrderMeetings, houseVideoReady, type OrderMeeting } from "@/lib/video";
+import { houseIdOf } from "@/lib/campaigns";
 import { useApp } from "@/contexts/AppContext";
 import { goToCheckout } from "@/lib/payments";
 import { fetchReviewable } from "@/lib/reviews";
@@ -73,9 +76,25 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
   const { currentUser } = useApp();
   const chatStatus = useChatStatus(ownerId, !isOwn);
   const [payOn, setPayOn] = useState(false);
+  const [videoOn, setVideoOn] = useState(false);
+  const [orderVideo, setOrderVideo] = useState<Map<string, OrderMeeting[]>>(new Map());
   const [slotsBy, setSlotsBy] = useState<Record<string, string[]>>({});
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [contractSlot, setContractSlot] = useState("");
+  // consulta por vídeo dentro do pedido (só a casa dona, na tela de pedidos)
+  useEffect(() => {
+    if (!isOwn || !ordersOnly) return;
+    let alive = true;
+    void houseIdOf(ownerId).then((id) => (id ? houseVideoReady(id) : false)).then((ok) => alive && setVideoOn(ok));
+    return () => { alive = false; };
+  }, [isOwn, ordersOnly, ownerId]);
+  const orderKey = orders.filter((o) => o.status === "confirmado" || o.status === "em_andamento").map((o) => o.id).join(",");
+  useEffect(() => {
+    if (!isOwn || !ordersOnly || !orderKey) return;
+    let alive = true;
+    void fetchOrderMeetings(orderKey.split(",")).then((m) => alive && setOrderVideo(m));
+    return () => { alive = false; };
+  }, [isOwn, ordersOnly, orderKey]);
   useEffect(() => {
     let alive = true;
     void paymentsEnabledFor(ownerId).then((v) => alive && setPayOn(v));
@@ -217,6 +236,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
                   {o.scheduledAt && <p className="text-sm mt-1"><span className="text-muted-foreground">Horário: </span><strong>{formatSlot(o.scheduledAt)}</strong></p>}
                   {o.modality && <p className="text-sm mt-1"><span className="text-muted-foreground">Modalidade: </span>{o.modality === "presencial" ? "Presencial" : "À distância"}</p>}
                   {o.note && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{o.note}</p>}
+                  {(o.status === "confirmado" || o.status === "em_andamento") && <OrderVideo orderId={o.id} meetings={orderVideo.get(o.id) ?? []} schedulable={videoOn} />}
                   <div className="mt-1 flex items-center gap-2"><Badge tone={o.status === "concluido" ? "forest" : isOpenOrder(o.status) ? "primary" : "muted"}>{ORDER_LABEL[o.status]}</Badge><span className="text-xs text-muted-foreground">{formatCents(o.priceCents)}</span>{o.stagesTotal > 1 && <Badge tone="gold">Etapas pagas: {stageDone.get(o.id) ?? 0}/{o.stagesTotal}</Badge>}</div>
                 </div>
                 <div className="flex flex-wrap gap-2">
