@@ -52,17 +52,16 @@ test("mensagens de recusa cobrem os motivos do servidor", () => {
 test("iframe: só https dos provedores; Daily exige token", () => {
   assert.equal(embedUrl("daily", "https://ileconecta.daily.co/ic-1", "T"), "https://ileconecta.daily.co/ic-1?t=T");
   assert.equal(embedUrl("daily", "https://ileconecta.daily.co/ic-1", ""), null);
-  assert.equal(embedUrl("whereby", "https://ile-conecta.whereby.com/ic-x?embed&displayName=Ana", null), "https://ile-conecta.whereby.com/ic-x?embed&displayName=Ana");
+  assert.equal(embedUrl("whereby", "https://ile-conecta.whereby.com/ic-x?embed&displayName=Ana", null), null);
   assert.equal(embedUrl("daily", "http://x.daily.co/r", "T"), null);
   assert.equal(embedUrl("daily", "https://evil.com/r", "T"), null);
   assert.equal(embedUrl("daily", "https://daily.co.evil.com/r", "T"), null);
-  assert.equal(embedUrl("whereby", "https://x.daily.co/r", null), null);
   assert.equal(embedUrl("outro", "https://x.daily.co/r", "T"), null);
   assert.equal(embedUrl("daily", "javascript:alert(1)", "T"), null);
 });
 test("configuração: valores inválidos voltam ao padrão seguro", () => {
   assert.deepEqual(readVideoConfig(null), { state: "off", provider: "daily", beta_houses: [] });
   const id = "11111111-1111-4111-8111-111111111111";
-  assert.deepEqual(readVideoConfig({ state: "beta", provider: "whereby", beta_houses: [id, id, "x", 3] }), { state: "beta", provider: "whereby", beta_houses: [id] });
+  assert.deepEqual(readVideoConfig({ state: "beta", provider: "whereby", beta_houses: [id, id, "x", 3] }), { state: "beta", provider: "daily", beta_houses: [id] });
   assert.equal(readVideoConfig({ state: "hack" }).state, "off");
 });

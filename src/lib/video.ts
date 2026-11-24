@@ -4,7 +4,7 @@ import { readVideoConfig, type VideoConfig, type VideoKind } from "@/lib/videoCo
 
 export interface UpcomingMeeting { id: string; houseId: string; houseName: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; isHost: boolean }
 export interface VideoBank { cap: number; used: number; remaining: number; enabled: boolean }
-export interface JoinResult { ok: boolean; reason?: string; startsAt?: string | null; provider?: "daily" | "whereby"; url?: string; token?: string | null; isHost?: boolean; title?: string; kind?: VideoKind; endsAt?: string }
+export interface JoinResult { ok: boolean; reason?: string; startsAt?: string | null; provider?: "daily"; url?: string; token?: string | null; isHost?: boolean; title?: string; kind?: VideoKind; endsAt?: string }
 
 /** Próximas reuniões que a pessoa pode ver (dona, membro da casa ou cliente convidado). */
 export async function fetchUpcoming(): Promise<UpcomingMeeting[]> {
@@ -64,7 +64,7 @@ export async function joinMeeting(id: string): Promise<JoinResult> {
     if (!d) return { ok: false, reason: "provedor_indisponivel" };
   }
   if (!d || d.ok !== true) return { ok: false, reason: typeof d?.reason === "string" ? d.reason : "indisponivel", startsAt: typeof d?.starts_at === "string" ? d.starts_at : null };
-  return { ok: true, provider: d.provider === "whereby" ? "whereby" : "daily", url: String(d.url ?? ""), token: typeof d.token === "string" ? d.token : null, isHost: d.is_host === true, title: String(d.title ?? ""), kind: d.kind === "consulta" ? "consulta" : "reuniao", endsAt: String(d.ends_at ?? "") };
+  return { ok: true, provider: "daily", url: String(d.url ?? ""), token: typeof d.token === "string" ? d.token : null, isHost: d.is_host === true, title: String(d.title ?? ""), kind: d.kind === "consulta" ? "consulta" : "reuniao", endsAt: String(d.ends_at ?? "") };
 }
 
 /** Pedidos da casa que podem virar consulta por vídeo (só os já pagos e em curso). */

@@ -3,9 +3,9 @@
 
 export const KINDS = { reuniao: "Reunião com membros", consulta: "Consulta por vídeo" };
 export const VIDEO_STATES = ["off", "beta", "on"];
-export const VIDEO_PROVIDERS = ["daily", "whereby"];
+export const VIDEO_PROVIDERS = ["daily"];
 export const VIDEO_STATE_LABEL = { off: "Desligado", beta: "Só casas de teste", on: "Ligado para todas" };
-export const PROVIDER_LABEL = { daily: "Daily", whereby: "Whereby" };
+export const PROVIDER_LABEL = { daily: "Daily" };
 
 const REASONS = {
   sem_login: "Entre na sua conta para participar.",
@@ -76,12 +76,12 @@ export function validateSchedule({ kind, title, startsAtIso, duration, max, orde
   return null;
 }
 
-/** Só endereços https dos dois provedores entram no iframe; qualquer outra coisa é recusada. */
+/** Só endereços https do provedor entram no iframe; qualquer outra coisa é recusada. */
 export function embedUrl(provider, url, token) {
   try {
     const u = new URL(url);
     const host = u.hostname.toLowerCase();
-    const okHost = provider === "daily" ? host.endsWith(".daily.co") : provider === "whereby" ? host.endsWith(".whereby.com") : false;
+    const okHost = provider === "daily" ? host.endsWith(".daily.co") : false;
     if (u.protocol !== "https:" || !okHost) return null;
     if (provider === "daily") {
       if (!token || typeof token !== "string") return null;

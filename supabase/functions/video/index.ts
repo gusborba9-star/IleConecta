@@ -1,9 +1,9 @@
-// Função de borda: vídeo das casas (reuniões com membros e consultas). Os dois provedores (Daily e Whereby Embedded) ficam atrás do mesmo contrato;
-// o painel escolhe o ativo e cada reunião guarda o provedor que a criou. As chaves vêm dos segredos DAILY_API_KEY e WHEREBY_API_KEY.
-// Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos dos provedores entram por ?hook=daily|whereby
+// Função de borda: vídeo das casas (reuniões com membros e consultas). O provedor (hoje o Daily) fica atrás de um contrato comum, para poder haver outro no futuro;
+// o painel escolhe o ativo e cada reunião guarda o provedor que a criou. A chave vem do segredo DAILY_API_KEY.
+// Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos do provedor entram por ?hook=daily
 // e só valem com assinatura correta; só eles gravam consumo de minutos.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, verifyDailySignature, verifyWherebySignature } from "./core.js";
+import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, verifyDailySignature } from "./core.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,24 +21,22 @@ Deno.serve(async (req) => {
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, service, { auth: { persistSession: false } });
-  const keys = { daily: Deno.env.get("DAILY_API_KEY") ?? "", whereby: Deno.env.get("WHEREBY_API_KEY") ?? "" };
+  const keys = { daily: Deno.env.get("DAILY_API_KEY") ?? "" };
   const hook = new URL(req.url).searchParams.get("hook");
 
   // ---- avisos dos provedores (sem login: valem pela assinatura) ----
-  if (hook === "daily" || hook === "whereby") {
+  if (hook === "daily") {
     const raw = await req.text();
     let evt: unknown;
     let ok = false;
-    if (hook === "daily") {
+    {
       const { data } = await admin.from("app_secrets").select("value").eq("key", "daily_webhook_hmac").maybeSingle();
       const secret = (data?.value as string | undefined) ?? Deno.env.get("DAILY_WEBHOOK_HMAC") ?? "";
       ok = await verifyDailySignature({ secretB64: secret, timestamp: req.headers.get("x-webhook-timestamp") ?? "", signature: req.headers.get("x-webhook-signature") ?? "", rawBody: raw });
-    } else {
-      ok = await verifyWherebySignature({ secret: Deno.env.get("WHEREBY_WEBHOOK_SECRET") ?? "", header: req.headers.get("whereby-signature") ?? "", rawBody: raw });
     }
     if (!ok) return json(401, { error: "assinatura_invalida" });
     try { evt = JSON.parse(raw); } catch { return json(200, { ok: true, ignorado: "json" }); }
-    const n = hook === "daily" ? normalizeDailyEvent(evt) : normalizeWherebyEvent(evt);
+    const n = normalizeDailyEvent(evt);
     if (!n) {
       const e = evt as { type?: unknown; payload?: unknown; data?: unknown };
       console.error("video_hook_ignorado", hook, String(e?.type ?? "?").slice(0, 60), Object.keys((e?.payload ?? e?.data ?? {}) as object).slice(0, 20).join(","));
@@ -73,13 +71,13 @@ Deno.serve(async (req) => {
           if (error) throw new Error(error.message);
           return data;
         },
-        // minutos só podem ser medidos se o aviso do provedor estiver ligado (Daily: chave gravada ao cadastrar; Whereby: segredo do aviso)
+        // minutos só podem ser medidos se o aviso do provedor estiver ligado (Daily: chave gravada ao cadastrar)
         meteringReady: async (provider: string) => {
           if (provider === "daily") {
             const { data } = await admin.from("app_secrets").select("key").eq("key", "daily_webhook_hmac").maybeSingle();
             return Boolean(data) || Boolean(Deno.env.get("DAILY_WEBHOOK_HMAC"));
           }
-          return provider === "whereby" && Boolean(Deno.env.get("WHEREBY_WEBHOOK_SECRET"));
+          return false;
         },
         roomGet: async (id: string) => (await admin.rpc("video_room_get", { p_meeting: id })).data,
         roomSet: async (id: string, ref: string, u: string, host: string | null) => {
