@@ -2,6 +2,7 @@ import SkipLink from "./SkipLink";
 import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopBar from "./TopBar";
+import { useUpdatePrompt } from "@/hooks/useUpdatePrompt";
 import SideNav from "./SideNav";
 import RightRail from "./RightRail";
 import { useApp } from "@/contexts/AppContext";
@@ -24,6 +25,7 @@ import SecurityWordCard from "@/components/account/SecurityWordCard";
 export default function AppShell() {
   const { isRemoteAuth, currentUser } = useApp();
   const userId = currentUser?.id;
+  useUpdatePrompt();
 
   // Aceite único: se o servidor não tem o aceite vigente desta conta, aparece só a tela de aceite (uma vez; de novo apenas se o texto mudar).
   // Se não for possível consultar, a pessoa não fica presa: a compra continua exigindo o aceite no servidor.
