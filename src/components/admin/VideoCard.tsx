@@ -63,7 +63,7 @@ export default function VideoCard() {
         <Button onClick={() => void save()} disabled={busy}>{busy ? "Salvando…" : "Salvar"}</Button>
         <Button variant="outline" onClick={() => void webhook()} disabled={busy}>Cadastrar aviso do Daily</Button>
       </div>
-      <p className="text-xs text-muted-foreground">"Cadastrar aviso do Daily" registra, uma única vez, o endereço que recebe entradas e saídas para contar os minutos. Para o Whereby, o aviso é configurado no painel dele.</p>
+      <p className="text-xs text-muted-foreground">"Cadastrar aviso do Daily" registra, uma única vez, o endereço que recebe entradas e saídas para contar os minutos.</p>
     </Card>
   );
 }

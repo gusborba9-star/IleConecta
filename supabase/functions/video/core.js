@@ -30,20 +30,6 @@ export async function verifyDailySignature({ secretB64, timestamp, signature, ra
   } catch { return false; }
 }
 
-/** Whereby: cabeçalho "t=<tempo>,v1=<assinatura>"; HMAC-SHA256 de "tempo.corpo" com o segredo do endpoint. Aceita 5 minutos de diferença. */
-export async function verifyWherebySignature({ secret, header, rawBody, nowMs = Date.now() }) {
-  try {
-    if (!secret || !header || typeof rawBody !== "string") return false;
-    const parts = Object.fromEntries(String(header).split(",").map((p) => p.trim().split("=")).filter((p) => p.length >= 2).map(([k, ...v]) => [k, v.join("=")]));
-    const t = parts.t, v1 = parts.v1;
-    if (!t || !v1) return false;
-    const tsMs = Number(t) < 1e12 ? Number(t) * 1000 : Number(t);
-    if (!Number.isFinite(tsMs) || Math.abs(nowMs - tsMs) > 5 * 60_000) return false;
-    const mine = bytesToHex(await hmac(te.encode(secret), `${t}.${rawBody}`));
-    return safeEqual(mine, v1.toLowerCase());
-  } catch { return false; }
-}
-
 const iso = (ms) => new Date(ms).toISOString();
 const sec = (ms) => Math.floor(ms / 1000);
 
@@ -103,38 +89,8 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
   };
 }
 
-/** Whereby Embedded: reunião passageira (some sozinha depois do fim); anfitrião usa o endereço de anfitrião. */
-export function wherebyAdapter(fetchImpl, apiKey, base = "https://api.whereby.dev/v1") {
-  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
-  return {
-    name: "whereby",
-    async ensureRoom({ startsAt, durationMin }) {
-      const w = roomWindow(startsAt, durationMin);
-      const res = await fetchImpl(`${base}/meetings`, { method: "POST", headers, body: JSON.stringify({ endDate: iso(w.closes), roomNamePrefix: "ic", roomMode: "group", fields: ["hostRoomUrl"] }) });
-      if (!res.ok) throw new Error("provedor_indisponivel");
-      const d = await j(res);
-      if (!d.meetingId || !d.roomUrl) throw new Error("provedor_resposta_invalida");
-      return { ref: String(d.meetingId), url: d.roomUrl, hostUrl: d.hostRoomUrl ?? null };
-    },
-    async accessFor({ room, displayName, isHost }) {
-      const base0 = isHost && room.hostUrl ? room.hostUrl : room.url;
-      const u = new URL(base0);
-      u.searchParams.set("embed", "");
-      u.searchParams.set("displayName", String(displayName ?? "Participante").replace(/[$!<>:;]/g, "").slice(0, 40) || "Participante");
-      return { url: u.toString().replace("embed=", "embed") };
-    },
-    /** Fecha a reunião para todos. Reunião que já não existe conta como fechada. */
-    async closeRoom({ ref }) {
-      if (!ref) return false;
-      const res = await fetchImpl(`${base}/meetings/${encodeURIComponent(ref)}`, { method: "DELETE", headers });
-      return res.ok || res.status === 404;
-    },
-  };
-}
-
 export function adapterFor(provider, fetchImpl, keys) {
   if (provider === "daily" && keys.daily) return dailyAdapter(fetchImpl, keys.daily);
-  if (provider === "whereby" && keys.whereby) return wherebyAdapter(fetchImpl, keys.whereby);
   return null;
 }
 
@@ -180,17 +136,6 @@ export function normalizeDailyEvent(evt) {
   return null;
 }
 
-/** Whereby → mesmo formato. O código da reunião (meetingId) identifica a sala; o tempo vem do createdAt do aviso. */
-export function normalizeWherebyEvent(evt) {
-  const d = evt?.data ?? {};
-  const at = toMs(evt?.createdAt) ?? Date.now();
-  const ext = typeof d.externalId === "string" && /^[0-9a-f-]{36}$/i.test(d.externalId) ? d.externalId : null;
-  const session = d.participantId ? String(d.participantId) : null;
-  if (evt?.type === "room.client.joined" && d.meetingId && session) return { kind: "joined", room: String(d.meetingId), session, userId: ext, at, joinedAt: at };
-  if (evt?.type === "room.client.left" && d.meetingId && session) return { kind: "left", room: String(d.meetingId), session, userId: ext, at, joinedAt: null };
-  return null;
-}
-
 /**
  * Encerrar reunião (só a dona da casa; o banco confere): marca como encerrada, fecha a sala no provedor e fecha os minutos em uso.
  * deps: { endMeeting(id) -> { provider, room_name, provider_ref }, adapterFor(provider), closeUsage(room) }
@@ -206,6 +151,6 @@ export async function endMeeting(meetingId, deps) {
     const adapter = deps.adapterFor(info.provider);
     if (adapter && typeof adapter.closeRoom === "function") roomClosed = await adapter.closeRoom({ roomName: info.room_name, ref: info.provider_ref });
   } catch { roomClosed = false; }
-  try { await deps.closeUsage(info.provider === "whereby" ? (info.provider_ref ?? info.room_name) : info.room_name); } catch { /* o aviso do provedor e a limpeza fecham depois */ }
+  try { await deps.closeUsage(info.room_name); } catch { /* o aviso do provedor e a limpeza fecham depois */ }
   return { ok: true, room_closed: roomClosed };
 }

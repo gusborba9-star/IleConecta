@@ -8,7 +8,7 @@ test("câmera e microfone só para o próprio site e os dois provedores de víde
   for (const f of ["camera", "microphone"]) {
     const m = h["Permissions-Policy"].match(new RegExp(`${f}=\\(([^)]*)\\)`));
     assert.ok(m, f);
-    assert.match(m[1], /^self "https:\/\/ileconecta\.daily\.co" "https:\/\/ile-conecta\.whereby\.com"$/);
+    assert.match(m[1], /^self "https:\/\/ileconecta\.daily\.co"$/);
   }
 });
 test("o site continua sem poder ser embutido por terceiros", () => {

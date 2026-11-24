@@ -56,7 +56,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(self \"https://ileconecta.daily.co\" \"https://ile-conecta.whereby.com\"), microphone=(self \"https://ileconecta.daily.co\" \"https://ile-conecta.whereby.com\"), display-capture=(self \"https://ileconecta.daily.co\" \"https://ile-conecta.whereby.com\"), geolocation=(self)"
+          "value": "camera=(self \"https://ileconecta.daily.co\"), microphone=(self \"https://ileconecta.daily.co\"), display-capture=(self \"https://ileconecta.daily.co\"), geolocation=(self)"
         }
       ]
     },

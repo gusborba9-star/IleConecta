@@ -1,6 +1,6 @@
 export type VideoKind = "reuniao" | "consulta";
 export type VideoState = "off" | "beta" | "on";
-export type VideoProvider = "daily" | "whereby";
+export type VideoProvider = "daily";
 export interface VideoConfig { state: VideoState; provider: VideoProvider; beta_houses: string[] }
 export interface BankView { cap: number; used: number; remaining: number; pct: number; level: "ok" | "warn" | "out" }
 export const KINDS: Record<VideoKind, string>;

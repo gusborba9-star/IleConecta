@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
-import { adapterFor, dailyAdapter, endMeeting, joinMeeting, normalizeDailyEvent, normalizeWherebyEvent, roomWindow, verifyDailySignature, verifyWherebySignature, wherebyAdapter } from "../supabase/functions/video/core.js";
+import { adapterFor, dailyAdapter, endMeeting, joinMeeting, normalizeDailyEvent, roomWindow, verifyDailySignature } from "../supabase/functions/video/core.js";
 
 const UID = "11111111-1111-4111-8111-111111111111";
 const MID = "22222222-2222-4222-8222-222222222222";
@@ -31,15 +31,6 @@ test("assinatura do Daily: certa passa; corpo, chave e hora erradas falham", asy
   assert.equal(await verifyDailySignature({ secretB64: B64(webcrypto.getRandomValues(new Uint8Array(32))), timestamp: ts, signature: sig, rawBody: body, nowMs: now }), false);
   assert.equal(await verifyDailySignature({ secretB64: B64(key), timestamp: ts, signature: sig, rawBody: body, nowMs: now + 10 * 60_000 }), false);
   assert.equal(await verifyDailySignature({ secretB64: "", timestamp: ts, signature: sig, rawBody: body, nowMs: now }), false);
-});
-
-test("assinatura do Whereby: t=,v1=", async () => {
-  const secret = "segredo", now = Date.now(), t = String(Math.floor(now / 1000)), body = '{"type":"x"}';
-  const v1 = (await hm(new TextEncoder().encode(secret), `${t}.${body}`)).toString("hex");
-  assert.equal(await verifyWherebySignature({ secret, header: `t=${t},v1=${v1}`, rawBody: body, nowMs: now }), true);
-  assert.equal(await verifyWherebySignature({ secret, header: `t=${t},v1=${v1}`, rawBody: body + "1", nowMs: now }), false);
-  assert.equal(await verifyWherebySignature({ secret: "outro", header: `t=${t},v1=${v1}`, rawBody: body, nowMs: now }), false);
-  assert.equal(await verifyWherebySignature({ secret, header: "lixo", rawBody: body, nowMs: now }), false);
 });
 
 test("Daily: cria sala privada com validade e lotação; trata sala já existente e geo recusado", async () => {
@@ -77,24 +68,11 @@ test("Daily: token de acesso leva nome, dono e expira com a sala", async () => {
   assert.ok(sent.properties.user_id.length <= 36);
 });
 
-test("Whereby: cria reunião e monta o endereço embutido (anfitrião usa o próprio)", async () => {
-  let sent;
-  const a = wherebyAdapter(async (u, init) => { sent = JSON.parse(init.body); return res(201, { meetingId: "M1", roomUrl: "https://ic.whereby.com/ic-x", hostRoomUrl: "https://ic.whereby.com/ic-x?roomKey=H" }); }, "K");
-  const r = await a.ensureRoom({ startsAt: START, durationMin: 30, maxParticipants: 10 });
-  assert.equal(r.ref, "M1");
-  assert.equal(sent.roomMode, "group");
-  const guest = await a.accessFor({ room: { url: r.url, hostUrl: r.hostUrl }, displayName: "Ana <b>", isHost: false });
-  assert.match(guest.url, /^https:\/\/ic\.whereby\.com\/ic-x\?embed&displayName=/);
-  assert.doesNotMatch(guest.url, /roomKey/);
-  assert.doesNotMatch(decodeURIComponent(guest.url), /[<>]/);
-  const host = await a.accessFor({ room: { url: r.url, hostUrl: r.hostUrl }, displayName: "Dona", isHost: true });
-  assert.match(host.url, /roomKey=H/);
-});
-
 test("adapterFor só entrega o provedor com chave", () => {
-  assert.equal(adapterFor("daily", fetch, { daily: "k", whereby: "" }).name, "daily");
-  assert.equal(adapterFor("whereby", fetch, { daily: "k", whereby: "" }), null);
-  assert.equal(adapterFor("outro", fetch, { daily: "k", whereby: "k" }), null);
+  assert.equal(adapterFor("daily", fetch, { daily: "k" }).name, "daily");
+  assert.equal(adapterFor("daily", fetch, { daily: "" }), null);
+  assert.equal(adapterFor("whereby", fetch, { daily: "k", whereby: "k" }), null);
+  assert.equal(adapterFor("outro", fetch, { daily: "k" }), null);
 });
 
 function deps(over = {}) {
@@ -122,7 +100,7 @@ test("entrada: negada pelo banco não toca no provedor; pedido inválido e prove
   assert.equal(state.created, 0);
   assert.equal((await joinMeeting("abc", deps().d)).reason, "pedido_invalido");
   assert.equal((await joinMeeting(MID, deps({ adapter: null }).d)).reason, "provedor_indisponivel");
-  assert.equal((await joinMeeting(MID, deps({ adapter: { name: "whereby" } }).d)).reason, "provedor_indisponivel");
+  assert.equal((await joinMeeting(MID, deps({ adapter: { name: "outro" } }).d)).reason, "provedor_indisponivel");
 });
 
 test("entrada: primeira gravação vence quando duas pessoas criam ao mesmo tempo", async () => {
@@ -136,7 +114,7 @@ test("entrada: primeira gravação vence quando duas pessoas criam ao mesmo temp
   assert.equal(x.url, y.url);
 });
 
-test("eventos do Daily e do Whereby são normalizados; desconhecidos viram null", () => {
+test("eventos do Daily são normalizados; desconhecidos viram null", () => {
   const j = normalizeDailyEvent({ type: "participant.joined", event_ts: 1800000000, payload: { room: "ic-1", session_id: "s1", user_id: UID, joined_at: 1799999990 } });
   assert.equal(j.kind, "joined"); assert.equal(j.userId, UID); assert.equal(j.joinedAt, 1799999990000);
   const l = normalizeDailyEvent({ type: "participant.left", event_ts: 1800000600, payload: { room: "ic-1", session_id: "s1", duration: 600 } });
@@ -144,11 +122,6 @@ test("eventos do Daily e do Whereby são normalizados; desconhecidos viram null"
   assert.equal(normalizeDailyEvent({ type: "meeting.ended", payload: { room: "ic-1" } }).kind, "ended");
   assert.equal(normalizeDailyEvent({ type: "outro", payload: {} }), null);
   assert.equal(normalizeDailyEvent(null), null);
-  const wj = normalizeWherebyEvent({ type: "room.client.joined", createdAt: "2026-12-01T18:00:00Z", data: { meetingId: "M1", participantId: "p1", externalId: "x" } });
-  assert.equal(wj.kind, "joined"); assert.equal(wj.room, "M1"); assert.equal(wj.userId, null);
-  const wl = normalizeWherebyEvent({ type: "room.client.left", createdAt: "2026-12-01T18:30:00Z", data: { meetingId: "M1", participantId: "p1" } });
-  assert.equal(wl.kind, "left"); assert.equal(wl.joinedAt, null);
-  assert.equal(normalizeWherebyEvent({ type: "room.session.started", data: {} }), null);
 });
 
 test("entrada: sem a medição de minutos do provedor a sala não abre e nada é criado", async () => {
@@ -172,7 +145,7 @@ test("função de vídeo: confere a medição antes de abrir a sala e limpa avis
   const { readFileSync } = await import("node:fs");
   const ts = readFileSync(new URL("../supabase/functions/video/index.ts", import.meta.url), "utf8");
   assert.match(ts, /meteringReady: async \(provider: string\)/);
-  assert.match(ts, /WHEREBY_WEBHOOK_SECRET/);
+  assert.doesNotMatch(ts, /whereby/i);
   assert.match(ts, /method: "DELETE"/);
   assert.match(ts, /w\.url === target/);
 });
@@ -192,26 +165,23 @@ test("encerrar reunião: fecha a sala no provedor e os minutos; recusa do banco 
   assert.equal((await endMeeting("x", {})).reason, "pedido_invalido");
 });
 
-test("encerrar reunião: provedor fora do ar não desfaz o encerramento; Whereby fecha os minutos pela referência", async () => {
+test("encerrar reunião: provedor fora do ar não desfaz o encerramento e os minutos fecham mesmo assim", async () => {
   const usos = [];
   const r = await endMeeting(MID, {
-    endMeeting: async () => ({ provider: "whereby", room_name: "ic-w", provider_ref: "ref-9" }),
+    endMeeting: async () => ({ provider: "daily", room_name: "ic-w", provider_ref: "ic-w" }),
     adapterFor: () => ({ closeRoom: async () => { throw new Error("rede"); } }), closeUsage: async (room) => usos.push(room),
   });
   assert.deepEqual(r, { ok: true, room_closed: false });
-  assert.deepEqual(usos, ["ref-9"]);
+  assert.deepEqual(usos, ["ic-w"]);
 });
 
-test("adaptadores fecham a sala (Daily por nome, Whereby por código); sala inexistente conta como fechada", async () => {
+test("adaptadores fecham a sala (por nome da sala); sala inexistente conta como fechada", async () => {
   const urls = [];
   const f = (status) => async (u, o) => { urls.push([o.method, u]); return res(status, {}); };
   assert.equal(await dailyAdapter(f(200), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), true);
   assert.equal(await dailyAdapter(f(404), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), true);
   assert.equal(await dailyAdapter(f(500), "k", "https://d.test").closeRoom({ roomName: "ic-a" }), false);
-  assert.equal(await wherebyAdapter(f(204), "k", "https://w.test").closeRoom({ ref: "m1" }), true);
-  assert.equal(await wherebyAdapter(f(204), "k", "https://w.test").closeRoom({ ref: "" }), false);
   assert.deepEqual(urls[0], ["DELETE", "https://d.test/rooms/ic-a"]);
-  assert.deepEqual(urls[3], ["DELETE", "https://w.test/meetings/m1"]);
 });
 
 test("encerrar reunião: banco só deixa a dona, só com a sala aberta, e cancelar não vale para sala aberta", async () => {
@@ -246,7 +216,7 @@ test("parecer jurídico: ciência registrada pelo banco, retenção 12 meses/5 a
   assert.match(sql, /kind = 'reuniao' and starts_at < now\(\) - interval '12 months'/);
   assert.match(sql, /kind = 'consulta' and starts_at < now\(\) - interval '5 years'/);
   const t = readFileSync(new URL("../src/content/institutional.ts", import.meta.url), "utf8");
-  assert.match(t, /atualmente, o Daily e o Whereby/);
+  assert.match(t, /atualmente, o Daily[^ e]/);
   assert.match(t, /não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo/);
   assert.doesNotMatch(t, /cláusulas-padrão contratuais previstas na regulamentação da ANPD/);
   assert.match(t, /estritamente necessária para a execução do serviço de videoconferência solicitado por você \(LGPD, art\. 33, IX, em conjunto/);
@@ -258,4 +228,13 @@ test("parecer jurídico: ciência registrada pelo banco, retenção 12 meses/5 a
   assert.match(sala, /ackMeeting\(id, LEGAL_VERSION\)/);
   const lc = readFileSync(new URL("../src/lib/legalCore.js", import.meta.url), "utf8");
   assert.match(lc, /atendimentos e reuniões por áudio e vídeo/);
+});
+
+test("Whereby saiu: nenhum rastro no código da função, no painel, na sala, nas permissões e nos textos; o banco só aceita o Daily", async () => {
+  const { readFileSync } = await import("node:fs");
+  const lerf = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
+  for (const f of ["../supabase/functions/video/core.js", "../supabase/functions/video/index.ts", "../src/lib/videoCore.js", "../src/lib/video.ts", "../src/components/admin/VideoCard.tsx", "../vercel.json", "../src/content/institutional.ts"]) assert.doesNotMatch(lerf(f), /whereby/i, f);
+  const sql = lerf("../supabase/migrations/0210_video_somente_daily.sql");
+  assert.match(sql, /not in \(''daily''\)/);
+  assert.match(sql, /check \(provider in \('daily'\)\)/);
 });
