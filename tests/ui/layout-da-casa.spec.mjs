@@ -447,13 +447,14 @@ test.describe("Ícones do Início agrupados por cor", () => {
     await entrar(page);
     await page.goto("/");
     await expect(page.getByRole("link", { name: /^Editar página/ })).toBeVisible();
-    const linhas = await page.locator("section[aria-labelledby=ferramentas] .tool-tile").evaluateAll((els) => {
+    // As permissões do plano (ex.: Equipe) chegam depois do primeiro desenho e reorganizam as linhas; esperar o estado final em vez de ler uma foto no meio da carga.
+    const lerLinhas = () => page.locator("section[aria-labelledby=ferramentas] .tool-tile").evaluateAll((els) => {
       // cada linha de cor é uma grade própria: agrupar pela grade (não pela posição, que oscila durante a animação de entrada)
       const grades = [];
       for (const e of els) { const g = e.parentElement; let i = grades.findIndex((x) => x.g === g); if (i < 0) { grades.push({ g, itens: [] }); i = grades.length - 1; } grades[i].itens.push(e.innerText.split("\n")[0].trim()); }
       return grades.map((x) => x.itens);
     });
-    expect(linhas).toEqual([
+    await expect.poll(lerLinhas, { timeout: 8000 }).toEqual([
       ["Crescer", "Planos", "Recebimentos"], // Avaliações só aparece com o recurso ligado; entra no começo desta linha
       ["Membros", "Pessoas", "Novo serviço", "Equipe"],
       ["Novo ritual", "Comunidade", "Divulgação", "Assistente"],
