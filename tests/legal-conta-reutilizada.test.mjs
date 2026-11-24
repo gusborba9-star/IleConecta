@@ -23,7 +23,7 @@ test("Política: registros de segurança e dispositivos com prazos de 12 e 24 me
 });
 
 test("a versão dos textos subiu junto com a mudança", () => {
-  assert.equal(LEGAL_VERSION, "2026-11-rascunho-16");
+  assert.equal(LEGAL_VERSION, "2026-11-rascunho-17");
   assert.equal(LEGAL_VERSION_HISTORY.at(-1), LEGAL_VERSION);
 });
 
@@ -46,7 +46,9 @@ test("Termos: limites temporários por rede e regularização de gestão pelo su
 test("Política: impressão do cartão (só código irreversível, 24 meses, nunca bloqueia sozinha) e código da rede do cadastro (até 3 dias)", () => {
   assert.match(txt, /Guardamos somente um código irreversível dessa impressão, nunca o número, a validade ou o nome do titular, por 24 meses desde o último uso/);
   assert.match(txt, /Esse código, sozinho, nunca bloqueia uma contratação nem uma conta/);
-  assert.match(txt, /guardamos por no máximo 3 dias um código irreversível da rede usada em cada tentativa de cadastro/);
+  assert.match(txt, /Para limitar cadastros em massa e proteger a estabilidade do sistema \(com base em nosso legítimo interesse de segurança, LGPD, art\. 7º, IX\), guardamos por no máximo 3 dias um código irreversível da rede usada em cada tentativa de cadastro/);
+  assert.match(txt, /apoiar a análise humana contra fraudes e repetição abusiva de benefícios/);
+  assert.doesNotMatch(txt, /evitar a repetição de benefícios e de reembolsos/);
   assert.match(txt, /Código irreversível da impressão do cartão de pagamento: 24 \(vinte e quatro\) meses desde o último uso/);
   assert.match(txt, /até 3 \(três\) dias;/);
 });
