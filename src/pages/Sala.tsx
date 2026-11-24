@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/base";
@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { useConfirm } from "@/components/base/Confirm";
 import { LEGAL_VERSION } from "@/lib/legalCore";
 import { ackMeeting, endMeetingNow, joinMeeting, type JoinResult } from "@/lib/video";
-import { embedUrl, joinReasonText } from "@/lib/videoCore";
+import { embedUrl, joinReasonText, livekitServerUrl } from "@/lib/videoCore";
 
-type State = { s: "aviso" } | { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; src: string; title: string; host: boolean; endsAt?: string };
+const LivekitRoomView = lazy(() => import("@/components/video/LivekitRoom"));
+
+type State = { s: "aviso" } | { s: "carregando" } | { s: "negado"; text: string } | { s: "pronta"; kind: "iframe"; src: string; title: string; host: boolean; endsAt?: string } | { s: "pronta"; kind: "livekit"; server: string; token: string; title: string; host: boolean; endsAt?: string };
 
 /** Sala de vídeo: o servidor confere o acesso e devolve o endereço da sala; só endereços dos dois provedores entram no quadro. */
 export default function Sala() {
@@ -45,8 +47,13 @@ export default function Sala() {
     void joinMeeting(id).then((r: JoinResult) => {
       if (!alive) return;
       if (!r.ok) return setSt({ s: "negado", text: joinReasonText(r.reason, r.startsAt) });
+      const common = { title: r.title ?? "Reunião", host: r.isHost === true, endsAt: r.endsAt };
+      if (r.provider === "livekit") {
+        const server = livekitServerUrl(r.url ?? "");
+        return setSt(server && r.token ? { s: "pronta", kind: "livekit", server, token: r.token, ...common } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
+      }
       const src = embedUrl(r.provider ?? "", r.url ?? "", r.token);
-      setSt(src ? { s: "pronta", src, title: r.title ?? "Reunião", host: r.isHost === true, endsAt: r.endsAt } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
+      setSt(src ? { s: "pronta", kind: "iframe", src, ...common } : { s: "negado", text: joinReasonText("provedor_indisponivel") });
     });
     return () => { alive = false; };
   }, [id, tick, accepted]);
@@ -85,7 +92,12 @@ export default function Sala() {
             <Button variant="outline" onClick={() => setTick((n) => n + 1)}>Tentar de novo</Button>
           </div>
         )}
-        {st.s === "pronta" && (
+        {st.s === "pronta" && st.kind === "livekit" && (
+          <Suspense fallback={<p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}>
+            <div className="h-full" data-testid="video-livekit"><LivekitRoomView serverUrl={st.server} token={st.token} onLeave={() => navigate("/reunioes")} /></div>
+          </Suspense>
+        )}
+        {st.s === "pronta" && st.kind === "iframe" && (
           <iframe title={st.title} src={st.src} allow="camera; microphone; fullscreen; display-capture; autoplay" referrerPolicy="strict-origin-when-cross-origin"
             className="block h-full w-full border-0 bg-black" data-testid="video-frame" />
         )}

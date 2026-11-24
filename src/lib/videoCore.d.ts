@@ -1,6 +1,6 @@
 export type VideoKind = "reuniao" | "consulta";
 export type VideoState = "off" | "beta" | "on";
-export type VideoProvider = "daily";
+export type VideoProvider = "daily" | "livekit";
 export interface VideoConfig { state: VideoState; provider: VideoProvider; beta_houses: string[] }
 export interface BankView { cap: number; used: number; remaining: number; pct: number; level: "ok" | "warn" | "out" }
 export const KINDS: Record<VideoKind, string>;
@@ -16,3 +16,4 @@ export function localToIso(date: string, time: string): string | null;
 export function validateSchedule(i: { kind: string; title: string; startsAtIso: string | null; duration: number | string; max?: number | string; orderId?: string | null }, nowMs?: number): string | null;
 export function embedUrl(provider: string, url: string, token?: string | null): string | null;
 export function readVideoConfig(raw: unknown): VideoConfig;
+export function livekitServerUrl(url: string): string | null;

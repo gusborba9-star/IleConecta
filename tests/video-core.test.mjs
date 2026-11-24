@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
-import { adapterFor, dailyAdapter, endMeeting, joinMeeting, normalizeDailyEvent, roomWindow, verifyDailySignature } from "../supabase/functions/video/core.js";
+import { adapterFor, dailyAdapter, endMeeting, joinMeeting, livekitAdapter, normalizeDailyEvent, normalizeLivekitEvent, roomWindow, signLivekitJwt, verifyDailySignature, verifyLivekitWebhook } from "../supabase/functions/video/core.js";
 
 const UID = "11111111-1111-4111-8111-111111111111";
 const MID = "22222222-2222-4222-8222-222222222222";
@@ -216,7 +216,7 @@ test("parecer jurídico: ciência registrada pelo banco, retenção 12 meses/5 a
   assert.match(sql, /kind = 'reuniao' and starts_at < now\(\) - interval '12 months'/);
   assert.match(sql, /kind = 'consulta' and starts_at < now\(\) - interval '5 years'/);
   const t = readFileSync(new URL("../src/content/institutional.ts", import.meta.url), "utf8");
-  assert.match(t, /atualmente, o Daily[^ e]/);
+  assert.match(t, /atualmente, o Daily e a LiveKit[,.)]/);
   assert.match(t, /não grava, não armazena e não tem acesso ao conteúdo de áudio ou vídeo/);
   assert.doesNotMatch(t, /cláusulas-padrão contratuais previstas na regulamentação da ANPD/);
   assert.match(t, /estritamente necessária para a execução do serviço de videoconferência solicitado por você \(LGPD, art\. 33, IX, em conjunto/);
@@ -237,4 +237,97 @@ test("Whereby saiu: nenhum rastro no código da função, no painel, na sala, na
   const sql = lerf("../supabase/migrations/0210_video_somente_daily.sql");
   assert.match(sql, /not in \(''daily''\)/);
   assert.match(sql, /check \(provider in \('daily'\)\)/);
+});
+
+// ---- LiveKit ----
+const LK = { url: "wss://ile.livekit.cloud", apiKey: "APIkey1", apiSecret: "segredo-de-teste-com-tamanho-bom-1234567890" };
+const dec = (t) => JSON.parse(Buffer.from(t.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString());
+const STARTS = new Date(Date.now() + 3600_000).toISOString();
+
+test("LiveKit: adapterFor só entrega com url, chave e segredo", () => {
+  assert.equal(adapterFor("livekit", fetch, { livekit: LK }).name, "livekit");
+  assert.equal(adapterFor("livekit", fetch, { livekit: { ...LK, apiSecret: "" } }), null);
+  assert.equal(adapterFor("livekit", fetch, {}), null);
+});
+
+test("LiveKit: token da pessoa traz sala, identidade, nome e validade até o fechamento", async () => {
+  const a = livekitAdapter(fetch, LK);
+  const r = await a.accessFor({ room: { url: LK.url }, roomName: "ic-1", userId: "11111111-1111-1111-1111-111111111111", displayName: "Ana", isHost: true, startsAt: STARTS, durationMin: 30 });
+  assert.equal(r.url, LK.url);
+  const [h, p, s] = r.token.split(".");
+  assert.equal(dec(h).alg, "HS256");
+  const c = dec(p);
+  assert.equal(c.iss, LK.apiKey); assert.equal(c.sub, "11111111-1111-1111-1111-111111111111"); assert.equal(c.name, "Ana");
+  assert.equal(c.video.room, "ic-1"); assert.equal(c.video.roomJoin, true); assert.ok(!c.video.roomAdmin);
+  const w = roomWindow(STARTS, 30);
+  assert.equal(c.exp, Math.floor(w.closes / 1000));
+  const { createHmac } = await import("node:crypto");
+  assert.equal(s, createHmac("sha256", LK.apiSecret).update(`${h}.${p}`).digest("base64url"));
+});
+
+test("LiveKit: criar e fechar sala chamam o servidor com credencial de administração", async () => {
+  const calls = [];
+  const f = async (u, o) => { calls.push([u, JSON.parse(o.body), dec(o.headers.Authorization.split(" ")[1].split(".")[1])]); return { ok: true, status: 200, json: async () => ({}) }; };
+  const a = livekitAdapter(f, LK);
+  const made = await a.ensureRoom({ roomName: "ic-1", startsAt: STARTS, durationMin: 30, maxParticipants: 4 });
+  assert.deepEqual(made, { ref: "ic-1", url: LK.url, hostUrl: null });
+  assert.equal(calls[0][0], "https://ile.livekit.cloud/twirp/livekit.RoomService/CreateRoom");
+  assert.equal(calls[0][1].max_participants, 4);
+  assert.equal(calls[0][2].video.roomCreate, true);
+  assert.equal(await a.closeRoom({ roomName: "ic-1" }), true);
+  assert.equal(calls[1][0], "https://ile.livekit.cloud/twirp/livekit.RoomService/DeleteRoom");
+  assert.deepEqual(calls[1][1], { room: "ic-1" });
+  assert.equal(calls[1][2].video.roomAdmin, true);
+  const fail = livekitAdapter(async () => ({ ok: false, status: 500 }), LK);
+  assert.equal(await fail.closeRoom({ roomName: "x" }), false);
+  assert.equal(await livekitAdapter(async () => ({ ok: false, status: 404 }), LK).closeRoom({ roomName: "x" }), true);
+  await assert.rejects(() => fail.ensureRoom({ roomName: "x", startsAt: STARTS, durationMin: 30, maxParticipants: 2 }), /provedor_indisponivel/);
+});
+
+test("LiveKit: aviso só vale com assinatura, chave e corpo corretos", async () => {
+  const raw = JSON.stringify({ event: "participant_joined", room: { name: "ic-1" }, participant: { identity: "11111111-1111-1111-1111-111111111111", sid: "PA_1", joinedAt: 1700000000 } });
+  const { createHash } = await import("node:crypto");
+  const sha256 = createHash("sha256").update(raw).digest("base64");
+  const now = Math.floor(Date.now() / 1000);
+  const good = await signLivekitJwt(LK.apiKey, LK.apiSecret, { exp: now + 300, nbf: now - 10, sha256 });
+  const base = { apiKey: LK.apiKey, apiSecret: LK.apiSecret, authorization: good, rawBody: raw };
+  assert.equal(await verifyLivekitWebhook(base), true);
+  assert.equal(await verifyLivekitWebhook({ ...base, rawBody: raw + " " }), false);
+  assert.equal(await verifyLivekitWebhook({ ...base, apiSecret: "outro-segredo-qualquer-0123456789abcdef" }), false);
+  assert.equal(await verifyLivekitWebhook({ ...base, apiKey: "outra" }), false);
+  assert.equal(await verifyLivekitWebhook({ ...base, authorization: "" }), false);
+  assert.equal(await verifyLivekitWebhook({ ...base, authorization: "abc.def.ghi" }), false);
+  const velho = await signLivekitJwt(LK.apiKey, LK.apiSecret, { exp: now - 3600, sha256 });
+  assert.equal(await verifyLivekitWebhook({ ...base, authorization: velho }), false);
+  assert.equal(await verifyLivekitWebhook({ ...base, authorization: `Bearer ${good}` }), true);
+});
+
+test("LiveKit: eventos viram entrada, saída e fim da sala", () => {
+  const id = "11111111-1111-1111-1111-111111111111";
+  const j = normalizeLivekitEvent({ event: "participant_joined", createdAt: 1700000005, room: { name: "ic-1" }, participant: { identity: id, sid: "PA_1", joinedAt: 1700000000 } });
+  assert.deepEqual(j, { kind: "joined", room: "ic-1", session: "PA_1", userId: id, at: 1700000000_000, joinedAt: 1700000000_000 });
+  const l = normalizeLivekitEvent({ event: "participant_left", createdAt: 1700000600, room: { name: "ic-1" }, participant: { identity: id, sid: "PA_1", joinedAt: 1700000000 } });
+  assert.equal(l.kind, "left"); assert.equal(l.at, 1700000600_000); assert.equal(l.joinedAt, 1700000000_000);
+  assert.deepEqual(normalizeLivekitEvent({ event: "room_finished", createdAt: 1700000900, room: { name: "ic-1" } }), { kind: "ended", room: "ic-1", at: 1700000900_000 });
+  assert.equal(normalizeLivekitEvent({ event: "track_published", room: { name: "ic-1" } }), null);
+  assert.equal(normalizeLivekitEvent({ event: "participant_joined", room: { name: "ic-1" }, participant: { identity: "x" } }), null);
+  assert.equal(normalizeLivekitEvent({ event: "participant_joined", room: { name: "ic-1" }, participant: { identity: "nao-uuid", sid: "PA_2", joinedAt: 1700000000 } }).userId, null);
+});
+
+test("LiveKit: entrada sem aviso cadastrado não abre (medicao_indisponivel)", async () => {
+  const deps = (ready) => ({
+    joinCheck: async () => ({ ok: true, provider: "livekit", room_name: "ic-1", starts_at: STARTS, duration_min: 30, max_participants: 2, user_id: "11111111-1111-1111-1111-111111111111", display_name: "Ana", is_host: false, title: "T", kind: "reuniao", ends_at: STARTS }),
+    meteringReady: async () => ready, roomGet: async () => null, roomSet: async () => null, adapter: livekitAdapter(async () => ({ ok: true, status: 200, json: async () => ({}) }), LK),
+  });
+  assert.equal((await joinMeeting(MID, deps(false))).reason, "medicao_indisponivel");
+  const ok = await joinMeeting(MID, deps(true));
+  assert.equal(ok.ok, true); assert.equal(ok.provider, "livekit"); assert.equal(ok.url, LK.url); assert.ok(ok.token.split(".").length === 3);
+});
+
+test("migração 0211 libera a LiveKit na configuração, na mensagem do painel e na coluna", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0211_video_livekit.sql", import.meta.url), "utf8");
+  assert.match(sql, /not in \(''daily'', ''livekit''\)/);
+  assert.match(sql, /check \(provider in \('daily', 'livekit'\)\)/);
+  assert.match(sql, /provedor \(Daily ou LiveKit\)/);
 });

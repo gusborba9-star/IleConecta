@@ -3,9 +3,9 @@
 
 export const KINDS = { reuniao: "Reunião com membros", consulta: "Consulta por vídeo" };
 export const VIDEO_STATES = ["off", "beta", "on"];
-export const VIDEO_PROVIDERS = ["daily"];
+export const VIDEO_PROVIDERS = ["daily", "livekit"];
 export const VIDEO_STATE_LABEL = { off: "Desligado", beta: "Só casas de teste", on: "Ligado para todas" };
-export const PROVIDER_LABEL = { daily: "Daily" };
+export const PROVIDER_LABEL = { daily: "Daily", livekit: "LiveKit (tela própria)" };
 
 const REASONS = {
   sem_login: "Entre na sua conta para participar.",
@@ -88,6 +88,15 @@ export function embedUrl(provider, url, token) {
       u.searchParams.set("t", token);
     }
     return u.toString().replace("embed=", "embed");
+  } catch { return null; }
+}
+
+/** LiveKit: o endereço do servidor da sala precisa ser wss do domínio da LiveKit Cloud (ou o domínio próprio, se um dia houver). */
+export function livekitServerUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "wss:" || !u.hostname.toLowerCase().endsWith(".livekit.cloud")) return null;
+    return u.toString().replace(/\/$/, "");
   } catch { return null; }
 }
 
