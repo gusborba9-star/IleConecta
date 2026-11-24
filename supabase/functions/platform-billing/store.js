@@ -63,6 +63,7 @@ export function createStore(admin) {
     cardSave: (houseId, provider, setupRef, customer, m) => rpc("platform_card_save", { p_house: houseId, p_provider: provider, p_setup_ref: setupRef, p_customer: customer, p_method: m.id, p_brand: m.brand, p_last4: m.last4, p_month: m.expMonth, p_year: m.expYear }),
     cardSetAuto: (houseId, enabled) => rpc("platform_card_set_auto", { p_house: houseId, p_enabled: enabled }),
     cardRemove: (houseId) => rpc("platform_card_remove", { p_house: houseId }),
+    payerKey: (userId, fingerprint) => rpc("payer_key_record", { p_user: userId, p_fingerprint: fingerprint }),
     cardAuthOk: (houseId) => rpc("platform_card_auth_ok", { p_house: houseId, p_minutes: 60 }),
     cardGet: (houseId) => rpc("platform_card_get", { p_house: houseId }),
     async houseOfOwner(userId) {

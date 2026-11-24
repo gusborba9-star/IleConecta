@@ -43,6 +43,10 @@ export function translateAuthError(message: string | undefined): string {
   if (m.includes("password") && (m.includes("least") || m.includes("weak") || m.includes("short"))) {
     return `A senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
   }
+  // limite suave de cadastros por rede (migração 0199): a rede tem de esperar um pouco, nada é bloqueado
+  if (m.includes("cadastro a partir desta rede")) {
+    return "Muitos cadastros foram feitos a partir desta rede em pouco tempo. Tente novamente mais tarde ou use outra conexão.";
+  }
   if (m.includes("rate limit") || m.includes("too many") || m.includes("security purposes")) {
     return "Muitas tentativas. Aguarde um minuto e tente novamente.";
   }

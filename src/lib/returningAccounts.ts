@@ -102,7 +102,7 @@ export interface SamePersonOther {
   nome: string;
   tipo: string;
   desde: string | null;
-  sinais: ("aparelho" | "rede" | "documento")[];
+  sinais: ("aparelho" | "rede" | "documento" | "cartao")[];
   nivel: "forte" | "fraco";
   reembolsoUsado: boolean;
 }
@@ -117,7 +117,7 @@ export interface SamePersonSignal {
   refundUsed: boolean;
 }
 
-/** Contas que parecem ser da mesma pessoa (mesmo aparelho, ou mesma rede com contas criadas em datas próximas). Só leitura; o IP nunca é exibido. */
+/** Contas que parecem ser da mesma pessoa (mesmo aparelho, mesmo cartão, mesmo CPF/CNPJ, ou mesma rede com contas criadas em datas próximas). Só leitura; o IP nunca é exibido. */
 export async function fetchSamePersonSignals(): Promise<SamePersonSignal[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("admin_same_person_signals");
@@ -134,7 +134,7 @@ export async function fetchSamePersonSignals(): Promise<SamePersonSignal[]> {
       nome: String(o.nome ?? ""),
       tipo: String(o.tipo ?? ""),
       desde: o.desde ? String(o.desde) : null,
-      sinais: (Array.isArray(o.sinais) ? (o.sinais as unknown[]) : []).map((x) => (x === "aparelho" ? "aparelho" : x === "documento" ? "documento" : "rede")),
+      sinais: (Array.isArray(o.sinais) ? (o.sinais as unknown[]) : []).map((x) => (x === "aparelho" ? "aparelho" : x === "documento" ? "documento" : x === "cartao" ? "cartao" : "rede")),
       nivel: o.nivel === "forte" ? "forte" : "fraco",
       reembolsoUsado: o.reembolso_usado === true,
     })),
