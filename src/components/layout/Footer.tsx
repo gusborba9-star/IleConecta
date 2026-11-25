@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BRAND } from "@/content/institutional";
+import { BRAND } from "@/content/brand";
 import { useApp } from "@/contexts/AppContext";
 
 /** Rodapé discreto em todas as telas: um link para os termos e normas (a página completa fica no menu) e o suporte. */

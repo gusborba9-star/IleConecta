@@ -2,7 +2,7 @@
 // e mede o que a pessoa sente (primeira tela, maior elemento, deslocamento de layout, bloqueio) e o peso transferido (com brotli, como na Vercel).
 // Uso: npm run build && node scripts/carga/celular.mjs [rotas separadas por vírgula, padrão /,/feed,/descobrir]
 import http from "node:http";
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { brotliCompressSync } from "node:zlib";
 import { extname, join } from "node:path";
 import { chromium, devices } from "playwright";
@@ -17,10 +17,15 @@ const srv = http.createServer((req, res) => {
   const h = { "content-type": types[ext] ?? "application/octet-stream", "cache-control": "no-store" };
   if (buf.br && String(req.headers["accept-encoding"] ?? "").includes("br")) { res.writeHead(200, { ...h, "content-encoding": "br" }); res.end(buf.br); } else { res.writeHead(200, h); res.end(buf.raw); }
 });
+// Aquece a compressão de todos os arquivos antes de medir: sem isso a primeira rota paga o tempo de comprimir (artefato do medidor, não do app).
+for (const name of ["index.html", ...readdirSync(join(DIST, "assets")).map((n) => "assets/" + n)]) {
+  const f = join(DIST, name); const ext = extname(f);
+  if ([".js", ".css", ".html", ".svg"].includes(ext)) { const raw = readFileSync(f); cache.set(f, { raw, br: brotliCompressSync(raw) }); }
+}
 await new Promise((r) => srv.listen(0, r));
 const base = `http://localhost:${srv.address().port}`;
 const routes = (process.argv[2] ?? "/,/feed,/descobrir").split(",");
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {});
 const out = [];
 for (const route of routes) {
   const ctx = await browser.newContext({ ...devices["Moto G Power"] ?? devices["Pixel 5"], locale: "pt-BR" });
