@@ -44,6 +44,25 @@ export function meetingPhase(m, nowMs = Date.now()) {
   return "aberta";
 }
 
+/**
+ * Cartões da tela inicial: reuniões que abrem nas próximas 24 horas ou estão em andamento (até 3), da mais próxima para a mais distante.
+ * estado: "aberta" (pode entrar), "hoje" ou "amanha" (ainda fechada). Reunião encerrada ou além de 24 horas não aparece.
+ */
+export function homeMeetingCards(list, nowMs = Date.now()) {
+  const out = [];
+  for (const m of Array.isArray(list) ? list : []) {
+    const start = Date.parse(m?.startsAt ?? m?.starts_at ?? "");
+    if (!Number.isFinite(start)) continue;
+    const phase = meetingPhase({ starts_at: new Date(start).toISOString(), duration_min: m.durationMin ?? m.duration_min }, nowMs);
+    if (phase === "encerrada") continue;
+    if (phase === "cedo" && start - nowMs > 24 * 3_600_000) continue;
+    const day = (ms) => new Date(ms).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const state = phase === "aberta" ? "aberta" : day(start) === day(nowMs) ? "hoje" : "amanha";
+    out.push({ ...m, start, state });
+  }
+  return out.sort((a, b) => a.start - b.start).slice(0, 3);
+}
+
 /** Banco do mês para a tela: percentual usado e nível (ok, aviso a partir de 80%, esgotado). */
 export function bankView(b) {
   const cap = Math.max(0, Number(b?.cap) || 0), used = Math.max(0, Number(b?.used) || 0);
@@ -61,7 +80,7 @@ export function localToIso(date, time) {
 }
 
 /** Mesmas regras do banco (video_schedule). Devolve a mensagem de erro ou null. */
-export function validateSchedule({ kind, title, startsAtIso, duration, max, orderId }, nowMs = Date.now()) {
+export function validateSchedule({ kind, title, startsAtIso, duration, max, orderId, audience = "todos", invitees = [] }, nowMs = Date.now()) {
   if (kind !== "reuniao" && kind !== "consulta") return "Escolha o tipo.";
   const t = String(title ?? "").trim();
   if (t.length < 1 || t.length > 80) return "Dê um título de até 80 letras.";
@@ -71,6 +90,12 @@ export function validateSchedule({ kind, title, startsAtIso, duration, max, orde
   if (!Number.isFinite(at)) return "Escolha o dia e a hora.";
   if (at < nowMs - 5 * 60_000 || at > nowMs + 120 * 86_400_000) return "Escolha um horário a partir de agora e em até 120 dias.";
   if (kind === "consulta") return orderId ? null : "Escolha o pedido do cliente para a consulta.";
+  if (audience === "escolher") {
+    const n = Array.isArray(invitees) ? new Set(invitees).size : 0;
+    if (n < 1) return "Escolha pelo menos uma pessoa para convidar.";
+    if (n > 99) return "Escolha até 99 pessoas.";
+    return null;
+  }
   const m = Number(max);
   if (!Number.isInteger(m) || m < 2 || m > 100) return "A reunião comporta de 2 a 100 pessoas.";
   return null;

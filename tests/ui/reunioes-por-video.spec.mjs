@@ -13,7 +13,7 @@ const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa",
 const setup = async (page, type, { upcoming = [], bank = null, fn = {}, rest = {} } = {}) =>
   api(page, {
     rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house] : [], stories: [], services: [], events: [], posts: [], service_orders: [], ...rest },
-    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null, video_acked: false },
+    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null, video_acked: false, video_house_members: [{ user_id: U(21), name: "Ana Souza", bond: "Filha de santo" }, { user_id: U(22), name: "Bruno Lima", bond: "Ogã" }, { user_id: U(23), name: "Carla Dias", bond: "" }] },
     fn,
   });
 
@@ -215,4 +215,93 @@ test("quem já aceitou esta reunião entra direto, sem ver o aviso nem aceitar d
   await expect(page.getByTestId("video-aviso")).toHaveCount(0);
   expect(calls.some((c) => c.name === "video_ack")).toBe(false);
   expect(calls.find((c) => c.name === "video_acked").body).toMatchObject({ p_meeting: MID });
+});
+
+const MEMBROS = [{ user_id: U(21), name: "Ana Souza", bond: "Filha de santo" }, { user_id: U(22), name: "Bruno Lima", bond: "Ogã" }, { user_id: U(23), name: "Carla Dias", bond: "" }];
+const agendar = async (page, calls) => {
+  await page.getByLabel("Título", { exact: true }).fill("Gira fechada");
+  const d = new Date(Date.now() + 2 * 86400000);
+  await page.getByLabel("Dia", { exact: true }).fill(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  await page.getByLabel("Hora", { exact: true }).fill("19:30");
+  await page.getByRole("button", { name: "Marcar reunião" }).click();
+};
+
+test("casa escolhe quem convidar: busca, marca, e envia só os escolhidos", async ({ page }) => {
+  const calls = await setup(page, "casa", { bank: { cap: 6000, used: 10, remaining: 5990, enabled: true } });
+  await page.goto("/reunioes");
+  await expect(page.getByTestId("video-picker")).toHaveCount(0);
+  await page.getByText("Escolher pessoas").click();
+  await expect(page.getByTestId("video-picker")).toBeVisible();
+  await expect(page.getByLabel("Máx. de pessoas")).toHaveCount(0);
+  await expect(page.getByText("Ana Souza")).toBeVisible();
+  await page.getByLabel("Buscar membro").fill("bru");
+  await expect(page.getByText("Ana Souza")).toHaveCount(0);
+  await page.getByLabel("Bruno Lima").check();
+  await page.getByLabel("Buscar membro").fill("");
+  await page.getByLabel("Carla Dias").check();
+  await expect(page.getByTestId("video-picked-count")).toHaveText("2 pessoas escolhidas");
+  await agendar(page, calls);
+  await expect.poll(() => calls.some((c) => c.name === "video_schedule")).toBe(true);
+  const c = calls.find((x) => x.name === "video_schedule").body;
+  expect(c.p_invitees.sort()).toEqual([U(22), U(23)].sort());
+  expect(c.p_max_participants).toBe(3);
+});
+
+test("escolher pessoas sem marcar ninguém avisa na tela e não chama o servidor", async ({ page }) => {
+  const calls = await setup(page, "casa", { bank: { cap: 6000, used: 10, remaining: 5990, enabled: true } });
+  await page.goto("/reunioes");
+  await page.getByText("Escolher pessoas").click();
+  await agendar(page, calls);
+  await expect(page.getByText("Escolha pelo menos uma pessoa para convidar.")).toBeVisible();
+  expect(calls.some((c) => c.name === "video_schedule")).toBe(false);
+});
+
+test("'Todos os membros' não manda lista de convidados (o banco convida todos)", async ({ page }) => {
+  const calls = await setup(page, "casa", { bank: { cap: 6000, used: 10, remaining: 5990, enabled: true } });
+  await page.goto("/reunioes");
+  await page.getByTestId("video-audience").getByText("Todos os membros").click();
+  await agendar(page, calls);
+  await expect.poll(() => calls.some((c) => c.name === "video_schedule")).toBe(true);
+  expect(calls.find((x) => x.name === "video_schedule").body.p_invitees).toBeNull();
+});
+
+test("acessibilidade e celular: seletor de convidados sem violações e sem rolagem lateral", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/reunioes");
+  await page.getByText("Escolher pessoas").click();
+  await expect(page.getByText("Ana Souza")).toBeVisible();
+  const r = await new AxeBuilder({ page }).analyze();
+  expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
+  await noHScroll(page);
+  const b = await page.getByLabel("Ana Souza").boundingBox();
+  expect(b.width).toBeGreaterThanOrEqual(20);
+});
+
+test("tela inicial do cliente: cartão com a reunião aberta e botão Entrar; fechada mostra só o horário", async ({ page }) => {
+  await setup(page, "pessoa", { upcoming: [
+    meeting({ id: U(301), title: "Gira aberta", starts_at: new Date(Date.now() - 2 * 60000).toISOString() }),
+    meeting({ id: U(302), title: "Reunião de logo mais", starts_at: new Date(Date.now() + 90 * 60000).toISOString() }),
+  ] });
+  await page.goto("/");
+  const card = page.getByTestId("video-home-card");
+  await expect(card).toBeVisible();
+  await expect(page.getByTestId("video-home-item")).toHaveCount(2);
+  await expect(card).toContainText("Sala aberta agora");
+  await expect(page.getByTestId("video-home-enter")).toHaveAttribute("href", `/reunioes/${U(301)}`);
+  await expect(page.getByTestId("video-home-enter")).toHaveCount(1);
+  await expect(card.getByRole("link", { name: "Ver reunião" })).toHaveAttribute("href", "/reunioes");
+});
+
+test("tela inicial sem reunião não mostra cartão", async ({ page }) => {
+  await setup(page, "pessoa", { upcoming: [] });
+  await page.goto("/");
+  await expect(page.getByTestId("video-home-card")).toHaveCount(0);
+});
+
+test("painel da casa mostra o cartão da reunião aberta", async ({ page }) => {
+  await setup(page, "casa", { upcoming: [meeting({ is_host: true, title: "Encontro de membros" })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/");
+  await expect(page.getByTestId("video-home-card")).toContainText("Encontro de membros");
+  await expect(page.getByTestId("video-home-enter")).toBeVisible();
 });

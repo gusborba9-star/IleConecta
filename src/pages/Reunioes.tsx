@@ -5,7 +5,7 @@ import { CalendarClock, Video } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Progress } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { useApp } from "@/contexts/AppContext";
-import { cancelMeeting, fetchBank, fetchConsultOrders, fetchUpcoming, scheduleMeeting, type UpcomingMeeting, type VideoBank } from "@/lib/video";
+import { cancelMeeting, fetchBank, fetchConsultOrders, fetchHouseMembers, fetchUpcoming, scheduleMeeting, type HouseMemberOption, type UpcomingMeeting, type VideoBank } from "@/lib/video";
 import { houseIdOf } from "@/lib/campaigns";
 import { KINDS, bankView, formatWhen, localToIso, meetingPhase, validateSchedule, type VideoKind } from "@/lib/videoCore";
 
@@ -41,17 +41,24 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
   const [orderId, setOrderId] = useState(presetOrder ?? "");
   const [orders, setOrders] = useState<{ id: string; title: string; clientName: string }[]>([]);
   const [busy, setBusy] = useState(false);
+  const [audience, setAudience] = useState<"todos" | "escolher">("todos");
+  const [members, setMembers] = useState<HouseMemberOption[] | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [q, setQ] = useState("");
   useEffect(() => { if (kind === "consulta") void fetchConsultOrders(houseId).then(setOrders); }, [kind, houseId]);
+  useEffect(() => { if (kind === "reuniao" && audience === "escolher" && members === null) void fetchHouseMembers(houseId).then(setMembers); }, [kind, audience, members, houseId]);
+  const shown = useMemo(() => (members ?? []).filter((m) => `${m.name} ${m.bond}`.toLowerCase().includes(q.trim().toLowerCase())), [members, q]);
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const submit = async () => {
     const startsAtIso = localToIso(date, time);
-    const err = validateSchedule({ kind, title, startsAtIso, duration, max, orderId });
+    const err = validateSchedule({ kind, title, startsAtIso, duration, max, orderId, audience, invitees: picked });
     if (err) return void toast.error(err);
     setBusy(true);
-    const r = await scheduleMeeting({ houseId, kind, title: title.trim(), startsAt: startsAtIso as string, durationMin: Number(duration), max: kind === "consulta" ? 2 : Number(max), orderId: kind === "consulta" ? orderId : null });
+    const r = await scheduleMeeting({ houseId, kind, title: title.trim(), startsAt: startsAtIso as string, durationMin: Number(duration), max: kind === "consulta" ? 2 : audience === "escolher" ? Math.max(2, picked.length + 1) : Number(max), orderId: kind === "consulta" ? orderId : null, invitees: kind === "reuniao" && audience === "escolher" ? picked : null });
     setBusy(false);
     if (!r.ok) return void toast.error(r.error ?? "Não consegui marcar.");
-    toast.success("Reunião marcada.");
-    setTitle(""); setDate(""); setTime(""); setOrderId("");
+    toast.success(kind === "consulta" ? "Consulta marcada. O cliente foi avisado." : "Reunião marcada. Os convidados foram avisados.");
+    setTitle(""); setDate(""); setTime(""); setOrderId(""); setPicked([]); setAudience("todos"); setQ("");
     onDone();
   };
   return (
@@ -77,11 +84,53 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
           {orders.length === 0 && <p className="mt-1 text-xs text-muted-foreground">Não há pedidos pagos em andamento. A consulta é sempre ligada a um pedido já pago.</p>}
         </div>
       )}
+      {kind === "reuniao" && (
+        <fieldset className="space-y-2" data-testid="video-audience">
+          <legend className="text-sm font-medium">Quem participa</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {([["todos", "Todos os membros"], ["escolher", "Escolher pessoas"]] as const).map(([v, label]) => (
+              <label key={v} className={`flex min-h-11 cursor-pointer items-center justify-center rounded-[14px] border px-3 text-center text-sm font-semibold ${audience === v ? "border-primary bg-primary/10 text-primary" : "border-input bg-card"}`}>
+                <input type="radio" name="vd-audience" className="sr-only" checked={audience === v} onChange={() => setAudience(v)} />{label}
+              </label>
+            ))}
+          </div>
+          {audience === "escolher" && (
+            <div className="space-y-2 rounded-[14px] border border-border p-3" data-testid="video-picker">
+              <Input aria-label="Buscar membro" placeholder="Buscar membro…" value={q} onChange={(e) => setQ(e.target.value)} />
+              {members === null ? <p className="text-sm text-muted-foreground" role="status">Carregando membros…</p>
+                : members.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum membro com conta. Convide membros pela página de membros da casa.</p>
+                : (
+                  <>
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span data-testid="video-picked-count" aria-live="polite">{picked.length} {picked.length === 1 ? "pessoa escolhida" : "pessoas escolhidas"}</span>
+                      <span className="flex gap-3">
+                        <button type="button" className="min-h-8 font-semibold text-primary" onClick={() => setPicked((p) => [...new Set([...p, ...shown.map((m) => m.userId)])])}>Marcar {q.trim() ? "os encontrados" : "todos"}</button>
+                        <button type="button" className="min-h-8 font-semibold text-muted-foreground" onClick={() => setPicked([])}>Limpar</button>
+                      </span>
+                    </div>
+                    <ul className="max-h-56 divide-y divide-border overflow-y-auto" aria-label="Membros da casa">
+                      {shown.map((m) => (
+                        <li key={m.userId}>
+                          <label className="flex min-h-11 cursor-pointer items-center gap-3 py-1.5 text-sm">
+                            <input type="checkbox" className="h-5 w-5 accent-[hsl(var(--primary))]" checked={picked.includes(m.userId)} onChange={() => toggle(m.userId)} />
+                            <span className="min-w-0 flex-1 break-words">{m.name}{m.bond && <span className="ml-1 text-xs text-muted-foreground">· {m.bond}</span>}</span>
+                          </label>
+                        </li>
+                      ))}
+                      {shown.length === 0 && <li className="py-2 text-sm text-muted-foreground">Ninguém encontrado.</li>}
+                    </ul>
+                  </>
+                )}
+              <p className="text-xs text-muted-foreground">Só as pessoas escolhidas recebem o aviso e conseguem entrar na sala.</p>
+            </div>
+          )}
+        </fieldset>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div><Label htmlFor="vd-date">Dia</Label><Input id="vd-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         <div><Label htmlFor="vd-time">Hora</Label><Input id="vd-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
         <div><Label htmlFor="vd-dur">Duração (min)</Label><Input id="vd-dur" type="number" min={5} max={90} value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
-        {kind === "reuniao" && <div><Label htmlFor="vd-max">Máx. de pessoas</Label><Input id="vd-max" type="number" min={2} max={100} value={max} onChange={(e) => setMax(e.target.value)} /></div>}
+        {kind === "reuniao" && audience === "todos" && <div><Label htmlFor="vd-max">Máx. de pessoas</Label><Input id="vd-max" type="number" min={2} max={100} value={max} onChange={(e) => setMax(e.target.value)} /></div>}
       </div>
       <Button onClick={() => void submit()} disabled={busy}>{busy ? "Marcando…" : "Marcar reunião"}</Button>
     </Card>

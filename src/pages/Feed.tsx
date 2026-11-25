@@ -10,6 +10,7 @@ import PostComposer from "@/components/feed/PostComposer";
 import PostCard from "@/components/feed/PostCard";
 import ClientHome, { ClientSearchBar } from "@/components/feed/ClientHome";
 import PendingReviewsCard from "@/components/reviews/PendingReviewsCard";
+import UpcomingMeetingCard from "@/components/video/UpcomingMeetingCard";
 import { Card } from "@/components/base";
 import { Sparkles } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -74,6 +75,7 @@ export default function Feed({ home = false }: { home?: boolean }) {
 
   return (
     <div className="space-y-4 pb-16 lg:pb-4">
+      {home && isRemoteAuth && <UpcomingMeetingCard />}
       {isClient && <ClientSearchBar />}
       {isClient && <ClientHome />}
       {isClient && <PendingReviewsCard />}

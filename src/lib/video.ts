@@ -26,10 +26,19 @@ export async function fetchBank(houseId: string): Promise<VideoBank | null> {
   return { cap: Number(d.cap) || 0, used: Number(d.used) || 0, remaining: Number(d.remaining) || 0, enabled: d.enabled === true };
 }
 
-export async function scheduleMeeting(a: { houseId: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; max: number; orderId?: string | null }): Promise<{ ok: boolean; error?: string }> {
+export async function scheduleMeeting(a: { houseId: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; max: number; orderId?: string | null; invitees?: string[] | null }): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Disponível só com conta real." };
-  const { error } = await supabase.rpc("video_schedule", { p_house: a.houseId, p_kind: a.kind, p_title: a.title, p_starts_at: a.startsAt, p_duration_min: a.durationMin, p_max_participants: a.max, p_order: a.orderId ?? null });
+  const { error } = await supabase.rpc("video_schedule", { p_house: a.houseId, p_kind: a.kind, p_title: a.title, p_starts_at: a.startsAt, p_duration_min: a.durationMin, p_max_participants: a.max, p_order: a.orderId ?? null, p_invitees: a.invitees && a.invitees.length ? a.invitees : null });
   return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export interface HouseMemberOption { userId: string; name: string; bond: string }
+/** Membros ativos da casa com conta (só a dona recebe): a lista de quem pode ser convidado. */
+export async function fetchHouseMembers(houseId: string): Promise<HouseMemberOption[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("video_house_members", { p_house: houseId });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { user_id: string; name: string; bond: string }[]).map((r) => ({ userId: r.user_id, name: r.name, bond: r.bond ?? "" }));
 }
 
 export async function cancelMeeting(id: string): Promise<boolean> {

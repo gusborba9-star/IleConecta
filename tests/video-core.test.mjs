@@ -366,3 +366,27 @@ test("migração 0213: só a própria pessoa, mesma reunião e mesma versão dos
   const sala = readFileSync(new URL("../src/pages/Sala.tsx", import.meta.url), "utf8");
   assert.match(sala, /hasAckedMeeting\(id, LEGAL_VERSION\)/);
 });
+
+test("migração 0214: convite confere na entrada e na lista; lista de membros só da dona; aviso por convidado", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0214_video_convidados.sql", import.meta.url), "utf8");
+  assert.match(sql, /invite_all boolean not null default true/);
+  assert.match(sql, /revoke all on public\.video_invites from public, anon, authenticated/);
+  assert.equal((sql.match(/m\.invite_all or exists \(select 1 from public\.video_invites vi/g) ?? []).length, 2);
+  assert.match(sql, /video_house_members[\s\S]*is_house_owner\(p_house\)[\s\S]*Sem permissão/);
+  assert.match(sql, /drop function if exists public\.video_schedule\(uuid, text, text, timestamptz, integer, integer, uuid\)/);
+  assert.match(sql, /Convide só membros ativos da sua casa/);
+  assert.match(sql, /insert into public\.notifications/);
+});
+
+test("migração 0215: lembrete uma vez por reunião, só do servidor, a cada minuto, com link para a sala", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0215_video_lembrete.sql", import.meta.url), "utf8");
+  assert.match(sql, /reminded_at is null/);
+  assert.match(sql, /set reminded_at = now\(\)/);
+  assert.match(sql, /'\/reunioes\/' \|\| r\.id/);
+  assert.match(sql, /video_enabled_for\(m\.house_id\)/);
+  assert.match(sql, /revoke all on function public\.video_send_reminders\(\) from public, anon, authenticated/);
+  assert.match(sql, /cron\.schedule\('video-lembrete', '\* \* \* \* \*'/);
+  assert.match(sql, /hm\.user_id <> h\.owner_id/);
+});
