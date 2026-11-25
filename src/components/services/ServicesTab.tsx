@@ -179,7 +179,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
 
   const save = async (value: ServiceValue) => {
     // Nova venda (oferta paga): pede o aceite da versão vigente dos Termos da Casa se o da casa estiver numa versão antiga.
-    if (value.priceCents > 0 && !(await renewal.ensure())) return false;
+    if (value.price_cents > 0 && !(await renewal.ensure())) return false;
     const ok = editing ? await updateService(editing.id, value) : Boolean(await createService(ownerId, value));
     if (ok) {
       toast.success(editing ? "Serviço atualizado." : "Serviço adicionado.");

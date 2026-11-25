@@ -104,7 +104,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
   };
 
   const save = async (value: RitualValue, publish: boolean) => {
-    if (value.priceCents > 0 && (publish || editing) && !(await renewal.ensure())) return false;
+    if (value.price_cents > 0 && (publish || editing) && !(await renewal.ensure())) return false;
     const ok = editing ? await updateRitual(editing.id, value) : await createRitual(ownerId, value, publish);
     if (ok) {
       toast.success(editing ? "Ritual atualizado." : publish ? "Ritual publicado." : "Rascunho salvo.");
