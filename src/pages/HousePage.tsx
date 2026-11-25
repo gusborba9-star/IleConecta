@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import HouseMemberButton from "@/components/members/HouseMemberButton";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar, Badge, Button, Card } from "@/components/base";
@@ -187,6 +188,7 @@ export default function HousePage() {
             ) : (
               <>
                 <Button className="h-auto min-h-11 min-w-0 flex-1 px-3 py-2" onClick={() => nav(`/mensagens/${house.id}`)}><MessageCircle className="h-4 w-4 shrink-0" aria-hidden /> Chat</Button>
+                {realHouse && currentUser?.type !== "commercial" && <HouseMemberButton ownerId={house.id} />}
                 {realHouse ? (
                   <Button variant={following ? "secondary" : "outline"} className="h-auto min-h-11 min-w-0 flex-1 px-3 py-2" disabled={followBusy} aria-pressed={following} onClick={() => void toggleFollow()}>
                     {following ? <UserCheck className="h-4 w-4 shrink-0" aria-hidden /> : <UserPlus className="h-4 w-4 shrink-0" aria-hidden />} {following ? "Seguindo" : "Seguir"}

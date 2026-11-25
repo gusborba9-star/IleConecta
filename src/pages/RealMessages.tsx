@@ -1,4 +1,5 @@
 import { useConfirm } from "@/components/base/Confirm";
+import MemberRequestCard from "@/components/members/MemberRequestCard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Bot, CalendarClock, Check, CheckCheck, Paperclip, Send, Trash2, Zap } from "lucide-react";
@@ -291,6 +292,7 @@ export default function RealMessages() {
               <ChatSafetyMenu otherId={peer.id} otherName={peer.name} blocked={iBlocked} conversationId={convId} onBlockedChange={setIBlocked} />
             </header>
 
+            {otherId && (iAmHouse !== peer.isHouse) && <MemberRequestCard otherId={otherId} />}
             {convId && <HandoffBar conversationId={convId} handoff={handoff} viewer={iAmHouse && peer && !peer.isHouse ? "house" : "client"} always={!!(iAmHouse && myAssistant && peer && !peer.isHouse)} onChange={() => void refreshRef.current()} />}
             <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain px-2.5 py-3 sm:px-4 bg-muted/30" aria-live="polite">
               {offlineHouse && assistantName && !handoff?.active && (
