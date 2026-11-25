@@ -72,6 +72,74 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export type AdminSection = "visao" | "config" | "historico";
 
+/** Atalhos "Ir para…" da aba Configurações: são dezenas de cartões em fila, então a pessoa pula direto ao grupo (no celular a barra gruda no topo). */
+function ConfigJump({ can }: { can: (m: string) => boolean }) {
+  const groups = [
+    { id: "plataforma", label: "Plataforma e planos", on: can("dono") },
+    { id: "equipe", label: "Equipe e contas", on: can("indicadores") || can("comunicacao") },
+    { id: "moderacao", label: "Moderação", on: can("moderacao") || can("dono") },
+    { id: "comunicacao", label: "Comunicação", on: can("comunicacao") || can("dono") },
+    { id: "dinheiro", label: "Dinheiro e preços", on: can("indicadores") || can("dono") },
+    { id: "assistente", label: "Assistente e alcance", on: can("dono") },
+  ].filter((g) => g.on);
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<{ text: string; el: HTMLElement }[]>([]);
+  if (groups.length < 2) return null;
+  // Busca pelo título dos cartões já na tela ("música", "taxa", "operador"): não tem lista paralela para esquecer de atualizar.
+  const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const find = (value: string) => {
+    setQ(value);
+    const t = norm(value.trim());
+    if (t.length < 2) return setHits([]);
+    const seen = new Set<string>();
+    const found = [...document.querySelectorAll<HTMLElement>("main h2, main h3")]
+      .map((el) => ({ text: (el.textContent ?? "").trim(), el }))
+      .filter((h) => h.text && norm(h.text).includes(t) && !seen.has(h.text) && seen.add(h.text));
+    setHits(found.slice(0, 6));
+  };
+  return (
+    <div className="sticky top-14 z-10 -mx-1 space-y-2 rounded-2xl border border-border bg-card/95 p-2 backdrop-blur lg:top-20">
+    <div className="relative">
+      <input
+        type="search"
+        value={q}
+        onChange={(e) => find(e.target.value)}
+        placeholder="Ir para… (ex.: música, taxa, operador)"
+        aria-label="Ir para um cartão de configuração"
+        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+      />
+      {hits.length > 0 && (
+        <ul role="listbox" aria-label="Cartões encontrados" className="absolute left-0 right-0 top-11 z-20 max-h-64 overflow-auto rounded-xl border border-border bg-card p-1 shadow-lg">
+          {hits.map((h) => (
+            <li key={h.text} role="option" aria-selected="false">
+              <button
+                type="button"
+                className="min-h-10 w-full rounded-lg px-3 text-left text-sm hover:bg-muted"
+                onClick={() => { h.el.scrollIntoView({ behavior: "smooth", block: "start" }); setHits([]); setQ(""); }}
+              >
+                {h.text}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    <nav aria-label="Ir para um grupo de configurações" className="flex gap-2 overflow-x-auto">
+      {groups.map((g) => (
+        <button
+          key={g.id}
+          type="button"
+          onClick={() => document.getElementById(`g-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="min-h-10 shrink-0 rounded-xl px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          {g.label}
+        </button>
+      ))}
+    </nav>
+    </div>
+  );
+}
+
 export default function Admin({ section = "visao" }: { section?: AdminSection }) {
   const { isRemoteAuth } = useApp();
   const { config, isAdmin, reload, can } = usePlatformConfig();
@@ -186,7 +254,9 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         </>
       ))}
 
-      {section === "config" && <div className="contents [overflow-wrap:anywhere] [&_select]:max-w-full [&_input]:min-w-0 [&_label]:min-w-0 [&_label>select]:w-full [&_span]:min-w-0 [&_button]:h-auto [&_button]:min-h-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center">
+      {section === "config" && <div className="contents [overflow-wrap:anywhere] [&_select]:max-w-full [&_input]:min-w-0 [&_label]:min-w-0 [&_label>>select]:w-full [&_span]:min-w-0 [&_button]:h-auto [&_button]:min-h-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center">
+      <ConfigJump can={can} />
+<div id="g-plataforma" className="scroll-mt-28" aria-hidden="true" />
       {can("dono") && <>
       <OperatorCard />
       <Card className="p-5 space-y-3">
@@ -258,12 +328,14 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       {can("dono") && <VideoCard />}
 
       {can("dono") && <HousePlansCard />}
+<div id="g-equipe" className="scroll-mt-28" aria-hidden="true" />
       {can("indicadores") && <StaffAuditCard />}
 
       {can("comunicacao") && <ReturningAccountsCard />}
       {can("comunicacao") && <SharedEmailAccountsCard />}
       {can("comunicacao") && <SamePersonSignalsCard />}
 
+<div id="g-moderacao" className="scroll-mt-28" aria-hidden="true" />
       {can("moderacao") && <ReportedReviewsCard />}
 
       {can("moderacao") && <ChatReportsCard />}
@@ -271,9 +343,11 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
       {can("moderacao") && <MomentReportsCard />}
       {can("dono") && <MusicLibraryCard />}
 
+<div id="g-comunicacao" className="scroll-mt-28" aria-hidden="true" />
       {can("comunicacao") && <AdminAnnounceCard />}
       {can("dono") && <AdminTaxIdCard />}
 
+<div id="g-dinheiro" className="scroll-mt-28" aria-hidden="true" />
       {can("indicadores") && <FinancePanelCard />}
 
       {can("dono") && <BillingAdminCard />}
@@ -283,6 +357,7 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
 
       {can("dono") && <PaymentLimitCard />}
 
+<div id="g-assistente" className="scroll-mt-28" aria-hidden="true" />
       {can("dono") && <AssistantEvalCard />}
       {can("dono") && <>
 
