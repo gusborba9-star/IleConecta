@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, LEGAL_VERSION_HISTORY, DOC_MIN_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs } from "../src/lib/legalCore.js";
+import { CHECKOUT_DOCS, CONSENT_DOCS, LEGAL_VERSION, LEGAL_VERSION_HISTORY, DOC_MIN_VERSION, REQUIRED_DOCS, OPTIONAL_DOCS, consentStatus, gateDocs, renewalDocs } from "../src/lib/legalCore.js";
 
 test("todo documento de aceite tem texto e links", () => {
   for (const [key, doc] of Object.entries(CONSENT_DOCS)) {
@@ -52,9 +52,10 @@ test("aceite único: dados sensíveis sozinhos nunca abrem a tela (consentimento
   assert.equal(consentStatus(sóTermos, "dados_sensiveis", LEGAL_VERSION).status, "never");
 });
 
-test("aceite único: versão nova pede de novo uma vez; dados sensíveis já aceitos não são pedidos de novo na mesma tela", () => {
+test("aceite único: versão antiga NÃO tranca (só avisa); dados sensíveis já aceitos não são pedidos de novo na mesma tela", () => {
   const old = [row("termos_cliente", "antiga", "2026-10-01T10:00:00Z"), row("dados_sensiveis", LEGAL_VERSION, "2026-11-01T10:00:00Z")];
-  assert.deepEqual(gateDocs("personal", old, LEGAL_VERSION), { required: ["termos_cliente"], optional: [] });
+  assert.deepEqual(gateDocs("personal", old, LEGAL_VERSION), { required: [], optional: [] });
+  assert.deepEqual(renewalDocs("personal", old, LEGAL_VERSION), ["termos_cliente"]);
   assert.equal(consentStatus(old, "termos_cliente", LEGAL_VERSION).status, "old");
 });
 
@@ -87,16 +88,19 @@ test("texto material novo: quem aceitou versão anterior ao mínimo vê a tela d
   for (const v of LEGAL_VERSION_HISTORY) {
     const casaOk = idx(v) >= idx(DOC_MIN_VERSION.termos_casa);
     const cliOk = idx(v) >= idx(DOC_MIN_VERSION.termos_cliente);
-    assert.deepEqual(gateDocs("commercial", [row("termos_casa", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, casaOk ? [] : ["termos_casa"], `casa ${v}`);
-    assert.deepEqual(gateDocs("personal", [row("termos_cliente", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, cliOk ? [] : ["termos_cliente"], `cliente ${v}`);
+    assert.deepEqual(renewalDocs("commercial", [row("termos_casa", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION), casaOk ? [] : ["termos_casa"], `aviso casa ${v}`);
+    assert.deepEqual(renewalDocs("personal", [row("termos_cliente", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION), cliOk ? [] : ["termos_cliente"], `aviso cliente ${v}`);
+    assert.deepEqual(gateDocs("commercial", [row("termos_casa", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `casa ${v}: entrada nunca é bloqueada`);
+    assert.deepEqual(gateDocs("personal", [row("termos_cliente", v, "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, [], `cliente ${v}: entrada nunca é bloqueada`);
   }
-  // o aceite antigo reaparece, e o novo aceite (na versão vigente) libera
-  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "2026-11-rascunho-22", "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_casa"]);
-  assert.deepEqual(gateDocs("personal", [row("termos_cliente", "2026-10-rascunho-1", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_cliente"]);
+  // aceite antigo: sem tela de bloqueio, só aviso; o aceite novo (versão vigente) encerra o aviso
+  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "2026-11-rascunho-22", "2026-11-01T10:00:00Z")], LEGAL_VERSION).required, []);
+  assert.deepEqual(gateDocs("personal", [row("termos_cliente", "2026-10-rascunho-1", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, []);
   assert.equal(consentStatus([row("termos_casa", "2026-11-rascunho-22", "2026-11-01T10:00:00Z")], "termos_casa", LEGAL_VERSION).status, "old");
   assert.deepEqual(gateDocs("commercial", [row("termos_casa", "2026-11-rascunho-22", "2026-11-01T10:00:00Z"), row("termos_casa", LEGAL_VERSION, "2026-11-24T10:00:00Z")], LEGAL_VERSION).required, []);
   assert.deepEqual(gateDocs("commercial", [], LEGAL_VERSION).required, ["termos_casa"]);
   assert.deepEqual(gateDocs("personal", [], LEGAL_VERSION).required, ["termos_cliente"]);
-  // versão desconhecida (nunca esteve na lista) continua pedindo
-  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, ["termos_casa"]);
+  // versão desconhecida (nunca esteve na lista) conta como antiga: aviso, sem bloqueio
+  assert.deepEqual(gateDocs("commercial", [row("termos_casa", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION).required, []);
+  assert.deepEqual(renewalDocs("commercial", [row("termos_casa", "antiga", "2026-10-01T10:00:00Z")], LEGAL_VERSION), ["termos_casa"]);
 });

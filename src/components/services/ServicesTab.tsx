@@ -8,6 +8,7 @@ import { Badge, Button, Card } from "@/components/base";
 import ServiceForm from "@/components/services/ServiceForm";
 import ContractModal from "@/components/services/ContractModal";
 import OfferCard, { type OfferInfo } from "@/components/OfferCard";
+import { useTermsRenewal } from "@/hooks/useTermsRenewal";
 import { useChatStatus } from "@/hooks/useChatStatus";
 import { paymentsEnabledFor } from "@/lib/consents";
 import { cardHint, primaryLabel, serviceSegment, slotChipLabel } from "@/lib/cardsCore";
@@ -74,6 +75,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
   const [reviewable, setReviewable] = useState<Set<string>>(new Set());
   const wantsReview = Boolean(onReview);
   const { currentUser } = useApp();
+  const renewal = useTermsRenewal(currentUser?.id, "termos_casa", "Para publicar uma nova oferta paga, aceite a versão vigente dos Termos da Casa.");
   const chatStatus = useChatStatus(ownerId, !isOwn);
   const [payOn, setPayOn] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
@@ -176,6 +178,8 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
   };
 
   const save = async (value: ServiceValue) => {
+    // Nova venda (oferta paga): pede o aceite da versão vigente dos Termos da Casa se o da casa estiver numa versão antiga.
+    if (value.price_cents > 0 && !(await renewal.ensure())) return false;
     const ok = editing ? await updateService(editing.id, value) : Boolean(await createService(ownerId, value));
     if (ok) {
       toast.success(editing ? "Serviço atualizado." : "Serviço adicionado.");
@@ -201,6 +205,7 @@ export default function ServicesTab({ ownerId, isOwn, startNew, onReview, orders
 
   return (
     <div className="space-y-3">
+      {renewal.modal}
       {isOwn && !ordersOnly && (
         <div className="flex justify-end">
           <Button onClick={openNew}><Plus className="h-4 w-4" /> Novo serviço</Button>

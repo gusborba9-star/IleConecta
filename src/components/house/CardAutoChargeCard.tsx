@@ -3,13 +3,15 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { CreditCard } from "lucide-react";
 import { Badge, Button, Card } from "@/components/base";
+import { useTermsRenewal } from "@/hooks/useTermsRenewal";
 import { useApp } from "@/contexts/AppContext";
 import { authorizeAutoCharge, fetchCardStatus, removeCard, setCardAuto, startCardSetup, type CardStatus } from "@/lib/platformBilling";
 import { authorizationText, cardView } from "@/lib/platformBillingCore";
 
 /** Cartão salvo para a cobrança automática da mensalidade e das vagas extras. A casa liga, desliga, troca e remove quando quiser. */
 export default function CardAutoChargeCard({ refreshKey = 0, onChanged, planName = null, monthly = null }: { refreshKey?: number; onChanged?: () => void; planName?: string | null; monthly?: number | null }) {
-  const { isRemoteAuth } = useApp();
+  const { isRemoteAuth, currentUser } = useApp();
+  const renewal = useTermsRenewal(currentUser?.id, "termos_casa", "Para assinar ou trocar a forma de cobrança do plano, aceite a versão vigente dos Termos da Casa.");
   const [status, setStatus] = useState<CardStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -39,6 +41,7 @@ export default function CardAutoChargeCard({ refreshKey = 0, onChanged, planName
   /** Registra a autorização marcada (a caixa começa desmarcada) e só então executa a ação; o servidor confere de novo. */
   const withAuth = async (key: string, action: () => Promise<string | null>, ok: string) => {
     if (!agreed) return void toast.error("Marque a autorização de cobrança automática para continuar.");
+    if (!(await renewal.ensure())) return;
     setBusy(key);
     const error = await authorizeAutoCharge(auth);
     setBusy(null);
@@ -52,6 +55,7 @@ export default function CardAutoChargeCard({ refreshKey = 0, onChanged, planName
   if (!view) return null;
   return (
     <Card className="p-5">
+      {renewal.modal}
       <div className="flex items-start gap-3">
         <CreditCard className="h-5 w-5 mt-0.5 shrink-0 text-forest" aria-hidden />
         <div className="min-w-0 flex-1">

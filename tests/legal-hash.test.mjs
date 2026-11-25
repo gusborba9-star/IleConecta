@@ -10,7 +10,7 @@ test("o texto jurídico só muda com decisão explícita (material sobe DOC_MIN_
   assert.equal(
     now.hash,
     saved.hash,
-    "Os textos de aceite/Termos/Privacidade/Taxas mudaram. Decida: MATERIAL => suba DOC_MIN_VERSION e LEGAL_VERSION (o aceite reaparece para todos); EDITORIAL => só rode `node scripts/legal-hash.mjs --write`.",
+    "Os textos de aceite/Termos/Privacidade/Taxas mudaram. Decida: IMPORTANTE => suba DOC_MIN_VERSION e LEGAL_VERSION (aviso na Home e aceite na próxima compra, venda ou assinatura); LEVE => só rode `node scripts/legal-hash.mjs --write`.",
   );
   assert.deepEqual(now.minVersion, saved.minVersion, "DOC_MIN_VERSION mudou: rode `node scripts/legal-hash.mjs --write` para registrar a decisão.");
 });

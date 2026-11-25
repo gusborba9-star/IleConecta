@@ -37,11 +37,16 @@ test("compra do cliente e venda da casa passam pela conferência de versão, e a
   assert.match(s, /alter table public\.legal_min_version enable row level security/);
   assert.match(s, /revoke all on table public\.legal_min_version from public, anon, authenticated/);
   assert.match(s, /revoke all on function public\.legal_accepted_current\(uuid, text\) from public, anon, authenticated/);
-  // nenhuma migração posterior volta a definir as duas funções sem a conferência
+  // nenhuma migração posterior volta a definir has_client_terms sem a conferência de versão (nova compra do cliente)
   for (const f of files.filter((f) => f > "0222")) {
     const t = read(f);
-    for (const fn of ["has_client_terms", "house_accepted_terms"]) {
-      if (new RegExp(`create or replace function public\\.${fn}`).test(t)) assert.match(t, /legal_accepted_current/, `${f} redefine ${fn} sem a conferência de versão`);
-    }
+    if (/create or replace function public\.has_client_terms/.test(t)) assert.match(t, /legal_accepted_current/, `${f} redefine has_client_terms sem a conferência de versão`);
   }
+});
+
+test("modelo do advogado: a casa com aceite antigo não trava a compra do cliente (0224)", () => {
+  const s = read("0224_aceite_da_casa_nao_trava_cliente.sql");
+  assert.match(s, /create or replace function public\.house_accepted_terms[\s\S]*doc_key = 'termos_casa'/);
+  assert.doesNotMatch(s.replace(/--.*$/gm, ""), /legal_accepted_current/, "house_accepted_terms não pode exigir versão mínima");
+  assert.match(s, /grant execute on function public\.house_accepted_terms\(uuid\) to authenticated/);
 });
