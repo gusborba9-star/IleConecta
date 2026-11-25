@@ -84,6 +84,23 @@ test("sala Daily: quadro só com endereço do provedor e permissões de câmera 
   await expect(frame).toHaveAttribute("allow", /camera; microphone/);
 });
 
+test("sala LiveKit: chat para todos; só a casa vê Pessoas e o aviso de remoção", async ({ page }) => {
+  for (const host of [false, true]) {
+    await setup(page, host ? "casa" : "pessoa", { fn: { video: { ok: true, provider: "livekit", url: "wss://ile-teste.livekit.cloud", token: "a.b.c", is_host: host, title: "Encontro", kind: "reuniao", ends_at: new Date(Date.now() + 3600000).toISOString() } } });
+    await page.routeWebSocket(/livekit\.cloud/, () => {});
+    await page.goto(`/reunioes/${MID}`);
+    await page.getByTestId("video-aceitar").click();
+    await expect(page.getByTestId("lk-chat")).toBeVisible();
+    await page.getByTestId("lk-chat").click();
+    await expect(page.getByTestId("lk-chat-panel")).toBeVisible();
+    await expect(page.getByTestId("lk-chat-input")).toBeEnabled();
+    await expect(page.getByTestId("lk-chat-host-only")).toHaveCount(host ? 1 : 0);
+    await expect(page.getByTestId("lk-people")).toHaveCount(host ? 1 : 0);
+    if (host) { await page.getByTestId("lk-people").click(); await expect(page.getByTestId("lk-people-panel")).toBeVisible(); }
+    await noHScroll(page);
+  }
+});
+
 test("sala LiveKit: tela própria com controles grandes em português, sem quadro de terceiros", async ({ page }) => {
   await setup(page, "pessoa", { fn: { video: { ok: true, provider: "livekit", url: "wss://ile-teste.livekit.cloud", token: "a.b.c", is_host: false, title: "Encontro de membros", kind: "reuniao", ends_at: new Date(Date.now() + 3600000).toISOString() } } });
   await page.routeWebSocket(/livekit\.cloud/, () => { /* conexão fica pendente: só conferimos a tela */ });
