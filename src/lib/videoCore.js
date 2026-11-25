@@ -1,7 +1,8 @@
 // Regras puras das reuniões por vídeo (sem rede): textos de recusa, janela de entrada, conferência do agendamento, banco de minutos
 // e a conferência do endereço da sala antes de ela ir para dentro de um iframe. O banco repete as regras; aqui é para a tela responder já.
 
-export const KINDS = { reuniao: "Reunião com membros", consulta: "Consulta por vídeo" };
+export const KINDS = { reuniao: "Reunião com membros", consulta: "Consulta por vídeo", atividade: "Atividade ao vivo" };
+export const ROLE_LABEL = { dono: "Responsável", coanfitriao: "Coanfitrião", moderador: "Moderador", participante: "Participante" };
 export const VIDEO_STATES = ["off", "beta", "on"];
 export const VIDEO_PROVIDERS = ["daily", "livekit"];
 export const VIDEO_STATE_LABEL = { off: "Desligado", beta: "Só casas de teste", on: "Ligado para todas" };
@@ -12,6 +13,8 @@ const REASONS = {
   indisponivel: "Esta reunião não está mais disponível.",
   sem_acesso: "Você não faz parte desta reunião.",
   removido: "A casa retirou você desta reunião.",
+  espera: "Aguardando a casa liberar a sua entrada.",
+  negado_espera: "A casa não liberou a sua entrada nesta reunião.",
   desligado: "O vídeo ainda não está liberado para esta casa.",
   encerrada: "Esta reunião já terminou.",
   sem_minutos: "Os minutos de vídeo da casa neste mês acabaram.",
@@ -133,4 +136,27 @@ export function readVideoConfig(raw) {
   const provider = VIDEO_PROVIDERS.includes(v.provider) ? v.provider : "daily";
   const ids = Array.isArray(v.beta_houses) ? v.beta_houses.filter((x) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x)) : [];
   return { state, provider, beta_houses: [...new Set(ids)] };
+}
+
+const csvCell = (v) => {
+  let t = String(v ?? "");
+  // planilhas executam células que começam com = + - @ : o apóstrofo desativa
+  if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`;
+  return /[";\n\r,]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+};
+const hhmm = (iso) => (iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
+
+/** Relatório de presença em CSV (separador ponto e vírgula, abre direto no Excel em português). */
+export function presenceCsv(rows) {
+  const head = ["Nome", "Função", "Esperado", "Compareceu", "Primeira entrada", "Última saída", "Minutos", "Entradas", "Retirado da sala"];
+  const lines = (Array.isArray(rows) ? rows : []).map((r) => [r.name, ROLE_LABEL[r.role] ?? "Participante", r.expected ? "sim" : "não", (r.sessions ?? 0) > 0 ? "sim" : "não", hhmm(r.firstIn), hhmm(r.lastOut), r.minutes ?? 0, r.sessions ?? 0, r.removed ? "sim" : "não"]);
+  return "\uFEFF" + [head, ...lines].map((l) => l.map(csvCell).join(";")).join("\r\n") + "\r\n";
+}
+
+/** Resumo do relatório: esperados, presentes, ausentes, minutos. */
+export function presenceSummary(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const expected = list.filter((r) => r.expected);
+  const present = list.filter((r) => (r.sessions ?? 0) > 0);
+  return { expected: expected.length, present: present.length, absent: expected.filter((r) => (r.sessions ?? 0) === 0).length, minutes: list.reduce((a, r) => a + (r.minutes ?? 0), 0) };
 }

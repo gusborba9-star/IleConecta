@@ -5,9 +5,10 @@ import { CalendarClock, Video } from "lucide-react";
 import { Badge, Button, Card, Input, Label, Progress } from "@/components/base";
 import { useConfirm } from "@/components/base/Confirm";
 import { useApp } from "@/contexts/AppContext";
-import { cancelMeeting, fetchBank, fetchConsultOrders, fetchHouseMembers, fetchUpcoming, scheduleMeeting, type HouseMemberOption, type UpcomingMeeting, type VideoBank } from "@/lib/video";
+import { cancelMeeting, fetchBank, fetchConsultOrders, fetchHistory, fetchHouseMembers, fetchUpcoming, scheduleMeeting, type HistoryRow, type HouseMemberOption, type UpcomingMeeting, type VideoBank } from "@/lib/video";
+import { HelpersEditor, PresenceReport } from "@/components/video/MeetingTools";
 import { houseIdOf } from "@/lib/campaigns";
-import { KINDS, bankView, formatWhen, localToIso, meetingPhase, validateSchedule, type VideoKind } from "@/lib/videoCore";
+import { KINDS, ROLE_LABEL, bankView, formatWhen, localToIso, meetingPhase, validateSchedule, type VideoKind } from "@/lib/videoCore";
 
 const selectCls = "h-11 w-full rounded-[14px] border border-input bg-card px-3 text-sm";
 
@@ -45,6 +46,7 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
   const [members, setMembers] = useState<HouseMemberOption[] | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [q, setQ] = useState("");
+  const [waiting, setWaiting] = useState(false);
   useEffect(() => { if (kind === "consulta") void fetchConsultOrders(houseId).then(setOrders); }, [kind, houseId]);
   useEffect(() => { if (kind === "reuniao" && audience === "escolher" && members === null) void fetchHouseMembers(houseId).then(setMembers); }, [kind, audience, members, houseId]);
   const shown = useMemo(() => (members ?? []).filter((m) => `${m.name} ${m.bond}`.toLowerCase().includes(q.trim().toLowerCase())), [members, q]);
@@ -54,11 +56,11 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
     const err = validateSchedule({ kind, title, startsAtIso, duration, max, orderId, audience, invitees: picked });
     if (err) return void toast.error(err);
     setBusy(true);
-    const r = await scheduleMeeting({ houseId, kind, title: title.trim(), startsAt: startsAtIso as string, durationMin: Number(duration), max: kind === "consulta" ? 2 : audience === "escolher" ? Math.max(2, picked.length + 1) : Number(max), orderId: kind === "consulta" ? orderId : null, invitees: kind === "reuniao" && audience === "escolher" ? picked : null });
+    const r = await scheduleMeeting({ houseId, kind, title: title.trim(), startsAt: startsAtIso as string, durationMin: Number(duration), max: kind === "consulta" ? 2 : audience === "escolher" ? Math.max(2, picked.length + 1) : Number(max), orderId: kind === "consulta" ? orderId : null, invitees: kind === "reuniao" && audience === "escolher" ? picked : null, waiting: kind === "reuniao" && waiting });
     setBusy(false);
     if (!r.ok) return void toast.error(r.error ?? "Não consegui marcar.");
     toast.success(kind === "consulta" ? "Consulta marcada. O cliente foi avisado." : "Reunião marcada. Os convidados foram avisados.");
-    setTitle(""); setDate(""); setTime(""); setOrderId(""); setPicked([]); setAudience("todos"); setQ("");
+    setTitle(""); setDate(""); setTime(""); setOrderId(""); setPicked([]); setAudience("todos"); setQ(""); setWaiting(false);
     onDone();
   };
   return (
@@ -67,7 +69,7 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
       <div>
         <Label htmlFor="vd-kind">Tipo</Label>
         <select id="vd-kind" value={kind} onChange={(e) => setKind(e.target.value as VideoKind)} className={selectCls}>
-          {(Object.keys(KINDS) as VideoKind[]).map((k) => <option key={k} value={k}>{KINDS[k]}</option>)}
+          {(["reuniao", "consulta"] as VideoKind[]).map((k) => <option key={k} value={k}>{KINDS[k]}</option>)}
         </select>
       </div>
       <div>
@@ -132,6 +134,12 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
         <div><Label htmlFor="vd-dur">Duração (min)</Label><Input id="vd-dur" type="number" min={5} max={90} value={duration} onChange={(e) => setDuration(e.target.value)} /></div>
         {kind === "reuniao" && audience === "todos" && <div><Label htmlFor="vd-max">Máx. de pessoas</Label><Input id="vd-max" type="number" min={2} max={100} value={max} onChange={(e) => setMax(e.target.value)} /></div>}
       </div>
+      {kind === "reuniao" && (
+        <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm" data-testid="video-waiting-opt">
+          <input type="checkbox" className="mt-0.5 h-5 w-5 accent-[hsl(var(--primary))]" checked={waiting} onChange={(e) => setWaiting(e.target.checked)} />
+          <span><strong>Sala de espera</strong><span className="block text-xs text-muted-foreground">Cada pessoa espera e você (ou quem você indicar) libera a entrada, uma a uma ou em grupo.</span></span>
+        </label>
+      )}
       <Button onClick={() => void submit()} disabled={busy}>{busy ? "Marcando…" : "Marcar reunião"}</Button>
     </Card>
   );
@@ -139,19 +147,58 @@ function ScheduleForm({ houseId, onDone, presetOrder }: { houseId: string; onDon
 
 function MeetingRow({ m, onCancel }: { m: UpcomingMeeting; onCancel: (m: UpcomingMeeting) => void }) {
   const phase = meetingPhase({ starts_at: m.startsAt, duration_min: m.durationMin });
+  const [open, setOpen] = useState<"equipe" | "presenca" | null>(null);
+  const canReport = m.role === "dono" || m.role === "coanfitriao";
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-3" data-testid="video-row">
-      <div className="min-w-0">
-        <div className="break-words font-semibold">{m.title}</div>
-        <div className="text-xs text-muted-foreground">{formatWhen(m.startsAt)} · {m.durationMin} min · {m.houseName}</div>
-        <Badge tone={m.kind === "consulta" ? "plum" : "primary"} className="mt-1">{KINDS[m.kind]}</Badge>
+    <li className="space-y-2 py-3" data-testid="video-row">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="break-words font-semibold">{m.title}</div>
+          <div className="text-xs text-muted-foreground">{formatWhen(m.startsAt)} · {m.durationMin} min · {m.houseName}</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            <Badge tone={m.kind === "reuniao" ? "primary" : "plum"}>{KINDS[m.kind]}</Badge>
+            {m.role !== "dono" && m.role !== "participante" && <Badge tone="gold">{ROLE_LABEL[m.role]}</Badge>}
+            {m.waitingRoom && <Badge tone="muted">Sala de espera</Badge>}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {m.isHost && m.kind !== "consulta" && <Button variant="outline" size="sm" onClick={() => setOpen(open === "equipe" ? null : "equipe")} aria-expanded={open === "equipe"} data-testid="video-team-toggle">Equipe</Button>}
+          {canReport && <Button variant="outline" size="sm" onClick={() => setOpen(open === "presenca" ? null : "presenca")} aria-expanded={open === "presenca"} data-testid="video-presence-toggle">Presença</Button>}
+          {m.isHost && m.kind !== "atividade" && phase === "cedo" && <Button variant="outline" size="sm" onClick={() => onCancel(m)}>Cancelar</Button>}
+          {phase === "aberta" ? <Link to={`/reunioes/${m.id}`} className="inline-flex h-10 items-center rounded-[14px] bg-primary px-4 text-sm font-semibold text-primary-foreground">Entrar</Link>
+            : <span className="self-center text-xs text-muted-foreground">{phase === "cedo" ? "Abre 10 min antes" : "Encerrada"}</span>}
+        </div>
       </div>
-      <div className="flex gap-2">
-        {m.isHost && phase === "cedo" && <Button variant="outline" size="sm" onClick={() => onCancel(m)}>Cancelar</Button>}
-        {phase === "aberta" ? <Link to={`/reunioes/${m.id}`} className="inline-flex h-10 items-center rounded-[14px] bg-primary px-4 text-sm font-semibold text-primary-foreground">Entrar</Link>
-          : <span className="text-xs text-muted-foreground">{phase === "cedo" ? "Abre 10 min antes" : "Encerrada"}</span>}
-      </div>
+      {open === "equipe" && <HelpersEditor meetingId={m.id} houseId={m.houseId} />}
+      {open === "presenca" && <PresenceReport meetingId={m.id} title={m.title} />}
     </li>
+  );
+}
+
+/** Histórico de presença (12 meses): a dona vê as reuniões passadas, quantos compareceram e abre o relatório de cada uma. */
+function History({ houseId }: { houseId: string }) {
+  const [rows, setRows] = useState<HistoryRow[] | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  useEffect(() => { let alive = true; void fetchHistory(houseId).then((r) => { if (alive) setRows(r); }); return () => { alive = false; }; }, [houseId]);
+  if (rows !== null && rows.length === 0) return null;
+  return (
+    <Card className="space-y-1 p-5" data-testid="video-history">
+      <h2 className="font-display text-lg font-bold">Histórico e presença</h2>
+      <p className="text-xs text-muted-foreground">Reuniões e atividades dos últimos 12 meses. Depois desse prazo os registros de presença são apagados.</p>
+      {rows === null ? <p className="text-sm text-muted-foreground">Carregando…</p> : (
+        <ul className="divide-y divide-border">
+          {rows.map((h) => (
+            <li key={h.id} className="space-y-2 py-3" data-testid="video-history-row">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0"><div className="break-words font-semibold">{h.title}</div><div className="text-xs text-muted-foreground">{formatWhen(h.startsAt)} · {KINDS[h.kind]} · {h.present} de {h.expected} esperados compareceram · {h.minutes.toLocaleString("pt-BR")} min</div></div>
+                <Button variant="outline" size="sm" onClick={() => setOpen(open === h.id ? null : h.id)} aria-expanded={open === h.id}>Ver presença</Button>
+              </div>
+              {open === h.id && <PresenceReport meetingId={h.id} title={h.title} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 
@@ -196,6 +243,7 @@ export default function Reunioes() {
           : ordered.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma reunião marcada por enquanto.</p>
           : <ul className="divide-y divide-border">{ordered.map((m) => <MeetingRow key={m.id} m={m} onCancel={(x) => void cancel(x)} />)}</ul>}
       </Card>
+      {isHouse && houseId && bank?.enabled && <History houseId={houseId} />}
     </div>
   );
 }

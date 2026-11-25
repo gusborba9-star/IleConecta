@@ -8,6 +8,7 @@ import OfferCard from "@/components/OfferCard";
 import { cardHint, dateTile } from "@/lib/cardsCore";
 import RitualRecords from "@/components/rituals/RitualRecords";
 import { REFUND_LABEL, type RefundRequest } from "@/lib/refunds";
+import RitualVideoRoom from "@/components/rituals/RitualVideoRoom";
 import { fetchStreamUrl, type MyReservation, type RealRitual } from "@/lib/rituals";
 import { bookingOpen, grossCents, modeLabel, seatsLeft, seatsState } from "@/lib/ritualsCore";
 import { formatCents } from "@/lib/servicesCore";
@@ -104,6 +105,7 @@ export default function RitualCardReal({ ritual: r, isOwn, mine, onReserve, wait
           </div>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1"><CalendarClock className="h-4 w-4" /> {when(r.startsAt)} (Brasília)</p>
           {r.description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{r.description}</p>}
+          <RitualVideoRoom eventId={r.id} houseId={r.houseId} isOwn={isOwn} mine={Boolean(mine) && mine?.status === "confirmada"} active={r.status === "publicado" && (r.mode === "distancia" || r.mode === "hibrido")} />
           {stream && (
             <a href={stream} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-sm font-semibold text-primary underline">
               {live ? "Entrar na transmissão agora" : "Link da transmissão"}

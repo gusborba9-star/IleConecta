@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { readVideoConfig, type VideoConfig, type VideoKind, type VideoProvider } from "@/lib/videoCore";
+import { readVideoConfig, type VideoConfig, type VideoKind, type VideoProvider, type VideoRole } from "@/lib/videoCore";
 
-export interface UpcomingMeeting { id: string; houseId: string; houseName: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; isHost: boolean }
+export interface UpcomingMeeting { id: string; houseId: string; houseName: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; isHost: boolean; role: VideoRole; waitingRoom: boolean }
 export interface VideoBank { cap: number; used: number; remaining: number; enabled: boolean }
-export interface JoinResult { ok: boolean; reason?: string; startsAt?: string | null; provider?: VideoProvider; url?: string; token?: string | null; isHost?: boolean; title?: string; kind?: VideoKind; endsAt?: string }
+export interface JoinResult { ok: boolean; reason?: string; startsAt?: string | null; provider?: VideoProvider; url?: string; token?: string | null; isHost?: boolean; canModerate?: boolean; role?: VideoRole; waitingStatus?: string; title?: string; kind?: VideoKind; endsAt?: string }
+
+const asKind = (k: unknown): VideoKind => (k === "consulta" ? "consulta" : k === "atividade" ? "atividade" : "reuniao");
+const asRole = (r: unknown): VideoRole => (r === "dono" || r === "coanfitriao" || r === "moderador" ? r : "participante");
 
 /** Próximas reuniões que a pessoa pode ver (dona, membro da casa ou cliente convidado). */
 export async function fetchUpcoming(): Promise<UpcomingMeeting[]> {
@@ -12,8 +15,8 @@ export async function fetchUpcoming(): Promise<UpcomingMeeting[]> {
   const { data, error } = await supabase.rpc("video_my_upcoming");
   if (error || !Array.isArray(data)) return [];
   return data.map((r: Record<string, unknown>) => ({
-    id: String(r.id), houseId: String(r.house_id), houseName: String(r.house_name ?? ""), kind: r.kind === "consulta" ? "consulta" : "reuniao",
-    title: String(r.title ?? ""), startsAt: String(r.starts_at), durationMin: Number(r.duration_min), isHost: r.is_host === true,
+    id: String(r.id), houseId: String(r.house_id), houseName: String(r.house_name ?? ""), kind: asKind(r.kind),
+    title: String(r.title ?? ""), startsAt: String(r.starts_at), durationMin: Number(r.duration_min), isHost: r.is_host === true, role: asRole(r.role), waitingRoom: r.waiting_room === true,
   }));
 }
 
@@ -26,9 +29,9 @@ export async function fetchBank(houseId: string): Promise<VideoBank | null> {
   return { cap: Number(d.cap) || 0, used: Number(d.used) || 0, remaining: Number(d.remaining) || 0, enabled: d.enabled === true };
 }
 
-export async function scheduleMeeting(a: { houseId: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; max: number; orderId?: string | null; invitees?: string[] | null }): Promise<{ ok: boolean; error?: string }> {
+export async function scheduleMeeting(a: { houseId: string; kind: VideoKind; title: string; startsAt: string; durationMin: number; max: number; orderId?: string | null; invitees?: string[] | null; waiting?: boolean }): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Disponível só com conta real." };
-  const { error } = await supabase.rpc("video_schedule", { p_house: a.houseId, p_kind: a.kind, p_title: a.title, p_starts_at: a.startsAt, p_duration_min: a.durationMin, p_max_participants: a.max, p_order: a.orderId ?? null, p_invitees: a.invitees && a.invitees.length ? a.invitees : null });
+  const { error } = await supabase.rpc("video_schedule", { p_house: a.houseId, p_kind: a.kind, p_title: a.title, p_starts_at: a.startsAt, p_duration_min: a.durationMin, p_max_participants: a.max, p_order: a.orderId ?? null, p_invitees: a.invitees && a.invitees.length ? a.invitees : null, p_waiting: a.waiting === true });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
@@ -88,8 +91,8 @@ export async function joinMeeting(id: string): Promise<JoinResult> {
     try { d = (await (error as { context?: Response }).context?.json()) as Record<string, unknown>; } catch { d = null; }
     if (!d) return { ok: false, reason: "provedor_indisponivel" };
   }
-  if (!d || d.ok !== true) return { ok: false, reason: typeof d?.reason === "string" ? d.reason : "indisponivel", startsAt: typeof d?.starts_at === "string" ? d.starts_at : null };
-  return { ok: true, provider: d.provider === "livekit" ? "livekit" : "daily", url: String(d.url ?? ""), token: typeof d.token === "string" ? d.token : null, isHost: d.is_host === true, title: String(d.title ?? ""), kind: d.kind === "consulta" ? "consulta" : "reuniao", endsAt: String(d.ends_at ?? "") };
+  if (!d || d.ok !== true) return { ok: false, reason: typeof d?.reason === "string" ? d.reason : "indisponivel", startsAt: typeof d?.starts_at === "string" ? d.starts_at : null, waitingStatus: typeof d?.waiting_status === "string" ? d.waiting_status : undefined };
+  return { ok: true, provider: d.provider === "livekit" ? "livekit" : "daily", url: String(d.url ?? ""), token: typeof d.token === "string" ? d.token : null, isHost: d.is_host === true, canModerate: d.can_moderate === true || d.is_host === true, role: asRole(d.role), title: String(d.title ?? ""), kind: asKind(d.kind), endsAt: String(d.ends_at ?? "") };
 }
 
 /** Pedidos da casa que podem virar consulta por vídeo (só os já pagos e em curso). */
@@ -160,4 +163,78 @@ export function useVideoNav(userId: string | undefined, isHouse: boolean): boole
     return () => { alive = false; };
   }, [userId, isHouse]);
   return state.id === userId && state.on;
+}
+
+// ---------- Vídeo 2.0: sala de espera, anfitriões e presença ----------
+
+/** Pede a entrada: se a sala tem espera, a pessoa entra na fila; devolve o estado (a tela repete o pedido até liberar). */
+export async function requestEntry(id: string): Promise<{ ok: boolean; reason?: string; startsAt?: string | null }> {
+  if (!supabase) return { ok: false, reason: "sem_login" };
+  const { data, error } = await supabase.rpc("video_request_entry", { p_meeting: id });
+  const d = data as Record<string, unknown> | null;
+  if (error || !d) return { ok: false, reason: "indisponivel" };
+  return { ok: d.ok === true, reason: typeof d.reason === "string" ? d.reason : undefined, startsAt: typeof d.starts_at === "string" ? d.starts_at : null };
+}
+
+export interface WaitingPerson { userId: string; name: string; requestedAt: string }
+export async function fetchWaiting(id: string): Promise<WaitingPerson[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("video_waiting_list", { p_meeting: id });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { user_id: string; name: string; requested_at: string }[]).map((r) => ({ userId: r.user_id, name: r.name, requestedAt: r.requested_at }));
+}
+
+/** Admite ou nega uma pessoa, várias ou todas as que esperam. Devolve quantas decisões valeram (ou -1 se falhou). */
+export async function decideWaiting(id: string, decision: "admitir" | "negar", users: string[] | null, all = false): Promise<number> {
+  if (!supabase) return -1;
+  const { data, error } = await supabase.rpc("video_admit", { p_meeting: id, p_users: users, p_decision: decision, p_all: all });
+  return error || typeof data !== "number" ? -1 : data;
+}
+
+export interface Helper { userId: string; name: string; role: "coanfitriao" | "moderador" }
+export async function fetchHelpers(id: string): Promise<Helper[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("video_helpers_of", { p_meeting: id });
+  if (error || !Array.isArray(data)) return [];
+  return (data as { user_id: string; name: string; role: string }[]).map((r) => ({ userId: r.user_id, name: r.name, role: r.role === "coanfitriao" ? "coanfitriao" : "moderador" }));
+}
+/** Indica (ou, com role nulo, tira) um ajudante da reunião. */
+export async function setHelper(id: string, userId: string, role: "coanfitriao" | "moderador" | null): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Disponível só com conta real." };
+  const { error } = await supabase.rpc("video_set_helper", { p_meeting: id, p_user: userId, p_role: role });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export interface PresenceRow { userId: string; name: string; role: VideoRole; expected: boolean; firstIn: string | null; lastOut: string | null; minutes: number; sessions: number; removed: boolean; waited: string | null }
+export async function fetchPresence(id: string): Promise<PresenceRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("video_presence", { p_meeting: id });
+  if (error || !Array.isArray(data)) return [];
+  return (data as Record<string, unknown>[]).map((r) => ({ userId: String(r.user_id), name: String(r.name ?? "Participante"), role: asRole(r.role), expected: r.expected === true, firstIn: typeof r.first_in === "string" ? r.first_in : null,
+    lastOut: typeof r.last_out === "string" ? r.last_out : null, minutes: Number(r.minutes) || 0, sessions: Number(r.sessions) || 0, removed: r.removed === true, waited: typeof r.waited === "string" ? r.waited : null }));
+}
+
+export interface HistoryRow { id: string; title: string; kind: VideoKind; startsAt: string; durationMin: number; status: string; expected: number; present: number; minutes: number }
+export async function fetchHistory(houseId: string): Promise<HistoryRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("video_history", { p_house: houseId });
+  if (error || !Array.isArray(data)) return [];
+  return (data as Record<string, unknown>[]).map((r) => ({ id: String(r.id), title: String(r.title ?? ""), kind: asKind(r.kind), startsAt: String(r.starts_at), durationMin: Number(r.duration_min), status: String(r.status ?? ""),
+    expected: Number(r.expected) || 0, present: Number(r.present) || 0, minutes: Number(r.minutes) || 0 }));
+}
+
+/** Abre a sala de vídeo da plataforma para um ritual à distância (a atividade ao vivo vendida como ingresso). */
+export async function openActivityRoom(eventId: string, durationMin?: number): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!supabase) return { ok: false, error: "Disponível só com conta real." };
+  const { data, error } = await supabase.rpc("video_schedule_activity", { p_event: eventId, p_duration_min: durationMin ?? null });
+  return error ? { ok: false, error: error.message } : { ok: true, id: String(data) };
+}
+
+/** A sala de vídeo aberta de um ritual (para o comprador entrar e a casa gerir), ou null. */
+export async function fetchActivityRoom(eventId: string): Promise<{ id: string; startsAt: string; durationMin: number } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("video_activity_of", { p_event: eventId });
+  const r = Array.isArray(data) ? data[0] : null;
+  if (error || !r) return null;
+  return { id: String(r.id), startsAt: String(r.starts_at), durationMin: Number(r.duration_min) };
 }
