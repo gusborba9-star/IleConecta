@@ -1,9 +1,10 @@
 // Acessibilidade por teclado: todo elemento que recebe foco mostra um indicador visível (contorno ou sombra).
 import { test, expect } from "@playwright/test";
 import { api, U } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const profile = { id: U(1), account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis", "termos_casa"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis", "termos_casa"].map((k) => ({ doc_key: k, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 
 const semIndicador = async (page, max) => {
   const ruins = [];

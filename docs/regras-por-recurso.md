@@ -118,6 +118,8 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 
 ## Aceite único dos Termos (0076)
 
+> Atualização de 24/11/2026 (decisão do proprietário): quando o texto muda de forma material, o aceite **reaparece** para quem já tinha aceitado (`DOC_MIN_VERSION`; ver `docs/legal/POLITICA_ACEITE_TERMOS.md` §5).
+
 - **Uma vez por conta.** Na primeira entrada, cliente e casa veem uma única tela com o texto que lhes cabe: cliente aceita os Termos de Uso do cliente e a Política de Privacidade; casa aceita os Termos de Uso da Casa Espiritual. Quem já aceitou a versão vigente nunca vê a tela. Se o texto mudar de versão (`LEGAL_VERSION`), a tela volta uma vez, avisando que os termos foram atualizados.
 - **Duas caixas separadas, nunca pré-marcadas.** Para o cliente, a autorização de dados sobre convicção religiosa vem na mesma tela, em caixa própria e **opcional** (consentimento tem de ser livre): sem marcar, a pessoa usa a plataforma e a autorização é pedida só ao contratar, uma única vez. Depois de dada, vale até ser retirada (não há mais o limite de 2 horas por compra).
 - **O servidor é a prova.** O aceite é gravado em `legal_consents` (conta, documento, versão, data, IP e navegador) e a tela só libera o app depois da confirmação do servidor. O aceite do cadastro deixou de ser guardado no navegador: o cadastro mostra um aviso com os links e o aceite é feito na primeira entrada.
@@ -143,11 +145,15 @@ A casa sempre indica a modalidade; a assistente entende e executa conforme as re
 
 ## Planos
 
-| Plano | Assistente | Vende | Descontos |
+| Plano | Assistente (respostas/mês) | Vende | Descontos |
 |---|---|---|---|
-| Essencial | Não | n/a | n/a |
-| Profissional | 300 respostas/mês | Sim | Não |
-| Premium | 3.000 respostas/mês | Sim | Sim, dentro do limite da casa |
+| Grátis | 0 (só com pacote comprado) | Sim, sempre ligado | Não |
+| Essencial | 100 | Sim | Não |
+| Profissional | 500 | Sim | Não |
+| Premium | 1.700 | Sim | Sim, dentro do limite da casa |
+| Plus (fora da venda) | 3.400 | Sim | Sim, dentro do limite da casa |
+
+Valores oficiais confirmados pelo proprietário em 24/11/2026 e lidos da matriz de planos (`platform_settings.plan_matrix`). A comissão (4% e 15%) vale em todos os planos.
 
 ## Decisões registradas
 

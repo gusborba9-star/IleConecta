@@ -9,6 +9,7 @@ Este diretório contém a documentação de autoridade do produto e suas regras 
 - `PROTOCOLO_EXECUCAO_AUDITORIA.md`: regras para ordens, execução, evidências e validação.
 - `REGRAS_DE_TRABALHO_DO_EXECUTOR.md`: padrão obrigatório de confronto da própria criação (fragilidades e vulnerabilidades), melhorias e validação antes de merge/push.
 - `MAPA_TECNICO.md`: mapa do sistema (infraestrutura, código, banco, funções, como mudar, testar e diagnosticar); começar por aqui numa conversa nova.
+- `MATRIZ_DE_COERENCIA_2026-11-24.md`: auditoria de coerência (documentos × código × banco), decisões e pendências; hierarquia de autoridade e vocabulário de estados.
 - `PLANO_DE_REVERSAO_E_INCIDENTES.md`: reversão por camada e resposta a incidentes.
 - `MATRIZ_CAPACIDADES_PERMISSOES.md`: modelo de capacidades, planos, configurações e autorizações.
 - `../comercial/REGRAS_FINANCEIRAS.md`: preços e regras financeiras aprovadas, além de pendências.

@@ -1,10 +1,11 @@
 // Avisos do sistema (toasts) com visual premium (21/11/2026): cartão com faixa de cor, ícone em círculo, botão de fechar em português, nos dois temas.
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ME = U(1);
 const casa = { id: ME, account_type: "casa", display_name: "Casa Axé", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_casa"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_casa"].map((k) => ({ doc_key: k, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: U(9), owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "intermediario", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null } };
 
 const disparar = (page, tipo, titulo, descricao) => page.evaluate(async ([t, a, b]) => {

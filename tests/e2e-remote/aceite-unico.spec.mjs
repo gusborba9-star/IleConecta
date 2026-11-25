@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const API = "http://127.0.0.1:54321";
-const V = "2026-10-rascunho-2"; // LEGAL_VERSION vigente
+const V = LEGAL_VERSION; // versão vigente dos textos
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: "application/json", headers: CORS, body: JSON.stringify(body) });
 

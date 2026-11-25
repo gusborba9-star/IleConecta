@@ -1,6 +1,6 @@
 # Rascunho — Política de Privacidade: visitas e interesse nas páginas das casas
 
-Status: **rascunho para o advogado**. O registro (migração 0219) está construído e **desligado** (`features.house_signals`); só liga depois da revisão deste texto.
+Status: **orientação do advogado recebida em 24/11/2026; texto integrado em `src/content/institutional.ts` (versão 2026-11-rascunho-23) num branch AINDA NÃO MESCLADO, a pedido do proprietário**. O registro (migração 0219) está construído e **desligado** (`features.house_signals`); só liga depois da revisão deste texto.
 Redação final e arquitetura são decididas pelo operador; o que importa é cumprir o que a lei pede.
 
 ## Texto proposto (nova seção, ao lado de "Métricas de visualização e impulsionamento")
@@ -36,3 +36,11 @@ Ligar o registro depois do parecer, mostrando na tela da casa o grupo "Visibilid
 4. **Opt-out.** Respeitamos "não rastrear" e Controle Global de Privacidade. É suficiente, ou é preciso um botão próprio na Política/Configurações?
 5. **Retenção.** Totais por 13 meses e chaves apagadas ao fim do dia. Está adequado e proporcional?
 6. **Termos da Casa.** Incluir que a casa recebe só totais, que não pode tentar identificar visitantes a partir deles e que a plataforma não garante que os números sejam exatos (aparelhos diferentes contam como pessoas diferentes)?
+
+## Orientação do advogado (24/11/2026) e o que mudou
+1. Natureza: o código é pseudonimizado enquanto existe (no máximo um dia); depois de apagado, o que resta são totais anônimos (art. 12). Manter o texto transparente (feito).
+2. Base legal: legítimo interesse adequado, com e sem conta, sem consentimento. LIA interna atualizada em `LIA_VISITAS_E_INTENCOES.md`.
+3. Armazenamento no aparelho: não exige banner; basta a transparência na Política. **Contamos todos, inclusive visitantes sem conta** (nenhuma mudança no código).
+4. Opt-out: DNT e GPC bastam; botão próprio é opcional.
+5. Retenção: adequada (chave até o fim do dia; totais 13 meses).
+6. Termos da Casa: incluir parágrafo curto (feito, na seção "Métricas de desempenho e conversões atribuídas").

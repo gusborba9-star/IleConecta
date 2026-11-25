@@ -1,13 +1,14 @@
 // Identificação do operador (Termos e Política) e textos novos do parecer de 20/11/2026. API simulada; nada sai para a internet.
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 let AxeBuilder = null;
 try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* sem o pacote: pula a parte de axe */ }
 
 const ME = U(1);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 const OP = { name: "Gustavo dos Santos Borba", document: "***.116.210-**", address: null, email: null };
 const SENT = "A plataforma Ilê Conecta é operada e administrada por Gustavo dos Santos Borba, inscrito(a) no CPF sob o nº ***.116.210-**, com canal de atendimento eletrônico pelo suporte interno do aplicativo.";
 const adminRpc = { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, operator_identity_public: OP, admin_operator_log: [] };

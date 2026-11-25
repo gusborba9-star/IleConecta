@@ -67,7 +67,7 @@ Upgrade/downgrade não pode gerar cobrança ou vaga duplicada. Definir tratament
 | 200 respostas | R$ 49,90 |
 | 500 respostas | R$ 89,90 |
 
-Os pacotes complementam a franquia mensal dos planos Profissional/Premium. Franquia incluída, expiração, acumulação, ordem de consumo, validade após cancelamento/downgrade e regra de reembolso permanecem pendentes. Uma resposta não pode ser debitada duas vezes por retry, falha ou webhook repetido.
+Os pacotes complementam a franquia mensal dos planos Profissional/Premium. (Atualização de 24/11/2026: franquia incluída 100/500/1.700/3.400 por plano e as regras de expiração, ordem de consumo, validade e reembolso estão decididas e registradas no Blueprint §18.3.) Uma resposta não pode ser debitada duas vezes por retry, falha ou webhook repetido.
 
 ## 6. Destaque e impulsionamento
 

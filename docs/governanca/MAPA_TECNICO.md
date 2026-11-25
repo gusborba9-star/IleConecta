@@ -1,4 +1,4 @@
-# Mapa técnico do Ilê Conecta (17/11/2026)
+# Mapa técnico do Ilê Conecta (atualizado em 24/11/2026)
 
 Ponto de partida para qualquer pessoa ou conversa nova assumir o sistema. **Autoridade de produto:** `../BLUEPRINT_DEFINITIVO.md` → `ROADMAP.md` → este mapa (que só descreve *onde as coisas estão* e *como operar*; não decide regras). Se este mapa divergir do código, vale o código e o mapa deve ser corrigido.
 
@@ -28,11 +28,11 @@ Obs.: o `README.md` da raiz é antigo (protótipo); valem os documentos acima.
 - Marca: `src/components/brand/Logo.tsx`, `scripts/build-icons.mjs` (gera ícones antes de dev/build), `public/brand/`.
 
 ## 4. Banco (Supabase)
-- 167 migrations em `supabase/migrations/NNNN_*.sql`, **só para frente** e idempotentes. 129 tabelas em `public`, **todas com RLS**.
+- 220 arquivos em `supabase/migrations/NNNN_*.sql` (até a 0221), **só para frente** e idempotentes. 150 tabelas em `public`, **todas com RLS** (conferido em produção em 24/11/2026). O papel anônimo não tem permissão de escrita em nenhuma tabela (0221); escrever é sempre por função RPC.
 - Funções SQL sensíveis são `SECURITY DEFINER` com `set search_path = public`; permissões de dono via `admin_can('dono')`; configurações em `platform_settings` (leitura pública, escrita só por função). Auditoria administrativa em `admin_audit`.
 - Áreas de tabelas: contas/casas (`profiles`, `houses`, `house_*`), conversas (`conversations`, `messages`, `conversation_handoff`), agenda/reservas (`reservations`, `house_availability`, `schedule_proposals`), eventos/rituais, posts/feed, **momentos** (`stories`, `moment_reports`, `moment_views`, `moment_likes`, `moment_comments`, `moment_publish_log`, `music_tracks`, `music_settings`; buckets `moments` e `music`, sem acesso direto às tabelas de interação: só por funções), serviços e pedidos, **pagamentos da casa** (`payments`, `payouts`, `ledger_entries`, `refund_*`, `stripe_events`), **cobrança da plataforma** (`platform_*`, `house_billing_*`, `house_card_on_file`), assistente/créditos (`assistants`, `ai_credit_*`, `assistant_*`, `conecta_calls`), suporte (`support_*`), moderação, equipe (`house_staff*`), observabilidade (`system_events`, `health_alerts`, `routine_runs`).
 - **Arquivos (Storage):** `avatars`, `covers`, `post-images` (públicos); `chat-files`, `ritual-records`, `report-evidence` (privados).
-- **Rotinas (pg_cron), 22 ativas:** cobrança (`platform-billing-tick`, `platform-billing-sweep`, `platform-cancel-apply`, `platform-price-apply`), mensalidades, reservas (`expire-stale-holds`), atendimento (`handoff-remind`), reembolso, promoções, exclusão de contas e `purge-*` de retenção, e `health-check` (a cada 10 min). A lista viva está em Administração > Visão geral > Saúde da plataforma.
+- **Rotinas (pg_cron), 38 ativas em 24/11/2026 (inclui `video-sweep`, `video-lembrete`, `video-close-stale`, `member-requests-clean`, `house-signals-clean`):** cobrança (`platform-billing-tick`, `platform-billing-sweep`, `platform-cancel-apply`, `platform-price-apply`), mensalidades, reservas (`expire-stale-holds`), atendimento (`handoff-remind`), reembolso, promoções, exclusão de contas e `purge-*` de retenção, e `health-check` (a cada 10 min). A lista viva está em Administração > Visão geral > Saúde da plataforma.
 
 ## 5. Funções do servidor (`supabase/functions/`, Deno)
 | Função | Para quê | Segredos que usa |
@@ -44,6 +44,11 @@ Obs.: o `README.md` da raiz é antigo (protótipo); valem os documentos acima.
 | `support-admin` | Ações administrativas de suporte | chaves do Supabase e do Stripe |
 | `push-notify` | Notificações push | chaves VAPID (config no banco) |
 | `purge-files` | Remoção de arquivos expirados | service role |
+| `video` | Videochamada (Daily e LiveKit): sala, entrada, avisos do provedor, remoção de convidado, rotina de fechamento | `DAILY_API_KEY`, `LIVEKIT_*`, segredos de aviso |
+| `account-recovery` | Recuperação de acesso | service role |
+| `send-email` | Avisos e comunicados por e-mail | chave do provedor de e-mail |
+
+(Em produção ainda existem `stripe-check` e `asaas-sandbox-check`: são restos de testes, já neutralizados — respondem 410 e não fazem nada; apagar no painel do Supabase quando o proprietário puder.)
 Comuns: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_URL`. **Valores nunca ficam no repositório nem no chat.**
 Cada função com manutenção tem uma cópia idêntica de `maintenance.js` (um teste confere).
 

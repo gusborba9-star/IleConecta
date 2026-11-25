@@ -1,10 +1,11 @@
 // Saúde da plataforma: o app relata erros inesperados (sem identificar a pessoa) e o cartão do dono mostra o estado. API simulada; nada sai para a internet.
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ADMIN = U(1);
 const profile = { id: ADMIN, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consents = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "dados_sensiveis", doc_version: "2026-11-rascunho-10", accepted_at: "2026-11-01T10:00:00Z" }];
+const consents = [{ doc_key: "termos_cliente", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }, { doc_key: "dados_sensiveis", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }];
 const ago = (ms) => new Date(Date.now() - ms).toISOString();
 const HEALTH = {
   generated_at: ago(5000), last_hour: { erro_app: 3, ia_falha: 0, funcao_erro: 1 }, last_24h: { erro_app: 9, ia_falha: 2, funcao_erro: 1 },

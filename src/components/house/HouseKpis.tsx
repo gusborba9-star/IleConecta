@@ -42,7 +42,7 @@ export default function HouseKpis({ ownerId }: { ownerId: string }) {
   const pct = next && next.seatsTotal > 0 ? Math.min(100, Math.round((next.taken / next.seatsTotal) * 100)) : 0;
 
   return (
-    <section aria-label="Resumo da casa" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] gap-3 xl:grid-cols-4">
+    <section aria-label="Resumo da casa" className="grid auto-rows-fr grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] gap-3 xl:grid-cols-4">
       <Kpi to="/pedidos?aba=historico" icon={Wallet} tone="ouro" label="Pago no mês" value={formatBRL(paidCents / 100)} note={`${paid.length} ${paid.length === 1 ? "pedido" : "pedidos"}`} />
       <Kpi to={`/casa/${ownerId}?aba=rituais`} icon={CalendarDays} tone="terra" label={next ? `Próximo ritual · ${new Date(next.startsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}` : "Próximo ritual"} value={next ? `${next.taken} de ${next.seatsTotal}` : "Nenhum"}
         note={next ? undefined : "Crie um ritual para abrir vagas."}

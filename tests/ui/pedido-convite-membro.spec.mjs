@@ -1,10 +1,11 @@
 // Pedido e convite de membro pelo chat (24/11/2026): a casa convida, a pessoa pede, o outro lado aceita ou recusa.
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ME = U(1), OTHER = U(2), CONV = "c0000000-0000-0000-0000-000000000001";
 const perfil = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Casa Axé" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
-const consents = (k) => [k].map((d) => ({ doc_key: d, doc_version: "2026-11-rascunho-22", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = (k) => [k].map((d) => ({ doc_key: d, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 const house = { id: U(9), owner_id: ME, name: "Casa Axé", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null } };
 const base = { open_conversation: CONV, my_conversations: [], is_blocked_by_me: false, report_client_error: true, conversation_handoff_state: [{ state: "ativa", handler_name: "x", since: "2026-11-24T10:00:00Z", active: false }] };
 const estado = (o) => ({ house_name: "Casa Axé", is_member: false, i_am_house: false, can_start: false, pending: null, ...o });

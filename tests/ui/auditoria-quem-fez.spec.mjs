@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ADMIN = U(1), ANA = U(2);
 const profile = { id: ADMIN, account_type: "pessoa", display_name: "Gustavo", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
@@ -10,7 +11,7 @@ const PAGE2 = [row(50, "features", ADMIN, "Gustavo"), row(49, "doc:termos", null
 
 test("histórico mostra quem fez, filtra por pessoa e pagina sem repetir (app inteiro)", async ({ page }) => {
   const calls = await api(page, {
-    rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }] },
+    rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }] },
     rpc: { is_admin: true, admin_houses_plans: [], admin_houses_seats: [], admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] },
       admin_audit_feed: (b) => (b.p_before ? PAGE2 : PAGE1) },
   });
@@ -34,7 +35,7 @@ test("histórico mostra quem fez, filtra por pessoa e pagina sem repetir (app in
 
 test("falha ao carregar mostra lista vazia, sem quebrar", async ({ page }) => {
   await api(page, {
-    rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }] },
+    rest: { profiles: profile, legal_consents: [{ doc_key: "termos_cliente", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }] },
     rpc: { is_admin: true, admin_houses_plans: [], admin_houses_seats: [], admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_audit_feed: { status: 500, body: { message: "boom" } } },
   });
   await page.goto("/admin?s=historico");
