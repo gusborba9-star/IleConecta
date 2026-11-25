@@ -79,7 +79,11 @@ test("coerência com o SQL: todo tipo e toda aba usados na migration existem na 
   void tabs;
 });
 
-test("cada destino aponta para uma seção real do painel", () => {
-  const shell = readFileSync(new URL("../src/pages/AdminShell.tsx", import.meta.url), "utf8");
-  for (const { section } of Object.values(TAB_TARGET)) assert.ok(new RegExp(`id: "${section}"`).test(shell), `seção '${section}' não existe no painel`);
+test("cada destino aponta para um módulo e uma tela reais do painel", async () => {
+  const { moduleById, screenById } = await import("../src/lib/adminNavCore.js");
+  for (const [tab, t] of Object.entries(TAB_TARGET)) {
+    assert.ok(moduleById(t.section), `módulo '${t.section}' (aba ${tab}) não existe no painel`);
+    const sc = screenById(t.screen);
+    assert.ok(sc && sc.module === t.section, `tela '${t.screen}' (aba ${tab}) não está em '${t.section}'`);
+  }
 });

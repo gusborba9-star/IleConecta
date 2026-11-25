@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
 import { Badge, Button, Card, Input, Label } from "@/components/base";
 import { useApp } from "@/contexts/AppContext";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -21,35 +20,6 @@ import {
   type PlatformConfig,
   type ScopeKey,
 } from "@/lib/platformConfig";
-import PaymentLimitCard from "@/components/admin/PaymentLimitCard";
-import FeeRulesCard from "@/components/admin/FeeRulesCard";
-import FinancePanelCard from "@/components/admin/FinancePanelCard";
-import BillingAdminCard from "@/components/admin/BillingAdminCard";
-import PriceChangeCard from "@/components/admin/PriceChangeCard";
-import PlanMatrixCard from "@/components/admin/PlanMatrixCard";
-import PromoLimitsCard from "@/components/admin/PromoLimitsCard";
-import AdminRecoveryCard from "@/components/admin/AdminRecoveryCard";
-import AdminSecurityCard from "@/components/admin/AdminSecurityCard";
-import VideoCard from "@/components/admin/VideoCard";
-import ChatReportsCard from "@/components/admin/ChatReportsCard";
-import AdminModerationCard from "@/components/admin/AdminModerationCard";
-import MomentReportsCard from "@/components/admin/MomentReportsCard";
-import MusicLibraryCard from "@/components/admin/MusicLibraryCard";
-import AdminAnnounceCard from "@/components/admin/AdminAnnounceCard";
-import AdminTaxIdCard from "@/components/admin/AdminTaxIdCard";
-import HousePlansCard from "@/components/admin/HousePlansCard";
-import ReturningAccountsCard from "@/components/admin/ReturningAccountsCard";
-import SharedEmailAccountsCard from "@/components/admin/SharedEmailAccountsCard";
-import SamePersonSignalsCard from "@/components/admin/SamePersonSignalsCard";
-import StaffAuditCard from "@/components/admin/StaffAuditCard";
-import ReportedReviewsCard from "@/components/admin/ReportedReviewsCard";
-import AssistantEvalCard from "@/components/admin/AssistantEvalCard";
-import PendingCenterCard from "@/components/admin/PendingCenterCard";
-import PlatformHealthCard from "@/components/admin/PlatformHealthCard";
-import MaintenanceCard from "@/components/admin/MaintenanceCard";
-import OperatorCard from "@/components/admin/OperatorCard";
-import AdminIndicatorsCard from "@/components/admin/AdminIndicatorsCard";
-import AdminEquityCard from "@/components/admin/AdminEquityCard";
 import { SCOPE_LABEL } from "@/lib/pricing";
 import MoneyInput from "@/components/base/MoneyInput";
 import { centsToMasked, maskedToCents } from "@/lib/moneyMask";
@@ -70,79 +40,11 @@ const SETTING_LABEL: Record<string, string> = { features: "Funcionalidades", mai
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
-export type AdminSection = "visao" | "config" | "historico";
+export type AdminScreenId = "cadastros" | "cidades" | "funcionalidades" | "alcance" | "precos" | "historico";
 
-/** Atalhos "Ir para…" da aba Configurações: são dezenas de cartões em fila, então a pessoa pula direto ao grupo. */
-function ConfigJump({ can }: { can: (m: string) => boolean }) {
-  const groups = [
-    { id: "plataforma", label: "Plataforma e planos", on: can("dono") },
-    { id: "equipe", label: "Equipe e contas", on: can("indicadores") || can("comunicacao") },
-    { id: "moderacao", label: "Moderação", on: can("moderacao") || can("dono") },
-    { id: "comunicacao", label: "Comunicação", on: can("comunicacao") || can("dono") },
-    { id: "dinheiro", label: "Dinheiro e preços", on: can("indicadores") || can("dono") },
-    { id: "assistente", label: "Assistente e alcance", on: can("dono") },
-  ].filter((g) => g.on);
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<{ text: string; el: HTMLElement }[]>([]);
-  if (groups.length < 2) return null;
-  // Busca pelo título dos cartões já na tela ("música", "taxa", "operador"): não tem lista paralela para esquecer de atualizar.
-  const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const find = (value: string) => {
-    setQ(value);
-    const t = norm(value.trim());
-    if (t.length < 2) return setHits([]);
-    const seen = new Set<string>();
-    const found = [...document.querySelectorAll<HTMLElement>("main h2, main h3")]
-      .map((el) => ({ text: (el.textContent ?? "").trim(), el }))
-      .filter((h) => h.text && norm(h.text).includes(t) && !seen.has(h.text) && seen.add(h.text));
-    setHits(found.slice(0, 6));
-  };
-  return (
-    <div className="relative w-full min-w-0 max-w-full space-y-2 rounded-2xl border border-border p-2">
-    <div className="relative">
-      <input
-        type="search"
-        value={q}
-        onChange={(e) => find(e.target.value)}
-        placeholder="Ir para… (ex.: música, taxa, operador)"
-        aria-label="Ir para um cartão de configuração"
-        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
-      />
-      {hits.length > 0 && (
-        <ul role="listbox" aria-label="Cartões encontrados" className="absolute left-0 right-0 top-11 z-20 max-h-64 overflow-auto rounded-xl border border-border bg-card p-1 shadow-lg">
-          {hits.map((h) => (
-            <li key={h.text} role="option" aria-selected="false">
-              <button
-                type="button"
-                className="min-h-10 w-full rounded-lg px-3 text-left text-sm hover:bg-muted"
-                onClick={() => { h.el.scrollIntoView({ behavior: "smooth", block: "start" }); setHits([]); setQ(""); }}
-              >
-                {h.text}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-    <nav aria-label="Ir para um grupo de configurações" className="flex min-w-0 flex-wrap gap-2">
-      {groups.map((g) => (
-        <button
-          key={g.id}
-          type="button"
-          onClick={() => document.getElementById(`g-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          className="min-h-10 shrink-0 rounded-xl px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          {g.label}
-        </button>
-      ))}
-    </nav>
-    </div>
-  );
-}
-
-export default function Admin({ section = "visao" }: { section?: AdminSection }) {
+export default function Admin({ screen }: { screen: AdminScreenId }) {
   const { isRemoteAuth } = useApp();
-  const { config, isAdmin, reload, can } = usePlatformConfig();
+  const { config, isAdmin, reload } = usePlatformConfig();
   const [draft, setDraft] = useState<PlatformConfig>(() => clone(config));
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
@@ -186,24 +88,9 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
   };
 
   return (
-    <div className="space-y-4 pb-16 lg:pb-4">
-      {section === "visao" && <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })} · tempo real</div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl mt-1 flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Visão geral da plataforma</h1>
-          <p className="text-sm text-muted-foreground mt-1">As mudanças valem na hora, sem deploy. Tudo fica registrado no histórico.</p>
-        </div>
-      </div>}
-
-      {section === "visao" && <PendingCenterCard />}
-      {section === "visao" && can("dono") && <PlatformHealthCard />}
-      {section === "visao" && can("dono") && <MaintenanceCard />}
-      {section === "visao" && <AdminIndicatorsCard />}
-      {section === "visao" && <AdminEquityCard />}
-
-      {section === "visao" && (!metrics ? (
-        <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card>
-      ) : (
+    <div className="space-y-4">
+      {screen === "cadastros" && (
+        !metrics ? <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card> : (
         <>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             <Stat label="Contas" value={metrics.users_total} />
@@ -237,7 +124,12 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
               <p className="mt-4 font-mono text-[11px] text-muted-foreground">tokens da assistente no mês: {metrics.assistant_month.prompt_tokens.toLocaleString("pt-BR")} entrada · {metrics.assistant_month.completion_tokens.toLocaleString("pt-BR")} saída</p>
             </Card>
           </div>
-
+        </>
+        )
+      )}
+      {screen === "cidades" && (
+        !metrics ? <Card className="p-5 text-sm text-muted-foreground">Carregando…</Card> : (
+        <>
           <Card className="p-5">
             <h2 className="font-display font-bold text-lg mb-2">Onde estão os usuários</h2>
             <div className="overflow-x-auto" role="region" aria-label="Tabela, role para o lado para ver tudo" tabIndex={0}>
@@ -252,13 +144,9 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
             </div>
           </Card>
         </>
-      ))}
-
-      {section === "config" && <div className="contents [overflow-wrap:anywhere] [&_select]:max-w-full [&_input]:min-w-0 [&_label]:min-w-0 [&_label>>select]:w-full [&_span]:min-w-0 [&_button]:h-auto [&_button]:min-h-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center">
-      <ConfigJump can={can} />
-<div id="g-plataforma" className="scroll-mt-28" aria-hidden="true" />
-      {can("dono") && <>
-      <OperatorCard />
+        )
+      )}
+      {screen === "funcionalidades" && (
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Funcionalidades</h2>
         {FEATURE_KEYS.map((k) => {
@@ -319,48 +207,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         })}
         <Button onClick={() => save("features")} disabled={saving !== null}>{saving === "features" ? "Salvando…" : "Salvar funcionalidades"}</Button>
       </Card>
-
-      </>}
-      {can("dono") && <PlanMatrixCard />}
-      {can("dono") && <PromoLimitsCard />}
-      {can("dono") && <AdminRecoveryCard />}
-      {can("dono") && <AdminSecurityCard />}
-      {can("dono") && <VideoCard />}
-
-      {can("dono") && <HousePlansCard />}
-<div id="g-equipe" className="scroll-mt-28" aria-hidden="true" />
-      {can("indicadores") && <StaffAuditCard />}
-
-      {can("comunicacao") && <ReturningAccountsCard />}
-      {can("comunicacao") && <SharedEmailAccountsCard />}
-      {can("comunicacao") && <SamePersonSignalsCard />}
-
-<div id="g-moderacao" className="scroll-mt-28" aria-hidden="true" />
-      {can("moderacao") && <ReportedReviewsCard />}
-
-      {can("moderacao") && <ChatReportsCard />}
-      {can("moderacao") && <AdminModerationCard />}
-      {can("moderacao") && <MomentReportsCard />}
-      {can("dono") && <MusicLibraryCard />}
-
-<div id="g-comunicacao" className="scroll-mt-28" aria-hidden="true" />
-      {can("comunicacao") && <AdminAnnounceCard />}
-      {can("dono") && <AdminTaxIdCard />}
-
-<div id="g-dinheiro" className="scroll-mt-28" aria-hidden="true" />
-      {can("indicadores") && <FinancePanelCard />}
-
-      {can("dono") && <BillingAdminCard />}
-      {can("dono") && <PriceChangeCard />}
-
-      {can("dono") && <FeeRulesCard />}
-
-      {can("dono") && <PaymentLimitCard />}
-
-<div id="g-assistente" className="scroll-mt-28" aria-hidden="true" />
-      {can("dono") && <AssistantEvalCard />}
-      {can("dono") && <>
-
+      )}
+      {screen === "alcance" && (
       <Card className="p-5 space-y-3">
         <h2 className="font-display font-bold text-lg">Alcance por região</h2>
         <p className="text-sm text-muted-foreground">Uma região só aparece para as casas se estiver ligada aqui e tiver preço definido.</p>
@@ -383,7 +231,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         ))}
         <Button onClick={() => save("scopes")} disabled={saving !== null}>{saving === "scopes" ? "Salvando…" : "Salvar alcance"}</Button>
       </Card>
-
+      )}
+      {screen === "precos" && (
       <Card className="p-5 space-y-4">
         <h2 className="font-display font-bold text-lg">Preços (R$)</h2>
         <div>
@@ -428,10 +277,9 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
         ))}
         <Button onClick={() => save("pricing")} disabled={saving !== null}>{saving === "pricing" ? "Salvando…" : "Salvar preços"}</Button>
       </Card>
-      </>}
-      </div>}
-
-      {section === "historico" && <Card className="p-5">
+      )}
+      {screen === "historico" && (
+      <Card className="p-5">
         <h2 className="font-display font-bold text-lg mb-2">Histórico de alterações</h2>
         {actors(audit).length > 1 && (
           <select aria-label="Filtrar por quem fez" value={auditWho} onChange={(e) => setAuditWho(e.target.value)} className="mb-3 h-9 rounded-xl border border-border bg-card px-3 text-sm">
@@ -459,7 +307,8 @@ export default function Admin({ section = "visao" }: { section?: AdminSection })
             setAudit((cur) => mergeAudit(cur, more));
           }}>Ver mais antigos</Button>
         )}
-      </Card>}
+      </Card>
+      )}
     </div>
   );
 }

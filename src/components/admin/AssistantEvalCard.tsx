@@ -22,7 +22,7 @@ export default function AssistantEvalCard() {
   return (
     <Card className="p-5 space-y-3">
       <div>
-        <h3 className="font-semibold">Testar a Assistente</h3>
+        <h2 className="font-display font-bold text-lg">Testar a Assistente</h2>
         <p className="text-xs text-muted-foreground">Roda conversas de exemplo com a IA de verdade (giras, rituais, serviços, preço, desconto, pagamento, crise, saúde) e confere as regras. Não grava nada e não gasta a cota de nenhuma casa.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">

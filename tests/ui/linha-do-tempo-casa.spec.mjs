@@ -23,8 +23,8 @@ const setup = (page, extra = {}) => api(page, {
 test.describe("linha do tempo da casa (administração, app inteiro)", () => {
   test("abre pela busca, mostra a pagar com Pix, eventos em ordem, filtro e 'ver mais' sem repetir", async ({ page }) => {
     const calls = await setup(page);
-    await page.goto("/admin?s=usuarios");
-    await expect(page.getByRole("heading", { name: "Linha do tempo da casa" })).toBeVisible();
+    await page.goto("/admin?s=usuarios&c=casas");
+    await expect(page.getByRole("heading", { name: "Linha do tempo da casa", level: 2 })).toBeVisible();
     await page.getByLabel("Buscar casa pelo nome").fill("terreiro");
     await expect(page.getByRole("button", { name: "Casa Um" })).toHaveCount(0);
     await page.getByLabel("Buscar casa pelo nome").fill("");
@@ -54,31 +54,31 @@ test.describe("linha do tempo da casa (administração, app inteiro)", () => {
   });
   test("link direto ?casa=<id> abre a casa; id inválido na URL é ignorado", async ({ page }) => {
     const calls = await setup(page);
-    await page.goto(`/admin?s=usuarios&casa=${H2}`);
+    await page.goto(`/admin?s=usuarios&c=casas&casa=${H2}`);
     await expect(page.locator("strong", { hasText: "Terreiro Dois" })).toBeVisible();
     await expect(page.getByText("Nada a pagar à plataforma agora.")).toBeVisible();
     const p2 = await page.context().newPage();
     const calls2 = await setup(p2);
-    await p2.goto(`/admin?s=usuarios&casa=${encodeURIComponent("x' or 1=1 --")}`);
-    await expect(p2.getByRole("heading", { name: "Linha do tempo da casa" })).toBeVisible();
+    await p2.goto(`/admin?s=usuarios&c=casas&casa=${encodeURIComponent("x' or 1=1 --")}`);
+    await expect(p2.getByRole("heading", { name: "Linha do tempo da casa", level: 2 })).toBeVisible();
     await p2.waitForTimeout(500);
     expect(calls2.filter((c) => c.name === "admin_house_timeline")).toHaveLength(0);
     expect(calls.length).toBeGreaterThan(0);
   });
   test("erros do servidor viram mensagem em português, sem detalhe técnico", async ({ page }) => {
     await setup(page, { admin_house_timeline: { status: 400, body: { message: "casa_inexistente" } } });
-    await page.goto(`/admin?s=usuarios&casa=${H1}`);
+    await page.goto(`/admin?s=usuarios&c=casas&casa=${H1}`);
     await expect(page.getByRole("alert")).toHaveText("Casa não encontrada.");
     const p2 = await page.context().newPage();
     await setup(p2, { admin_house_timeline: { status: 500, body: { message: "pg_catalog sqlstate 12345 stack" } } });
-    await p2.goto(`/admin?s=usuarios&casa=${H1}`);
+    await p2.goto(`/admin?s=usuarios&c=casas&casa=${H1}`);
     await expect(p2.getByRole("alert")).toHaveText("Não foi possível carregar a linha do tempo.");
   });
   test("a central de pendências leva à linha do tempo da casa do item", async ({ page }) => {
     await setup(page, { admin_pending_center: { total: 1, overdue: 0, counts: { suporte: 1 }, items: [{ kind: "suporte", ref_id: U(80), house_id: H1, house_name: "Casa Um", title: "Chamado da casa", detail: "", priority: "alta", due_at: null, overdue: false, since: null, tab: "suporte" }] } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await page.locator("li").filter({ hasText: "Chamado da casa" }).getByRole("button", { name: "Linha do tempo da casa" }).click();
-    await expect(page).toHaveURL(new RegExp(`s=usuarios&casa=${H1}`));
+    await expect(page).toHaveURL(new RegExp(`s=usuarios&c=casas&casa=${H1}`));
     await expect(page.locator("strong", { hasText: "Casa Um" })).toBeVisible();
   });
   test("reembolso da plataforma que falhou: a linha do tempo abre com o item destacado", async ({ page }) => {
@@ -87,16 +87,16 @@ test.describe("linha do tempo da casa (administração, app inteiro)", () => {
       admin_pending_center: { total: 1, overdue: 0, counts: { reembolso_plataforma: 1 }, items: [{ kind: "reembolso_plataforma", ref_id: REF, house_id: H1, house_name: "Casa Um", title: "Reembolso de plano de R$ 89,90", detail: "falhou", priority: "alta", due_at: null, overdue: false, since: null, tab: "cobranca" }] },
       admin_house_timeline: { ...PAGE1, events: [ev(1, "fatura_emitida"), { ...ev(2, "reembolso_plataforma", { status: "falhou", amount_cents: 8990 }), ref_id: REF }, ev(3, "suporte")], has_more: false, next_before: null },
     });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await page.locator("li").filter({ hasText: "Reembolso de plano" }).getByRole("button", { name: "Linha do tempo da casa" }).click();
-    await expect(page).toHaveURL(new RegExp(`s=usuarios&casa=${H1}&foco=${REF}`));
+    await expect(page).toHaveURL(new RegExp(`s=usuarios&c=casas&casa=${H1}&foco=${REF}`));
     await expect(page.locator(`[data-foco="${REF}"]`)).toHaveAttribute("data-focused", "true");
     await expect(page.locator(`[data-foco="${U(601)}"]`)).not.toHaveAttribute("data-focused", "true");
   });
   test("celular estreito: sem rolagem horizontal", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await setup(page);
-    await page.goto(`/admin?s=usuarios&casa=${H1}`);
+    await page.goto(`/admin?s=usuarios&c=casas&casa=${H1}`);
     await expect(page.locator("strong", { hasText: "Casa Um" })).toBeVisible();
     await noHScroll(page);
   });

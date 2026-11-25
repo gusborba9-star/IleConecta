@@ -24,7 +24,7 @@ export default function AdminSupport() {
 
   const load = useCallback(async () => {
     const r = await adminQueue(closedView ? "resolvido" : null);
-    if (r.ok) { setRows(sortQueue(r.data)); setError(null); } else setError(r.error);
+    if (r.ok) { setRows(sortQueue(Array.isArray(r.data) ? r.data : [])); setError(null); } else setError(r.error);
   }, [closedView]);
   useEffect(() => { void load(); }, [load]);
   // Vindo da central de pendências (?foco=<chamado>): abre o chamado pedido, uma vez, se ele estiver na fila.

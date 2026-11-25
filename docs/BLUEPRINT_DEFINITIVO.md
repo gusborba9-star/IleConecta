@@ -123,6 +123,8 @@ Inclui gestão de usuários e casas, aprovação/moderação, planos/assinaturas
 
 Ações administrativas críticas exigem interface apropriada, autorização, justificativa e trilha de auditoria; não devem depender de alterações manuais no banco para operações comuns.
 
+**Formato do painel (decisão do proprietário, 25/11/2026):** a administração é um CRM, não uma página longa: tela inicial com caminho direto para cada módulo, menu lateral no computador, barra de ícones embaixo no celular, **uma tela por assunto com botão Voltar**, busca que abre a tela direto, nada repetido. Cada tela tem endereço próprio e permissão própria; a lista de módulos e telas fica num mapa único (`adminNavCore.js`). Novas ferramentas da administração entram como tela nesse mapa.
+
 ---
 
 # 4. IDENTIDADE, CONTAS E MULTI-TENANCY

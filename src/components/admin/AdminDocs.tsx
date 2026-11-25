@@ -111,7 +111,7 @@ export default function AdminDocs() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h1 className="font-display font-bold text-2xl">Documentos</h1>
+            <h2 className="font-display font-bold text-2xl">Documentos</h2>
           </div>
           <Button variant="outline" onClick={startNew}><Plus className="h-4 w-4" /> Novo</Button>
         </div>

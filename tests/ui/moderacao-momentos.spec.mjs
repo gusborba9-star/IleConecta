@@ -12,8 +12,8 @@ const base = { rest: { profiles: pessoa, legal_consents: consents, platform_sett
 
 test("denúncia de menor sobe para o topo, com aviso de prioridade e já oculta", async ({ page }) => {
   await api(page, { ...base, rpc: rpc([row(1), row(2, { reasons: ["menor", "golpe"], n_reports: 2, hidden: true }), row(3, { reasons: ["assedio"] })]) });
-  await page.goto("/admin?s=config");
-  await expect(page.getByRole("heading", { name: /Denúncias de momentos/ })).toBeVisible();
+  await page.goto("/admin?s=moderacao&c=momentos");
+  await expect(page.getByRole("heading", { name: /Denúncias de momentos/, level: 2 })).toBeVisible();
   const cards = page.locator("div.rounded-lg").filter({ hasText: /Casa \d · foto/ });
   await expect(cards).toHaveCount(3);
   await expect(cards.first()).toContainText("Casa 2");
@@ -24,7 +24,7 @@ test("denúncia de menor sobe para o topo, com aviso de prioridade e já oculta"
 
 test("remover envia a decisão, mostra que a casa foi avisada e recarrega a fila", async ({ page }) => {
   const calls = await api(page, { ...base, rpc: rpc([row(2, { reasons: ["menor"], hidden: true })]) });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=moderacao&c=momentos");
   await cardOf(page, 2).getByLabel("Observação").fill("menor sem autorização");
   await cardOf(page, 2).getByRole("button", { name: "Remover" }).click();
   await expect(page.getByText("Momento removido. A casa foi avisada.")).toBeVisible();
@@ -34,13 +34,13 @@ test("remover envia a decisão, mostra que a casa foi avisada e recarrega a fila
 
 test("manter no ar envia a decisão; erro do banco mostra mensagem e não some da fila", async ({ page }) => {
   const calls = await api(page, { ...base, rpc: rpc([row(1)]) });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=moderacao&c=momentos");
   await cardOf(page, 1).getByRole("button", { name: "Manter no ar" }).click();
   await expect(page.getByText("Momento mantido no ar.")).toBeVisible();
   expect(calls.find((c) => c.name === "admin_moment_decide").body).toMatchObject({ p_action: "manter" });
   const p2 = await page.context().newPage();
   await api(p2, { ...base, rpc: rpc([row(1)], { admin_moment_decide: { status: 400, body: { message: "boom" } } }) });
-  await p2.goto("/admin?s=config");
+  await p2.goto("/admin?s=moderacao&c=momentos");
   await cardOf(p2, 1).getByRole("button", { name: "Remover" }).click();
   await expect(p2.getByText("Não foi possível concluir.")).toBeVisible();
   await expect(p2.getByText("Casa 1")).toBeVisible();
@@ -48,12 +48,12 @@ test("manter no ar envia a decisão; erro do banco mostra mensagem e não some d
 
 test("legenda hostil aparece como texto; quem não é da moderação não vê a fila", async ({ page }) => {
   await api(page, { ...base, rpc: rpc([row(1, { caption: "<img src=x onerror=window.__xss=1>" })]) });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=moderacao&c=momentos");
   await expect(page.getByText("“<img src=x onerror=window.__xss=1>”")).toBeVisible();
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   const p2 = await page.context().newPage();
   await api(p2, { ...base, rpc: rpc([row(1)], { admin_my_access: { admin: true, owner: false, perms: ["suporte"] } }) });
-  await p2.goto("/admin?s=config");
+  await p2.goto("/admin?s=moderacao&c=momentos");
   await p2.waitForTimeout(600);
   await expect(p2.getByRole("heading", { name: /Denúncias de momentos/ })).toHaveCount(0);
 });

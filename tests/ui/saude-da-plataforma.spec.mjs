@@ -76,8 +76,8 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
     test(`mostra estado, contagens, erros frequentes e rotinas (${vp.name}); texto hostil fica como texto`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: HEALTH } });
-      await page.goto("/admin");
-      await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
+      await page.goto("/admin?s=numeros&c=saude");
+      await expect(page.getByRole("heading", { name: "Saúde da plataforma", level: 2 })).toBeVisible();
       await expect(page.getByText("Precisa de atenção")).toBeVisible();
       await expect(page.getByText("2 alertas em aberto")).toBeVisible();
       await expect(page.getByText("Erros no app", { exact: true })).toBeVisible();
@@ -99,14 +99,14 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
   }
   test("tudo certo: sem erros, rotinas ok", async ({ page }) => {
     await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: { ...HEALTH, last_hour: {}, last_24h: {}, top: [], alerts: [], cron: [HEALTH.cron[0]] } } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     await expect(page.getByText("Tudo certo")).toBeVisible();
     await expect(page.getByText("Nenhum erro registrado nas últimas 24 horas.")).toBeVisible();
   });
   test("erro do servidor aparece como aviso sem detalhe técnico; atualizar tenta de novo", async ({ page }) => {
     let falha = true;
     await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: () => (falha ? { status: 500, body: { message: "Falhou aqui" } } : HEALTH) } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     await expect(page.getByText("Falhou aqui")).toBeVisible();
     falha = false;
     await page.getByRole("button", { name: "Atualizar saúde da plataforma" }).click();
@@ -116,7 +116,7 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
     const calls = await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_my_access: { admin: true, owner: false, perms: ["suporte"] }, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: HEALTH } });
     await page.goto("/admin?s=suporte");
     await page.waitForTimeout(500);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude"); // sem o módulo "dono" o endereço cai no início, sem o cartão
     await page.waitForTimeout(500);
     await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toHaveCount(0);
     expect(calls.filter((c) => c.name === "admin_health").length).toBe(0);
@@ -131,7 +131,7 @@ test.describe("ações do dono no cartão", () => {
       admin_ack_alert: () => { visto = true; return true; },
       admin_health: () => (visto ? { ...HEALTH, alerts: HEALTH.alerts.map((a) => ({ ...a, seen_at: a.seen_at ?? ago(1000) })) } : HEALTH),
     });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     const al = page.getByRole("region", { name: "Alertas em aberto" });
     await expect(al.locator("ul > li")).toHaveCount(2);
     await expect(al.locator("ul > li").nth(0)).toContainText("novo");
@@ -146,7 +146,7 @@ test.describe("ações do dono no cartão", () => {
   });
   test("erro frequente abre com quem resolve e o que fazer", async ({ page }) => {
     await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     const top = page.getByRole("region", { name: "Erros mais frequentes" });
     await top.getByText("TypeError: x is undefined").click();
     await expect(top).toContainText("Quem resolve: eu (Claude)");
@@ -154,7 +154,7 @@ test.describe("ações do dono no cartão", () => {
   });
   test("'Rodar agora': pede confirmação, roda só a rotina escolhida; rotina de limpeza não tem botão", async ({ page }) => {
     const calls = await setup(page, { admin_run_routine: { ok: true } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     const cron = page.getByRole("region", { name: "Rotinas agendadas" });
     await expect(cron.getByRole("button", { name: /Rodar agora a rotina/ })).toHaveCount(2);
     await expect(cron.locator("li").nth(2).getByRole("button")).toHaveCount(0);
@@ -170,7 +170,7 @@ test.describe("ações do dono no cartão", () => {
   });
   test("'Rodar agora' que falha de novo mostra o motivo e pede o print", async ({ page }) => {
     await setup(page, { admin_run_routine: { ok: false, message: "division by zero" } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     const cron = page.getByRole("region", { name: "Rotinas agendadas" });
     await cron.getByRole("button", { name: "Rodar agora a rotina plan-trial-revert" }).click();
     await cron.getByRole("button", { name: "Rodar", exact: true }).click();
@@ -179,16 +179,16 @@ test.describe("ações do dono no cartão", () => {
   });
   test("servidor recusa (um minuto, limite): a mensagem aparece e o app segue de pé", async ({ page }) => {
     await setup(page, { admin_run_routine: { status: 400, body: { message: "Esta rotina acabou de rodar. Espere um minuto." } } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     const cron = page.getByRole("region", { name: "Rotinas agendadas" });
     await cron.getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
     await cron.getByRole("button", { name: "Rodar", exact: true }).click();
     await expect(cron.getByRole("status")).toContainText("acabou de rodar");
-    await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Saúde da plataforma", level: 2 })).toBeVisible();
   });
   test("últimas execuções manuais aparecem; texto hostil no alerta fica como texto", async ({ page }) => {
     await setup(page, { admin_health: { ...HEALTH, alerts: [{ code: "<img src=x onerror=window.__xss=2>", since: ago(1000), seen_at: null }], manual_runs: [{ routine: "refund-sweep", at: ago(3600000), ok: false, note: "<b>x</b>" }] } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     await expect(page.getByRole("region", { name: "Últimas execuções manuais" })).toContainText("falhou: <b>x</b>");
     await expect(page.getByRole("region", { name: "Alertas em aberto" })).toContainText("Alerta técnico");
     expect(await page.evaluate(() => window.__xss)).toBeUndefined();
@@ -196,7 +196,7 @@ test.describe("ações do dono no cartão", () => {
   test("celular 375: sem rolagem lateral com alertas e botões", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 740 });
     await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     await page.getByRole("region", { name: "Alertas em aberto" }).getByText('A rotina "plan-trial-revert" falhou').click();
     await page.getByRole("region", { name: "Rotinas agendadas" }).getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
     await noHScroll(page);
@@ -208,13 +208,13 @@ test.describe("manutenção ligada aparece na saúde da plataforma", () => {
   const setup = (page, health) => api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: health } });
   test("com manutenção: linha de aviso e status 'Precisa de atenção'; sem manutenção: nada", async ({ page }) => {
     await setup(page, { ...sem, maintenance: { assistant: false, payments: true, since: ago(2 * 3600000) } });
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=saude");
     await expect(page.getByText("Manutenção ligada:")).toBeVisible();
     await expect(page.getByText(/pagamentos, há 2 h/)).toBeVisible();
     await expect(page.getByText("Precisa de atenção")).toBeVisible();
     const p2 = await page.context().newPage();
     await setup(p2, { ...sem, maintenance: { assistant: false, payments: false, since: null } });
-    await p2.goto("/admin");
+    await p2.goto("/admin?s=numeros&c=saude");
     await expect(p2.getByText("Tudo certo")).toBeVisible();
     await expect(p2.getByText("Manutenção ligada:")).toHaveCount(0);
   });
