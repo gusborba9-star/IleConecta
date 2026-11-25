@@ -101,8 +101,8 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await page.getByLabel("Filtrar por tipo").selectOption("moderacao");
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText("Moderação");
-      await page.getByRole("button", { name: /Resolver em Configurações › Moderação/ }).click();
-      await expect(page).toHaveURL(/[?&]s=config/);
+      await page.getByRole("button", { name: /Resolver em Moderação › Conteúdos denunciados/ }).click();
+      await expect(page).toHaveURL(/[?&]s=moderacao&c=moderacao/);
     });
 
     test("Central de pendências: vazia, com erro do servidor e sem detalhe técnico", async ({ page }) => {
