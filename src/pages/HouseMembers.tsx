@@ -14,6 +14,7 @@ import {
 } from "@/lib/members";
 import { formatBRL } from "@/lib/utils";
 import { useOwnerPlan } from "@/lib/housePlan";
+import { cancelMemberRequest, fetchHouseMemberRequests, respondMemberRequest, type HouseMemberRequest } from "@/lib/memberRequests";
 import PremiumShowcase from "@/components/premium/PremiumShowcase";
 
 const SITUATION: Record<MemberSituation, { label: string; tone: "danger" | "gold" | "forest" | "muted"; name: string }> = {
@@ -37,10 +38,12 @@ export default function HouseMembers() {
   const [filter, setFilter] = useState<MemberSituation | "todos">("todos");
   const { caps, loading: planLoading } = useOwnerPlan(currentUser?.id);
 
+  const [requests, setRequests] = useState<HouseMemberRequest[]>([]);
   const reload = useCallback(async () => {
-    const [o, d] = await Promise.all([fetchMembersOverview(), fetchMemberDefaults()]);
+    const [o, d, rq] = await Promise.all([fetchMembersOverview(), fetchMemberDefaults(), fetchHouseMemberRequests()]);
     setData(o);
     setDefaults(d);
+    setRequests(rq);
   }, []);
 
   useEffect(() => {
@@ -94,6 +97,25 @@ export default function HouseMembers() {
         )}
         {s && s.atrasadoCents > 0 && <p className="text-sm mt-3">Total em atraso: <strong className="text-[hsl(var(--danger))]">{brl(s.atrasadoCents)}</strong></p>}
       </Card>
+
+      {requests.length > 0 && (
+        <Card className="p-4 space-y-2" data-testid="pedidos-de-membro">
+          <h2 className="font-display font-bold text-lg">Pedidos e convites de membro</h2>
+          {requests.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1"><strong>{r.name}</strong> {r.direction === "pedido" ? "pediu para ser membro." : "foi convidado(a) e ainda não respondeu."}</span>
+              {r.direction === "pedido" ? (
+                <>
+                  <Button size="sm" onClick={() => void act(async () => (await respondMemberRequest(r.id, true)).error ?? null, "Membro adicionado.")}>Aceitar</Button>
+                  <Button size="sm" variant="outline" onClick={() => void act(async () => (await respondMemberRequest(r.id, false)).error ?? null, "Pedido recusado.")}>Recusar</Button>
+                </>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => void act(async () => (await cancelMemberRequest(r.id)).error ?? null, "Convite cancelado.")}>Cancelar convite</Button>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
 
       {!data && <Card className="p-6 text-sm text-muted-foreground">Carregando…</Card>}
 
