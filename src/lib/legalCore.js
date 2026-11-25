@@ -1,9 +1,9 @@
 // Textos de aceite versionados. Rascunho: precisa de revisão jurídica antes de os pagamentos serem ligados.
 // Ao mudar qualquer texto, mude também LEGAL_VERSION: cada aceite do usuário guarda a versão que ele viu.
-export const LEGAL_VERSION = "2026-11-rascunho-22";
+export const LEGAL_VERSION = "2026-11-rascunho-23";
 
 /** Versões em ordem. Uma versão fora desta lista conta como antiga. */
-export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18", "2026-11-rascunho-19", "2026-11-rascunho-20", "2026-11-rascunho-21", "2026-11-rascunho-22"];
+export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18", "2026-11-rascunho-19", "2026-11-rascunho-20", "2026-11-rascunho-21", "2026-11-rascunho-22", "2026-11-rascunho-23"];
 
 /**
  * Versão mínima que cada documento exige na tela de aceite. Regra do aceite único (decisão do proprietário, validada pelo advogado em

@@ -270,6 +270,7 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           "Os relatórios de destaque e impulsionamento mostram visualizações, cliques e conversões atribuídas. Conversão atribuída é qualquer conversa, pedido ou reserva iniciada com a Casa em até 7 dias depois de o anúncio ser aberto no mesmo aparelho.",
           "A métrica é estatística e não prova que o anúncio foi a causa exclusiva do contato. O número de aparelhos novos é uma estimativa por aparelho e pode representar mais de uma pessoa. Nenhum relatório identifica clientes.",
+          "Os indicadores de visitas e de interesse na página da Casa (visitas, pessoas que viram a página, pessoas que abriram um serviço ou ritual e compartilhamentos) são estatísticas agregadas e anônimas. A Casa recebe apenas totais e é proibida qualquer tentativa de identificar visitantes individuais a partir desses números. Os números são estimativas técnicas: a mesma pessoa que acessa por aparelhos ou navegadores diferentes pode ser contada mais de uma vez. A plataforma não garante a exatidão absoluta dessas métricas, que servem apenas como apoio informativo de desempenho.",
         ],
       },
       {
@@ -369,6 +370,14 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           "Para fornecer relatórios transparentes de desempenho às casas e evitar contagens duplicadas, registramos temporariamente a interação (aparição ou clique) em conteúdos impulsionados ou em destaque. Esse registro técnico é usado apenas para medir a entrega do serviço contratado pela casa (execução dos Termos de Uso que você aceita ao entrar na plataforma, LGPD, art. 7º, V, o que viabiliza a busca, as conexões com as casas e a auditoria técnica antifraude e de entrega do sistema), sem perfilamento individual e sem uso de dados sobre crença ou religião.",
           "Os registros individuais de acesso são eliminados em até 24 horas, permanecendo apenas os totais diários sem identificação de usuários.",
+        ],
+      },
+      {
+        heading: "Visitas e interesse nas páginas das casas",
+        paragraphs: [
+          "Para que cada casa saiba quantas pessoas viram a sua página, abriram um serviço ou ritual e compartilharam a página, o Ilê Conecta conta essas ações. Guardamos apenas totais por casa e por dia (por exemplo, \"80 pessoas viram a página hoje\"). A casa nunca vê quem visitou.",
+          "Para não contar a mesma pessoa mais de uma vez no mesmo dia, geramos um código técnico a partir da sua conta (ou, se você não tem conta, de um código aleatório guardado no seu aparelho), misturado ao dia, à casa e a um segredo da plataforma. Esse código não permite identificar você nem acompanhar você de um dia para o outro ou de uma casa para outra, e é apagado ao fim do próprio dia (horário de Brasília). Os totais diários ficam por 13 meses.",
+          "Não contamos visitas da própria casa nem da equipe. Se o seu navegador envia o sinal \"não rastrear\" (Do Not Track) ou o Controle Global de Privacidade, nenhuma contagem é feita. Base legal: legítimo interesse (LGPD, art. 7º, IX), para oferecer às casas indicadores do próprio desempenho, sem perfil individual e sem compartilhar esses dados com terceiros.",
         ],
       },
       {
