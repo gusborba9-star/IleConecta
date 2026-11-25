@@ -69,8 +69,8 @@ export default function PriceChangeCard() {
         <p className="text-xs text-muted-foreground">Aumento de mensalidade com aviso de 30 dias. Sem data, a vigência é daqui a 30 dias; cada casa muda na sua primeira renovação a partir da vigência. Redução de preço vale na hora, direto na tabela de preços. Com a cobrança ligada, aumento direto na tabela é recusado.</p>
       </div>
       <div className="flex flex-wrap items-end gap-2 text-sm">
-        <label className="grid gap-1">Plano
-          <select className="h-10 rounded-xl border border-input bg-background px-3 text-sm" value={plan} onChange={(e) => setPlan(e.target.value)}>
+        <label className="grid min-w-0 max-w-full gap-1">Plano
+          <select className="h-10 w-full min-w-0 max-w-full rounded-xl border border-input bg-background px-3 text-sm" value={plan} onChange={(e) => setPlan(e.target.value)}>
             {PLANS.map((p) => <option key={p.id} value={p.id}>{config.pricing.plans[p.id].name}{config.pricing.plans[p.id].monthly !== null ? ` (hoje R$ ${config.pricing.plans[p.id].monthly})` : ""}</option>)}
           </select>
         </label>

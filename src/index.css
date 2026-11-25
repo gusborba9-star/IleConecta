@@ -163,7 +163,7 @@
     height: 2px;
   }
   .glass {
-    background: hsl(var(--glass) / 0.75);
+    background: hsl(var(--glass) / 0.94);
     backdrop-filter: blur(12px);
   }
   /* Efeito almofada: contorno dourado fino, brilho no topo e sombra suave por dentro e por fora. */
