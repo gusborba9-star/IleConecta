@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Lock, Plus, Play } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Avatar } from "@/components/base";
-import MomentViewer from "@/components/feed/MomentViewer";
-import MomentComposer from "@/components/feed/MomentComposer";
+const MomentViewer = lazy(() => import("@/components/feed/MomentViewer"));
+const MomentComposer = lazy(() => import("@/components/feed/MomentComposer"));
 import { useOwnerPlan } from "@/lib/housePlan";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { minPlanFor } from "@/lib/planMatrixCore";
@@ -124,10 +124,10 @@ export default function MomentsRail({ highlightOwners = [], allow }: { highlight
         </div>
       </div>
       {open && groups[open.gi] && (
-        <MomentViewer groups={groups} start={open} viewerId={isRemoteAuth ? currentUser?.id : null} onSeen={markSeen} onClose={() => setOpen(null)} onDelete={isRemoteAuth ? remove : undefined} />
+        <Suspense fallback={null}><MomentViewer groups={groups} start={open} viewerId={isRemoteAuth ? currentUser?.id : null} onSeen={markSeen} onClose={() => setOpen(null)} onDelete={isRemoteAuth ? remove : undefined} /></Suspense>
       )}
       {composing && currentUser && (
-        <MomentComposer open ownerId={currentUser.id} caps={caps} onClose={() => setComposing(false)} onPublished={() => void reload()} />
+        <Suspense fallback={null}><MomentComposer open ownerId={currentUser.id} caps={caps} onClose={() => setComposing(false)} onPublished={() => void reload()} /></Suspense>
       )}
     </>
   );

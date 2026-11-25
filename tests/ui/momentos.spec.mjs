@@ -81,6 +81,7 @@ test.describe("momentos das casas", () => {
     await page.goto("/comunidade");
     await page.getByTestId("moment-card").first().click();
     const v = page.getByTestId("moment-viewer");
+    await expect(v).toBeVisible(); // o visualizador carrega sob demanda; as teclas só valem depois que ele abre
     await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("dialog", { name: "Momentos de Ilê Axé Omolu" })).toBeVisible();
     await page.keyboard.press("ArrowRight");

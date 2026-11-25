@@ -1,7 +1,6 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { CONSENT_DOCS, type ConsentDocKey } from "@/lib/legalCore";
-import { findInfoPage } from "@/content/institutional";
 
 interface Props {
   doc: ConsentDocKey;
@@ -20,6 +19,17 @@ const SHORT: Record<ConsentDocKey, string> = {
 export default function ConsentBox({ doc, checked, onChange }: Props) {
   const id = useId();
   const info = CONSENT_DOCS[doc];
+  // Os textos institucionais (~58 KB) saem do código inicial: os títulos dos links chegam em seguida.
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    void import("@/content/institutional").then((m) => {
+      if (alive) setTitles(Object.fromEntries(info.links.map((slug) => [slug, m.findInfoPage(slug)?.title ?? slug])));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [info]);
   return (
     <div className="rounded-md border border-border p-3">
       <label htmlFor={id} className="flex items-start gap-2 text-xs leading-relaxed cursor-pointer">
@@ -33,7 +43,7 @@ export default function ConsentBox({ doc, checked, onChange }: Props) {
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
         {info.links.map((slug) => (
           <Link key={slug} to={`/sobre/${slug}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            {findInfoPage(slug)?.title ?? slug}
+            {titles[slug] ?? slug}
           </Link>
         ))}
       </div>

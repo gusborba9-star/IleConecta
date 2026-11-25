@@ -1,4 +1,5 @@
 // Textos institucionais. Revisados e aprovados pelo advogado em 16/11/2026.
+// O mesmo valor de brand.ts (que existe só para o rodapé não puxar este arquivo grande); tests/coalesce-fetch.test.mjs confere que são iguais.
 export const BRAND = "Ilê Conecta";
 export const REVIEW_PENDING = false;
 

@@ -53,3 +53,28 @@ Carregamento por tela (cada página só é baixada quando a pessoa chega nela; e
 
 ## Ainda por medir
 Tempo real e plano de produção só se validam em produção depois do Pro; peso real das imagens do feed logado no celular; observabilidade, acessibilidade e plano de rollback.
+
+## Medição de desempenho móvel (25/11/2026, Core Web Vitals)
+
+Como medir: `npm run build` e `PW_CHROMIUM=<caminho do chrome> node scripts/carga/celular.mjs "/,/descobrir,/entrar"` (celular Moto G Power emulado, internet 4G lenta de 1,6 Mbps com 150 ms, processador 4 vezes mais lento, brotli como na Vercel). `PW_CHROMIUM` só é necessário quando o navegador do Playwright não estiver no caminho padrão. O medidor agora comprime todos os arquivos antes de medir; antes, a primeira rota da lista pagava o tempo de compressão e parecia 3,7 s (artefato do medidor, confirmado comparando duas execuções, não defeito do app).
+
+| Rota (sem login, cai na entrada) | LCP | CLS | Bloqueio (TBT) | Transferido |
+|---|---|---|---|---|
+| / | 2,0 a 2,1 s | 0 | 50 a 115 ms | 249 KB |
+| /descobrir | 1,9 s | 0 | 2 a 39 ms | 249 KB |
+| /entrar | 2,1 s | 0 | 92 a 103 ms | 249 KB |
+
+Limites do Google para "bom": LCP até 2,5 s, CLS até 0,1, bloqueio até 200 ms. Todas as rotas medidas ficam dentro.
+
+### Telas logadas (Home do cliente, API simulada, `scripts/carga/celular_logado.mjs`)
+
+Mediana de 5 execuções da rota `/` logada:
+
+| | LCP | Bloqueio (TBT) | Pedidos | Transferido |
+|---|---|---|---|---|
+| Antes | 2,56 s | 225 ms | 99 | 255 KB |
+| Depois | 2,46 s | 188 ms | 81 | 235 KB |
+
+O que mudou: (1) leituras idênticas que estão em andamento ao mesmo tempo viram um pedido só (`coalesceFetchCore.js`; a Home pedia a mesma coisa até 4 vezes; uma escrita esvazia a lista para nunca devolver resposta velha); (2) os textos institucionais (~54 KB) saíram do código inicial; (3) o visualizador e o editor de Momentos carregam só ao abrir. Ficou dentro dos limites "bom" (LCP 2,5 s e bloqueio 200 ms), porém com pouca folga: o peso restante do código inicial é do React Router, do Supabase e do app em si. Para medir: `VITE_SUPABASE_URL=http://sb.test VITE_SUPABASE_ANON_KEY=anon-key-de-teste npx vite build --outDir dist-medida` e depois `node scripts/carga/celular_logado.mjs "/"`.
+
+Orçamento fixado (a conferir a cada etapa): entrada até 260 KB transferidos (hoje 249 sem login e 235 logada; era 210 em 17/11, o aumento vem das telas e dos recursos novos), CLS até 0,1, LCP até 2,5 s. Limite conhecido: a medição logada usa dados simulados e uma conta vazia; com muitos posts o tempo real será maior.

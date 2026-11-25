@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { trackHouseSignal } from "@/lib/houseSignals";
 import HouseMemberButton from "@/components/members/HouseMemberButton";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -21,8 +21,8 @@ import CalendarTab from "@/components/calendar/CalendarTab";
 import { fetchHouseCalendar, type CalendarItem } from "@/lib/calendar";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 import { isFeatureOn } from "@/lib/platformConfig";
-import MomentViewer from "@/components/feed/MomentViewer";
-import MomentComposer from "@/components/feed/MomentComposer";
+const MomentViewer = lazy(() => import("@/components/feed/MomentViewer"));
+const MomentComposer = lazy(() => import("@/components/feed/MomentComposer"));
 import PostComposer from "@/components/feed/PostComposer";
 import HouseActionsMenu from "@/components/house/HouseActionsMenu";
 import PlanUpsellModal from "@/components/house/PlanUpsellModal";
@@ -267,7 +267,7 @@ export default function HousePage() {
       </div>
 
       {isOwn && <EditProfileModal open={editing} onClose={() => setEditing(false)} />}
-      {isOwn && composingMoment && <MomentComposer open ownerId={house.id} caps={ownCaps} onClose={() => setComposingMoment(false)} onPublished={() => setMomentReload((n) => n + 1)} />}
+      {isOwn && composingMoment && <Suspense fallback={null}><MomentComposer open ownerId={house.id} caps={ownCaps} onClose={() => setComposingMoment(false)} onPublished={() => setMomentReload((n) => n + 1)} /></Suspense>}
       <PlanUpsellModal
         tool={momentUpsell ? { title: "Momentos", about: "Publique fotos que ficam 24 horas no topo da Comunidade e no aro da foto da sua casa, com texto e música." } : null}
         planName={momentPlanName}
@@ -275,8 +275,8 @@ export default function HousePage() {
         onPlans={() => { setMomentUpsell(false); nav("/planos?aba=mudar"); }}
       />
       {momentOpen && momentGroup && (
-        <MomentViewer groups={[momentGroup]} start={{ gi: 0, ii: startIndex(momentGroup, momentSeen) }} viewerId={currentUser?.id} onClose={() => setMomentOpen(false)}
-          onSeen={(sid) => setMomentSeen((prev) => { if (prev.has(sid)) return prev; const n = new Set(prev); n.add(sid); saveSeen(n, [...n]); return n; })} />
+        <Suspense fallback={null}><MomentViewer groups={[momentGroup]} start={{ gi: 0, ii: startIndex(momentGroup, momentSeen) }} viewerId={currentUser?.id} onClose={() => setMomentOpen(false)}
+          onSeen={(sid) => setMomentSeen((prev) => { if (prev.has(sid)) return prev; const n = new Set(prev); n.add(sid); saveSeen(n, [...n]); return n; })} /></Suspense>
       )}
       {isOwn && hasServices && <HouseRefundCases ownerId={house.id} />}
 

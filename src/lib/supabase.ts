@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createCoalescingFetch } from "@/lib/coalesceFetchCore";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -11,5 +12,5 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
  * Fica null enquanto as variaveis nao existem, para o app continuar funcionando em modo demo.
  */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url as string, anonKey as string)
+  ? createClient(url as string, anonKey as string, { global: { fetch: createCoalescingFetch((i, o) => fetch(i, o)) } })
   : null;
