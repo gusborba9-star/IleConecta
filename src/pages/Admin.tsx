@@ -72,7 +72,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export type AdminSection = "visao" | "config" | "historico";
 
-/** Atalhos "Ir para…" da aba Configurações: são dezenas de cartões em fila, então a pessoa pula direto ao grupo (no celular a barra gruda no topo). */
+/** Atalhos "Ir para…" da aba Configurações: são dezenas de cartões em fila, então a pessoa pula direto ao grupo. */
 function ConfigJump({ can }: { can: (m: string) => boolean }) {
   const groups = [
     { id: "plataforma", label: "Plataforma e planos", on: can("dono") },
@@ -98,7 +98,7 @@ function ConfigJump({ can }: { can: (m: string) => boolean }) {
     setHits(found.slice(0, 6));
   };
   return (
-    <div className="sticky top-14 z-10 w-full min-w-0 max-w-full space-y-2 rounded-2xl border border-border bg-card/95 p-2 backdrop-blur lg:top-20">
+    <div className="relative w-full min-w-0 max-w-full space-y-2 rounded-2xl border border-border p-2">
     <div className="relative">
       <input
         type="search"
