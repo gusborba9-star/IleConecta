@@ -12,13 +12,13 @@ const TEAM = [
 ];
 const base = { is_admin: true, admin_houses_plans: [], admin_houses_seats: [], admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_support_queue: [], admin_audit_feed: [], admin_moderation_list: [], admin_chat_reports: [], admin_reported_reviews: [] };
 const setup = (page, access, extra = {}) => api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { ...base, admin_my_access: { admin: true, ...access }, ...extra } });
-const tabs = (page) => page.getByRole("navigation", { name: "Seções do painel" }).getByRole("button");
+const tabs = (page) => page.getByRole("navigation", { name: "Módulos do painel" }).getByRole("link");
 
 test.describe("módulos de acesso da administração (app inteiro)", () => {
   test("dono vê todas as seções e a equipe, com módulos", async ({ page }) => {
     await setup(page, { owner: true, perms: [] }, { admin_list_admins: TEAM });
-    await page.goto("/admin?s=usuarios");
-    await expect(tabs(page)).toHaveText(["Visão geral", "Reembolsos", "Suporte", "Usuários", "Configurações", "Documentos", "Histórico"]);
+    await page.goto("/admin?s=usuarios&c=contas");
+    await expect(tabs(page)).toHaveText(["Início", "Números e saúde", "Suporte", "Reembolsos", "Usuários", "Plataforma e planos", "Equipe e contas", "Moderação", "Comunicação", "Dinheiro e preços", "Assistente e alcance", "Documentos", "Histórico"]);
     const team = page.getByRole("list", { name: "Equipe" }).locator("li");
     await expect(team).toHaveCount(3);
     await expect(team.nth(0)).toContainText("Dono");
@@ -30,7 +30,7 @@ test.describe("módulos de acesso da administração (app inteiro)", () => {
 
   test("dono marca módulos e salva: o servidor recebe exatamente a lista; adicionar manda e-mail e módulos", async ({ page }) => {
     const calls = await setup(page, { owner: true, perms: [] }, { admin_list_admins: TEAM, admin_set_admin_perms: null, admin_add_admin: null });
-    await page.goto("/admin?s=usuarios");
+    await page.goto("/admin?s=usuarios&c=contas");
     const bia = page.getByRole("list", { name: "Equipe" }).locator("li").nth(2);
     await bia.getByRole("button", { name: "Módulos" }).click();
     await bia.getByLabel(/Verificar infrações/).check();
@@ -47,40 +47,49 @@ test.describe("módulos de acesso da administração (app inteiro)", () => {
 
   test("o dono não tem botão de tirar nem de editar módulos em si", async ({ page }) => {
     await setup(page, { owner: true, perms: [] }, { admin_list_admins: TEAM });
-    await page.goto("/admin?s=usuarios");
+    await page.goto("/admin?s=usuarios&c=contas");
     const me = page.getByRole("list", { name: "Equipe" }).locator("li").first();
     await expect(me.getByRole("button")).toHaveCount(0);
   });
 
-  test("atendente (só suporte): só a aba Suporte; endereços de outras seções caem nela; sem equipe, sem e-mail de suporte, sem suspender", async ({ page }) => {
+  test("atendente (só suporte): só o módulo Suporte; endereços de outros módulos caem no início; sem equipe, sem e-mail de suporte, sem suspender", async ({ page }) => {
     await setup(page, { owner: false, perms: ["suporte"] });
     await page.goto("/admin?s=historico");
-    await expect(tabs(page)).toHaveText(["Suporte"]);
-    await expect(page).toHaveURL(/s=historico/); // a URL fica, mas o conteúdo é o da seção permitida
+    await expect(tabs(page)).toHaveText(["Início", "Suporte"]);
     await expect(page.getByText("Histórico de alterações")).toHaveCount(0);
-    for (const s of ["config", "docs", "reembolsos", "usuarios", ""]) {
+    await expect(page.getByRole("link", { name: /Suporte/ }).first()).toBeVisible();
+    for (const s of ["config", "docs", "reembolsos", "usuarios", "dinheiro", ""]) {
       await page.goto(s ? `/admin?s=${s}` : "/admin");
-      await expect(tabs(page)).toHaveText(["Suporte"]);
+      await expect(tabs(page)).toHaveText(["Início", "Suporte"]);
+      await expect(page.getByRole("heading", { name: "Painel da administração" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Equipe da administração" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Documentos" })).toHaveCount(0);
     }
   });
 
-  test("moderador: só Configurações, e nela só os cartões de moderação (nada de preços, planos, cobrança)", async ({ page }) => {
+  test("moderador: só Moderação, e nela só as telas de moderação (nada de preços, planos, cobrança, músicas)", async ({ page }) => {
     await setup(page, { owner: false, perms: ["moderacao"] });
+    await page.goto("/admin?s=moderacao");
+    await expect(tabs(page)).toHaveText(["Início", "Moderação"]);
+    const telas = page.locator("main a[href*='c=']");
+    await expect(telas).toHaveText([/Avaliações contestadas/, /Denúncias do chat/, /Conteúdos denunciados/, /Denúncias de momentos/]);
+    await page.goto("/admin?s=moderacao&c=moderacao");
+    await expect(page.getByRole("heading", { name: /Moderação de anúncios/, level: 2 })).toBeVisible();
+    await page.goto("/admin?s=moderacao&c=denuncias-chat");
+    await expect(page.getByRole("heading", { name: /Denúncias do chat/, level: 2 })).toBeVisible();
+    for (const [m, c, h] of [["dinheiro", "taxas", "Taxas da plataforma"], ["plataforma", "funcionalidades", "Funcionalidades"], ["plataforma", "planos", "Planos: ferramentas, limites e textos"], ["assistente", "alcance", "Alcance por região"], ["comunicacao", "avisos", "Comunicados"], ["moderacao", "musicas", "Biblioteca de músicas"]]) {
+      await page.goto(`/admin?s=${m}&c=${c}`);
+      await expect(page.getByRole("heading", { name: h })).toHaveCount(0);
+    }
     await page.goto("/admin?s=config");
-    await expect(tabs(page)).toHaveText(["Configurações"]);
-    await expect(page.getByRole("heading", { name: /Moderação de anúncios/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Denúncias do chat/ })).toBeVisible();
-    for (const h of ["Funcionalidades", "Planos: ferramentas, limites e textos", "Alcance por região"]) await expect(page.getByRole("heading", { name: h })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Comunicados" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Painel da administração" })).toBeVisible();
   });
 
-  test("números (só leitura): Visão geral e Usuários com linha do tempo, sem equipe", async ({ page }) => {
+test("números (só leitura): números, usuários com linha do tempo, equipe e painel financeiro, sem gestão da equipe da administração", async ({ page }) => {
     await setup(page, { owner: false, perms: ["indicadores"] });
-    await page.goto("/admin?s=usuarios");
-    await expect(tabs(page)).toHaveText(["Visão geral", "Usuários"]);
-    await expect(page.getByRole("heading", { name: "Linha do tempo da casa" })).toBeVisible();
+    await page.goto("/admin?s=usuarios&c=casas");
+    await expect(tabs(page)).toHaveText(["Início", "Números e saúde", "Usuários", "Equipe e contas", "Dinheiro e preços"]);
+    await expect(page.getByRole("heading", { name: "Linha do tempo da casa", level: 2 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Equipe da administração" })).toHaveCount(0);
   });
 

@@ -9,17 +9,6 @@ export const MODULES = [
 export const MODULE_KEYS = MODULES.map((m) => m.key);
 export const OWNER_ONLY = "Só o dono: preços e planos, reembolsos, cobrança, CPF/CNPJ, exclusão de contas, documentos, histórico e a gestão desta equipe.";
 
-// Cada seção do painel e o que abre ela (qualquer um dos módulos; "dono" = só o dono).
-export const SECTION_NEEDS = {
-  visao: ["indicadores"],
-  reembolsos: ["dono"],
-  suporte: ["suporte"],
-  usuarios: ["indicadores"],
-  config: ["moderacao", "comunicacao"],
-  docs: ["dono"],
-  historico: ["dono"],
-};
-
 export const NO_ACCESS = Object.freeze({ admin: false, owner: false, perms: Object.freeze([]) });
 
 export function readAccess(raw) {
@@ -34,16 +23,6 @@ export function canModule(access, module) {
   if (!access || access.admin !== true) return false;
   if (access.owner) return true;
   return module !== "dono" && access.perms.includes(module);
-}
-
-export function canSection(access, section) {
-  const needs = SECTION_NEEDS[section];
-  if (!needs) return false;
-  return needs.some((m) => canModule(access, m));
-}
-
-export function allowedSections(access, order) {
-  return order.filter((s) => canSection(access, s));
 }
 
 export function readAdminRow(raw) {

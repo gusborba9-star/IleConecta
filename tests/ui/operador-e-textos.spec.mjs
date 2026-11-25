@@ -92,7 +92,7 @@ test("Termos da Casa: imagem de terceiros e de crianças e adolescentes", async 
 
 test("card do dono: CPF completo é recusado na tela, sem chamar o banco", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: adminRpc });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=plataforma&c=operador");
   await expect(page.getByRole("heading", { name: "Identificação do operador" })).toBeVisible();
   await expect(page.getByLabel("Nome completo ou razão social")).toHaveValue("Gustavo dos Santos Borba");
   await expect(page.getByRole("button", { name: "Salvar identificação" })).toBeDisabled();
@@ -104,7 +104,7 @@ test("card do dono: CPF completo é recusado na tela, sem chamar o banco", async
 
 test("card do dono: troca para CNPJ pede confirmação, grava os campos certos e avisa", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: { ...adminRpc, admin_operator_set: { ok: true, notified: 7 } } });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=plataforma&c=operador");
   await page.getByLabel("Nome completo ou razão social").fill("Ilê Conecta Ltda");
   await page.getByLabel("CPF mascarado ou CNPJ completo").fill("12.345.678/0001-95");
   await page.getByLabel("E-mail de atendimento (opcional)").fill("contato@ileconecta.com.br");
@@ -118,7 +118,7 @@ test("card do dono: troca para CNPJ pede confirmação, grava os campos certos e
 
 test("card do dono: sem avisar, e cancelar a confirmação não grava nada", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: { ...adminRpc, admin_operator_set: { ok: true, notified: 0 } } });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=plataforma&c=operador");
   await page.getByLabel("Endereço ou caixa postal (opcional)").fill("Caixa postal 12, Salvador/BA");
   await page.getByRole("button", { name: "Salvar identificação" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Voltar" }).click();
@@ -134,7 +134,7 @@ test("card do dono: sem avisar, e cancelar a confirmação não grava nada", asy
 test("card do dono: mostra o erro do banco e o histórico sem interpretar HTML; quem não é dono não vê o card", async ({ page }) => {
   const log = [{ at: "2026-11-20T15:00:00Z", by: "Dono <b>x</b>", name: "Gustavo dos Santos Borba", document: "***.116.210-**", address: null, email: null }];
   await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: { ...adminRpc, admin_operator_log: log, admin_operator_set: { status: 400, body: { message: "Nada mudou." } } } });
-  await page.goto("/admin?s=config");
+  await page.goto("/admin?s=plataforma&c=operador");
   await page.getByText(/Histórico de mudanças \(1\)/).click();
   await expect(page.getByText("Dono <b>x</b>: Gustavo dos Santos Borba", { exact: false })).toBeVisible();
   await page.getByLabel("E-mail de atendimento (opcional)").fill("a@ileconecta.com.br");
@@ -143,7 +143,7 @@ test("card do dono: mostra o erro do banco e o histórico sem interpretar HTML; 
   await expect(page.getByText("Nada mudou.")).toBeVisible();
   const p2 = await page.context().newPage();
   await api(p2, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: { ...adminRpc, admin_my_access: { admin: true, owner: false, perms: ["suporte"] } } });
-  await p2.goto("/admin?s=config");
+  await p2.goto("/admin?s=plataforma&c=operador");
   await p2.waitForTimeout(600);
   await expect(p2.getByRole("heading", { name: "Identificação do operador" })).toHaveCount(0);
 });
@@ -156,11 +156,11 @@ for (const scheme of ["light", "dark"]) {
     await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: { ...adminRpc, admin_operator_log: [{ at: "2026-11-20T15:00:00Z", by: "Dono", name: "Gustavo dos Santos Borba", document: "***.116.210-**", address: null, email: null }] } });
     for (const vp of [{ width: 320, height: 640 }, { width: 1280, height: 800 }]) {
       await page.setViewportSize(vp);
-      for (const rota of ["/admin?s=config", "/sobre/privacidade-lgpd", "/sobre/termos-da-casa"]) {
+      for (const rota of ["/admin?s=plataforma&c=operador", "/sobre/privacidade-lgpd", "/sobre/termos-da-casa"]) {
         await page.goto(rota);
         await page.locator("h1").first().waitFor({ timeout: 5000 });
         await page.waitForTimeout(300);
-        if (rota.includes("config")) await page.getByText(/Histórico de mudanças/).click();
+        if (rota.includes("operador")) await page.getByText(/Histórico de mudanças/).click();
         const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
         expect(r.violations.map((v) => `${rota} ${v.id}: ${v.nodes[0].target.join(" ")}`)).toEqual([]);
         await noHScroll(page);

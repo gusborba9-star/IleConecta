@@ -256,7 +256,7 @@ test.describe("biblioteca de músicas no painel", () => {
   const track = (n, extra = {}) => ({ id: U(200 + n), title: `Faixa ${n}`, author: "Autora", source_url: "https://pixabay.com/music/x", license_note: "Pixabay Content License", license_date: "2026-11-10", path: `abcd1234efg${n}.mp3`, size_bytes: 3145728, active: true, created_at: "2026-11-17T10:00:00Z", uses: 2, ...extra });
   const state = (extra = {}) => ({ enabled: false, max_total_bytes: 524288000, total_bytes: 6291456, max_count: 300, tracks: [track(1), track(2, { active: false, uses: 0 })], ...extra });
   const admin = (extra = {}) => ({ rest: { profiles: { ...profile("pessoa"), display_name: "Admin" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [], admin_music_list: state(), admin_music_set_enabled: null, admin_music_set_active: null, admin_music_add: U(300), admin_music_update: null, admin_music_meta: null, admin_music_proof: null, admin_music_delete: "abcd1234efg2.mp3", admin_music_log: [], ...extra } });
-  const open = async (page, a = admin()) => { const calls = await api(page, a); await page.route("**/storage/v1/object/public/music/**", (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: wav })); await page.goto("/admin?s=config"); await expect(page.getByRole("heading", { name: "Biblioteca de músicas" })).toBeVisible(); return calls; };
+  const open = async (page, a = admin()) => { const calls = await api(page, a); await page.route("**/storage/v1/object/public/music/**", (r) => r.fulfill({ status: 200, contentType: "audio/wav", body: wav })); await page.goto("/admin?s=moderacao&c=musicas"); await expect(page.getByRole("heading", { name: "Biblioteca de músicas" })).toBeVisible(); return calls; };
   const mp3 = (name = "faixa.mp3", size = 2048) => ({ name, mimeType: "audio/mpeg", buffer: Buffer.alloc(size, 1) });
 
   test("mostra o estado, o uso de espaço e as faixas; sem rolagem lateral e sem violações de acessibilidade", async ({ page }) => {
@@ -376,7 +376,7 @@ test.describe("biblioteca de músicas no painel", () => {
     expect(await page.evaluate(() => window.__xss)).toBeUndefined();
     const vazio = await page.context().newPage();
     await api(vazio, admin());
-    await vazio.goto("/admin?s=config");
+    await vazio.goto("/admin?s=moderacao&c=musicas");
     await vazio.getByText("Registro de faixas retiradas (guardado por 5 anos)").click();
     await expect(vazio.getByText("Nenhuma faixa foi retirada ainda.")).toBeVisible();
   });
@@ -532,7 +532,7 @@ test.describe("biblioteca de músicas no painel", () => {
 
   test("quem não é o dono não vê a biblioteca", async ({ page }) => {
     await api(page, { rest: { profiles: { ...profile("pessoa"), display_name: "Moderadora" }, legal_consents: consentsCli, platform_settings: [] }, rpc: { is_admin: true, admin_my_access: { admin: true, owner: false, perms: ["moderacao"] }, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: null, admin_moment_reports: [] } });
-    await page.goto("/admin?s=config");
+    await page.goto("/admin?s=moderacao&c=musicas");
     await expect(page.getByRole("heading", { name: /Denúncias de momentos/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Biblioteca de músicas" })).toHaveCount(0);
   });

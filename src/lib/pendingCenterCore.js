@@ -11,14 +11,14 @@ export const KIND_LABELS = {
   pedido_reembolso: "Pedido preso em reembolso",
 };
 export const PRIORITY_LABELS = { urgente: "Urgente", alta: "Alta", normal: "Normal" };
-// Onde a administração resolve cada tipo: seção do painel (?s=) e o nome do bloco dentro dela.
+// Onde a administração resolve cada tipo: módulo do painel (?s=), tela (?c=) e o nome do destino.
 export const TAB_TARGET = {
-  suporte: { section: "suporte", label: "Suporte" },
-  moderacao: { section: "config", label: "Configurações › Moderação" },
-  denuncias: { section: "config", label: "Configurações › Denúncias de conversa" },
-  avaliacoes: { section: "config", label: "Configurações › Avaliações contestadas" },
-  financeiro: { section: "reembolsos", label: "Reembolsos" },
-  cobranca: { section: "config", label: "Configurações › Cobrança" },
+  suporte: { section: "suporte", screen: "suporte", label: "Suporte" },
+  moderacao: { section: "moderacao", screen: "moderacao", label: "Moderação › Conteúdos denunciados" },
+  denuncias: { section: "moderacao", screen: "denuncias-chat", label: "Moderação › Denúncias do chat" },
+  avaliacoes: { section: "moderacao", screen: "avaliacoes", label: "Moderação › Avaliações contestadas" },
+  financeiro: { section: "reembolsos", screen: "reembolsos", label: "Reembolsos" },
+  cobranca: { section: "dinheiro", screen: "cobranca", label: "Dinheiro › Cobrança" },
 };
 const PRIORITIES = ["urgente", "alta", "normal"];
 const str = (v) => (typeof v === "string" ? v : "");

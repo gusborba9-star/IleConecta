@@ -8,10 +8,11 @@ export function readFocus(raw) {
 export function focusRow(id) {
   return typeof id === "string" && UUID.test(id) ? { "data-foco": id.toLowerCase() } : {};
 }
-/** Endereço do painel da administração com a seção e o item em foco. */
-export function adminPath(section, refId) {
+/** Endereço do painel da administração: módulo (?s=), tela (?c=) e item em foco (?foco=). Sem módulo = tela inicial. */
+export function adminPath(section, refId, screen) {
   const f = readFocus(refId);
-  const base = section === "visao" ? "" : `s=${encodeURIComponent(section)}`;
-  const q = [base, f ? `foco=${f}` : ""].filter(Boolean).join("&");
+  const base = section === "visao" || !section ? "" : `s=${encodeURIComponent(section)}`;
+  const c = base && typeof screen === "string" && /^[a-z0-9-]{1,40}$/.test(screen) ? `c=${screen}` : "";
+  const q = [base, c, f ? `foco=${f}` : ""].filter(Boolean).join("&");
   return q ? `?${q}` : "";
 }

@@ -38,7 +38,7 @@ test("falha ao ler a configuração: nada é bloqueado nem aparece aviso (falha 
 
 test("card do dono: pede confirmação ao ligar, grava só o que mudou e mostra o estado", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [off] }, rpc: adminRpc });
-  await page.goto("/admin");
+  await page.goto("/admin?s=numeros&c=emergencia");
   const card = page.locator("section,div").filter({ has: page.getByRole("heading", { name: "Interruptor de emergência" }) }).last();
   await expect(page.getByRole("heading", { name: "Interruptor de emergência" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Salvar" })).toBeDisabled();
@@ -55,14 +55,14 @@ test("card do dono: pede confirmação ao ligar, grava só o que mudou e mostra 
 
 test("card do dono: cancelar a confirmação não grava nada; quem não é dono nem vê o card", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [off] }, rpc: adminRpc });
-  await page.goto("/admin");
+  await page.goto("/admin?s=numeros&c=emergencia");
   await page.getByRole("checkbox", { name: /^Assistente \(IA\)/ }).check();
   await page.getByRole("button", { name: "Ligar manutenção" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Voltar" }).click();
   expect(calls.filter((x) => x.name === "admin_set_maintenance").length).toBe(0);
   const p2 = await page.context().newPage();
   await api(p2, { rest: { profiles: profile, legal_consents: consents, platform_settings: [off] }, rpc: { ...adminRpc, admin_my_access: { admin: true, owner: false, perms: ["suporte"] } } });
-  await p2.goto("/admin");
+  await p2.goto("/admin?s=numeros&c=emergencia");
   await p2.waitForTimeout(800);
   await expect(p2.getByRole("heading", { name: "Interruptor de emergência" })).toHaveCount(0);
 });
@@ -75,7 +75,7 @@ test("acessibilidade (axe): faixa de aviso e card do dono, claro e escuro", asyn
   for (const scheme of ["light", "dark"]) {
     await page.emulateMedia({ colorScheme: scheme });
     await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [on({ assistant: true })] }, rpc: adminRpc });
-    for (const tela of ["/", "/admin"]) {
+    for (const tela of ["/", "/admin?s=numeros&c=emergencia"]) {
       await page.goto(tela);
       await page.locator("h1").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(150);
       const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();

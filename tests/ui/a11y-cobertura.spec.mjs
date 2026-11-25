@@ -5,6 +5,7 @@
 import { test, expect } from "@playwright/test";
 import { api, U } from "./_api.mjs";
 import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
+import { ADMIN_MODULES, ADMIN_SCREENS } from "../../src/lib/adminNavCore.js";
 
 let AxeBuilder = null;
 try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* sem o pacote: pula */ }
@@ -19,8 +20,10 @@ const INFO = ["normas-de-uso", "conduta", "eventos-e-taxas", "termos-do-cliente"
 const GRUPOS = [
   { nome: "institucionais (sem login)", login: null, telas: [...INFO, "/redefinir-senha", "/nao-existe-mesmo"] },
   { nome: "conta pessoa: restantes", login: logado, telas: ["/creditos-de-audio", "/suporte/chamados", "/pessoas", `/rituais/${U(70)}`, "/convite/abc123", "/pagamento/retorno", "/pagamento/conta", "/nao-existe-mesmo"] },
-  { nome: "administração: seções", login: logado, telas: ["visao", "reembolsos", "suporte", "usuarios", "config", "docs", "historico"].map((s) => `/admin?s=${s}`) },
 ];
+// Painel da administração (CRM): início, a lista de cada módulo e TODAS as telas, em blocos de 10 para cada teste caber no tempo.
+const ADMIN_URLS = ["/admin", ...ADMIN_MODULES.filter((m) => ADMIN_SCREENS.filter((x) => x.module === m.id).length > 1).map((m) => `/admin?s=${m.id}`), ...ADMIN_SCREENS.map((x) => `/admin?s=${x.module}&c=${x.id}`)];
+for (let i = 0; i < ADMIN_URLS.length; i += 10) GRUPOS.push({ nome: `administração: telas ${i / 10 + 1}`, login: logado, telas: ADMIN_URLS.slice(i, i + 10) });
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"];
 
 for (const vp of [{ n: "celular 375", width: 375, height: 740 }, { n: "computador", width: 1280, height: 800 }]) {
@@ -56,13 +59,7 @@ const TELAS_RESPONSIVAS = [
   { nome: "suporte", login: logado, tela: "/suporte" },
   { nome: "termos", login: logado, tela: "/termos" },
   { nome: "créditos de áudio", login: logado, tela: "/creditos-de-audio" },
-  { nome: "administração", login: logado, tela: "/admin" },
-  { nome: "administração: configurações", login: logado, tela: "/admin?s=config" },
-  { nome: "administração: reembolsos", login: logado, tela: "/admin?s=reembolsos" },
-  { nome: "administração: suporte (admin)", login: logado, tela: "/admin?s=suporte" },
-  { nome: "administração: usuários", login: logado, tela: "/admin?s=usuarios" },
-  { nome: "administração: documentos", login: logado, tela: "/admin?s=docs" },
-  { nome: "administração: histórico", login: logado, tela: "/admin?s=historico" },
+  ...ADMIN_URLS.map((u) => ({ nome: `administração ${u.replace("/admin", "") || "início"}`, login: logado, tela: u })),
   { nome: "normas (institucional)", login: null, tela: "/sobre/normas-de-uso" },
 ];
 const semRolagemLateral = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);

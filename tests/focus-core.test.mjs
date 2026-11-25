@@ -14,11 +14,13 @@ test("focusRow: atributo só para UUID", () => {
   assert.deepEqual(focusRow("nao-uuid"), {});
   assert.deepEqual(focusRow(undefined), {});
 });
-test("adminPath: seção + foco; visão sem seção; foco inválido some", () => {
-  assert.equal(adminPath("config", ID), `?s=config&foco=${ID}`);
+test("adminPath: módulo + tela + foco; início sem módulo; foco e tela inválidos somem", () => {
+  assert.equal(adminPath("moderacao", ID, "denuncias-chat"), `?s=moderacao&c=denuncias-chat&foco=${ID}`);
   assert.equal(adminPath("suporte", null), "?s=suporte");
+  assert.equal(adminPath("suporte", ID), `?s=suporte&foco=${ID}`);
   assert.equal(adminPath("visao", null), "");
   assert.equal(adminPath("visao", ID), `?foco=${ID}`);
-  assert.equal(adminPath("config", "x&s=docs"), "?s=config");
+  assert.equal(adminPath("moderacao", "x&s=docs", "avaliacoes"), "?s=moderacao&c=avaliacoes");
+  assert.equal(adminPath("moderacao", null, 'x"&s=docs'), "?s=moderacao");
   assert.equal(adminPath("a&b", ID), `?s=a%26b&foco=${ID}`);
 });

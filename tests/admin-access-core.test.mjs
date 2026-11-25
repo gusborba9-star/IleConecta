@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MODULES, MODULE_KEYS, SECTION_NEEDS, readAccess, canModule, canSection, allowedSections, readAdminList, togglePerm, NO_ACCESS } from "../src/lib/adminAccessCore.js";
-const ORDER = ["visao", "reembolsos", "suporte", "usuarios", "config", "docs", "historico"];
+import { MODULES, MODULE_KEYS, readAccess, canModule, readAdminList, togglePerm, NO_ACCESS } from "../src/lib/adminAccessCore.js";
 const acc = (owner, perms) => readAccess({ admin: true, owner, perms });
 
 test("lê o formato do banco; lixo vira sem acesso", () => {
@@ -21,19 +20,7 @@ test("dono pode tudo, inclusive 'dono'; delegado nunca 'dono'; sem módulo não 
   for (const m of [...MODULE_KEYS, "dono"]) assert.equal(canModule(acc(false, []), m), false);
   assert.equal(canModule(NO_ACCESS, "suporte"), false); assert.equal(canModule(null, "suporte"), false);
 });
-test("seções: cada módulo abre só o que deve", () => {
-  assert.deepEqual(allowedSections(acc(true, []), ORDER), ORDER);
-  assert.deepEqual(allowedSections(acc(false, []), ORDER), []);
-  assert.deepEqual(allowedSections(NO_ACCESS, ORDER), []);
-  assert.deepEqual(allowedSections(acc(false, ["suporte"]), ORDER), ["suporte"]);
-  assert.deepEqual(allowedSections(acc(false, ["indicadores"]), ORDER), ["visao", "usuarios"]);
-  assert.deepEqual(allowedSections(acc(false, ["moderacao"]), ORDER), ["config"]);
-  assert.deepEqual(allowedSections(acc(false, ["contas"]), ORDER), []);
-  for (const k of MODULE_KEYS) for (const s of ["reembolsos", "docs", "historico"]) assert.equal(canSection(acc(false, [k]), s), false, `${k} não abre ${s}`);
-  assert.equal(canSection(acc(true, []), "inexistente"), false);
-});
-test("toda seção do painel tem regra e todo módulo tem rótulo e descrição", () => {
-  assert.deepEqual(Object.keys(SECTION_NEEDS).sort(), [...ORDER].sort());
+test("todo módulo de acesso tem rótulo e descrição (as regras de tela ficam em admin-nav-core.test.mjs)", () => {
   for (const m of MODULES) { assert.ok(m.label.length > 3 && m.desc.length > 20); }
 });
 test("lista de administradores: defensiva", () => {

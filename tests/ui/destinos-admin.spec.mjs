@@ -23,36 +23,36 @@ const resolve = (page, title) => page.locator("li").filter({ hasText: title }).g
 test.describe("central da administração abre o item exato", () => {
   test("denúncia de conversa: seção certa, linha certa em foco (e só ela)", async ({ page }) => {
     await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await resolve(page, "Denúncia do alvo");
-    await expect(page).toHaveURL(new RegExp(`s=config&foco=${CASES.r2}`));
+    await expect(page).toHaveURL(new RegExp(`s=moderacao&c=denuncias-chat&foco=${CASES.r2}`));
     await expect(page.locator(`[data-foco="${CASES.r2}"]`)).toHaveAttribute("data-focused", "true");
     await expect(page.locator(`[data-foco="${CASES.r1}"]`)).not.toHaveAttribute("data-focused", "true");
     await expect(page.locator(`[data-foco="${CASES.r2}"]`)).toContainText("Denunciante 2");
   });
   test("moderação: a linha do alvo recebe o foco", async ({ page }) => {
     await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await resolve(page, "Moderação do alvo");
     await expect(page.locator(`[data-foco="${CASES.m2}"]`)).toHaveAttribute("data-focused", "true");
     await expect(page.locator(`[data-foco="${CASES.m1}"]`)).not.toHaveAttribute("data-focused", "true");
   });
   test("suporte: abre direto o chamado pedido (dossiê)", async ({ page }) => {
     const calls = await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await resolve(page, "Chamado do alvo");
-    await expect(page).toHaveURL(new RegExp(`s=suporte&foco=${CASES.s2}`));
+    await expect(page).toHaveURL(new RegExp(`s=suporte&c=suporte&foco=${CASES.s2}`));
     await expect(page.getByRole("button", { name: /Chamado 1/ })).toHaveCount(0); // a fila deu lugar ao dossiê do chamado pedido
     await expect.poll(() => calls.some((c) => c.name === "admin_support_dossier")).toBe(true);
   });
   test("tipo sem linha própria abre só a seção; foco inválido na URL é ignorado (sem erro)", async ({ page }) => {
     await setup(page);
-    await page.goto("/admin");
+    await page.goto("/admin?s=numeros&c=pendencias");
     await resolve(page, "Exclusão");
-    await expect(page).toHaveURL(/s=suporte$/);
+    await expect(page).toHaveURL(/s=suporte&c=suporte$/);
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(`/admin?s=config&foco=${encodeURIComponent('"]),alert(1)//')}`);
+    await page.goto(`/admin?s=moderacao&c=moderacao&foco=${encodeURIComponent('"]),alert(1)//')}`);
     await page.waitForTimeout(1200);
     expect(errors).toEqual([]);
     expect(await page.locator("[data-focused]").count()).toBe(0);
