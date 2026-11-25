@@ -76,7 +76,7 @@ Decisão do proprietário de **2026-11-24** (revoga a de 2026-11-13, que não pe
 - Para ninguém esquecer de decidir, `tests/legal-hash.test.mjs` compara a impressão digital dos textos (aceites, Termos do cliente e da Casa, Privacidade e Taxas) com `tests/fixtures/legal-hash.json`: mudar texto sem registrar a decisão faz a verificação falhar (`node scripts/legal-hash.mjs --write` registra).
 - Todos (casas e clientes) também recebem uma notificação no aplicativo, com push, com link para o que mudou, enviada pelo servidor (`platform_announce`), nunca pelo usuário.
 - O **aceite explícito** com registro do texto exato, versão, data e IP continua nos momentos de dinheiro: autorização da cobrança automática da casa (`house_auto_authorizations` e `legal_consents`, tipo `cobranca_automatica`) e cada compra do cliente.
-- A tela de aceite é uma trava de interface. O servidor guarda cada aceite com a versão, mas hoje as compras conferem se existe aceite do documento, não se a versão é a mínima. Fechar isso no servidor é uma melhoria registrada no Roadmap (linha 145).
+- **O servidor também exige a versão mínima** (migrações 0222 e 0223, tabela `legal_min_version`): a compra do cliente (`has_client_terms`) e a venda da casa (`house_accepted_terms`) só passam com aceite na versão mínima vigente do documento. O mínimo do servidor e `DOC_MIN_VERSION` do app são iguais, e um teste confere. Texto que não mudou: um único aceite basta, como o advogado recomenda.
 
 ## 6. Falhas e segurança
 
