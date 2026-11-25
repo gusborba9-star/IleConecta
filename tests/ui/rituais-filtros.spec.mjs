@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ME = U(5), OWN1 = U(1), OWN2 = U(2), H1 = U(60), H2 = U(61);
-const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
+const consents = ["termos_cliente", "dados_sensiveis"].map((k) => ({ doc_key: k, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 const pessoa = (city) => ({ id: ME, account_type: "pessoa", display_name: "Ana Souza", avatar_url: null, bio: null, city, state: city ? "BA" : null, country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = (id, owner, name, city) => ({ id, owner_id: owner, name, category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null, bio: null, city, state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" } });
 const ev = (id, hid, owner, name, title, days, price, mode = "presencial") => ({ id, house_id: hid, title, description: null, price_cents: price, seats_total: 10, mode, starts_at: new Date(Date.now() + days * 86_400_000).toISOString(), duration_min: 90, status: "publicado", started_at: null, intake_fields: [], houses: { owner_id: owner, name, verified: false } });

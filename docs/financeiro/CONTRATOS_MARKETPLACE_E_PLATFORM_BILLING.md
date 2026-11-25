@@ -1,5 +1,6 @@
 # Marketplace Payments (Stripe) × Platform Billing (Efí) — contratos e pontos de integração
 
+- **SUPERADO NO PROVEDOR (24/11/2026):** a cobrança da plataforma (planos, créditos, destaques) usa o **Stripe**, e não a Efí; ver Blueprint §33 (decisão do provedor). Os contratos e os domínios abaixo continuam válidos; onde está "Efí", leia "Stripe (cobrança da plataforma)". Nenhuma integração Efí existe.
 - Status: **recomendação técnica subordinada**. Não altera o Blueprint nem o Roadmap; alterações normativas dependem de validação do CTO.
 - Origem: diretriz arquitetural CTO (Stripe = marketplace; Efí = monetização própria) e EXEC-01 (PR #140).
 - Escopo desta entrega: **somente análise e contratos**. Nenhuma integração Efí, credencial, cobrança ou configuração externa foi criada.

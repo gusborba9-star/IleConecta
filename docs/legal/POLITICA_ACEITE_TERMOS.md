@@ -69,12 +69,14 @@ O desenho físico deve reutilizar estruturas existentes após auditoria. Não cr
 
 ## 5. Atualização dos Termos
 
-Decisão do proprietário, validada pelo advogado em 2026-11-13: uma nova versão dos textos **não trava a tela de ninguém** e não pede novo aceite no login.
+Decisão do proprietário de **2026-11-24** (revoga a de 2026-11-13, que não pedia novo aceite): quando o texto de um documento muda de forma **material**, o aceite **reaparece** para quem já tinha aceitado.
 
-- Quem já aceitou continua entrando. O texto novo é publicado e todos (casas e clientes) recebem uma notificação no aplicativo, com push, com link para ler o que mudou. A notificação registra quando foi lida (`notifications.read_at`). Continuar usando vale como ciência.
-- O **aceite explícito** (caixa desmarcada, com registro do texto exato, versão, data e IP) acontece onde há dinheiro: na autorização da cobrança automática da casa (`house_auto_authorizations` e `legal_consents`, tipo `cobranca_automatica`) e em cada compra do cliente (checkbox ligado à versão vigente).
-- A versão vigente (`LEGAL_VERSION`) muda a cada alteração de texto e é a que fica gravada nesses aceites. A exigência mínima de cada documento na tela de aceite do primeiro acesso (`DOC_MIN_VERSION`) só sobe com orientação jurídica e aprovação expressa do proprietário. Mudança editorial nunca força aceite recorrente.
-- O aviso geral é enviado pelo servidor (`platform_announce`), nunca pelo usuário.
+- **Material** (muda direito, dever, cobrança, tratamento de dados, prazo ou finalidade): sobe `LEGAL_VERSION` e `DOC_MIN_VERSION` do documento. Quem aceitou uma versão anterior ao mínimo vê a tela única de aceite, uma vez, com o aviso "os termos foram atualizados", e só segue usando depois de aceitar. Quem nunca aceitou continua vendo a tela.
+- **Editorial** (ortografia, formatação, link): sobe só `LEGAL_VERSION`; `DOC_MIN_VERSION` não muda e ninguém é obrigado a aceitar de novo.
+- Para ninguém esquecer de decidir, `tests/legal-hash.test.mjs` compara a impressão digital dos textos (aceites, Termos do cliente e da Casa, Privacidade e Taxas) com `tests/fixtures/legal-hash.json`: mudar texto sem registrar a decisão faz a verificação falhar (`node scripts/legal-hash.mjs --write` registra).
+- Todos (casas e clientes) também recebem uma notificação no aplicativo, com push, com link para o que mudou, enviada pelo servidor (`platform_announce`), nunca pelo usuário.
+- O **aceite explícito** com registro do texto exato, versão, data e IP continua nos momentos de dinheiro: autorização da cobrança automática da casa (`house_auto_authorizations` e `legal_consents`, tipo `cobranca_automatica`) e cada compra do cliente.
+- A tela de aceite é uma trava de interface. O servidor guarda cada aceite com a versão, mas hoje as compras conferem se existe aceite do documento, não se a versão é a mínima. Fechar isso no servidor é uma melhoria registrada no Roadmap (linha 145).
 
 ## 6. Falhas e segurança
 
@@ -103,7 +105,7 @@ Se o usuário não aceitar, não liberar as áreas autenticadas que dependem dos
 9. Falha na gravação: não liberar como aceito.
 10. Requisições repetidas: um único evento lógico.
 11. Atualização editorial do documento: não dispara novo aceite.
-12. Versão material: não dispara novo aceite automaticamente; exige análise e autorização específica conforme seção 5.
+12. Versão material (decisão de 2026-11-24): o aceite reaparece uma vez para quem aceitou versão anterior ao mínimo do documento (seção 5).
 13. Nenhuma outra política, norma ou manual aparece como tela ou item de navegação.
 
 ## 9. Limite desta especificação
@@ -112,7 +114,7 @@ Este documento define o comportamento desejado. Não comprova que o fluxo esteja
 
 ## 10. Estado da implementação (2026-11-11, decisão do proprietário)
 
-- O aceite é feito **uma única vez por conta, na primeira entrada** (não necessariamente no login), em tela exclusiva, com confirmação do servidor antes de liberar o app. A tela só reaparece se a versão do texto mudar.
+- O aceite é feito **uma única vez por conta, na primeira entrada** (não necessariamente no login), em tela exclusiva, com confirmação do servidor antes de liberar o app. A tela só reaparece se o texto mudar de forma material (`DOC_MIN_VERSION`).
 - A autorização de dados sobre convicção religiosa fica em caixa separada e opcional na mesma tela; vale até ser retirada, e a retirada é registrada.
 - Os termos deixam de aparecer em cada tela e fluxo. O acesso permanente é a página "Termos e normas" (menu lateral, "Mais" e rodapé), para cliente, casa e equipe.
 - Detalhes técnicos e regras: `docs/regras-por-recurso.md`, seção "Aceite único dos Termos (0076)".

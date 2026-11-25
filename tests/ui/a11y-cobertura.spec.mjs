@@ -4,13 +4,14 @@
 // Precisa de: npm install --no-save @axe-core/playwright axe-core
 import { test, expect } from "@playwright/test";
 import { api, U } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 let AxeBuilder = null;
 try { AxeBuilder = (await import("@axe-core/playwright")).default; } catch { /* sem o pacote: pula */ }
 
 const ME = U(1), HID = U(60);
 const pessoa = { id: ME, account_type: "pessoa", display_name: "Admin", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" };
-const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }));
+const consent = (...keys) => keys.map((k) => ({ doc_key: k, doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }));
 const rpc = { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, music_credits: [] };
 const logado = { rest: { profiles: pessoa, legal_consents: consent("termos_cliente", "dados_sensiveis"), platform_settings: [] }, rpc };
 

@@ -6,14 +6,18 @@ export const LEGAL_VERSION = "2026-11-rascunho-23";
 export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18", "2026-11-rascunho-19", "2026-11-rascunho-20", "2026-11-rascunho-21", "2026-11-rascunho-22", "2026-11-rascunho-23"];
 
 /**
- * Versão mínima que cada documento exige na tela de aceite. Regra do aceite único (decisão do proprietário, validada pelo advogado em
- * 2026-11-13): nova versão dos textos NÃO trava a tela de ninguém. Quem já aceitou continua entrando; todos recebem uma notificação
- * com link para o texto novo (a leitura fica registrada). O aceite explícito, com registro do texto exato, data e IP, acontece onde há
- * dinheiro: na autorização da cobrança automática da casa e em cada compra do cliente.
+ * Versão mínima que cada documento exige na tela de aceite. Decisão do proprietário (2026-11-24, revoga a de 2026-11-13):
+ * quando o TEXTO de um documento muda de forma material, o novo aceite REAPARECE para quem já tinha aceitado (uma vez, com o aviso
+ * "os termos foram atualizados"); a pessoa só segue usando depois de aceitar. Quem nunca aceitou continua vendo a tela.
+ * Mudança puramente editorial (ortografia, formatação) NÃO sobe este número. Para não depender de memória, o teste
+ * tests/legal-hash.test.mjs compara a impressão digital dos textos com tests/fixtures/legal-hash.json e falha se o texto mudar sem
+ * uma decisão explícita: material = subir o mínimo aqui; editorial = apenas atualizar a impressão digital.
+ * Todos também recebem uma notificação com link para o texto novo (platform_announce). O aceite explícito com registro do texto,
+ * data e IP continua existindo onde há dinheiro (autorização da cobrança automática e cada compra do cliente).
  */
 export const DOC_MIN_VERSION = {
-  termos_cliente: "2026-10-rascunho-1",
-  termos_casa: "2026-10-rascunho-1",
+  termos_cliente: "2026-11-rascunho-23",
+  termos_casa: "2026-11-rascunho-23",
 };
 
 export const CONSENT_DOCS = {

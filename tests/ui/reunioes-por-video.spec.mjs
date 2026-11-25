@@ -2,10 +2,11 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { api, U, noHScroll } from "./_api.mjs";
+import { LEGAL_VERSION } from "../../src/lib/legalCore.js";
 
 const ME = U(1), HID = U(60), MID = U(300);
-const consentsCli = [{ doc_key: "termos_cliente", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }];
-const consentsCasa = [{ doc_key: "termos_casa", doc_version: "2026-11-rascunho-12", accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCli = [{ doc_key: "termos_cliente", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }];
+const consentsCasa = [{ doc_key: "termos_casa", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = { id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } };
 const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa", kind: "reuniao", title: "Encontro de membros", starts_at: new Date(Date.now() + 5 * 60000).toISOString(), duration_min: 60, is_host: false, ...o });
