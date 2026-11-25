@@ -91,9 +91,9 @@ function Home({ access }: { access: ReturnType<typeof usePlatformConfig>["access
       </div>
       <AdminSearch access={access} />
       {canPending && (
-        <Link to={adminTo("numeros", "pendencias")} className="pillow flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link to={adminTo("numeros", "pendencias")} className="pillow flex min-h-14 min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <span className="font-semibold">Pendências da administração</span>
-          <span className="text-muted-foreground">{pend === null ? "…" : pend.total === 0 ? "Nada pendente agora" : `${pend.total} no total · ${pend.overdue} vencida${pend.overdue === 1 ? "" : "s"}`}</span>
+          <span className="min-w-0 text-muted-foreground [overflow-wrap:anywhere]">{pend === null ? "…" : pend.total === 0 ? "Nada pendente agora" : `${pend.total} no total · ${pend.overdue} vencida${pend.overdue === 1 ? "" : "s"}`}</span>
         </Link>
       )}
       {metrics && (
