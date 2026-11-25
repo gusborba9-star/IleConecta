@@ -20,5 +20,10 @@ export function intentOf(q) {
 export function matchesIntent(intent, fields) {
   if (!intent) return false;
   const hay = plain(fields.filter((f) => typeof f === "string").join(" | "));
-  return intent.terms.some((t) => hay.includes(t));
+  // O termo precisa ser a palavra inteira (ou o plural dela): "cura" não acha "procura", "uniao" não acha "reuniao", "passe" não acha "passeio".
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return intent.terms.some((t) => {
+    const forms = [t, `${t}s`, `${t}es`, ...(t.endsWith("ao") ? [`${t.slice(0, -2)}oes`] : [])];
+    return new RegExp(`(^|[^a-z0-9])(${forms.map(esc).join("|")})($|[^a-z0-9])`).test(hay);
+  });
 }
