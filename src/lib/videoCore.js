@@ -11,6 +11,7 @@ const REASONS = {
   sem_login: "Entre na sua conta para participar.",
   indisponivel: "Esta reunião não está mais disponível.",
   sem_acesso: "Você não faz parte desta reunião.",
+  removido: "A casa retirou você desta reunião.",
   desligado: "O vídeo ainda não está liberado para esta casa.",
   encerrada: "Esta reunião já terminou.",
   sem_minutos: "Os minutos de vídeo da casa neste mês acabaram.",

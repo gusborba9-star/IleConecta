@@ -56,6 +56,15 @@ export async function endMeetingNow(id: string): Promise<{ ok: boolean; roomClos
   return { ok: true, roomClosed: d.room_closed === true };
 }
 
+/** A dona retira alguém da sala; a pessoa não volta àquela reunião (o banco nega a entrada). */
+export async function removeFromRoom(meetingId: string, userId: string): Promise<{ ok: boolean; kicked?: boolean }> {
+  if (!supabase) return { ok: false };
+  const { data, error } = await supabase.functions.invoke("video", { body: { action: "remove", meeting_id: meetingId, user_id: userId } });
+  const d = data as { ok?: boolean; kicked?: boolean } | null;
+  if (error || !d?.ok) return { ok: false };
+  return { ok: true, kicked: d.kicked === true };
+}
+
 /** Registra a ciência do aviso da sala (a regra de quem pode é a da entrada). */
 export async function ackMeeting(id: string, version: string): Promise<boolean> {
   if (!supabase) return false;

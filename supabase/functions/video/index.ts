@@ -3,7 +3,7 @@
 // Quem entra é sempre identificado pelo JWT e o BANCO decide o acesso (video_join_check). Os avisos do provedor entram por ?hook=daily
 // e só valem com assinatura correta; só eles gravam consumo de minutos.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeLivekitEvent, sweepRooms, verifyDailySignature, verifyLivekitWebhook } from "./core.js";
+import { adapterFor, endMeeting, joinMeeting, normalizeDailyEvent, normalizeLivekitEvent, removeFromMeeting, sweepRooms, verifyDailySignature, verifyLivekitWebhook } from "./core.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +52,13 @@ Deno.serve(async (req) => {
       ? await admin.rpc("video_close_room", { p_room: n.room })
       : await admin.rpc("video_record_usage", { p_room: n.room, p_session: n.session, p_user: n.userId, p_joined: iso(n.joinedAt), p_left: n.kind === "left" ? iso(n.at) : null });
     if (error) { console.error("video_hook_erro", error.message); return json(500, { error: "falha_ao_registrar" }); }
+    // quem foi removido da reunião e entrou com chave antiga é retirado de novo na hora
+    if (n.kind === "joined" && n.userId) {
+      const { data: gone } = await admin.rpc("video_removed_check", { p_room: n.room, p_user: n.userId });
+      if (gone === true) {
+        try { await adapterFor(hook, fetch, keys)?.removeParticipant?.({ roomName: n.room, userId: n.userId }); } catch (e) { console.error("video_reeject", (e as Error).message); }
+      }
+    }
     return json(200, { ok: true });
   }
 
@@ -74,7 +81,7 @@ Deno.serve(async (req) => {
   const { data: auth } = await asUser.auth.getUser();
   if (!auth?.user) return json(401, { error: "nao_autenticado" });
 
-  let body: { action?: unknown; meeting_id?: unknown } = {};
+  let body: { action?: unknown; meeting_id?: unknown; user_id?: unknown } = {};
   try { body = await req.json(); } catch { return json(400, { error: "json_invalido" }); }
 
   if (body.action === "join") {
@@ -126,6 +133,18 @@ Deno.serve(async (req) => {
       },
       adapterFor: (provider: string) => adapterFor(provider, fetch, keys),
       closeUsage: async (room: string) => { await admin.rpc("video_close_room", { p_room: room }); },
+    });
+    return json(r.ok ? 200 : 403, r as unknown as Record<string, unknown>);
+  }
+
+  if (body.action === "remove") {
+    const r = await removeFromMeeting(String(body.meeting_id ?? ""), String(body.user_id ?? ""), {
+      remove: async (id: string, uid: string) => {
+        const { data, error } = await asUser.rpc("video_remove", { p_meeting: id, p_user: uid });
+        if (error) throw new Error(error.message);
+        return data;
+      },
+      adapterFor: (provider: string) => adapterFor(provider, fetch, keys),
     });
     return json(r.ok ? 200 : 403, r as unknown as Record<string, unknown>);
   }

@@ -52,7 +52,7 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
     name: "daily",
     async ensureRoom({ roomName, startsAt, durationMin, maxParticipants }) {
       const w = roomWindow(startsAt, durationMin);
-      const props = { exp: sec(w.closes), nbf: sec(w.opens), max_participants: Math.min(Math.max(Number(maxParticipants) || 2, 2), 100), enable_prejoin_ui: true, enable_knocking: false, eject_at_room_exp: true, lang: "pt-BR" };
+      const props = { exp: sec(w.closes), nbf: sec(w.opens), max_participants: Math.min(Math.max(Number(maxParticipants) || 2, 2), 100), enable_prejoin_ui: true, enable_chat: true, enable_knocking: false, eject_at_room_exp: true, lang: "pt-BR" };
       const make = (withGeo) => fetchImpl(`${base}/rooms`, { method: "POST", headers, body: JSON.stringify({ name: roomName, privacy: "private", properties: withGeo ? { ...props, geo: "sa-east-1" } : props }) });
       let res = await make(true);
       if (res.status === 400) {
@@ -84,6 +84,11 @@ export function dailyAdapter(fetchImpl, apiKey, base = "https://api.daily.co/v1"
     /** Fecha a sala para todos (quem está dentro é retirado). Sala que já não existe conta como fechada. */
     async closeRoom({ roomName }) {
       const res = await fetchImpl(`${base}/rooms/${encodeURIComponent(roomName)}`, { method: "DELETE", headers });
+      return res.ok || res.status === 404;
+    },
+    /** Retira a pessoa da sala e impede que volte com a mesma chave (ban). Sala ou pessoa que já não existem contam como retiradas. */
+    async removeParticipant({ roomName, userId }) {
+      const res = await fetchImpl(`${base}/rooms/${encodeURIComponent(roomName)}/eject`, { method: "POST", headers, body: JSON.stringify({ user_ids: [String(userId)], ban: true }) });
       return res.ok || res.status === 404;
     },
   };
@@ -152,6 +157,11 @@ export function livekitAdapter(fetchImpl, { url, apiKey, apiSecret }) {
     /** Fecha a sala para todos (quem está dentro é retirado). Sala que já não existe conta como fechada. */
     async closeRoom({ roomName }) {
       const res = await twirp("DeleteRoom", { room: roomName }, roomName);
+      return res.ok || res.status === 404;
+    },
+    /** Retira a pessoa da sala (identidade = id da pessoa). Quem já saiu conta como retirado; a volta é barrada no banco e no aviso de entrada. */
+    async removeParticipant({ roomName, userId }) {
+      const res = await twirp("RemoveParticipant", { room: roomName, identity: String(userId) }, roomName);
       return res.ok || res.status === 404;
     },
   };
@@ -253,4 +263,22 @@ export async function sweepRooms(deps) {
     } catch { failed++; }
   }
   return { ok: true, total: rooms.length, closed, failed };
+}
+
+/**
+ * A dona retira alguém da sala: o banco confere que é a dona e grava a remoção (a entrada passa a ser negada); depois o provedor tira a pessoa da sala.
+ * deps: { remove(meetingId, userId) -> { provider, room_name }, adapterFor(provider) }. A remoção no banco vale mesmo se o provedor falhar (devolvido em kicked).
+ */
+export async function removeFromMeeting(meetingId, userId, deps) {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (typeof meetingId !== "string" || !uuid.test(meetingId) || typeof userId !== "string" || !uuid.test(userId)) return { ok: false, reason: "pedido_invalido" };
+  let info;
+  try { info = await deps.remove(meetingId, userId); } catch { return { ok: false, reason: "sem_permissao" }; }
+  if (!info?.room_name) return { ok: false, reason: "sem_permissao" };
+  let kicked = false;
+  try {
+    const adapter = deps.adapterFor(info.provider);
+    if (adapter && typeof adapter.removeParticipant === "function") kicked = await adapter.removeParticipant({ roomName: info.room_name, userId });
+  } catch { kicked = false; }
+  return { ok: true, kicked };
 }

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
-import { adapterFor, dailyAdapter, endMeeting, joinMeeting, livekitAdapter, normalizeDailyEvent, normalizeLivekitEvent, roomWindow, signLivekitJwt, verifyDailySignature, verifyLivekitWebhook } from "../supabase/functions/video/core.js";
+import { adapterFor, dailyAdapter, endMeeting, joinMeeting, livekitAdapter, normalizeDailyEvent, normalizeLivekitEvent, removeFromMeeting, roomWindow, signLivekitJwt, verifyDailySignature, verifyLivekitWebhook } from "../supabase/functions/video/core.js";
 
 const UID = "11111111-1111-4111-8111-111111111111";
 const MID = "22222222-2222-4222-8222-222222222222";
@@ -389,4 +389,41 @@ test("migração 0215: lembrete uma vez por reunião, só do servidor, a cada mi
   assert.match(sql, /revoke all on function public\.video_send_reminders\(\) from public, anon, authenticated/);
   assert.match(sql, /cron\.schedule\('video-lembrete', '\* \* \* \* \*'/);
   assert.match(sql, /hm\.user_id <> h\.owner_id/);
+});
+
+test("remover convidado: LiveKit tira a identidade da sala; Daily tira e bloqueia a volta; sala inexistente conta como retirada", async () => {
+  const calls = [];
+  const f = (status) => async (u, o) => { calls.push([u, JSON.parse(o.body)]); return { ok: status < 300, status, json: async () => ({}) }; };
+  assert.equal(await livekitAdapter(f(200), LK).removeParticipant({ roomName: "ic-1", userId: UID }), true);
+  assert.equal(calls.at(-1)[0], "https://ile.livekit.cloud/twirp/livekit.RoomService/RemoveParticipant");
+  assert.deepEqual(calls.at(-1)[1], { room: "ic-1", identity: UID });
+  assert.equal(await livekitAdapter(f(404), LK).removeParticipant({ roomName: "ic-1", userId: UID }), true);
+  assert.equal(await livekitAdapter(f(500), LK).removeParticipant({ roomName: "ic-1", userId: UID }), false);
+  assert.equal(await dailyAdapter(f(200), "k", "https://d.test").removeParticipant({ roomName: "ic-a", userId: UID }), true);
+  assert.equal(calls.at(-1)[0], "https://d.test/rooms/ic-a/eject");
+  assert.deepEqual(calls.at(-1)[1], { user_ids: [UID], ban: true });
+  assert.equal(await dailyAdapter(f(404), "k", "https://d.test").removeParticipant({ roomName: "ic-a", userId: UID }), true);
+});
+
+test("remover convidado: o banco decide (só a dona); o provedor falhar não desfaz a remoção", async () => {
+  const done = [];
+  const deps = (over = {}) => ({ remove: async (m, u) => { done.push([m, u]); return { provider: "livekit", room_name: "ic-1" }; }, adapterFor: () => ({ removeParticipant: async () => true }), ...over });
+  assert.deepEqual(await removeFromMeeting(MID, UID, deps()), { ok: true, kicked: true });
+  assert.deepEqual(done, [[MID, UID]]);
+  assert.deepEqual(await removeFromMeeting("x", UID, deps()), { ok: false, reason: "pedido_invalido" });
+  assert.deepEqual(await removeFromMeeting(MID, "y", deps()), { ok: false, reason: "pedido_invalido" });
+  assert.deepEqual(await removeFromMeeting(MID, UID, deps({ remove: async () => { throw new Error("Sem permissão."); } })), { ok: false, reason: "sem_permissao" });
+  assert.deepEqual(await removeFromMeeting(MID, UID, deps({ adapterFor: () => ({ removeParticipant: async () => { throw new Error("rede"); } }) })), { ok: true, kicked: false });
+});
+
+test("migração 0218: remoção só da dona, entrada negada a quem foi removido, consulta de reentrada só do servidor", async () => {
+  const { readFileSync } = await import("node:fs");
+  const sql = readFileSync(new URL("../supabase/migrations/0218_video_remover_convidado.sql", import.meta.url), "utf8");
+  assert.match(sql, /alter table public\.video_removed enable row level security/);
+  assert.match(sql, /revoke all on public\.video_removed from public, anon, authenticated/);
+  assert.match(sql, /h\.owner_id = uid/);
+  assert.match(sql, /'reason'', ''removido''/);
+  assert.match(sql, /p_user = uid then raise exception 'Escolha outra pessoa/);
+  assert.match(sql, /revoke all on function public\.video_removed_check\(text, uuid\) from public, anon, authenticated/);
+  assert.match(sql, /grant execute on function public\.video_removed_check\(text, uuid\) to service_role/);
 });

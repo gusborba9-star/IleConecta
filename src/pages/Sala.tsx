@@ -100,7 +100,7 @@ export default function Sala() {
         )}
         {st.s === "pronta" && st.kind === "livekit" && (
           <Suspense fallback={<p className="p-5 text-sm text-muted-foreground" role="status">Preparando a sala…</p>}>
-            <div className="h-full" data-testid="video-livekit"><LivekitRoomView serverUrl={st.server} token={st.token} onLeave={() => navigate("/reunioes")} /></div>
+            <div className="h-full" data-testid="video-livekit"><LivekitRoomView serverUrl={st.server} token={st.token} meetingId={id} isHost={st.host} onLeave={(removed) => { if (removed) toast.info("A casa retirou você desta reunião."); navigate("/reunioes"); }} /></div>
           </Suspense>
         )}
         {st.s === "pronta" && st.kind === "iframe" && (
