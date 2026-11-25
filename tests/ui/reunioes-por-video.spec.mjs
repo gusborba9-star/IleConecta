@@ -433,6 +433,7 @@ test("dona indica um moderador e tira a função", async ({ page }) => {
   await page.getByTestId("video-helpers").getByLabel("Função").selectOption("coanfitriao");
   await page.getByRole("button", { name: "Indicar" }).click();
   await expect.poll(() => calls.find((c) => c.name === "video_set_helper")?.body).toEqual({ p_meeting: MID, p_user: U(21), p_role: "coanfitriao" });
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 10000 }); // o aviso animado não entra na conferência de contraste
   const r = await new AxeBuilder({ page }).analyze();
   expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
 });
