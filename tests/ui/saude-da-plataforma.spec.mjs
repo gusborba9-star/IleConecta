@@ -77,7 +77,7 @@ test.describe("cartão Saúde da plataforma (dono)", () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await api(page, { rest: { profiles: profile, legal_consents: consents }, rpc: { is_admin: true, admin_pending_center: { total: 0, overdue: 0, counts: {}, items: [] }, admin_health: HEALTH } });
       await page.goto("/admin?s=numeros&c=saude");
-      await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Saúde da plataforma", level: 2 })).toBeVisible();
       await expect(page.getByText("Precisa de atenção")).toBeVisible();
       await expect(page.getByText("2 alertas em aberto")).toBeVisible();
       await expect(page.getByText("Erros no app", { exact: true })).toBeVisible();
@@ -184,7 +184,7 @@ test.describe("ações do dono no cartão", () => {
     await cron.getByRole("button", { name: "Rodar agora a rotina refund-sweep" }).click();
     await cron.getByRole("button", { name: "Rodar", exact: true }).click();
     await expect(cron.getByRole("status")).toContainText("acabou de rodar");
-    await expect(page.getByRole("heading", { name: "Saúde da plataforma" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Saúde da plataforma", level: 2 })).toBeVisible();
   });
   test("últimas execuções manuais aparecem; texto hostil no alerta fica como texto", async ({ page }) => {
     await setup(page, { admin_health: { ...HEALTH, alerts: [{ code: "<img src=x onerror=window.__xss=2>", since: ago(1000), seen_at: null }], manual_runs: [{ routine: "refund-sweep", at: ago(3600000), ok: false, note: "<b>x</b>" }] } });

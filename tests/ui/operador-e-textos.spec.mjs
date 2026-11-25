@@ -93,7 +93,7 @@ test("Termos da Casa: imagem de terceiros e de crianças e adolescentes", async 
 test("card do dono: CPF completo é recusado na tela, sem chamar o banco", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: pessoa, legal_consents: consents, platform_settings: [] }, rpc: adminRpc });
   await page.goto("/admin?s=plataforma&c=operador");
-  await expect(page.getByRole("heading", { name: "Identificação do operador" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Identificação do operador", level: 2 })).toBeVisible();
   await expect(page.getByLabel("Nome completo ou razão social")).toHaveValue("Gustavo dos Santos Borba");
   await expect(page.getByRole("button", { name: "Salvar identificação" })).toBeDisabled();
   await page.getByLabel("CPF mascarado ou CNPJ completo").fill("123.116.210-45");

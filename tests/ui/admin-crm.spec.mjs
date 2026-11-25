@@ -102,12 +102,14 @@ test.describe("computador", () => {
 test("toda tela do mapa abre, mostra um título visível, o h1 certo, o Voltar e nenhum erro de página", async ({ page }) => {
   test.setTimeout(240000);
   const erros = [];
-  page.on("pageerror", (e) => erros.push(e.message));
+  let atual = "";
+  page.on("pageerror", (e) => erros.push(`${atual}: ${e.message}`));
   await setup(page);
   for (const t of ADMIN_SCREENS) {
+    atual = t.id;
     await page.goto(`/admin?s=${t.module}&c=${t.id}`);
     await expect(page.locator("h1").first(), t.id).toHaveText(t.title);
-    await expect(page.locator("main h1 ~ *, main h2, main h3").first(), `${t.id}: sem título visível`).toBeVisible({ timeout: 8000 });
+    await expect(page.locator("[data-screen] h2, [data-screen] h3, [data-screen] > *").first(), `${t.id}: sem título visível`).toBeVisible({ timeout: 8000 });
     await expect(page.getByRole("link", { name: "Voltar" }), t.id).toBeVisible();
   }
   expect(erros).toEqual([]);

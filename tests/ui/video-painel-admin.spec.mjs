@@ -12,7 +12,6 @@ const video = { key: "video", value: { state: "off", provider: "daily", beta_hou
 test("dono liga em modo de teste com a própria conta (Daily e LiveKit são oferecidos); grava a configuração completa", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [video] }, rpc: adminRpc });
   await page.goto("/admin?s=plataforma&c=video");
-  await page.getByRole("tab", { name: "Configurações" }).or(page.getByRole("button", { name: "Configurações" })).first().click();
   await expect(page.getByTestId("video-admin")).toBeVisible();
   const card = page.getByTestId("video-admin");
   await card.getByLabel("Estado", { exact: true }).selectOption("beta");
@@ -27,7 +26,6 @@ test("dono liga em modo de teste com a própria conta (Daily e LiveKit são ofer
 test("código de casa inválido na lista não grava nada", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [video] }, rpc: adminRpc });
   await page.goto("/admin?s=plataforma&c=video");
-  await page.getByRole("tab", { name: "Configurações" }).or(page.getByRole("button", { name: "Configurações" })).first().click();
   await page.getByLabel(/Casas de teste/).fill("isto-nao-e-um-codigo");
   await page.getByTestId("video-admin").getByRole("button", { name: "Salvar" }).click();
   await expect(page.getByText("Há um código de casa inválido na lista.")).toBeVisible();
@@ -37,7 +35,6 @@ test("código de casa inválido na lista não grava nada", async ({ page }) => {
 test("cadastrar aviso do Daily chama a função e confirma; recusa do Daily mostra erro", async ({ page }) => {
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [video] }, rpc: adminRpc, fn: { video: { ok: true, uuid: "w1" } } });
   await page.goto("/admin?s=plataforma&c=video");
-  await page.getByRole("tab", { name: "Configurações" }).or(page.getByRole("button", { name: "Configurações" })).first().click();
   await page.getByRole("button", { name: "Cadastrar aviso do Daily" }).click();
   await expect(page.getByText("Aviso do Daily cadastrado.")).toBeVisible();
   expect(calls.find((x) => x.kind === "fn" && x.name === "video").body).toEqual({ action: "setup_daily_webhook" });

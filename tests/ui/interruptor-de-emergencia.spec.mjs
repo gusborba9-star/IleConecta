@@ -40,7 +40,7 @@ test("card do dono: pede confirmação ao ligar, grava só o que mudou e mostra 
   const calls = await api(page, { rest: { profiles: profile, legal_consents: consents, platform_settings: [off] }, rpc: adminRpc });
   await page.goto("/admin?s=numeros&c=emergencia");
   const card = page.locator("section,div").filter({ has: page.getByRole("heading", { name: "Interruptor de emergência" }) }).last();
-  await expect(page.getByRole("heading", { name: "Interruptor de emergência" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Interruptor de emergência", level: 2 })).toBeVisible();
   await expect(page.getByRole("button", { name: "Salvar" })).toBeDisabled();
   await page.getByRole("checkbox", { name: /^Pagamentos/ }).check();
   await page.getByLabel("Mensagem para os usuários (opcional)").fill("Voltamos às 22h");
