@@ -98,7 +98,7 @@ function ConfigJump({ can }: { can: (m: string) => boolean }) {
     setHits(found.slice(0, 6));
   };
   return (
-    <div className="sticky top-14 z-10 -mx-1 space-y-2 rounded-2xl border border-border bg-card/95 p-2 backdrop-blur lg:top-20">
+    <div className="sticky top-14 z-10 w-full min-w-0 max-w-full space-y-2 rounded-2xl border border-border bg-card/95 p-2 backdrop-blur lg:top-20">
     <div className="relative">
       <input
         type="search"
@@ -124,7 +124,7 @@ function ConfigJump({ can }: { can: (m: string) => boolean }) {
         </ul>
       )}
     </div>
-    <nav aria-label="Ir para um grupo de configurações" className="flex gap-2 overflow-x-auto">
+    <nav aria-label="Ir para um grupo de configurações" className="flex min-w-0 flex-wrap gap-2">
       {groups.map((g) => (
         <button
           key={g.id}
