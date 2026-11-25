@@ -9,12 +9,12 @@ const consentsCli = [{ doc_key: "termos_cliente", doc_version: LEGAL_VERSION, ac
 const consentsCasa = [{ doc_key: "termos_casa", doc_version: LEGAL_VERSION, accepted_at: "2026-11-01T10:00:00Z" }];
 const profile = (type) => ({ id: ME, account_type: type, display_name: type === "casa" ? "Minha Casa" : "Maria", avatar_url: null, bio: null, city: "Salvador", state: "BA", country: "BR", created_at: "2026-01-01T00:00:00Z" });
 const house = { id: HID, owner_id: ME, name: "Minha Casa", category: "Terreiro", tags: [], cover_url: null, verified: false, offerings: "", plan: "maximo", created_at: "2026-01-01T00:00:00Z", profiles: { avatar_url: null } };
-const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa", kind: "reuniao", title: "Encontro de membros", starts_at: new Date(Date.now() + 5 * 60000).toISOString(), duration_min: 60, is_host: false, ...o });
+const meeting = (o = {}) => ({ id: MID, house_id: HID, house_name: "Minha Casa", kind: "reuniao", title: "Encontro de membros", starts_at: new Date(Date.now() + 5 * 60000).toISOString(), duration_min: 60, is_host: false, role: "participante", waiting_room: false, ...o });
 
 const setup = async (page, type, { upcoming = [], bank = null, fn = {}, rest = {} } = {}) =>
   api(page, {
     rest: { profiles: profile(type), legal_consents: type === "casa" ? consentsCasa : consentsCli, houses: type === "casa" ? [house] : [], stories: [], services: [], events: [], posts: [], service_orders: [], ...rest },
-    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null, video_acked: false, video_house_members: [{ user_id: U(21), name: "Ana Souza", bond: "Filha de santo" }, { user_id: U(22), name: "Bruno Lima", bond: "Ogã" }, { user_id: U(23), name: "Carla Dias", bond: "" }] },
+    rpc: { video_my_upcoming: upcoming, video_bank: bank, report_client_error: true, moments_feed: [], moments_published_today: 0, video_schedule: MID, video_cancel: null, video_ack: null, video_acked: false, video_request_entry: { ok: true }, video_waiting_list: [], video_helpers_of: [], video_history: [], video_set_helper: null, video_admit: 1, video_house_members: [{ user_id: U(21), name: "Ana Souza", bond: "Filha de santo" }, { user_id: U(22), name: "Bruno Lima", bond: "Ogã" }, { user_id: U(23), name: "Carla Dias", bond: "" }] },
     fn,
   });
 
@@ -225,7 +225,7 @@ test("quem já aceitou esta reunião entra direto, sem ver o aviso nem aceitar d
   await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
   const calls = await api(page, {
     rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
-    rpc: { video_my_upcoming: [], video_bank: null, report_client_error: true, moments_feed: [], moments_published_today: 0, video_ack: null, video_acked: true },
+    rpc: { video_my_upcoming: [], video_bank: null, report_client_error: true, moments_feed: [], moments_published_today: 0, video_ack: null, video_acked: true, video_request_entry: { ok: true } },
     fn: { video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, title: "x", kind: "reuniao" } },
   });
   await page.goto(`/reunioes/${MID}`);
@@ -322,4 +322,162 @@ test("painel da casa mostra o cartão da reunião aberta", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("video-home-card")).toContainText("Encontro de membros");
   await expect(page.getByTestId("video-home-enter")).toBeVisible();
+});
+
+// ---------- Vídeo 2.0: sala de espera, equipe, presença e histórico ----------
+const liveFn = (o = {}) => ({ video: { ok: true, provider: "daily", url: "https://ileconecta.daily.co/ic-1", token: "TKN", is_host: false, can_moderate: false, role: "participante", title: "Encontro", kind: "reuniao", ends_at: new Date(Date.now() + 3600000).toISOString(), ...o } });
+
+test("sala de espera: pedido fica 'espera' → tela de espera, sem iframe", async ({ page }) => {
+  const calls = await api(page, {
+    rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
+    rpc: { video_request_entry: { ok: false, reason: "espera", waiting_status: "aguardando" }, video_acked: true, video_ack: null, report_client_error: true, moments_feed: [], moments_published_today: 0 },
+    fn: liveFn(),
+  });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-espera")).toContainText("Aguardando a casa liberar a sua entrada");
+  await expect(page.getByTestId("video-frame")).toHaveCount(0);
+  expect(calls.some((c) => c.name === "video_request_entry")).toBe(true);
+  expect(calls.some((c) => c.kind === "fn")).toBe(false);
+  await noHScroll(page);
+  const r = await new AxeBuilder({ page }).analyze();
+  expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
+});
+
+test("sala de espera: entrada negada mostra o motivo", async ({ page }) => {
+  await api(page, {
+    rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
+    rpc: { video_request_entry: { ok: false, reason: "negado_espera" }, video_acked: true, report_client_error: true, moments_feed: [], moments_published_today: 0 },
+    fn: liveFn(),
+  });
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByRole("alert")).toContainText("A casa não liberou a sua entrada");
+});
+
+test("moderador na sala: painel da espera libera um, nega outro e libera todos", async ({ page }) => {
+  const calls = await api(page, {
+    rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
+    rpc: { video_request_entry: { ok: true }, video_acked: true, video_waiting_list: [{ user_id: U(31), name: "Joana Alves", requested_at: new Date().toISOString() }, { user_id: U(32), name: "Pedro Reis", requested_at: new Date().toISOString() }], video_admit: 1, report_client_error: true, moments_feed: [], moments_published_today: 0 },
+    fn: liveFn({ can_moderate: true, role: "moderador" }),
+  });
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-frame")).toBeVisible();
+  await expect(page.getByTestId("video-end")).toHaveCount(0);
+  await expect(page.getByTestId("video-waiting-count")).toHaveText("2");
+  await page.getByTestId("video-waiting-toggle").click();
+  await expect(page.getByTestId("video-waiting-row")).toHaveCount(2);
+  await page.getByTestId("video-waiting-row").first().getByRole("button", { name: "Liberar" }).click();
+  await expect.poll(() => calls.find((c) => c.name === "video_admit")?.body).toMatchObject({ p_meeting: MID, p_users: [U(31)], p_decision: "admitir", p_all: false });
+  await page.getByTestId("video-waiting-row").nth(1).getByRole("button", { name: "Negar" }).click();
+  await expect.poll(() => calls.filter((c) => c.name === "video_admit").at(-1)?.body).toMatchObject({ p_users: [U(32)], p_decision: "negar" });
+  await page.getByTestId("video-admit-all").click();
+  await expect.poll(() => calls.filter((c) => c.name === "video_admit").at(-1)?.body).toMatchObject({ p_decision: "admitir", p_all: true });
+  await noHScroll(page);
+});
+
+test("coanfitrião vê Encerrar; participante comum não vê a espera nem o botão", async ({ page }) => {
+  await api(page, {
+    rest: { profiles: profile("pessoa"), legal_consents: consentsCli, houses: [], stories: [], services: [], events: [], posts: [], service_orders: [] },
+    rpc: { video_request_entry: { ok: true }, video_acked: true, video_waiting_list: [], report_client_error: true, moments_feed: [], moments_published_today: 0 },
+    fn: liveFn({ is_host: true, can_moderate: true, role: "coanfitriao" }),
+  });
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  await page.goto(`/reunioes/${MID}`);
+  await expect(page.getByTestId("video-end")).toBeVisible();
+  await expect(page.getByTestId("video-waiting-toggle")).toBeVisible();
+});
+
+test("participante comum: sem botão de espera e sem Encerrar", async ({ page }) => {
+  await setup(page, "pessoa", { fn: liveFn() });
+  await page.route("https://ileconecta.daily.co/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>sala</p>" }));
+  await page.goto(`/reunioes/${MID}`);
+  await page.getByTestId("video-aceitar").click();
+  await expect(page.getByTestId("video-frame")).toBeVisible();
+  await expect(page.getByTestId("video-waiting-toggle")).toHaveCount(0);
+  await expect(page.getByTestId("video-end")).toHaveCount(0);
+});
+
+test("marcar reunião com sala de espera envia p_waiting verdadeiro (e falso por padrão)", async ({ page }) => {
+  const calls = await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/reunioes");
+  await expect(page.getByTestId("video-waiting-opt")).toBeVisible();
+  const d = new Date(Date.now() + 2 * 86400000);
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  await page.getByLabel("Título").fill("Reunião com espera");
+  await page.getByLabel("Dia").fill(day); await page.getByLabel("Hora").fill("19:30");
+  await page.getByLabel("Sala de espera").check();
+  await page.getByRole("button", { name: "Marcar reunião" }).click();
+  await expect.poll(() => calls.find((c) => c.name === "video_schedule")?.body).toMatchObject({ p_waiting: true, p_kind: "reuniao" });
+  await page.getByLabel("Título").fill("Sem espera");
+  await page.getByLabel("Dia").fill(day); await page.getByLabel("Hora").fill("19:30");
+  await page.getByRole("button", { name: "Marcar reunião" }).click();
+  await expect.poll(() => calls.filter((c) => c.name === "video_schedule").length).toBe(2);
+  expect(calls.filter((c) => c.name === "video_schedule")[1].body.p_waiting).toBe(false);
+});
+
+test("consulta não oferece sala de espera", async ({ page }) => {
+  await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.goto("/reunioes");
+  await page.getByLabel("Tipo").selectOption("consulta");
+  await expect(page.getByTestId("video-waiting-opt")).toHaveCount(0);
+});
+
+test("dona indica um moderador e tira a função", async ({ page }) => {
+  const calls = await setup(page, "casa", {
+    upcoming: [meeting({ is_host: true, role: "dono", starts_at: new Date(Date.now() + 3 * 3600000).toISOString() })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true },
+  });
+  await page.goto("/reunioes");
+  await page.getByTestId("video-team-toggle").click();
+  await expect(page.getByTestId("video-helpers")).toBeVisible();
+  await page.getByTestId("video-helpers").getByLabel("Membro").selectOption(U(21));
+  await page.getByTestId("video-helpers").getByLabel("Função").selectOption("coanfitriao");
+  await page.getByRole("button", { name: "Indicar" }).click();
+  await expect.poll(() => calls.find((c) => c.name === "video_set_helper")?.body).toEqual({ p_meeting: MID, p_user: U(21), p_role: "coanfitriao" });
+  const r = await new AxeBuilder({ page }).analyze();
+  expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
+});
+
+test("moderador indicado vê o papel na lista, mas não o botão Equipe nem Cancelar", async ({ page }) => {
+  await setup(page, "pessoa", { upcoming: [meeting({ role: "moderador", waiting_room: true, starts_at: new Date(Date.now() + 3 * 3600000).toISOString() })] });
+  await page.goto("/reunioes");
+  await expect(page.getByTestId("video-row")).toContainText("Moderador");
+  await expect(page.getByTestId("video-row")).toContainText("Sala de espera");
+  await expect(page.getByTestId("video-team-toggle")).toHaveCount(0);
+  await expect(page.getByTestId("video-presence-toggle")).toHaveCount(0);
+});
+
+const PRES = [
+  { user_id: U(21), name: "Ana Souza", role: "participante", expected: true, first_in: "2026-12-01T20:00:00Z", last_out: "2026-12-01T21:00:00Z", minutes: 58, sessions: 2, removed: false, waited: "admitido" },
+  { user_id: U(22), name: "Bruno Lima", role: "participante", expected: true, first_in: null, last_out: null, minutes: 0, sessions: 0, removed: false, waited: null },
+];
+
+test("presença: resumo, ausentes e planilha CSV", async ({ page }) => {
+  await setup(page, "casa", { upcoming: [meeting({ is_host: true, role: "dono" })], bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.route("**/rest/v1/rpc/video_presence", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PRES) }));
+  await page.goto("/reunioes");
+  await page.getByTestId("video-presence-toggle").click();
+  await expect(page.getByTestId("video-presence-summary")).toContainText("1 compareceram");
+  await expect(page.getByTestId("video-presence-summary")).toContainText("1 ausentes");
+  await expect(page.getByTestId("video-presence-row")).toHaveCount(2);
+  await expect(page.getByTestId("video-presence")).toContainText("12 meses");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId("video-presence-csv").click()]);
+  expect(dl.suggestedFilename()).toMatch(/^presenca-.*\.csv$/);
+  const fs = await import("node:fs");
+  const txt = fs.readFileSync(await dl.path(), "utf8");
+  expect(txt).toContain("Ana Souza;Participante;sim;sim;");
+  expect(txt).toContain("Bruno Lima;Participante;sim;não;");
+  const r = await new AxeBuilder({ page }).analyze();
+  expect(r.violations.filter((v) => ["serious", "critical"].includes(v.impact))).toEqual([]);
+});
+
+test("histórico: reuniões passadas com comparecimento e relatório", async ({ page }) => {
+  await setup(page, "casa", { bank: { cap: 6000, used: 0, remaining: 6000, enabled: true } });
+  await page.route("**/rest/v1/rpc/video_history", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: MID, title: "Gira de novembro", kind: "atividade", starts_at: "2026-11-10T20:00:00Z", duration_min: 60, status: "encerrada", expected: 10, present: 8, minutes: 400 }]) }));
+  await page.route("**/rest/v1/rpc/video_presence", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PRES) }));
+  await page.goto("/reunioes");
+  await expect(page.getByTestId("video-history-row")).toContainText("8 de 10 esperados compareceram");
+  await expect(page.getByTestId("video-history-row")).toContainText("Atividade ao vivo");
+  await page.getByRole("button", { name: "Ver presença" }).click();
+  await expect(page.getByTestId("video-presence")).toBeVisible();
+  await noHScroll(page);
 });

@@ -107,3 +107,36 @@ test("cartões da tela inicial: só o que abre em até 24 h ou está aberto, ord
   assert.equal(homeMeetingCards([{ id: "a", startsAt: at(10), durationMin: 30 }], now)[0].state, "aberta");
   assert.equal(homeMeetingCards([{ id: "a", startsAt: at(11), durationMin: 30 }], now)[0].state, "hoje");
 });
+
+import { KINDS, ROLE_LABEL, presenceCsv, presenceSummary } from "../src/lib/videoCore.js";
+
+test("Vídeo 2.0: textos da sala de espera e tipos", () => {
+  assert.match(joinReasonText("espera"), /Aguardando a casa liberar/);
+  assert.match(joinReasonText("negado_espera"), /não liberou/);
+  assert.equal(KINDS.atividade, "Atividade ao vivo");
+  assert.equal(ROLE_LABEL.coanfitriao, "Coanfitrião");
+});
+
+const rows = [
+  { name: "Ana", role: "participante", expected: true, firstIn: "2026-12-01T20:00:00Z", lastOut: "2026-12-01T21:00:00Z", minutes: 58, sessions: 2, removed: false },
+  { name: "Bia", role: "participante", expected: true, firstIn: null, lastOut: null, minutes: 0, sessions: 0, removed: false },
+  { name: "=CMD()", role: "moderador", expected: false, firstIn: "2026-12-01T20:05:00Z", lastOut: null, minutes: 10, sessions: 1, removed: false },
+  { name: "Caio; \"o\" grande", role: "participante", expected: true, firstIn: "2026-12-01T20:10:00Z", lastOut: "2026-12-01T20:20:00Z", minutes: 10, sessions: 1, removed: true },
+];
+
+test("Vídeo 2.0: resumo de presença conta esperados, presentes, ausentes e minutos", () => {
+  assert.deepEqual(presenceSummary(rows), { expected: 3, present: 3, absent: 1, minutes: 78 });
+  assert.deepEqual(presenceSummary(null), { expected: 0, present: 0, absent: 0, minutes: 0 });
+});
+
+test("Vídeo 2.0: planilha de presença (BOM, ponto e vírgula, aspas e proteção contra fórmula)", () => {
+  const csv = presenceCsv(rows);
+  assert.ok(csv.startsWith("﻿Nome;Função;Esperado;Compareceu;"));
+  const lines = csv.trim().split("\r\n");
+  assert.equal(lines.length, 5);
+  assert.match(lines[1], /^Ana;Participante;sim;sim;/);
+  assert.match(lines[2], /^Bia;Participante;sim;não;;;0;0;não$/);
+  assert.match(lines[3], /^'=CMD\(\);Moderador;/);
+  assert.match(lines[4], /^"Caio; ""o"" grande";/);
+  assert.match(lines[4], /;sim$/);
+});

@@ -205,9 +205,10 @@ export async function joinMeeting(meetingId, deps) {
   }
   const access = await deps.adapter.accessFor({
     room: { url: room.url, hostUrl: room.host_url ?? null }, roomName: chk.room_name, userId: chk.user_id, displayName: chk.display_name,
-    isHost: chk.is_host, startsAt: chk.starts_at, durationMin: chk.duration_min,
+    // quem modera (dono e ajudantes) recebe o poder de moderação do provedor; encerrar a sala continua só com is_host (dono e coanfitrião)
+    isHost: chk.can_moderate ?? chk.is_host, startsAt: chk.starts_at, durationMin: chk.duration_min,
   });
-  return { ok: true, provider: chk.provider, url: access.url, token: access.token ?? null, is_host: chk.is_host, title: chk.title, kind: chk.kind, ends_at: chk.ends_at };
+  return { ok: true, provider: chk.provider, url: access.url, token: access.token ?? null, is_host: chk.is_host, can_moderate: chk.can_moderate ?? chk.is_host, role: chk.role ?? (chk.is_host ? "dono" : "participante"), title: chk.title, kind: chk.kind, ends_at: chk.ends_at };
 }
 
 const toMs = (v) => (typeof v === "number" && Number.isFinite(v) ? (v < 1e12 ? Math.round(v * 1000) : v) : typeof v === "string" && Number.isFinite(Date.parse(v)) ? Date.parse(v) : null);

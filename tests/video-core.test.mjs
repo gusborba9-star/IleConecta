@@ -427,3 +427,35 @@ test("migração 0218: remoção só da dona, entrada negada a quem foi removido
   assert.match(sql, /revoke all on function public\.video_removed_check\(text, uuid\) from public, anon, authenticated/);
   assert.match(sql, /grant execute on function public\.video_removed_check\(text, uuid\) to service_role/);
 });
+
+test("Vídeo 2.0: moderador recebe poder de moderação no provedor, mas só dono e coanfitrião encerram", async () => {
+  let got;
+  const { d } = deps({
+    joinCheck: async () => ({ ok: true, room_name: "ic-1", provider: "daily", is_host: false, can_moderate: true, role: "moderador", display_name: "Ana", user_id: UID, kind: "reuniao", title: "Encontro", starts_at: START, duration_min: 60, max_participants: 50, ends_at: START }),
+    adapter: { name: "daily", ensureRoom: async () => ({ ref: "ic-1", url: "https://x.daily.co/ic-1", hostUrl: null }), accessFor: async (a) => { got = a; return { url: a.room.url, token: "T" }; } },
+  });
+  const out = await joinMeeting(MID, d);
+  assert.equal(got.isHost, true);
+  assert.equal(out.is_host, false);
+  assert.equal(out.can_moderate, true);
+  assert.equal(out.role, "moderador");
+});
+
+test("Vídeo 2.0: participante comum entra sem poder de moderação", async () => {
+  let got;
+  const { d } = deps({
+    joinCheck: async () => ({ ok: true, room_name: "ic-1", provider: "daily", is_host: false, can_moderate: false, role: "participante", display_name: "Ana", user_id: UID, kind: "atividade", title: "Gira", starts_at: START, duration_min: 60, max_participants: 50, ends_at: START }),
+    adapter: { name: "daily", ensureRoom: async () => ({ ref: "ic-1", url: "https://x.daily.co/ic-1", hostUrl: null }), accessFor: async (a) => { got = a; return { url: a.room.url, token: "T" }; } },
+  });
+  const out = await joinMeeting(MID, d);
+  assert.equal(got.isHost, false);
+  assert.equal(out.can_moderate, false);
+  assert.equal(out.kind, "atividade");
+});
+
+test("Vídeo 2.0: resposta antiga do banco (sem papéis) continua funcionando", async () => {
+  const { d } = deps();
+  const out = await joinMeeting(MID, d);
+  assert.equal(out.role, "participante");
+  assert.equal(out.can_moderate, false);
+});
