@@ -248,6 +248,28 @@ for (const vp of [{ name: "celular 375", width: 375, height: 740 }, { name: "des
       await noHScroll(page);
     });
 
+    test("Indicadores da casa: visibilidade (visitas, alcance e funil) só aparece com o registro ligado", async ({ page }) => {
+      const P = (current, previous = 0) => ({ current, previous });
+      const ind = { days: 30, role: "titular", metrics: { pessoas_que_falaram: P(10, 4), pedidos_criados: P(2, 1) }, snapshot: { seguidores_total: 1, ocupacao_pct: null, avaliacoes_sem_resposta: 0 } };
+      await api(page, { rpc: { house_indicators: ind } });
+      await page.goto("/tests/browser/ui-harness.html?c=indicators");
+      await expect(page.getByRole("heading", { name: "Indicadores da casa" })).toBeVisible();
+      await expect(page.locator("li").filter({ hasText: "Pessoas que viram a casa" })).toHaveCount(0);
+      const p2 = await page.context().newPage();
+      await api(p2, { rpc: { house_indicators: ind, house_signals: { enabled: true, days: 30, signals: {
+        visita: { current: { events: 120, people: 80 }, previous: { events: 60, people: 40 } },
+        oferta: { current: { events: 30, people: 20 }, previous: { events: 10, people: 10 } },
+        compartilhar: { current: { events: 5, people: 4 }, previous: { events: 0, people: 0 } } } } } });
+      await p2.goto("/tests/browser/ui-harness.html?c=indicators");
+      const tile = (n) => p2.locator("li").filter({ hasText: n });
+      await expect(tile("Pessoas que viram a casa")).toContainText("80");
+      await expect(tile("Pessoas que viram a casa")).toContainText("+100% sobre o período anterior");
+      await expect(tile("Visitas à página da casa")).toContainText("120");
+      await expect(tile("Viram e abriram uma oferta")).toContainText("25%");
+      await expect(tile("Viram e falaram com a casa")).toContainText("12,5%");
+      await noHScroll(p2);
+    });
+
     test("Indicadores da casa: equipe não vê dinheiro nem avaliações; sem permissão some; erro do servidor sem detalhe técnico", async ({ page }) => {
       const P = (current, previous = 0) => ({ current, previous });
       await api(page, { rpc: { house_indicators: { days: 30, role: "equipe", metrics: { pedidos_criados: P(7, 2), pedidos_pagos: P(3, 2), volume_cents: P(27000, 13000), nota_media: P(4.5, 3), reembolsos: P(1, 0) }, snapshot: { seguidores_total: 1, ocupacao_pct: null, avaliacoes_sem_resposta: 2 } } } });

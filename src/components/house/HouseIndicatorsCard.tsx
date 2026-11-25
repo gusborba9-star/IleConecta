@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button, Card } from "@/components/base";
 import { fetchHouseIndicators } from "@/lib/houseIndicators";
-import { PERIODS, changeInfo, formatIndicator, groupedIndicators, type HouseIndicatorsView } from "@/lib/houseIndicatorsCore.js";
+import { fetchHouseSignals } from "@/lib/houseSignals";
+import { PERIODS, changeInfo, formatIndicator, groupedIndicators, mergeSignals, type HouseIndicatorsView } from "@/lib/houseIndicatorsCore.js";
 
 const TONE = { good: "text-forest", bad: "text-destructive", none: "text-muted-foreground" } as const;
 
@@ -16,11 +17,11 @@ export default function HouseIndicatorsCard({ hideTitle = false }: { hideTitle?:
 
   const load = useCallback(async (d: number) => {
     setBusy(true);
-    const r = await fetchHouseIndicators(d);
+    const [r, sig] = await Promise.all([fetchHouseIndicators(d), fetchHouseSignals(d)]);
     setBusy(false);
     if (typeof r === "string") return void setError(r);
     setError(null);
-    setView(r);
+    setView(mergeSignals(r, sig));
   }, []);
   useEffect(() => {
     void load(days);

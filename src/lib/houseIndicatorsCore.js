@@ -4,6 +4,18 @@ export const PERIODS = [7, 30, 90];
 
 /** Cada indicador: nome, unidade, o que significa e de onde vem. "better": o que é melhor (para a cor da variação). */
 export const INDICATORS = {
+  visitas: { group: "Visibilidade", label: "Visitas à página da casa", unit: "n", better: "up",
+    definition: "Quantas vezes a página da casa foi aberta no período, contando cada pessoa no máximo 20 vezes por dia.", source: "Contagem do próprio Ilê Conecta. Não entram a casa, a equipe nem quem desliga o rastreio no navegador." },
+  alcance: { group: "Visibilidade", label: "Pessoas que viram a casa", unit: "n", better: "up",
+    definition: "Pessoas diferentes que abriram a página, somando os dias do período. Quem volta em outro dia conta de novo; quem entra sem conta é contado por aparelho.", source: "Contagem do próprio Ilê Conecta, sem guardar quem visitou." },
+  ofertas_abertas: { group: "Visibilidade", label: "Pessoas que abriram um serviço ou ritual", unit: "n", better: "up",
+    definition: "Pessoas que chegaram à tela de contratar um serviço ou de reservar um ritual da casa, mesmo sem concluir.", source: "Contagem do próprio Ilê Conecta." },
+  compartilhamentos: { group: "Visibilidade", label: "Compartilhamentos da página", unit: "n", better: "up",
+    definition: "Vezes em que visitantes usaram Compartilhar na página da casa.", source: "Contagem do próprio Ilê Conecta." },
+  interesse_pct: { group: "Visibilidade", label: "Viram e abriram uma oferta", unit: "pct", better: "up",
+    definition: "Pessoas que abriram um serviço ou ritual dividido pelas pessoas que viram a casa.", source: "Calculado a partir dos números acima." },
+  conversa_pct: { group: "Visibilidade", label: "Viram e falaram com a casa", unit: "pct", better: "up",
+    definition: "Pessoas que falaram com a casa dividido pelas pessoas que viram a página (aproximação: quem conversa pode ter chegado por outro caminho).", source: "Calculado a partir do alcance e das conversas." },
   pessoas_que_falaram: { group: "Atendimento", label: "Pessoas que falaram com a casa", unit: "n", better: "up",
     definition: "Quantas pessoas diferentes mandaram mensagem para a casa no período.", source: "Mensagens das conversas da casa. A casa e a assistente não entram na conta." },
   tempo_resposta_min: { group: "Atendimento", label: "Tempo de resposta (mediana)", unit: "min", better: "down",
@@ -41,7 +53,7 @@ export const INDICATORS = {
   avaliacoes_sem_resposta: { group: "Reputação", label: "Avaliações sem resposta", unit: "n", better: "down", money: true, snapshot: true,
     definition: "Avaliações visíveis que a casa ainda não respondeu (de todo o tempo).", source: "Avaliações da casa. Só a titular vê." },
 };
-export const GROUPS = ["Atendimento", "Vendas", "Rituais", "Clientes", "Reputação"];
+export const GROUPS = ["Visibilidade", "Atendimento", "Vendas", "Rituais", "Clientes", "Reputação"];
 // Total de seguidores é só contexto para "Novos seguidores".
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const rawNum = (v) => (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : num(v));
@@ -102,10 +114,27 @@ export function changeInfo(key, current, previous) {
   return { text: `${up ? "+" : "−"}${Math.abs(Math.round(diff))}% sobre o período anterior`, tone: good ? "good" : "bad" };
 }
 
+/** Junta as contagens de visitas (house_signals) ao que veio dos indicadores. Desligado ou sem resposta: o grupo "Visibilidade" não aparece. */
+export function mergeSignals(view, raw) {
+  const on = !!raw && raw.enabled === true && !!raw.signals && typeof raw.signals === "object";
+  const out = { ...view, signalsOn: on, items: { ...view.items } };
+  if (!on) return out;
+  const get = (k, field, w) => nonNeg(raw.signals?.[k]?.[w]?.[field]);
+  const both = (k, field) => ({ current: get(k, field, "current"), previous: get(k, field, "previous") });
+  out.items.visitas = both("visita", "events");
+  out.items.alcance = both("visita", "people");
+  out.items.ofertas_abertas = both("oferta", "people");
+  out.items.compartilhamentos = both("compartilhar", "events");
+  const r = (a, b) => ({ current: pct(a.current, b.current), previous: pct(a.previous, b.previous) });
+  out.items.interesse_pct = r(out.items.ofertas_abertas, out.items.alcance);
+  out.items.conversa_pct = r(view.items.pessoas_que_falaram ?? { current: null, previous: null }, out.items.alcance);
+  return out;
+}
+
 /** Indicadores visíveis, agrupados e na ordem da tela; some o que a pessoa não pode ver. */
 export function groupedIndicators(view) {
   return GROUPS.map((g) => ({
     group: g,
-    items: Object.entries(INDICATORS).filter(([k, d]) => d.group === g && !(view.role === "equipe" && d.money)).map(([k, d]) => ({ key: k, ...d, ...(view.items[k] ?? { current: null, previous: null }) })),
+    items: Object.entries(INDICATORS).filter(([k, d]) => d.group === g && !(view.role === "equipe" && d.money) && (g !== "Visibilidade" || view.signalsOn === true)).map(([k, d]) => ({ key: k, ...d, ...(view.items[k] ?? { current: null, previous: null }) })),
   })).filter((g) => g.items.length > 0);
 }

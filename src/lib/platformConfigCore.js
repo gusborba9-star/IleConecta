@@ -2,7 +2,7 @@
 // O painel admin grava estes dados no banco; qualquer valor inválido volta ao padrão aqui.
 import { cloneDefaultMatrix, sanitizePlanMatrix } from "./planMatrixCore.js";
 
-export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar"];
+export const FEATURE_KEYS = ["assistant", "boost", "highlight", "payments", "ritual_video", "referral", "reviews", "calendar", "house_signals"];
 export const SCOPE_KEYS = ["cidade", "estado", "pais", "exterior"];
 export const PLAN_IDS = ["base", "intermediario", "maximo", "plus"];
 export const HOUSE_PLAN_IDS = ["gratis", ...PLAN_IDS];
@@ -24,6 +24,8 @@ export const DEFAULT_CONFIG = {
     reviews: { state: "off", beta_houses: [] },
     // Calendário religioso da casa: construído e desligado (só vale com "Ligado para todos").
     calendar: { state: "off", beta_houses: [] },
+    // Visitas, alcance e intenções da casa (Blueprint §28.1): construído e desligado até a Política de Privacidade ser revisada (só vale com "Ligado para todos").
+    house_signals: { state: "off", beta_houses: [] },
   },
   // Prêmio da indicação: dias de destaque para quem indicou, para a casa indicada (0 = nenhum) e limite por mês.
   referral: { reward_days: 7, referred_days: 0, monthly_cap: 3 },

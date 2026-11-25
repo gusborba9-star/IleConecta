@@ -1,5 +1,5 @@
 import type { PlanMatrix } from "@/lib/planMatrixCore";
-export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews" | "calendar";
+export type FeatureKey = "assistant" | "boost" | "highlight" | "payments" | "ritual_video" | "referral" | "reviews" | "calendar" | "house_signals";
 export type ScopeKey = "cidade" | "estado" | "pais" | "exterior";
 /** Planos com mensalidade (cobrança e tabela de preços): base = Essencial. */
 export type PlanId = "base" | "intermediario" | "maximo" | "plus";
