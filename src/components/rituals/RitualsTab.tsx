@@ -12,6 +12,7 @@ import RitualCardReal from "@/components/rituals/RitualCardReal";
 import Attendees from "@/components/rituals/Attendees";
 import ReserveModal from "@/components/rituals/ReserveModal";
 import { useApp } from "@/contexts/AppContext";
+import { useTermsRenewal } from "@/hooks/useTermsRenewal";
 import { useChatStatus } from "@/hooks/useChatStatus";
 import { paymentsEnabledFor } from "@/lib/consents";
 import {
@@ -31,6 +32,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
   const confirm = useConfirm();
   const ask = (o: ConfirmOptions, fn: () => unknown) => void confirm(o).then((ok) => { if (ok) void fn(); });
   const { currentUser } = useApp();
+  const renewal = useTermsRenewal(currentUser?.id, "termos_casa", "Para publicar uma nova oferta paga, aceite a versão vigente dos Termos da Casa.");
   const nav = useNavigate();
   const [items, setItems] = useState<RealRitual[] | null>(null);
   const [mine, setMine] = useState<Record<string, MyReservation>>({});
@@ -102,6 +104,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
   };
 
   const save = async (value: RitualValue, publish: boolean) => {
+    if (value.priceCents > 0 && (publish || editing) && !(await renewal.ensure())) return false;
     const ok = editing ? await updateRitual(editing.id, value) : await createRitual(ownerId, value, publish);
     if (ok) {
       toast.success(editing ? "Ritual atualizado." : publish ? "Ritual publicado." : "Rascunho salvo.");
@@ -160,6 +163,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
 
   return (
     <div className="space-y-3">
+      {renewal.modal}
       {isOwn && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Badge tone="muted">Vagas atualizadas ao vivo</Badge>
@@ -197,7 +201,7 @@ export default function RitualsTab({ ownerId, isOwn, startNew }: Props) {
           chatStatus={chatStatus}
           onEdit={() => void openEdit(r)}
           onAttendees={() => setAttendeesOf(r)}
-          onPublish={() => void act(() => setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
+          onPublish={() => void act(async () => (r.priceCents > 0 && !(await renewal.ensure())) ? false : setRitualStatus(r.id, "publicado"), "Ritual publicado.")}
           onUnpublish={() => void act(() => setRitualStatus(r.id, "rascunho"), "Ritual voltou para rascunho.")}
           onStart={() =>
             ask({ title: "Iniciar o ritual agora?", message: `As reservas serão encerradas e os ${r.taken} participantes serão avisados.`, confirmLabel: "Iniciar" }, () =>

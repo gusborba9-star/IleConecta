@@ -48,7 +48,7 @@ export default function ReserveModal({ ritual, onClose, onDone }: Props) {
     if (currentUser?.id) {
       void fetchConsentRows(currentUser.id).then((rows) => {
         if (!alive || !rows) return;
-        setTermsDone(["ok", "old"].includes(consentStatus(rows, "termos_cliente", LEGAL_VERSION).status));
+        setTermsDone(consentStatus(rows, "termos_cliente", LEGAL_VERSION).status === "ok");
         setSensitiveDone(["ok", "old"].includes(consentStatus(rows, "dados_sensiveis", LEGAL_VERSION).status));
       });
     }

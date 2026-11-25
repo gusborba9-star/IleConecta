@@ -10,3 +10,5 @@ export declare const REQUIRED_DOCS: { cliente: ConsentDocKey[]; casa: ConsentDoc
 export declare const OPTIONAL_DOCS: { cliente: ConsentDocKey[]; casa: ConsentDocKey[] };
 export declare function consentStatus(rows: ConsentRow[] | null | undefined, doc: ConsentDocKey, version: string): ConsentState;
 export declare function gateDocs(accountType: string | undefined, rows: ConsentRow[] | null | undefined, version: string): { required: ConsentDocKey[]; optional: ConsentDocKey[] };
+
+export declare function renewalDocs(accountType: string | undefined, rows: ConsentRow[] | null | undefined, version: string): ConsentDocKey[];

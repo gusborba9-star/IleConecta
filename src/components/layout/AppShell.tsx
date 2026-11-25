@@ -1,6 +1,6 @@
 import SkipLink from "./SkipLink";
 import { Suspense, useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import TopBar from "./TopBar";
 import { useUpdatePrompt } from "@/hooks/useUpdatePrompt";
 import SideNav from "./SideNav";
@@ -8,8 +8,9 @@ import RightRail from "./RightRail";
 import { useApp } from "@/contexts/AppContext";
 import { touchPresence } from "@/lib/messaging";
 import { fetchConsentRows } from "@/lib/consents";
-import { LEGAL_VERSION, consentStatus, gateDocs, type ConsentDocKey } from "@/lib/legalCore";
+import { LEGAL_VERSION, gateDocs, renewalDocs, type ConsentDocKey } from "@/lib/legalCore";
 import TermsGate from "@/components/legal/TermsGate";
+import TermsUpdateBanner from "@/components/legal/TermsUpdateBanner";
 import InstallPrompt from "./InstallPrompt";
 import LockedLayout from "./LockedLayout";
 import { fetchAccountGate } from "@/lib/accountGate";
@@ -27,22 +28,33 @@ export default function AppShell() {
   const userId = currentUser?.id;
   useUpdatePrompt();
 
-  // Aceite único: se o servidor não tem o aceite vigente desta conta, aparece só a tela de aceite (uma vez; de novo apenas se o texto mudar).
+  // Aceite: quem NUNCA aceitou vê só a tela de aceite (uma vez). Quem já aceitou numa versão antiga NÃO é trancado: entra normalmente e,
+  // se a mudança foi importante, vê um aviso na Home; o aceite da versão vigente é pedido só ao fechar uma nova compra, venda ou assinatura.
   // Se não for possível consultar, a pessoa não fica presa: a compra continua exigindo o aceite no servidor.
   const accountType = currentUser?.type;
-  const [gate, setGate] = useState<{ required: ConsentDocKey[]; optional: ConsentDocKey[]; renewal: boolean } | null>(null);
+  const [gate, setGate] = useState<{ required: ConsentDocKey[]; optional: ConsentDocKey[] } | null>(null);
+  const [renewal, setRenewal] = useState<ConsentDocKey[]>([]);
+  const dismissKey = `terms-banner:${userId ?? ""}:${LEGAL_VERSION}`;
+  const [bannerHidden, setBannerHidden] = useState(false);
+  const onHome = useLocation().pathname === "/";
   useEffect(() => {
     if (!isRemoteAuth || !userId) return;
     let alive = true;
+    try { setBannerHidden(window.sessionStorage.getItem(dismissKey) === "1"); } catch { setBannerHidden(false); }
     void fetchConsentRows(userId).then((rows) => {
       if (!alive || !rows) return;
       const g = gateDocs(accountType, rows, LEGAL_VERSION);
-      setGate(g.required.length > 0 ? { ...g, renewal: g.required.some((d) => consentStatus(rows, d, LEGAL_VERSION).status === "old") } : null);
+      setGate(g.required.length > 0 ? g : null);
+      setRenewal(g.required.length > 0 ? [] : renewalDocs(accountType, rows, LEGAL_VERSION));
     });
     return () => {
       alive = false;
     };
-  }, [isRemoteAuth, userId, accountType]);
+  }, [isRemoteAuth, userId, accountType, dismissKey]);
+  const hideBanner = () => {
+    setBannerHidden(true);
+    try { window.sessionStorage.setItem(dismissKey, "1"); } catch { /* sem armazenamento: o aviso só some até recarregar */ }
+  };
 
   // Estado da conta da casa: bloqueio total ou assinatura encerrada leva à tela única (LockedLayout). O servidor também trava as gravações.
   // Se não for possível consultar, a pessoa não fica presa. Confere ao entrar, ao voltar para a aba e de tempos em tempos (a cada 15 s enquanto bloqueada).
@@ -112,7 +124,8 @@ export default function AppShell() {
           {isRemoteAuth && <div className="mb-4 empty:hidden"><InstallPrompt /></div>}
           {!gate && <BackBar />}
           {!gate && isRemoteAuth && <div className="mb-4 empty:hidden"><SecurityWordCard nudge /></div>}
-          {gate ? <TermsGate required={gate.required} optional={gate.optional} renewal={gate.renewal} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
+          {!gate && onHome && !bannerHidden && <TermsUpdateBanner docs={renewal} onAccepted={() => setRenewal([])} onDismiss={hideBanner} />}
+          {gate ? <TermsGate required={gate.required} optional={gate.optional} onDone={() => setGate(null)} /> : <Suspense fallback={<div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground" role="status">Carregando…</div>}><Outlet /></Suspense>}
         </main>
         {!isRemoteAuth && (
           <aside aria-label="Complementos" className="hidden lg:block sticky top-20 self-start">

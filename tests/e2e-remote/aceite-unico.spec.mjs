@@ -57,7 +57,7 @@ async function serve(page, { type = "cliente", rows = [], consentsStatus = 200, 
 }
 
 const row = (doc_key, doc_version, accepted_at = "2026-11-01T10:00:00Z") => ({ doc_key, doc_version, accepted_at });
-const gateHeading = (page) => page.getByRole("heading", { name: /Termos de Uso|Atualizamos os nossos termos/ });
+const gateHeading = (page) => page.getByRole("heading", { name: "Termos de Uso", exact: true });
 
 test("conta nova: aparece só a tela de aceite; os Termos são obrigatórios e dados sensíveis opcionais", async ({ page }) => {
   const s = await serve(page);
@@ -112,13 +112,15 @@ test("quem já aceitou a versão vigente nunca vê a tela", async ({ page }) => 
   await expect(gateHeading(page)).toHaveCount(0);
 });
 
-test("texto novo: pede de novo, com aviso de atualização", async ({ page }) => {
+test("texto novo (aceite antigo): aviso na Home, sem tela de bloqueio; 'Ler e aceitar agora' grava o aceite", async ({ page }) => {
   const s = await serve(page, { rows: [row("termos_cliente", "versao-antiga")] });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Atualizamos os nossos termos" })).toBeVisible();
+  await expect(page.getByText("Atualizamos nossos Termos de Uso e Política de Privacidade.")).toBeVisible();
+  await expect(gateHeading(page)).toHaveCount(0);
+  await page.getByRole("button", { name: "Ler e aceitar agora" }).click();
   await page.getByLabel(/Li e concordo com os Termos de Uso do cliente/).check();
   await page.getByRole("button", { name: "Aceitar e continuar" }).click();
-  await expect(gateHeading(page)).toHaveCount(0);
+  await expect(page.getByText("Atualizamos nossos Termos de Uso e Política de Privacidade.")).toHaveCount(0);
   expect(s.recorded).toEqual(["termos_cliente"]);
 });
 

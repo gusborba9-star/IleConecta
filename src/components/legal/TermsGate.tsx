@@ -10,14 +10,12 @@ interface Props {
   /** Documentos obrigatórios (os Termos) e opcionais (dados sensíveis, só para cliente), vindos de gateDocs(). */
   required: ConsentDocKey[];
   optional: ConsentDocKey[];
-  /** Há um aceite antigo: o texto mudou de versão. */
-  renewal: boolean;
   /** Chamado só depois de o servidor confirmar que o aceite foi gravado. */
   onDone: () => void;
 }
 
-/** Tela única de aceite: aparece uma só vez por conta (de novo apenas se o texto mudar de versão). */
-export default function TermsGate({ required, optional, renewal, onDone }: Props) {
+/** Tela única de aceite: aparece uma só vez por conta (só quem nunca aceitou; mudança de versão vira aviso na Home, nunca bloqueio). */
+export default function TermsGate({ required, optional, onDone }: Props) {
   const { logout } = useApp();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -37,11 +35,9 @@ export default function TermsGate({ required, optional, renewal, onDone }: Props
     <div className="mx-auto max-w-xl py-6" role="dialog" aria-modal="true" aria-labelledby="terms-gate-title">
       <Card className="p-6 space-y-4">
         <div>
-          <h1 id="terms-gate-title" className="font-display font-bold text-2xl">{renewal ? "Atualizamos os nossos termos" : "Termos de Uso"}</h1>
+          <h1 id="terms-gate-title" className="font-display font-bold text-2xl">Termos de Uso</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {renewal
-              ? "Leia a nova versão e aceite para continuar."
-              : "Leia e aceite para continuar. Você faz isso uma única vez, e pode rever tudo depois em “Termos e normas”, no menu."}
+            Leia e aceite para continuar. Você faz isso uma única vez, e pode rever tudo depois em “Termos e normas”, no menu.
           </p>
         </div>
         {required.map((d) => (

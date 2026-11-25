@@ -6,14 +6,15 @@ export const LEGAL_VERSION = "2026-11-rascunho-23";
 export const LEGAL_VERSION_HISTORY = ["2026-10-rascunho-1", "2026-10-rascunho-2", "2026-11-rascunho-3", "2026-11-rascunho-4", "2026-11-rascunho-5", "2026-11-rascunho-6", "2026-11-rascunho-7", "2026-11-rascunho-8", "2026-11-rascunho-9", "2026-11-rascunho-10", "2026-11-rascunho-11", "2026-11-rascunho-12", "2026-11-rascunho-13", "2026-11-rascunho-14", "2026-11-rascunho-15", "2026-11-rascunho-16", "2026-11-rascunho-17", "2026-11-rascunho-18", "2026-11-rascunho-19", "2026-11-rascunho-20", "2026-11-rascunho-21", "2026-11-rascunho-22", "2026-11-rascunho-23"];
 
 /**
- * Versão mínima que cada documento exige na tela de aceite. Decisão do proprietário (2026-11-24, revoga a de 2026-11-13):
- * quando o TEXTO de um documento muda de forma material, o novo aceite REAPARECE para quem já tinha aceitado (uma vez, com o aviso
- * "os termos foram atualizados"); a pessoa só segue usando depois de aceitar. Quem nunca aceitou continua vendo a tela.
- * Mudança puramente editorial (ortografia, formatação) NÃO sobe este número. Para não depender de memória, o teste
+ * Versão mínima que cada documento exige. Modelo definido pelo advogado (2026-11-25), que substitui o de 2026-11-24:
+ * - mudança LEVE (ortografia, texto mais claro, visual): publica a versão nova quieto, sem aviso e sem pedir nada (este número NÃO sobe);
+ * - mudança IMPORTANTE (regra de dinheiro, dado novo, recurso novo, direito ou dever): sobe este número. Ninguém é travado: aparece um
+ *   aviso na Home ("Ler e aceitar agora" / "Fechar / Ver depois") e o aceite na versão vigente é pedido só ao fechar uma NOVA compra,
+ *   venda (publicar oferta paga) ou assinatura (autorizar a cobrança do plano), gravando versão, data e IP.
+ * - sem bloqueio na entrada: quem já aceitou (em qualquer versão) entra, vê a reunião e o histórico normalmente.
+ * A tela cheia de aceite (TermsGate) aparece apenas para quem NUNCA aceitou. Para não depender de memória, o teste
  * tests/legal-hash.test.mjs compara a impressão digital dos textos com tests/fixtures/legal-hash.json e falha se o texto mudar sem
- * uma decisão explícita: material = subir o mínimo aqui; editorial = apenas atualizar a impressão digital.
- * Todos também recebem uma notificação com link para o texto novo (platform_announce). O aceite explícito com registro do texto,
- * data e IP continua existindo onde há dinheiro (autorização da cobrança automática e cada compra do cliente).
+ * uma decisão explícita: importante = subir o mínimo aqui; leve = apenas atualizar a impressão digital.
  */
 export const DOC_MIN_VERSION = {
   termos_cliente: "2026-11-rascunho-23",
@@ -61,7 +62,7 @@ const accountKey = (accountType) => (accountType === "commercial" ? "casa" : "cl
 
 /**
  * Situação de um documento, a partir dos registros de aceite da pessoa (em qualquer ordem):
- * "ok" (aceito na versão vigente), "old" (aceito numa versão antiga: pede de novo uma vez), "never" (nunca aceitou)
+ * "ok" (aceito na versão vigente), "old" (aceito numa versão antiga: só gera o aviso na Home e o pedido na próxima compra, venda ou assinatura), "never" (nunca aceitou)
  * ou "withdrawn" (retirou a autorização; só vale para dados sensíveis e não é cobrada de novo na entrada).
  */
 export function consentStatus(rows, doc, version) {
@@ -78,10 +79,10 @@ export function consentStatus(rows, doc, version) {
   return { status: ok ? "ok" : "old", version: last.doc_version, at: last.accepted_at };
 }
 
-const pending = (rows, doc, version) => ["never", "old"].includes(consentStatus(rows, doc, version).status);
+const pending = (rows, doc, version) => consentStatus(rows, doc, version).status === "never";
 
 /**
- * O que a tela de aceite mostra agora. `required` vazio = a tela não aparece.
+ * O que a tela de aceite mostra agora: só o que a conta NUNCA aceitou (versão antiga não tranca ninguém; ver renewalDocs). `required` vazio = a tela não aparece.
  * `optional` só vem junto quando a tela aparece (nunca abre sozinha por causa de um documento opcional).
  */
 export function gateDocs(accountType, rows, version) {
@@ -89,4 +90,9 @@ export function gateDocs(accountType, rows, version) {
   const required = REQUIRED_DOCS[k].filter((d) => pending(rows, d, version));
   const optional = required.length ? OPTIONAL_DOCS[k].filter((d) => pending(rows, d, version)) : [];
   return { required, optional };
+}
+
+/** Documentos obrigatórios que a conta aceitou numa versão antiga: pedem o aviso na Home e o aceite na próxima compra, venda ou assinatura. */
+export function renewalDocs(accountType, rows, version) {
+  return REQUIRED_DOCS[accountKey(accountType)].filter((d) => consentStatus(rows, d, version).status === "old");
 }

@@ -42,6 +42,6 @@ test("toda migração a partir da 0204 aparece no Roadmap", () => {
 test("o Roadmap não deixa 'precisa de deploy' pendurado e a política de aceite descreve a regra vigente", () => {
   assert.ok(!/precisa de deploy/i.test(roadmap));
   const pol = read("docs/legal/POLITICA_ACEITE_TERMOS.md");
-  assert.ok(/reaparece/.test(pol) && /DOC_MIN_VERSION/.test(pol));
-  assert.ok(!/não trava a tela de ninguém/.test(pol));
+  assert.ok(/Ler e aceitar agora/.test(pol) && /DOC_MIN_VERSION/.test(pol) && /nova compra, venda ou assinatura/.test(pol));
+  assert.ok(!/reaparece/.test(pol), "a regra de 24/11 (tela que reaparece) foi substituída pela do advogado");
 });
