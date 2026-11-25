@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, CreditCard, Link2, MoreHorizontal, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
+import { trackHouseSignal } from "@/lib/houseSignals";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const ITEM = "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none focus:bg-muted data-[highlighted]:bg-muted";
@@ -9,6 +10,7 @@ const ITEM = "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 te
 export default function HouseActionsMenu({ house, isOwn, remote }: { house: { id: string; name: string }; isOwn: boolean; remote: boolean }) {
   const nav = useNavigate();
   const share = async () => {
+    if (!isOwn) trackHouseSignal(house.id, "compartilhar", { once: false });
     const url = `${window.location.origin}/casa/${house.id}`;
     try {
       if (navigator.share) {

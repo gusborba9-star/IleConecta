@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trackHouseSignal } from "@/lib/houseSignals";
 import HouseMemberButton from "@/components/members/HouseMemberButton";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
@@ -59,6 +60,7 @@ export default function HousePage() {
   const [followDelta, setFollowDelta] = useState(0);
   const [reviewRef, setReviewRef] = useState<string | null>(null);
   const realHouse = isRemoteAuth && isRemoteId(id ?? "");
+  useEffect(() => { if (id && isRemoteId(id)) trackHouseSignal(id, "visita"); }, [id]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const calendarOn = realHouse && isFeatureOn(config, "calendar", id ?? "");
   // Momentos no ar desta casa: o avatar ganha o aro dourado e abre o visualizador.

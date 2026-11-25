@@ -45,7 +45,7 @@ test("equipe: dinheiro, reembolso e avaliações somem mesmo que o servidor mand
   const v = readHouseIndicators(raw({}, "equipe"));
   for (const [k, d] of Object.entries(INDICATORS)) if (d.money) assert.deepEqual(v.items[k], { current: null, previous: null }, k);
   const keys = groupedIndicators(v).flatMap((g) => g.items.map((i) => i.key));
-  for (const [k, d] of Object.entries(INDICATORS)) assert.equal(keys.includes(k), !d.money, k);
+  for (const [k, d] of Object.entries(INDICATORS)) assert.equal(keys.includes(k), !d.money && d.group !== "Visibilidade", k);
   assert.ok(groupedIndicators(readHouseIndicators(raw())).flatMap((g) => g.items.map((i) => i.key)).includes("volume_cents"));
 });
 
@@ -78,10 +78,33 @@ test("coerência com o SQL: todo indicador do banco aparece na tela e o contrár
   const sql = readFileSync(new URL("../supabase/migrations/0132_indicadores_da_casa.sql", import.meta.url), "utf8");
   const sqlKeys = [...sql.matchAll(/^\s+'([a-z_]+)', (?:case when|\(select)/gm)].map((m) => m[1]).filter((k) => !["generated_at", "metrics", "snapshot", "scope", "since", "previous_since", "days", "role"].includes(k));
   const derived = new Set(["conversao_pct", "recorrencia_pct", "ticket_medio_cents"]);
+  // grupo "Visibilidade": vem de house_signals (0219), não de house_indicators
+  const signals = new Set(["visitas", "alcance", "ofertas_abertas", "compartilhamentos", "interesse_pct", "conversa_pct"]);
   const fromSql = new Set(sqlKeys.filter((k) => !["seguidores_total", "clientes_que_voltaram"].includes(k)));
-  const inUi = new Set(Object.keys(INDICATORS).filter((k) => !derived.has(k)));
+  const inUi = new Set(Object.keys(INDICATORS).filter((k) => !derived.has(k) && !signals.has(k)));
   assert.deepEqual([...fromSql].sort(), [...inUi].sort());
   assert.ok(/p_days in \(7, 30, 90\)/.test(sql));
   const app = readFileSync(new URL("../src/pages/HouseHome.tsx", import.meta.url), "utf8");
   assert.ok(app.includes("HouseIndicatorsCard"));
+});
+
+test("visibilidade: some enquanto o registro está desligado; ligado, junta visitas, alcance e as taxas do funil", async () => {
+  const { mergeSignals } = await import("../src/lib/houseIndicatorsCore.js");
+  const base = readHouseIndicators(raw());
+  const off = mergeSignals(base, { enabled: false, days: 30 });
+  assert.ok(!groupedIndicators(off).some((g) => g.group === "Visibilidade"));
+  assert.ok(!groupedIndicators(mergeSignals(base, null)).some((g) => g.group === "Visibilidade"));
+  const on = mergeSignals(base, { enabled: true, days: 30, signals: {
+    visita: { current: { events: 120, people: 80 }, previous: { events: 60, people: 40 } },
+    oferta: { current: { events: 30, people: 20 }, previous: { events: 10, people: 10 } },
+    compartilhar: { current: { events: 5, people: 4 }, previous: { events: 0, people: 0 } } } });
+  const g = groupedIndicators(on);
+  assert.equal(g[0].group, "Visibilidade");
+  assert.equal(on.items.visitas.current, 120);
+  assert.equal(on.items.alcance.current, 80);
+  assert.equal(on.items.ofertas_abertas.current, 20);
+  assert.equal(on.items.interesse_pct.current, 25);
+  assert.equal(on.items.interesse_pct.previous, 25);
+  const nodata = mergeSignals(base, { enabled: true, days: 30, signals: { visita: { current: { events: 0, people: 0 }, previous: { events: 0, people: 0 } } } });
+  assert.equal(nodata.items.interesse_pct.current, null);
 });

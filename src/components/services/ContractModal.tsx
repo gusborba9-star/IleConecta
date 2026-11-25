@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { trackHouseSignal } from "@/lib/houseSignals";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { Button, Label, Modal, Textarea } from "@/components/base";
@@ -33,6 +34,7 @@ export default function ContractModal({ service, initialSlot, proposal, onClose,
   const [modality, setModality] = useState<"presencial" | "distancia" | "">("");
   const [saving, setSaving] = useState(false);
   const { id: ownerId } = useParams();
+  useEffect(() => { if (service) trackHouseSignal(ownerId, "oferta"); }, [service, ownerId]);
   const [payOn, setPayOn] = useState(false);
   // Só libera o envio depois de saber se a casa cobra pelo app; sem isso um toque rápido criava pedido sem abrir o pagamento.
   const [payReady, setPayReady] = useState(false);

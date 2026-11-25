@@ -76,6 +76,7 @@ export const CRON_DESCRIPTIONS = {
   "video-close-stale": "Vídeo: a cada 15 minutos fecha as sessões sem saída registrada (contando só até o fim previsto da reunião) e encerra reuniões esquecidas.",
   "video-sweep": "Vídeo (LiveKit): a cada 5 minutos pede ao servidor para fechar as salas que passaram do horário-limite (fim previsto + 15 min) e ainda têm gente dentro.",
   "video-lembrete": "Vídeo: a cada minuto avisa no sino (uma vez por reunião) quem foi convidado quando a sala abre, 10 minutos antes do horário.",
+  "house-signals-clean": "Visitas da casa: de hora em hora apaga as chaves de contagem do dia que passou e os totais com mais de 13 meses.",
   "member-requests-clean": "Membros: pedidos e convites de membro sem resposta há 30 dias expiram; os já decididos são apagados após 90 dias.",
   "purge-video-usage": "Limpeza de privacidade: apaga o consumo de vídeo (quem entrou e quando) com mais de 12 meses.",
   "purge-video-meetings": "Limpeza de privacidade: apaga o agendamento de reuniões da casa com mais de 12 meses e o de consultas por vídeo com mais de 5 anos.",
